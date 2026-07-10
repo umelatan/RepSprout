@@ -174,27 +174,75 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </header>
 
     <!-- DASHBOARD -->
-    <section id="dashboard-view" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
-      <div class="card p-6 text-center">
-        <div id="plant-emoji" class="text-7xl mb-3 p-sway">🌱</div>
-        <p id="plant-name-label" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
-        <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400 mt-0.5 mb-4"></p>
-        <div class="flex items-center justify-center gap-6">
-          <div class="text-center"><p id="streak-val" class="font-display font-extrabold text-2xl text-brand-500">0</p><p class="text-[11px] text-slate-400">day streak</p></div>
-          <div class="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
-          <div class="text-center"><p id="total-sessions-val" class="font-display font-extrabold text-2xl text-slate-700 dark:text-slate-200">0</p><p class="text-[11px] text-slate-400">workouts</p></div>
-          <div class="w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
-          <div class="text-center"><p id="last-session-val" class="font-display font-extrabold text-2xl text-slate-700 dark:text-slate-200">—</p><p class="text-[11px] text-slate-400">last session</p></div>
+    <section id="dashboard-view" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4 pb-8">
+
+      <!-- Plant companion hero -->
+      <div class="card relative overflow-hidden p-6 text-center">
+        <div class="absolute inset-x-0 top-0 flex justify-center pointer-events-none" aria-hidden="true">
+          <div class="w-44 h-44 rounded-full bg-brand-200 dark:bg-brand-900/50 opacity-60 blur-3xl"></div>
+        </div>
+        <div id="plant-emoji" class="relative text-9xl leading-none p-sway">🌱</div>
+
+        <div id="dash-hero-empty" style="display:none" class="relative space-y-2 pt-3">
+          <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Your RepSprout is ready to grow.</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Complete your first workout to grow your first leaf.</p>
+        </div>
+
+        <div id="dash-hero-body" class="relative space-y-3 pt-3">
+          <div>
+            <p class="font-display font-bold text-lg text-slate-800 dark:text-white">
+              <span id="plant-name-label"></span>
+              <span id="plant-level-label" class="text-brand-500 font-semibold text-sm align-middle"></span>
+            </p>
+            <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400 mt-0.5"></p>
+          </div>
+          <div class="text-left px-2">
+            <p id="growth-pct-label" class="text-xs text-slate-500 dark:text-slate-400 mb-1"></p>
+            <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-label="Growth progress toward next leaf">
+              <div id="growth-bar-fill" class="h-full bg-brand-500 rounded-full transition-all duration-700" style="width:0%"></div>
+            </div>
+            <p id="growth-next-label" class="text-xs text-slate-400 mt-1.5"></p>
+          </div>
         </div>
       </div>
 
-      <div class="card p-4">
-        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 mb-3">Today's Workout</h3>
-        <div id="today-session-card"><p class="text-sm text-slate-400 text-center py-3">No workout logged yet.</p></div>
-        <div class="flex gap-2 mt-3">
-          <button id="dash-log-workout" class="btn btn-green flex-1 text-sm py-2.5"><span class="ms text-base">fitness_center</span>Log Workout</button>
-        </div>
+      <!-- Compact stats -->
+      <div id="dash-stats-row" class="flex items-center justify-center gap-6">
+        <div class="text-center"><p id="streak-val" class="font-display font-bold text-lg text-slate-600 dark:text-slate-300">0</p><p class="text-[10px] text-slate-400">day streak</p></div>
+        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
+        <div class="text-center"><p id="total-sessions-val" class="font-display font-bold text-lg text-slate-600 dark:text-slate-300">0</p><p class="text-[10px] text-slate-400">workouts</p></div>
+        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
+        <div class="text-center"><p id="last-session-val" class="font-display font-bold text-lg text-slate-600 dark:text-slate-300">—</p><p class="text-[10px] text-slate-400">last session</p></div>
       </div>
+
+      <!-- Today's mission -->
+      <div id="dash-mission-card" class="card p-4 space-y-3">
+        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Today's Mission</h3>
+        <div id="dash-mission-body" class="space-y-3"></div>
+      </div>
+
+      <!-- Closest progress -->
+      <div class="card p-4 space-y-2">
+        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Closest Progress</h3>
+        <div id="dash-progress-body" class="space-y-2"></div>
+      </div>
+
+      <!-- Garden preview -->
+      <div class="card p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Garden</h3>
+          <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-1">View Garden →</button>
+        </div>
+        <div id="dash-garden-preview" class="flex items-center gap-3"></div>
+      </div>
+
+      <!-- Recent win -->
+      <div class="card p-4 space-y-1">
+        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Recent Win</h3>
+        <p id="dash-win-text" class="text-sm text-slate-600 dark:text-slate-300"></p>
+      </div>
+
+      <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-1"></p>
     </section>
 
     <!-- WORKOUT -->
@@ -509,14 +557,23 @@ const HEALTH_LABELS = {
   growing:  ['Growing steadily 🌿', 'You\'re building momentum.'],
   thriving: ['Thriving! 🌿', 'Great streak — keep the momentum going.'],
   blooming: ['Blooming! 🌸', '7+ day streak. You\'re on fire!'],
-  wilting:  ['Wilting... 🥀', 'It\'s been a few days. Your plant needs you.'],
-  dormant:  ['Dormant 💤', 'Long time no see. Come back — it\'s not too late.']
+  wilting:  ['Taking it slow 🌿', 'Growth pauses when you rest. Jump back in anytime.'],
+  dormant:  ['Welcome back 🌱', 'Let\'s keep growing.']
 };
 
 const HEALTH_ANIM = {
   seed:'p-still', sprout:'p-sway', growing:'p-sway', thriving:'p-sway',
-  blooming:'p-bloom', wilting:'p-droop', dormant:'p-droop'
+  blooming:'p-bloom', wilting:'p-still', dormant:'p-still'
 };
+
+// ── Growth / home page helpers ───────────────────────────────────────────────
+const GROWTH_PER_LEVEL = 5; // workouts logged per plant level
+const ENCOURAGEMENT = [
+  'Small reps become big strength.',
+  'Every plant starts as a seed.',
+  'Recovery is part of growth.',
+  'Progress does not have to be perfect.'
+];
 
 // ── Progression ────────────────────────────────────────────────────────────
 function nextProgression(targetReps, completedReps) {
@@ -663,9 +720,16 @@ document.getElementById('ob-finish-btn').addEventListener('click', async functio
 const VIEWS = ['dashboard','workout','calendar','profile'];
 const TITLES = { dashboard:'Dashboard', workout:'Workout', calendar:'Calendar', profile:'Garden' };
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  const first = (me?.displayName || me?.email || '').trim().split(/\s+/)[0] || '';
+  return `Good ${part}${first ? ', ' + first : ''}`;
+}
+
 function goView(v) {
   VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
-  document.getElementById('page-title').textContent = TITLES[v] || '';
+  document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
@@ -702,32 +766,125 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
 });
 
 // ── Dashboard render ────────────────────────────────────────────────────────
-function renderDashboard() {
-  const plant = userProfile.plant || 'sprout';
-  const p = PLANTS[plant] || { emoji:'🌱', name:'', desc:'' };
+const MG_LABEL = { upper:'Upper Body', lower:'Lower Body', core:'Core', full:'Full Body', cardio:'Cardio' };
 
-  // Collect all session dates
-  const sessionDates = [];
+function allSessionDates() {
+  const dates = [];
   Object.values(sessions).forEach(dayMap => {
     if (typeof dayMap === 'object') Object.keys(dayMap).forEach(date => {
-      if (!sessionDates.includes(date)) sessionDates.push(date);
+      if (!dates.includes(date)) dates.push(date);
     });
   });
+  return dates;
+}
 
-  const health = getPlantHealth(sessionDates);
-  const [hl1, hl2] = HEALTH_LABELS[health] || ['', ''];
-  const anim = HEALTH_ANIM[health] || 'p-sway';
+function totalLoggedSessions() {
+  return Object.values(sessions).reduce((sum, day) => sum + Object.keys(day || {}).length, 0);
+}
 
+// Finds the exercise closest to its next weight increase, consuming the
+// weightUpFlag/targetReps state that nextProgression() already maintains
+// rather than recomputing progression from raw history.
+function findClosestProgression() {
+  const dates = Object.keys(sessions).sort().reverse();
+  const seen = new Set();
+  let best = null;
+  let readyFallback = null;
+  for (const date of dates) {
+    const daySessions = sessions[date] || {};
+    for (const s of Object.values(daySessions)) {
+      for (const loggedEx of (s.exercises || [])) {
+        if (!loggedEx.exerciseId || seen.has(loggedEx.exerciseId)) continue;
+        seen.add(loggedEx.exerciseId);
+        const exDef = exercises[loggedEx.exerciseId];
+        if (!exDef) continue;
+        const targetReps = exDef.targetReps || [8,8,8];
+        const remaining = targetReps.reduce((sum, r) => sum + Math.max(0, 12 - r), 0);
+        const entry = {
+          name: exDef.name, group: exDef.muscleGroup,
+          weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
+          targetReps, lastSets: (loggedEx.sets || []).map(st => st.reps || 0),
+          remaining, ready: !!exDef.weightUpFlag
+        };
+        if (entry.ready) { if (!readyFallback) readyFallback = entry; continue; }
+        if (!best || entry.remaining < best.remaining) best = entry;
+      }
+    }
+  }
+  return best || readyFallback;
+}
+
+// Surfaces the most recent genuinely-earned win: a weight-increase unlock,
+// otherwise a real rep improvement between an exercise's last two sessions,
+// otherwise a real monthly session count. Never invents numbers.
+function findRecentWin() {
+  const readyEntry = Object.values(exercises).find(ex => ex.weightUpFlag);
+  if (readyEntry) return { icon:'🍃', text: `${readyEntry.name} is ready for more weight` };
+
+  const history = {};
+  Object.keys(sessions).sort().forEach(date => {
+    Object.values(sessions[date] || {}).forEach(s => (s.exercises || []).forEach(ex => {
+      if (!ex.exerciseId) return;
+      const total = (ex.sets || []).reduce((sum, st) => sum + (+st.reps || 0), 0);
+      (history[ex.exerciseId] ||= []).push({ total, name: ex.name });
+    }));
+  });
+  for (const list of Object.values(history)) {
+    if (list.length < 2) continue;
+    const prev = list[list.length-2], last = list[list.length-1];
+    if (last.total > prev.total) return { icon:'💪', text: `+${last.total-prev.total} rep${last.total-prev.total>1?'s':''} on ${last.name}` };
+  }
+
+  const monthPrefix = todayStr().slice(0,7);
+  const sessionsThisMonth = Object.keys(sessions).filter(d => d.startsWith(monthPrefix))
+    .reduce((sum, d) => sum + Object.keys(sessions[d] || {}).length, 0);
+  if (sessionsThisMonth > 0) return { icon:'🌱', text: `${sessionsThisMonth} workout${sessionsThisMonth>1?'s':''} logged this month` };
+
+  return null;
+}
+
+function renderPlantHero(sessionDates, hasHistory) {
+  const plant = userProfile.plant || 'sprout';
+  const p = PLANTS[plant] || { emoji:'🌱', name:'', desc:'' };
   const emoji = document.getElementById('plant-emoji');
   emoji.textContent = p.emoji;
-  emoji.className = `text-7xl mb-3 ${anim}`;
-  document.getElementById('plant-name-label').textContent   = `${p.name}`;
-  document.getElementById('plant-status-label').textContent = hl2;
 
-  // Streak calculation
+  if (!hasHistory) {
+    emoji.className = 'relative text-9xl leading-none p-sway';
+    show('dash-hero-empty'); hide('dash-hero-body');
+    return;
+  }
+  hide('dash-hero-empty'); show('dash-hero-body');
+
+  const health = getPlantHealth(sessionDates);
+  const [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
+  emoji.className = `relative text-9xl leading-none ${HEALTH_ANIM[health] || 'p-sway'}`;
+
+  document.getElementById('plant-name-label').textContent = p.name;
+  document.getElementById('plant-status-label').textContent = statusMsg;
+
+  const totalSessions = totalLoggedSessions();
+  const level = Math.floor(totalSessions / GROWTH_PER_LEVEL) + 1;
+  const inLevel = totalSessions % GROWTH_PER_LEVEL;
+  const pct = Math.round(inLevel / GROWTH_PER_LEVEL * 100);
+  const remaining = GROWTH_PER_LEVEL - inLevel;
+
+  document.getElementById('plant-level-label').textContent = `· Level ${level}`;
+  document.getElementById('growth-pct-label').textContent = `${pct}% to next leaf`;
+  const bar = document.getElementById('growth-bar-fill');
+  bar.style.width = `${pct}%`;
+  bar.parentElement.setAttribute('aria-valuenow', String(pct));
+  bar.parentElement.setAttribute('aria-valuemin', '0');
+  bar.parentElement.setAttribute('aria-valuemax', '100');
+  document.getElementById('growth-next-label').textContent =
+    `${remaining} more workout${remaining===1?'':'s'} until a new leaf 🍃`;
+}
+
+function renderDashStats(sessionDates, hasHistory) {
+  if (!hasHistory) { hide('dash-stats-row'); return; }
+  show('dash-stats-row');
   const today = todayStr();
-  let streak = 0;
-  let check = new Date(today+'T12:00:00');
+  let streak = 0, check = new Date(today+'T12:00:00');
   for (let i = 0; i < 60; i++) {
     if (sessionDates.includes(check.toISOString().slice(0,10))) streak++;
     else if (i > 0) break;
@@ -735,23 +892,100 @@ function renderDashboard() {
   }
   document.getElementById('streak-val').textContent = streak;
   document.getElementById('total-sessions-val').textContent = sessionDates.length;
-  const lastDate = sessionDates.sort().reverse()[0];
+  const lastDate = [...sessionDates].sort().reverse()[0];
   document.getElementById('last-session-val').textContent = lastDate ? fmtDate(lastDate) : '—';
+}
 
-  // Today's session
+function renderTodayMission() {
+  const body = document.getElementById('dash-mission-body');
+  const today = todayStr();
   const todaySessions = sessions[today] || {};
-  const card = document.getElementById('today-session-card');
-  if (Object.keys(todaySessions).length) {
+  const done = Object.keys(todaySessions).length > 0;
+
+  if (done) {
     const s = Object.values(todaySessions)[0];
-    const mgLabel = { upper:'Upper Body', lower:'Lower Body', core:'Core', full:'Full Body', cardio:'Cardio' };
-    card.innerHTML = `<div class="flex items-center gap-3 py-1">
-      <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${s.muscleGroup}">${mgLabel[s.muscleGroup]||s.muscleGroup}</span>
-      <span class="text-sm text-slate-600 dark:text-slate-300">${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
-      ${s.caloriesBurned ? `<span class="text-xs text-brand-500 ml-auto">🔥 ${s.caloriesBurned} kcal</span>` : ''}
-    </div>`;
+    body.innerHTML = `
+      <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-sm">
+        <span class="ms text-xl">check_circle</span>Mission complete
+      </div>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Your sprout grew today 🌿</p>
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <span class="px-2 py-0.5 rounded-lg border font-semibold mg-${s.muscleGroup}">${MG_LABEL[s.muscleGroup]||s.muscleGroup}</span>
+        <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
+      </div>
+      <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
+        <button data-action="view-workout" class="text-brand-500 hover:underline py-1">View workout</button>
+        <button data-action="log-another" class="text-slate-400 hover:underline py-1">Log another activity</button>
+      </div>`;
   } else {
-    card.innerHTML = '<p class="text-sm text-slate-400 text-center py-3">No workout logged yet.</p>';
+    body.innerHTML = `
+      <p class="text-sm text-slate-600 dark:text-slate-300">Log any workout today</p>
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-slate-400">Reward</span>
+        <span class="font-semibold text-brand-500">+1 Growth</span>
+      </div>
+      <button data-action="start-growing" class="btn btn-green w-full py-3"><span class="ms text-base">fitness_center</span>Start Growing</button>`;
   }
+}
+
+function renderClosestProgress() {
+  const body = document.getElementById('dash-progress-body');
+  const best = findClosestProgression();
+  if (!best) {
+    body.innerHTML = '<p class="text-sm text-slate-400 text-center py-2">Your next progression will appear here after your first workout.</p>';
+    return;
+  }
+  const setsCount = best.targetReps.length || 1;
+  const pct = Math.max(0, Math.min(100, Math.round(((setsCount*12) - best.remaining) / (setsCount*12) * 100)));
+  const detail = best.ready ? 'Ready to increase next session 🎉' :
+    `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next weight increase`;
+  body.innerHTML = `
+    <div class="flex items-center justify-between">
+      <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(best.name)}</p>
+      <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group}">${MG_LABEL[best.group]||best.group}</span>
+    </div>
+    <p class="text-xs text-slate-400">${best.weight} ${best.unit} · last set${best.lastSets.length!==1?'s':''}: ${best.lastSets.join(' • ')} reps</p>
+    <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden" role="progressbar" aria-label="Progress toward next weight increase" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+      <div class="h-full bg-brand-500 rounded-full transition-all duration-700" style="width:${pct}%"></div>
+    </div>
+    <p class="text-xs font-semibold text-brand-500">${detail}</p>`;
+}
+
+function renderGardenPreview() {
+  const wrap = document.getElementById('dash-garden-preview');
+  const current = userProfile.plant;
+  wrap.innerHTML = Object.entries(PLANTS).map(([key, p]) => {
+    const isCurrent = key === current;
+    return `<div class="flex flex-col items-center gap-1">
+      <div class="w-11 h-11 rounded-full flex items-center justify-center text-2xl ${isCurrent ? 'bg-brand-50 dark:bg-brand-950/40 ring-2 ring-brand-400' : 'bg-slate-100 dark:bg-slate-800 opacity-50'}">
+        ${isCurrent ? p.emoji : '<span class="ms text-base text-slate-400">lock</span>'}
+      </div>
+      <span class="text-[10px] ${isCurrent ? 'font-semibold text-brand-500' : 'text-slate-400'}">${isCurrent ? p.name : '???'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderRecentWin() {
+  const el = document.getElementById('dash-win-text');
+  const win = findRecentWin();
+  el.textContent = win ? `${win.icon} ${win.text}` : 'Your first win will appear here.';
+}
+
+function renderEncouragement() {
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  document.getElementById('dash-encouragement').textContent = ENCOURAGEMENT[dayIndex % ENCOURAGEMENT.length];
+}
+
+function renderDashboard() {
+  const sessionDates = allSessionDates();
+  const hasHistory = sessionDates.length > 0;
+  renderPlantHero(sessionDates, hasHistory);
+  renderDashStats(sessionDates, hasHistory);
+  renderTodayMission();
+  renderClosestProgress();
+  renderGardenPreview();
+  renderRecentWin();
+  renderEncouragement();
 }
 
 // ── Profile render ──────────────────────────────────────────────────────────
@@ -1134,9 +1368,14 @@ function showCalDetail(ds) {
 }
 
 // ── Dashboard quick actions ─────────────────────────────────────────────────
-document.getElementById('dash-log-workout').addEventListener('click', () => {
-  goView('workout'); switchWorkoutTab('log');
+document.getElementById('dash-mission-card').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  if (action === 'start-growing' || action === 'log-another') { goView('workout'); switchWorkoutTab('log'); }
+  if (action === 'view-workout') { goView('workout'); switchWorkoutTab('history'); }
 });
+document.getElementById('dash-view-garden').addEventListener('click', () => goView('profile'));
 
 // ── Utility ────────────────────────────────────────────────────────────────
 function show(id){ document.getElementById(id).style.display = ''; }
