@@ -1,61 +1,229 @@
-# Kumpul
+# 🌱 RepSprout
 
-> "Next week lah" never actually happens.
+> **Grow stronger, one rep at a time.**
 
-**Kumpul** is a lightweight group hangout planner. Mark your free days, see when everyone overlaps, and lock in a date — no group chat chaos required.
+RepSprout is a workout tracker built around **double progression**. Instead of only recording your workouts, RepSprout helps you understand **when you're actually ready to increase the weight**.
 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#how-it-works">How It Works</a></li>
-    <li><a href="#development-plans">Development Plans</a></li>
-    <li><a href="#tech">Tech</a></li>
-  </ol>
-</details>
+Most fitness apps are digital notebooks.
+
+RepSprout is a **growth companion**.
+
 ---
 
+## ✨ Why RepSprout?
 
-## Features
+Many people ask:
 
-- **Mark your availability** — tap days to set morning, afternoon, or evening free slots
-- **Heat map** — see at a glance which days most people are free
-- **Daily view** — drill into any day to see exactly who's free and when
-- **Plan hangouts** — propose a date and time, notify the group, track RSVPs
-- **Multi-group** — belong to multiple friend groups, each with their own calendar
-- **Invite links** — share a link, admin approves who gets in
-- **PWA** — installable on mobile, works offline
+- Should I increase the weight?
+- Should I do more reps first?
+- Am I progressing correctly?
 
-<p align="right">(<a href="#kumpul">back to top</a>)</p>
+RepSprout removes the guesswork by guiding users through a simple, proven progression system.
+
+Every workout moves you one step closer to your next milestone.
+
 ---
 
-## How it works
+## 🌱 Core Philosophy
 
-1. Admin creates a group and shares the invite link
-2. Friends sign in with Google and request to join
-3. Admin approves requests from the Requests tab
-4. Everyone marks their free days
-5. Pick the day with the most overlap and plan the hangout
+Small improvements compound.
 
-<p align="right">(<a href="#kumpul">back to top</a>)</p>
+Instead of chasing heavier weights every session, RepSprout encourages users to **earn** their progress through consistency.
+
+One more rep.
+
+One more workout.
+
+One more step.
+
+Eventually...
+
+🌸 Bloom.
+
 ---
 
-## Development Plans
-- [x] PWA
-- [x] Enable multi-group function
-- [ ] Polling Feature (For location/activities)
+## 🚀 Features
 
-<p align="right">(<a href="#kumpul">back to top</a>)</p>
+### 📚 Custom Exercise Library
+
+Create your own exercises with:
+
+- Exercise name
+- Target rep range
+- Number of sets
+- Weight increments
+- Rest timer
+- Notes
+- Machine settings
+
+### 🏋️ Workout Groups
+
+Create unlimited workout programs such as:
+
+- Upper Body A
+- Lower Body A
+- Push
+- Pull
+- Full Body
+- Pilates
+- Hotel Gym
+
+Reuse exercises across multiple workout groups.
+
+### 📈 Double Progression
+
+RepSprout recommends what to do next after every workout.
+
+- Stay at the same weight
+- Build more reps
+- Increase the weight
+
+Example:
+
+```text
+10 kg
+
+12
+12
+10
+```
+
+Recommendation:
+
+```text
+Stay at 10 kg.
+
+Reach 12 reps across all sets before increasing.
+```
+
+Once you achieve:
+
+```text
+12
+12
+12
+```
+
+RepSprout celebrates:
+
+> 🌸 You earned your next weight!
+
+### 📅 Workout Calendar
+
+Visualise your training history.
+
+Track:
+- Workout groups
+- Gym sessions
+- Pilates
+- Spin
+- Walking
+- Yoga
+- Rest days
+
+Tap any date to review the complete workout.
+
+### 📊 Progress Tracking
+
+Monitor:
+- Strength progression
+- Personal records
+- Workout frequency
+- Exercise history
+- Weight progression
+
+### 🌿 Plant Companion *(Planned)*
+
+Your plant grows through:
+- Consistency
+- Progressive overload
+- Recovery
+
+Missing a workout doesn't kill your plant.
+
+Growth simply pauses.
+
 ---
 
-## Tech
+## 💚 Recovery Matters
 
-- Single-file HTML app — no build step, no framework
-- Firebase Realtime Database (data + auth)
-- Google Sign-In
-- Tailwind CSS (CDN)
-- PWA (manifest + service worker)
+Recovery is part of progress.
 
-<p align="right">(<a href="#kumpul">back to top</a>)</p>
+Log:
+- Walk
+- Yoga
+- Rest Day
+
+RepSprout celebrates recovery as much as training.
+
 ---
 
+## 🛣️ Roadmap
+
+### Phase 1 — MVP
+
+- User authentication
+- Exercise library
+- Workout groups
+- Workout logging
+- Double progression engine
+- Workout calendar
+- Progress charts
+- Previous workout comparison
+
+### Phase 2
+
+- Growing plant companion
+- Unlockable plants
+- Workout reminders
+- Apple Health integration
+- Google Fit integration
+- Smart rest timer
+- Dark mode
+
+### Phase 3
+
+- Friends
+- Challenges
+- Shared workout programs
+- Personal trainer mode
+- AI-powered recommendations
+- Apple Watch & Wear OS support
+
+---
+
+## 🛠️ Tech Stack
+
+**Frontend**
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+**Backend**
+- Supabase
+- PostgreSQL
+- Supabase Authentication
+
+**Deployment**
+- Vercel
+
+---
+
+## 🤝 Contributing
+
+Contributions, ideas and feature requests are welcome.
+
+Feel free to open an issue or submit a pull request.
+
+---
+
+## 📜 License
+
+MIT License
+
+---
+
+# 🌱 Brand Promise
+
+**Grow stronger, one rep at a time.**
