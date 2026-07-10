@@ -909,7 +909,10 @@ function subscribeData() {
   onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); }, e => console.error(e));
   dataRefs.push(rExercises);
 
-  const rGroups = ref(db, `groups/${uid()}`);
+  // Nested under users/{uid} (not a new top-level groups/{uid} path) so it
+  // inherits the already-working per-user rule instead of needing its own
+  // Firebase Security Rules entry that was never published.
+  const rGroups = ref(db, `users/${uid()}/groups`);
   onValue(rGroups, snap => { groups = snap.val() || {}; renderGroupsList(); renderExerciseLibrary(); }, e => console.error(e));
   dataRefs.push(rGroups);
 
@@ -1839,9 +1842,9 @@ document.getElementById('gm-next-btn').addEventListener('click', async () => {
     hide('gm-save-error');
     try {
       if (groupModalId) {
-        await set(ref(db, `groups/${uid()}/${groupModalId}`), { ...groups[groupModalId], ...data });
+        await set(ref(db, `users/${uid()}/groups/${groupModalId}`), { ...groups[groupModalId], ...data });
       } else {
-        await set(push(ref(db, `groups/${uid()}`)), { ...data, createdAt: Date.now() });
+        await set(push(ref(db, `users/${uid()}/groups`)), { ...data, createdAt: Date.now() });
       }
       document.getElementById('group-modal').style.display = 'none';
       switchWorkoutTab('groups');
@@ -1866,7 +1869,7 @@ document.getElementById('gm-duplicate-btn').addEventListener('click', async func
   this.disabled = true;
   try {
     const copy = { ...groupModalDraft, name: `${groupModalDraft.name} copy`, exercises: groupModalDraft.exercises.map(ge => ({ ...ge })) };
-    await set(push(ref(db, `groups/${uid()}`)), { ...copy, description: copy.description || null, createdAt: Date.now(), updatedAt: Date.now() });
+    await set(push(ref(db, `users/${uid()}/groups`)), { ...copy, description: copy.description || null, createdAt: Date.now(), updatedAt: Date.now() });
     document.getElementById('group-modal').style.display = 'none';
     switchWorkoutTab('groups');
     showToast('Workout group duplicated.');
@@ -1882,7 +1885,7 @@ document.getElementById('gm-delete-btn').addEventListener('click', async functio
   if (!confirm(`Delete "${groupModalDraft.name}"? Past workouts logged from it stay in your history.`)) return;
   this.disabled = true;
   try {
-    await remove(ref(db, `groups/${uid()}/${groupModalId}`));
+    await remove(ref(db, `users/${uid()}/groups/${groupModalId}`));
     document.getElementById('group-modal').style.display = 'none';
     switchWorkoutTab('groups');
     showToast('Workout group deleted.');
