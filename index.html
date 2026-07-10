@@ -136,7 +136,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <nav class="flex flex-col gap-0.5 flex-grow" id="sidebar-nav">
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="dashboard"><span class="ms text-xl">home</span>Dashboard</a>
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="workout"><span class="ms text-xl">fitness_center</span>Workout</a>
-      <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="nutrition"><span class="ms text-xl">restaurant</span>Nutrition</a>
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="calendar"><span class="ms text-xl">calendar_month</span>Calendar</a>
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="profile"><span class="ms text-xl">yard</span>Garden</a>
     </nav>
@@ -189,33 +188,11 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         </div>
       </div>
 
-      <div class="card p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Today's Nutrition</h3>
-          <span id="dash-date" class="text-xs text-slate-400"></span>
-        </div>
-        <div>
-          <div class="flex justify-between text-xs mb-1 text-slate-500">
-            <span>Calories</span>
-            <span><span id="d-cal-in">0</span> eaten · <span class="text-brand-500">🔥 <span id="d-cal-burn">0</span> burned</span> · <span id="d-cal-goal">2000</span> goal</span>
-          </div>
-          <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div id="d-cal-bar" class="h-full bg-brand-500 rounded-full transition-all duration-700" style="width:0%"></div>
-          </div>
-        </div>
-        <div class="grid grid-cols-3 gap-3">
-          <div><div class="flex justify-between text-[11px] mb-1"><span class="text-blue-500 font-semibold">Protein</span><span class="text-slate-400"><span id="d-pro">0</span>g</span></div><div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div id="d-pro-bar" class="h-full bg-blue-500 rounded-full transition-all duration-700" style="width:0%"></div></div></div>
-          <div><div class="flex justify-between text-[11px] mb-1"><span class="text-amber-500 font-semibold">Carbs</span><span class="text-slate-400"><span id="d-carb">0</span>g</span></div><div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div id="d-carb-bar" class="h-full bg-amber-500 rounded-full transition-all duration-700" style="width:0%"></div></div></div>
-          <div><div class="flex justify-between text-[11px] mb-1"><span class="text-pink-500 font-semibold">Fat</span><span class="text-slate-400"><span id="d-fat">0</span>g</span></div><div class="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div id="d-fat-bar" class="h-full bg-pink-500 rounded-full transition-all duration-700" style="width:0%"></div></div></div>
-        </div>
-      </div>
-
       <div class="card p-4">
         <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 mb-3">Today's Workout</h3>
         <div id="today-session-card"><p class="text-sm text-slate-400 text-center py-3">No workout logged yet.</p></div>
         <div class="flex gap-2 mt-3">
           <button id="dash-log-workout" class="btn btn-green flex-1 text-sm py-2.5"><span class="ms text-base">fitness_center</span>Log Workout</button>
-          <button id="dash-log-meal" class="btn btn-outline flex-1 text-sm py-2.5"><span class="ms text-base">restaurant</span>Log Meal</button>
         </div>
       </div>
     </section>
@@ -273,25 +250,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       </div>
     </section>
 
-    <!-- NUTRITION -->
-    <section id="nutrition-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
-      <div class="card p-4 space-y-3">
-        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Daily Totals</h3>
-        <div class="grid grid-cols-4 gap-2 text-center">
-          <div class="p-2 rounded-xl bg-brand-50 dark:bg-brand-950/30"><p id="nt-cal" class="font-display font-bold text-brand-600 dark:text-brand-400 text-lg">0</p><p class="text-[10px] text-slate-400">kcal</p></div>
-          <div class="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/30"><p id="nt-pro" class="font-display font-bold text-blue-600 dark:text-blue-400 text-lg">0g</p><p class="text-[10px] text-slate-400">protein</p></div>
-          <div class="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30"><p id="nt-carb" class="font-display font-bold text-amber-600 dark:text-amber-400 text-lg">0g</p><p class="text-[10px] text-slate-400">carbs</p></div>
-          <div class="p-2 rounded-xl bg-pink-50 dark:bg-pink-950/30"><p id="nt-fat" class="font-display font-bold text-pink-600 dark:text-pink-400 text-lg">0g</p><p class="text-[10px] text-slate-400">fat</p></div>
-        </div>
-      </div>
-      <div class="space-y-3">
-        <div class="card p-4"><div class="flex items-center justify-between mb-3"><p class="font-semibold text-sm text-slate-700 dark:text-slate-200">🍳 Breakfast</p><button class="add-meal-btn btn btn-outline text-xs px-2 py-1" data-meal="breakfast"><span class="ms text-sm">add</span></button></div><div class="meal-list space-y-2" data-meal="breakfast"></div></div>
-        <div class="card p-4"><div class="flex items-center justify-between mb-3"><p class="font-semibold text-sm text-slate-700 dark:text-slate-200">🥗 Lunch</p><button class="add-meal-btn btn btn-outline text-xs px-2 py-1" data-meal="lunch"><span class="ms text-sm">add</span></button></div><div class="meal-list space-y-2" data-meal="lunch"></div></div>
-        <div class="card p-4"><div class="flex items-center justify-between mb-3"><p class="font-semibold text-sm text-slate-700 dark:text-slate-200">🍽️ Dinner</p><button class="add-meal-btn btn btn-outline text-xs px-2 py-1" data-meal="dinner"><span class="ms text-sm">add</span></button></div><div class="meal-list space-y-2" data-meal="dinner"></div></div>
-        <div class="card p-4"><div class="flex items-center justify-between mb-3"><p class="font-semibold text-sm text-slate-700 dark:text-slate-200">🍎 Snacks</p><button class="add-meal-btn btn btn-outline text-xs px-2 py-1" data-meal="snacks"><span class="ms text-sm">add</span></button></div><div class="meal-list space-y-2" data-meal="snacks"></div></div>
-      </div>
-    </section>
-
     <!-- CALENDAR -->
     <section id="calendar-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
       <div class="card p-4">
@@ -333,7 +291,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
       <div class="card p-4 space-y-3">
         <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">AI Settings</h3>
-        <p class="text-xs text-slate-400">Your OpenAI key is stored privately in your account. Used for meal photo analysis and macro estimation.</p>
+        <p class="text-xs text-slate-400">Your OpenAI key is stored privately in your account. Used to extract calories burned from a fitness-tracker screenshot.</p>
         <div>
           <label class="text-xs font-semibold text-slate-400 block mb-1">OpenAI API Key</label>
           <div class="flex gap-2">
@@ -365,7 +323,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex z-50">
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="dashboard"><span class="ms text-2xl">home</span><span class="text-[9px] font-semibold">Home</span></button>
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="workout"><span class="ms text-2xl">fitness_center</span><span class="text-[9px] font-semibold">Workout</span></button>
-    <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="nutrition"><span class="ms text-2xl">restaurant</span><span class="text-[9px] font-semibold">Nutrition</span></button>
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="calendar"><span class="ms text-2xl">calendar_month</span><span class="text-[9px] font-semibold">Calendar</span></button>
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="profile"><span class="ms text-2xl">yard</span><span class="text-[9px] font-semibold">Garden</span></button>
   </nav>
@@ -382,7 +339,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <nav class="flex flex-col gap-0.5 flex-grow">
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="dashboard"><span class="ms text-xl">home</span>Dashboard</a>
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="workout"><span class="ms text-xl">fitness_center</span>Workout</a>
-      <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="nutrition"><span class="ms text-xl">restaurant</span>Nutrition</a>
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="calendar"><span class="ms text-xl">calendar_month</span>Calendar</a>
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="profile"><span class="ms text-xl">yard</span>Garden</a>
     </nav>
@@ -429,51 +385,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </div>
     <input type="hidden" id="ex-modal-id">
     <button id="ex-modal-save" class="btn btn-green w-full py-2.5">Save Exercise</button>
-  </div>
-</div>
-
-<!-- Log meal -->
-<div id="meal-modal" style="display:none" class="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[90vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 class="font-display font-bold text-slate-800 dark:text-white">Log Meal</h3>
-      <button id="meal-modal-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
-    </div>
-    <div class="flex gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl">
-      <button class="meal-type-btn flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all text-slate-500 dark:text-slate-400" data-type="breakfast">🍳 Breakfast</button>
-      <button class="meal-type-btn flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all text-slate-500 dark:text-slate-400" data-type="lunch">🥗 Lunch</button>
-      <button class="meal-type-btn flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all text-slate-500 dark:text-slate-400" data-type="dinner">🍽️ Dinner</button>
-      <button class="meal-type-btn flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all text-slate-500 dark:text-slate-400" data-type="snacks">🍎 Snack</button>
-    </div>
-    <div class="flex gap-2">
-      <button id="meal-mode-text" class="flex-1 text-xs font-semibold py-2 rounded-xl border transition-all border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300">✍️ Describe</button>
-      <button id="meal-mode-photo" class="flex-1 text-xs font-semibold py-2 rounded-xl border transition-all border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300">📷 Photo</button>
-      <button id="meal-mode-manual" class="flex-1 text-xs font-semibold py-2 rounded-xl border transition-all border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300">✏️ Manual</button>
-    </div>
-    <div id="meal-text-section" style="display:none" class="space-y-2">
-      <textarea id="meal-text-input" rows="3" placeholder="e.g. 2 scrambled eggs, whole wheat toast, black coffee" class="resize-none"></textarea>
-      <button id="analyze-text-btn" class="btn btn-green w-full py-2.5 text-sm"><span class="ms text-base">auto_awesome</span>Analyze with AI</button>
-    </div>
-    <div id="meal-photo-section" style="display:none" class="space-y-2">
-      <label class="flex flex-col items-center justify-center gap-2 h-28 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl cursor-pointer hover:border-brand-400 transition-colors">
-        <span class="ms text-3xl text-slate-300">add_photo_alternate</span>
-        <span class="text-xs text-slate-400">Tap to upload photo</span>
-        <input id="meal-photo-input" type="file" accept="image/*" capture="environment" class="hidden">
-      </label>
-      <img id="meal-photo-preview" class="w-full rounded-xl object-cover max-h-36 hidden">
-      <button id="analyze-photo-btn" class="btn btn-green w-full py-2.5 text-sm" disabled><span class="ms text-base">auto_awesome</span>Analyze Photo</button>
-    </div>
-    <div id="meal-analyzing" style="display:none" class="flex items-center gap-2 text-sm text-slate-500 py-1">
-      <div class="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>Analyzing with AI...
-    </div>
-    <div id="meal-macro-inputs" class="grid grid-cols-2 gap-2">
-      <div class="col-span-2"><label class="text-[10px] font-bold text-slate-400 block mb-1">Meal Name</label><input id="meal-name" type="text" placeholder="e.g. Oats with banana"></div>
-      <div><label class="text-[10px] font-bold text-brand-500 block mb-1">Calories</label><input id="meal-cal" type="number" placeholder="350" min="0"></div>
-      <div><label class="text-[10px] font-bold text-blue-500 block mb-1">Protein (g)</label><input id="meal-pro" type="number" placeholder="12" min="0"></div>
-      <div><label class="text-[10px] font-bold text-amber-500 block mb-1">Carbs (g)</label><input id="meal-carb" type="number" placeholder="60" min="0"></div>
-      <div><label class="text-[10px] font-bold text-pink-500 block mb-1">Fat (g)</label><input id="meal-fat" type="number" placeholder="8" min="0"></div>
-    </div>
-    <button id="save-meal-btn" class="btn btn-green w-full py-2.5">Save Meal</button>
   </div>
 </div>
 
@@ -528,11 +439,10 @@ const db   = getDatabase(app);
 const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let me = null, userProfile = {}, exercises = {}, sessions = {}, nutrition = {};
+let me = null, userProfile = {}, exercises = {}, sessions = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'log', selectedMuscleGroup = 'upper';
 let sessionExercises = []; // [{exerciseId, name, group, weight, unit, targetReps, sets:[{reps}]}]
-let activeMealType = 'breakfast', activeMealMode = 'text';
 let dataRefs = [];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -638,14 +548,6 @@ async function callAI(prompt, imageBase64 = null) {
   return JSON.parse(data.choices[0].message.content);
 }
 
-async function analyzeMealText(desc) {
-  return callAI(`Estimate nutrition for this meal. Return JSON only with keys: name, calories, protein, carbs, fat (all numbers except name). Meal: "${desc}"`);
-}
-
-async function analyzeMealPhoto(b64) {
-  return callAI('Analyze this meal photo. Return JSON only with keys: name, calories, protein, carbs, fat (all numbers except name).', b64);
-}
-
 async function extractCaloriesFromPhoto(b64) {
   return callAI('This is a workout summary screenshot. Extract data. Return JSON with keys: calories_burned (number), duration_minutes (number).', b64);
 }
@@ -712,14 +614,6 @@ function subscribeData() {
   }, e => console.error(e));
   dataRefs.push(rSessions);
 
-  const today = todayStr();
-  const rNutrition = ref(db, `nutrition/${uid()}/${today}`);
-  onValue(rNutrition, snap => {
-    nutrition = snap.val() || {};
-    renderNutrition(); renderDashboard();
-  }, e => console.error(e));
-  dataRefs.push(rNutrition);
-
   const rProfile = ref(db, `users/${uid()}`);
   onValue(rProfile, snap => {
     userProfile = snap.val() || {};
@@ -766,8 +660,8 @@ document.getElementById('ob-finish-btn').addEventListener('click', async functio
 });
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-const VIEWS = ['dashboard','workout','nutrition','calendar','profile'];
-const TITLES = { dashboard:'Dashboard', workout:'Workout', nutrition:'Nutrition', calendar:'Calendar', profile:'Garden' };
+const VIEWS = ['dashboard','workout','calendar','profile'];
+const TITLES = { dashboard:'Dashboard', workout:'Workout', calendar:'Calendar', profile:'Garden' };
 
 function goView(v) {
   VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
@@ -810,7 +704,6 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
 // ── Dashboard render ────────────────────────────────────────────────────────
 function renderDashboard() {
   const plant = userProfile.plant || 'sprout';
-  const goals = userProfile.goals || { calories:2000, protein:150, carbs:200, fat:65 };
   const p = PLANTS[plant] || { emoji:'🌱', name:'', desc:'' };
 
   // Collect all session dates
@@ -844,26 +737,6 @@ function renderDashboard() {
   document.getElementById('total-sessions-val').textContent = sessionDates.length;
   const lastDate = sessionDates.sort().reverse()[0];
   document.getElementById('last-session-val').textContent = lastDate ? fmtDate(lastDate) : '—';
-
-  // Nutrition totals
-  const meals = nutrition.meals || {};
-  let cal=0, pro=0, carb=0, fat=0;
-  ['breakfast','lunch','dinner','snacks'].forEach(m => {
-    (meals[m] || []).forEach(item => { cal+=+item.calories||0; pro+=+item.protein||0; carb+=+item.carbs||0; fat+=+item.fat||0; });
-  });
-  const burned = +(nutrition.caloriesBurned || 0);
-
-  document.getElementById('d-cal-in').textContent   = cal;
-  document.getElementById('d-cal-burn').textContent = burned;
-  document.getElementById('d-cal-goal').textContent = goals.calories;
-  document.getElementById('d-cal-bar').style.width  = pct(cal, goals.calories) + '%';
-  document.getElementById('d-pro').textContent  = pro;
-  document.getElementById('d-carb').textContent = carb;
-  document.getElementById('d-fat').textContent  = fat;
-  document.getElementById('d-pro-bar').style.width  = pct(pro, goals.protein) + '%';
-  document.getElementById('d-carb-bar').style.width = pct(carb, goals.carbs)   + '%';
-  document.getElementById('d-fat-bar').style.width  = pct(fat, goals.fat)      + '%';
-  document.getElementById('dash-date').textContent  = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 
   // Today's session
   const todaySessions = sessions[today] || {};
@@ -1074,7 +947,6 @@ document.getElementById('save-session-btn').addEventListener('click', async () =
   };
   const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
   await set(sessionRef, sessionData);
-  if (burned) await set(ref(db, `nutrition/${uid()}/${today}/caloriesBurned`), burned);
 
   // Update exercise progressions
   for (const ex of sessionExercises) {
@@ -1204,139 +1076,6 @@ function renderHistory() {
       </div>`)
   ).join('');
 }
-
-// ── Nutrition ───────────────────────────────────────────────────────────────
-function renderNutrition() {
-  const meals = nutrition.meals || {};
-  let totCal=0, totPro=0, totCarb=0, totFat=0;
-  ['breakfast','lunch','dinner','snacks'].forEach(mType => {
-    const items = meals[mType] || [];
-    const container = document.querySelector(`.meal-list[data-meal="${mType}"]`);
-    if (!container) return;
-    if (!items.length) { container.innerHTML = '<p class="text-xs text-slate-400">Nothing logged yet.</p>'; return; }
-    container.innerHTML = items.map((item, idx) => {
-      totCal += +item.calories||0; totPro += +item.protein||0;
-      totCarb += +item.carbs||0;  totFat += +item.fat||0;
-      return `<div class="flex items-center justify-between gap-2 py-1">
-        <div class="min-w-0 flex-1">
-          <p class="text-sm text-slate-700 dark:text-slate-200 font-medium truncate">${esc(item.name||'Meal')}</p>
-          <p class="text-[11px] text-slate-400">${item.calories||0} kcal · P:${item.protein||0}g C:${item.carbs||0}g F:${item.fat||0}g</p>
-        </div>
-        <button class="del-meal-item text-slate-300 hover:text-red-400 flex-shrink-0 p-1" data-meal="${mType}" data-idx="${idx}"><span class="ms text-base">close</span></button>
-      </div>`;
-    }).join('');
-    container.querySelectorAll('.del-meal-item').forEach(b =>
-      b.addEventListener('click', async () => {
-        const arr = [...(meals[b.dataset.meal] || [])];
-        arr.splice(+b.dataset.idx, 1);
-        await set(ref(db, `nutrition/${uid()}/${todayStr()}/meals/${b.dataset.meal}`), arr.length ? arr : null);
-      })
-    );
-  });
-  document.getElementById('nt-cal').textContent  = totCal;
-  document.getElementById('nt-pro').textContent  = totPro + 'g';
-  document.getElementById('nt-carb').textContent = totCarb + 'g';
-  document.getElementById('nt-fat').textContent  = totFat + 'g';
-}
-
-// Meal modal
-function openMealModal(mealType) {
-  activeMealType = mealType || 'breakfast';
-  document.querySelectorAll('.meal-type-btn').forEach(b => {
-    const on = b.dataset.type === activeMealType;
-    b.style.background = on ? (document.documentElement.classList.contains('dark') ? '#1e293b' : 'white') : '';
-    b.style.color      = on ? '#22c55e' : '';
-  });
-  setMealMode('text');
-  ['meal-name','meal-cal','meal-pro','meal-carb','meal-fat'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('meal-modal').style.display = '';
-}
-
-document.querySelectorAll('.add-meal-btn').forEach(b => b.addEventListener('click', () => openMealModal(b.dataset.meal)));
-document.getElementById('dash-log-meal').addEventListener('click', () => openMealModal('breakfast'));
-document.getElementById('meal-modal-close').addEventListener('click', () => document.getElementById('meal-modal').style.display = 'none');
-document.querySelectorAll('.meal-type-btn').forEach(b => b.addEventListener('click', () => {
-  activeMealType = b.dataset.type;
-  document.querySelectorAll('.meal-type-btn').forEach(btn => {
-    const on = btn.dataset.type === activeMealType;
-    btn.style.background = on ? (document.documentElement.classList.contains('dark') ? '#1e293b' : 'white') : '';
-    btn.style.color      = on ? '#22c55e' : '';
-  });
-}));
-
-function setMealMode(mode) {
-  activeMealMode = mode;
-  ['text','photo','manual'].forEach(m => {
-    const btn = document.getElementById('meal-mode-'+m);
-    const on = m === mode;
-    btn.style.background = on ? '#22c55e' : '';
-    btn.style.color      = on ? 'white'   : '';
-    btn.style.borderColor = on ? '#22c55e' : '';
-  });
-  document.getElementById('meal-text-section').style.display   = mode === 'text'   ? '' : 'none';
-  document.getElementById('meal-photo-section').style.display  = mode === 'photo'  ? '' : 'none';
-}
-document.getElementById('meal-mode-text').addEventListener('click',   () => setMealMode('text'));
-document.getElementById('meal-mode-photo').addEventListener('click',  () => setMealMode('photo'));
-document.getElementById('meal-mode-manual').addEventListener('click', () => setMealMode('manual'));
-
-// Analyze text
-document.getElementById('analyze-text-btn').addEventListener('click', async function() {
-  const desc = document.getElementById('meal-text-input').value.trim();
-  if (!desc) return;
-  this.disabled = true;
-  document.getElementById('meal-analyzing').style.display = 'flex';
-  try {
-    const r = await analyzeMealText(desc);
-    document.getElementById('meal-name').value  = r.name  || desc;
-    document.getElementById('meal-cal').value   = r.calories  || '';
-    document.getElementById('meal-pro').value   = r.protein   || '';
-    document.getElementById('meal-carb').value  = r.carbs     || '';
-    document.getElementById('meal-fat').value   = r.fat       || '';
-  } catch(e) { alert('AI error: ' + e.message); }
-  finally { this.disabled = false; document.getElementById('meal-analyzing').style.display = 'none'; }
-});
-
-// Analyze photo
-document.getElementById('meal-photo-input').addEventListener('change', function() {
-  if (!this.files[0]) return;
-  const prev = document.getElementById('meal-photo-preview');
-  prev.src = URL.createObjectURL(this.files[0]); prev.classList.remove('hidden');
-  document.getElementById('analyze-photo-btn').disabled = false;
-});
-document.getElementById('analyze-photo-btn').addEventListener('click', async function() {
-  const file = document.getElementById('meal-photo-input').files[0];
-  if (!file) return;
-  this.disabled = true;
-  document.getElementById('meal-analyzing').style.display = 'flex';
-  try {
-    const b64 = await fileToBase64(file);
-    const r = await analyzeMealPhoto(b64);
-    document.getElementById('meal-name').value  = r.name      || 'Meal from photo';
-    document.getElementById('meal-cal').value   = r.calories  || '';
-    document.getElementById('meal-pro').value   = r.protein   || '';
-    document.getElementById('meal-carb').value  = r.carbs     || '';
-    document.getElementById('meal-fat').value   = r.fat       || '';
-  } catch(e) { alert('AI error: ' + e.message); }
-  finally { this.disabled = false; document.getElementById('meal-analyzing').style.display = 'none'; }
-});
-
-// Save meal
-document.getElementById('save-meal-btn').addEventListener('click', async () => {
-  const name = document.getElementById('meal-name').value.trim();
-  const cal  = +document.getElementById('meal-cal').value  || 0;
-  const pro  = +document.getElementById('meal-pro').value  || 0;
-  const carb = +document.getElementById('meal-carb').value || 0;
-  const fat  = +document.getElementById('meal-fat').value  || 0;
-  if (!name) { alert('Add a meal name.'); return; }
-  const today = todayStr();
-  const path  = `nutrition/${uid()}/${today}/meals/${activeMealType}`;
-  const snap  = await get(ref(db, path));
-  const arr   = snap.val() ? [...snap.val()] : [];
-  arr.push({ name, calories:cal, protein:pro, carbs:carb, fat, timestamp: Date.now() });
-  await set(ref(db, path), arr);
-  document.getElementById('meal-modal').style.display = 'none';
-});
 
 // ── Calendar ────────────────────────────────────────────────────────────────
 document.getElementById('cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); });
