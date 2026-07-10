@@ -6,7 +6,7 @@ RepSprout is a workout tracker built around **double progression**. Instead of o
 
 Most fitness apps are digital notebooks.
 
-RepSprout is a **growth companion**.
+RepSprout is a **growth companion**!
 
 ---
 
