@@ -45,25 +45,31 @@ body{font-family:'Inter',sans-serif}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 .hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
-.hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,rgba(34,197,94,.35),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
-.dark .hero-glow{background:radial-gradient(circle at 50% 22%,rgba(34,197,94,.28),rgba(34,197,94,0) 60%)}
-.hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.25),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
-.dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.14),rgba(251,191,36,0) 55%)}
+.hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
+.dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
+.hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.2),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
+.dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.12),rgba(251,191,36,0) 55%)}
+.hero-surface{box-shadow:0 24px 40px -34px rgba(15,23,42,.18)}
+.dark .hero-surface{box-shadow:0 24px 40px -30px rgba(0,0,0,.4)}
 .mission-surface{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)}
 .dark .mission-surface{background:linear-gradient(135deg,rgba(20,83,45,.4) 0%,rgba(5,46,22,.6) 100%)}
 .garden-shelf{background:linear-gradient(180deg,rgba(253,230,138,.25) 0%,rgba(253,230,138,0) 100%)}
 .dark .garden-shelf{background:linear-gradient(180deg,rgba(120,53,15,.2) 0%,rgba(120,53,15,0) 100%)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
-.btn-pop{border-radius:1.25rem;box-shadow:0 8px 20px -6px rgba(34,197,94,.5)}
-.btn-pop:hover{box-shadow:0 10px 24px -6px rgba(34,197,94,.6)}
-.dark .btn-pop{box-shadow:0 8px 20px -4px rgba(34,197,94,.3)}
+.btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
+.btn-pop:hover{box-shadow:0 8px 16px -6px rgba(34,197,94,.4)}
+.dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
 .pot-base{border-radius:0 0 .85rem .85rem}
+.btn:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #16a34a;outline-offset:2px;border-radius:.5rem}
+@media (prefers-reduced-motion:reduce){
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill{animation:none!important;transition:none!important}
+}
 input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .dark input,.dark textarea,.dark select{background:#1e293b;color:#f1f5f9;border-color:#334155}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;padding:.625rem 1.25rem;border-radius:.75rem;font-weight:600;font-size:.875rem;cursor:pointer;transition:opacity .15s,transform .1s;border:none;font-family:inherit}
-.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-green{background:#22c55e;color:white}.btn-green:hover{opacity:.9}
 .btn-outline{background:transparent;color:#64748b;border:1px solid #e2e8f0}
 .dark .btn-outline{color:#94a3b8;border-color:#334155}.btn-outline:hover{background:rgba(100,116,139,.08)}
@@ -202,32 +208,32 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <section id="dashboard-view" class="flex-1 pb-8">
 
       <!-- Plant companion hero — full-bleed, the one true hero of the page -->
-      <div class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-4 pb-12 text-center">
+      <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-8 text-center">
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="hero-glow-warm" aria-hidden="true"></div>
-        <span class="leaf-particle text-2xl" style="top:8%;left:14%;animation-delay:0s" aria-hidden="true">🍃</span>
-        <span class="leaf-particle text-xl" style="top:14%;right:16%;animation-delay:1.8s" aria-hidden="true">🍃</span>
-        <span class="leaf-particle text-lg" style="top:36%;right:8%;animation-delay:3.2s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-2xl" style="top:6%;left:12%;animation-delay:0s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-xl" style="top:12%;right:14%;animation-delay:1.8s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-lg" style="top:32%;right:6%;animation-delay:3.2s" aria-hidden="true">🍃</span>
 
-        <div id="plant-emoji" class="relative text-9xl leading-none p-hero-float" aria-hidden="true">🌱</div>
+        <div id="plant-emoji" class="relative text-[10rem] leading-none p-hero-float" aria-hidden="true">🌱</div>
 
-        <div id="dash-hero-empty" style="display:none" class="relative space-y-2 pt-2 max-w-xs mx-auto">
-          <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Your RepSprout is ready to grow.</p>
-          <p class="text-sm text-slate-500 dark:text-slate-400">Complete your first workout to grow your first leaf.</p>
+        <div class="relative space-y-0.5 -mt-1">
+          <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white" id="plant-name-label"></p>
+          <p id="plant-subtitle-label" class="text-xs text-slate-500 dark:text-slate-400"></p>
         </div>
 
-        <div id="dash-hero-body" class="relative space-y-3 pt-2">
-          <div>
-            <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">
-              <span id="plant-name-label"></span>
-            </p>
-            <span id="plant-level-label" class="inline-block mt-1 text-[11px] font-bold text-brand-600 dark:text-brand-300 bg-brand-100 dark:bg-brand-900/50 rounded-full px-2.5 py-0.5"></span>
-            <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400 mt-2"></p>
-          </div>
-          <div class="text-left max-w-xs mx-auto px-2">
+        <div id="dash-hero-empty" style="display:none" class="relative space-y-1 pt-3 max-w-xs mx-auto">
+          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
+          <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+        </div>
+
+        <div id="dash-hero-body" class="relative space-y-2 pt-2">
+          <span id="plant-level-label" class="inline-block text-[11px] font-bold rounded-full px-2.5 py-0.5"></span>
+          <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
+          <div class="text-left max-w-xs mx-auto px-2 pt-1">
             <p id="growth-pct-label" class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"></p>
             <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Growth progress toward next leaf">
-              <div id="growth-bar-fill" class="h-full bg-gradient-to-r from-brand-400 to-brand-500 rounded-full transition-all duration-700" style="width:0%"></div>
+              <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
             </div>
             <p id="growth-next-label" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
           </div>
@@ -235,46 +241,46 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       </div>
 
       <!-- Content below overlaps the hero slightly for depth -->
-      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 -mt-6 relative z-10 space-y-5">
+      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 -mt-8 relative z-10 space-y-6">
 
-        <!-- Ambient stats -->
-        <div id="dash-stats-row" class="flex items-center justify-center gap-8">
-          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p></div>
-          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500">fitness_center</span> <span id="total-sessions-val">0</span></p><p class="text-[10px] text-slate-400">workouts</p></div>
-          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span id="last-session-val">—</span></p><p class="text-[10px] text-slate-400">last session</p></div>
-        </div>
-
-        <!-- Today's mission -->
+        <!-- Today's mission — the one strong card on the page -->
         <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 space-y-3 shadow-sm">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm">eco</span>Today's Mission</p>
+          <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
           <div id="dash-mission-body" class="space-y-3"></div>
         </div>
 
-        <!-- Closest progress -->
-        <div class="card p-4 space-y-2">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Closest Progress</p>
+        <!-- Ambient stats — quiet, secondary -->
+        <div id="dash-stats-row" class="flex items-center justify-center gap-8">
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p></div>
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500" aria-hidden="true">fitness_center</span> <span id="total-sessions-val">0</span></p><p class="text-[10px] text-slate-400">workouts</p></div>
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span id="last-session-val">—</span></p><p class="text-[10px] text-slate-400">last session</p></div>
+        </div>
+
+        <!-- Closest progress — open section, not a card -->
+        <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
+          <p class="text-xs font-semibold text-slate-400 pt-3">Closest progress</p>
           <div id="dash-progress-body" class="space-y-2"></div>
         </div>
 
-        <!-- Garden preview -->
+        <!-- Garden preview — wide, soft-tinted, collectible -->
         <div class="garden-shelf rounded-3xl p-4 space-y-3">
           <div class="flex items-center justify-between">
-            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Garden</p>
-            <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-1">View Garden →</button>
+            <p class="text-xs font-semibold text-slate-400">Garden</p>
+            <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-2">View Garden →</button>
           </div>
           <div id="dash-garden-preview" class="flex items-center justify-center gap-4"></div>
         </div>
 
-        <!-- Recent win -->
-        <div class="win-banner rounded-2xl px-4 py-3 flex items-center gap-3">
-          <span class="relative text-2xl flex-shrink-0"><span class="sparkle-dot" aria-hidden="true">✨</span><span id="dash-win-icon">🍃</span></span>
+        <!-- Recent win — compact chip, not a card -->
+        <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
+          <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
           <div class="min-w-0">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300">Recent win</p>
+            <p class="text-[10px] font-semibold text-brand-600 dark:text-brand-300">Recent win</p>
             <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate"></p>
           </div>
         </div>
 
-        <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-1"></p>
+        <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-2"></p>
       </div>
     </section>
 
@@ -545,6 +551,18 @@ const PLANTS = {
   lavender: { emoji:'🪻', name:'Lavender', desc:'Mindful and grounded. Wellness is your foundation.' },
   sunflower:{ emoji:'🌻', name:'Sunflower',desc:'Energetic and vibrant. You bloom with every rep.' }
 };
+
+// Single source of truth for per-plant accent color, since PLANTS carries no
+// color metadata of its own. Derived once here, consumed via CSS variables —
+// no hex codes scattered into the render functions below.
+const PLANT_THEME = {
+  cactus:    { primary:'#16a34a', soft:'#dcfce7', glow:'rgba(22,163,74,.32)' },
+  oak:       { primary:'#65a30d', soft:'#ecfccb', glow:'rgba(101,163,13,.32)' },
+  bamboo:    { primary:'#059669', soft:'#d1fae5', glow:'rgba(5,150,105,.32)' },
+  lavender:  { primary:'#8b5cf6', soft:'#ede9fe', glow:'rgba(139,92,246,.32)' },
+  sunflower: { primary:'#f59e0b', soft:'#fef3c7', glow:'rgba(245,158,11,.32)' }
+};
+const DEFAULT_THEME = PLANT_THEME.cactus;
 
 const obScores = { cactus:0, oak:0, bamboo:0, lavender:0, sunflower:0 };
 const obAnswers = {};
@@ -877,23 +895,43 @@ function findRecentWin() {
 }
 
 function renderPlantHero(sessionDates, hasHistory) {
-  const plant = userProfile.plant || 'sprout';
-  const p = PLANTS[plant] || { emoji:'🌱', name:'', desc:'' };
+  const plantKey = userProfile.plant || 'sprout';
+  const p = PLANTS[plantKey] || { emoji:'🌱', name:'RepSprout', desc:'' };
+  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
+
+  const hero = document.getElementById('dash-hero');
+  hero.style.setProperty('--plant-glow', theme.glow);
+
   const emoji = document.getElementById('plant-emoji');
   emoji.textContent = p.emoji;
 
+  document.getElementById('plant-name-label').textContent = p.name;
+  const subtitleEl = document.getElementById('plant-subtitle-label');
+  const subtitle = p.desc ? p.desc.split('.')[0].trim() + '.' : '';
+  subtitleEl.textContent = subtitle;
+  subtitleEl.style.display = subtitle ? '' : 'none';
+
+  const levelBadge = document.getElementById('plant-level-label');
+  levelBadge.style.color = theme.primary;
+  levelBadge.style.background = theme.soft;
+
   if (!hasHistory) {
-    emoji.className = 'relative text-9xl leading-none p-hero-float';
+    emoji.className = 'relative text-[10rem] leading-none p-hero-float';
+    document.getElementById('hero-empty-line1').textContent = `${p.name} is ready to grow.`;
+    document.getElementById('hero-empty-line2').textContent = 'Your first leaf is one workout away.';
     show('dash-hero-empty'); hide('dash-hero-body');
     return;
   }
   hide('dash-hero-empty'); show('dash-hero-body');
 
+  const today = todayStr();
+  const loggedToday = !!(sessions[today] && Object.keys(sessions[today]).length);
   const health = getPlantHealth(sessionDates);
-  const [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
-  emoji.className = `relative text-9xl leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
-
-  document.getElementById('plant-name-label').textContent = p.name;
+  let [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
+  if (loggedToday && health !== 'dormant' && health !== 'wilting') {
+    statusMsg = `${p.name} made progress today.`;
+  }
+  emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
 
   const totalSessions = totalLoggedSessions();
@@ -902,10 +940,11 @@ function renderPlantHero(sessionDates, hasHistory) {
   const pct = Math.round(inLevel / GROWTH_PER_LEVEL * 100);
   const remaining = GROWTH_PER_LEVEL - inLevel;
 
-  document.getElementById('plant-level-label').textContent = `Level ${level}`;
+  levelBadge.textContent = `Level ${level}`;
   document.getElementById('growth-pct-label').textContent = `${pct}% to next leaf`;
   const bar = document.getElementById('growth-bar-fill');
   bar.style.width = `${pct}%`;
+  bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
   bar.parentElement.setAttribute('aria-valuenow', String(pct));
   bar.parentElement.setAttribute('aria-valuemin', '0');
   bar.parentElement.setAttribute('aria-valuemax', '100');
@@ -939,25 +978,25 @@ function renderTodayMission() {
     const s = Object.values(todaySessions)[0];
     body.innerHTML = `
       <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-sm">
-        <span class="ms text-xl">check_circle</span>Mission complete
+        <span class="ms text-xl" aria-hidden="true">check_circle</span>Mission complete
       </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Your sprout grew today 🌿</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Your sprout grew today.</p>
       <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="px-2 py-0.5 rounded-lg border font-semibold mg-${s.muscleGroup}">${MG_LABEL[s.muscleGroup]||s.muscleGroup}</span>
         <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
       </div>
       <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
-        <button data-action="view-workout" class="text-brand-500 hover:underline py-1">View workout</button>
-        <button data-action="log-another" class="text-slate-400 hover:underline py-1">Log another activity</button>
+        <button data-action="view-workout" class="text-brand-500 hover:underline py-2">View workout</button>
+        <button data-action="log-another" class="text-slate-400 hover:underline py-2">Log another activity</button>
       </div>`;
   } else {
     body.innerHTML = `
       <p class="text-base font-semibold text-slate-700 dark:text-slate-200">Log any workout today</p>
       <div class="flex items-center justify-between">
         <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
-        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400">+1 Growth 🍃</span>
+        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>+1 Growth</span>
       </div>
-      <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg">fitness_center</span>Start Growing</button>`;
+      <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>`;
   }
 }
 
@@ -965,7 +1004,15 @@ function renderClosestProgress() {
   const body = document.getElementById('dash-progress-body');
   const best = findClosestProgression();
   if (!best) {
-    body.innerHTML = '<p class="text-sm text-slate-400 text-center py-3">Your next progression will appear here after your first workout.</p>';
+    body.innerHTML = `
+      <div class="flex items-center justify-center gap-2 py-1" aria-hidden="true">
+        <span class="text-lg">🌰</span>
+        <span class="flex-1 max-w-8 border-t border-dashed border-slate-300 dark:border-slate-700"></span>
+        <span class="text-lg opacity-30">🌱</span>
+        <span class="flex-1 max-w-8 border-t border-dashed border-slate-300 dark:border-slate-700"></span>
+        <span class="text-lg opacity-30">🍃</span>
+      </div>
+      <p class="text-sm text-slate-400 text-center">Your next progression will appear after your first workout.</p>`;
     return;
   }
   const detail = best.ready ? 'Ready to increase next session 🎉' :
@@ -994,13 +1041,18 @@ function renderGardenPreview() {
   const current = userProfile.plant;
   wrap.innerHTML = Object.entries(PLANTS).map(([key, p]) => {
     const isCurrent = key === current;
-    return `<div class="flex flex-col items-center gap-1.5">
-      <div class="relative w-14 h-14 flex items-end justify-center">
-        <div class="pot-base w-9 h-5 ${isCurrent ? 'bg-amber-300/80 dark:bg-amber-700/60' : 'bg-slate-200 dark:bg-slate-700'}"></div>
-        <span class="absolute bottom-3 text-2xl ${isCurrent ? 'p-sway' : 'opacity-30 grayscale'}">${isCurrent ? p.emoji : '🌱'}</span>
-        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5">lock</span>' : ''}
+    const theme = PLANT_THEME[key] || DEFAULT_THEME;
+    const potStyle = isCurrent
+      ? `background-color:${theme.soft};box-shadow:0 0 0 2px ${theme.primary}55`
+      : `background-color:${theme.soft};opacity:.35`;
+    const scale = isCurrent ? 'scale-110' : '';
+    return `<div class="flex flex-col items-center gap-1.5 ${scale}">
+      <div class="relative w-14 h-14 flex items-end justify-center" role="img" aria-label="${esc(p.name)}${isCurrent ? '' : ', locked'}">
+        <div class="pot-base w-9 h-5" style="${potStyle}"></div>
+        <span class="absolute bottom-3 text-2xl ${isCurrent ? 'p-sway' : 'opacity-40 grayscale'}" aria-hidden="true">${isCurrent ? p.emoji : '🌱'}</span>
+        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5" aria-hidden="true">lock</span>' : ''}
       </div>
-      <span class="text-[10px] ${isCurrent ? 'font-semibold text-brand-600 dark:text-brand-400' : 'text-slate-400'}">${isCurrent ? p.name : '???'}</span>
+      <span class="text-[10px] ${isCurrent ? 'font-semibold' : 'text-slate-400'}" ${isCurrent ? `style="color:${theme.primary}"` : ''} aria-hidden="true">${isCurrent ? p.name : '???'}</span>
     </div>`;
   }).join('');
 }
