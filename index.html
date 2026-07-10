@@ -24,16 +24,41 @@ body{font-family:'Inter',sans-serif}
 @keyframes sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
 @keyframes droop{0%,100%{transform:translateY(0)}50%{transform:translateY(8px) scaleY(.94)}}
 @keyframes bloom{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes heroBloom{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.045)}}
+@keyframes leafDrift{0%,100%{transform:translate(0,0) rotate(-6deg);opacity:.5}50%{transform:translate(3px,-12px) rotate(8deg);opacity:.85}}
+@keyframes sparklePulse{0%,100%{transform:scale(.8) rotate(0deg);opacity:.4}50%{transform:scale(1.2) rotate(15deg);opacity:1}}
 .p-sway{animation:sway 4s ease-in-out infinite;transform-origin:bottom center;display:inline-block}
 .p-droop{animation:droop 2.5s ease-in-out infinite;transform-origin:top center;display:inline-block}
 .p-bloom{animation:bloom 3s ease-in-out infinite;display:inline-block}
 .p-still{display:inline-block}
+.p-hero-float{animation:heroFloat 5s ease-in-out infinite;display:inline-block}
+.p-hero-bloom{animation:heroBloom 4s ease-in-out infinite;display:inline-block}
+.p-hero-still{display:inline-block}
+.leaf-particle{position:absolute;animation:leafDrift 6s ease-in-out infinite;pointer-events:none;user-select:none}
+.sparkle-dot{position:absolute;top:-3px;right:-6px;font-size:.65rem;animation:sparklePulse 2.2s ease-in-out infinite}
 .nav-active{color:#22c55e!important;background:rgba(34,197,94,.1)!important}
 .bnav-active{color:#22c55e!important}
 .bnav-active .ms{font-variation-settings:'FILL' 1}
 .ms{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300;font-size:inherit;line-height:1;vertical-align:middle;user-select:none}
-.card{background:white;border:1px solid #f1f5f9;border-radius:1rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
+.hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
+.dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
+.hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,rgba(34,197,94,.35),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
+.dark .hero-glow{background:radial-gradient(circle at 50% 22%,rgba(34,197,94,.28),rgba(34,197,94,0) 60%)}
+.hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.25),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
+.dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.14),rgba(251,191,36,0) 55%)}
+.mission-surface{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)}
+.dark .mission-surface{background:linear-gradient(135deg,rgba(20,83,45,.4) 0%,rgba(5,46,22,.6) 100%)}
+.garden-shelf{background:linear-gradient(180deg,rgba(253,230,138,.25) 0%,rgba(253,230,138,0) 100%)}
+.dark .garden-shelf{background:linear-gradient(180deg,rgba(120,53,15,.2) 0%,rgba(120,53,15,0) 100%)}
+.win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
+.dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
+.btn-pop{border-radius:1.25rem;box-shadow:0 8px 20px -6px rgba(34,197,94,.5)}
+.btn-pop:hover{box-shadow:0 10px 24px -6px rgba(34,197,94,.6)}
+.dark .btn-pop{box-shadow:0 8px 20px -4px rgba(34,197,94,.3)}
+.pot-base{border-radius:0 0 .85rem .85rem}
 input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .dark input,.dark textarea,.dark select{background:#1e293b;color:#f1f5f9;border-color:#334155}
@@ -160,7 +185,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <button id="mob-menu-btn" class="md:hidden p-2 rounded-xl text-slate-400 hover:text-brand-500 transition-colors">
           <span class="ms text-xl">menu</span>
         </button>
-        <h2 id="page-title" class="font-display font-bold text-slate-800 dark:text-white text-base"></h2>
+        <h2 id="page-title" class="font-display font-extrabold text-slate-800 dark:text-white text-base sm:text-lg"></h2>
       </div>
       <div class="flex items-center gap-2">
         <button id="theme-toggle" class="p-2 rounded-xl text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all">
@@ -174,75 +199,83 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </header>
 
     <!-- DASHBOARD -->
-    <section id="dashboard-view" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4 pb-8">
+    <section id="dashboard-view" class="flex-1 pb-8">
 
-      <!-- Plant companion hero -->
-      <div class="card relative overflow-hidden p-6 text-center">
-        <div class="absolute inset-x-0 top-0 flex justify-center pointer-events-none" aria-hidden="true">
-          <div class="w-44 h-44 rounded-full bg-brand-200 dark:bg-brand-900/50 opacity-60 blur-3xl"></div>
-        </div>
-        <div id="plant-emoji" class="relative text-9xl leading-none p-sway">🌱</div>
+      <!-- Plant companion hero — full-bleed, the one true hero of the page -->
+      <div class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-4 pb-12 text-center">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-glow-warm" aria-hidden="true"></div>
+        <span class="leaf-particle text-2xl" style="top:8%;left:14%;animation-delay:0s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-xl" style="top:14%;right:16%;animation-delay:1.8s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-lg" style="top:36%;right:8%;animation-delay:3.2s" aria-hidden="true">🍃</span>
 
-        <div id="dash-hero-empty" style="display:none" class="relative space-y-2 pt-3">
-          <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Your RepSprout is ready to grow.</p>
+        <div id="plant-emoji" class="relative text-9xl leading-none p-hero-float" aria-hidden="true">🌱</div>
+
+        <div id="dash-hero-empty" style="display:none" class="relative space-y-2 pt-2 max-w-xs mx-auto">
+          <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Your RepSprout is ready to grow.</p>
           <p class="text-sm text-slate-500 dark:text-slate-400">Complete your first workout to grow your first leaf.</p>
         </div>
 
-        <div id="dash-hero-body" class="relative space-y-3 pt-3">
+        <div id="dash-hero-body" class="relative space-y-3 pt-2">
           <div>
-            <p class="font-display font-bold text-lg text-slate-800 dark:text-white">
+            <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">
               <span id="plant-name-label"></span>
-              <span id="plant-level-label" class="text-brand-500 font-semibold text-sm align-middle"></span>
             </p>
-            <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400 mt-0.5"></p>
+            <span id="plant-level-label" class="inline-block mt-1 text-[11px] font-bold text-brand-600 dark:text-brand-300 bg-brand-100 dark:bg-brand-900/50 rounded-full px-2.5 py-0.5"></span>
+            <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400 mt-2"></p>
           </div>
-          <div class="text-left px-2">
-            <p id="growth-pct-label" class="text-xs text-slate-500 dark:text-slate-400 mb-1"></p>
-            <div class="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-label="Growth progress toward next leaf">
-              <div id="growth-bar-fill" class="h-full bg-brand-500 rounded-full transition-all duration-700" style="width:0%"></div>
+          <div class="text-left max-w-xs mx-auto px-2">
+            <p id="growth-pct-label" class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"></p>
+            <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Growth progress toward next leaf">
+              <div id="growth-bar-fill" class="h-full bg-gradient-to-r from-brand-400 to-brand-500 rounded-full transition-all duration-700" style="width:0%"></div>
             </div>
-            <p id="growth-next-label" class="text-xs text-slate-400 mt-1.5"></p>
+            <p id="growth-next-label" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
           </div>
         </div>
       </div>
 
-      <!-- Compact stats -->
-      <div id="dash-stats-row" class="flex items-center justify-center gap-6">
-        <div class="text-center"><p id="streak-val" class="font-display font-bold text-lg text-slate-600 dark:text-slate-300">0</p><p class="text-[10px] text-slate-400">day streak</p></div>
-        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
-        <div class="text-center"><p id="total-sessions-val" class="font-display font-bold text-lg text-slate-600 dark:text-slate-300">0</p><p class="text-[10px] text-slate-400">workouts</p></div>
-        <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
-        <div class="text-center"><p id="last-session-val" class="font-display font-bold text-lg text-slate-600 dark:text-slate-300">—</p><p class="text-[10px] text-slate-400">last session</p></div>
-      </div>
+      <!-- Content below overlaps the hero slightly for depth -->
+      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 -mt-6 relative z-10 space-y-5">
 
-      <!-- Today's mission -->
-      <div id="dash-mission-card" class="card p-4 space-y-3">
-        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Today's Mission</h3>
-        <div id="dash-mission-body" class="space-y-3"></div>
-      </div>
-
-      <!-- Closest progress -->
-      <div class="card p-4 space-y-2">
-        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Closest Progress</h3>
-        <div id="dash-progress-body" class="space-y-2"></div>
-      </div>
-
-      <!-- Garden preview -->
-      <div class="card p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Garden</h3>
-          <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-1">View Garden →</button>
+        <!-- Ambient stats -->
+        <div id="dash-stats-row" class="flex items-center justify-center gap-8">
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p></div>
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500">fitness_center</span> <span id="total-sessions-val">0</span></p><p class="text-[10px] text-slate-400">workouts</p></div>
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span id="last-session-val">—</span></p><p class="text-[10px] text-slate-400">last session</p></div>
         </div>
-        <div id="dash-garden-preview" class="flex items-center gap-3"></div>
-      </div>
 
-      <!-- Recent win -->
-      <div class="card p-4 space-y-1">
-        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Recent Win</h3>
-        <p id="dash-win-text" class="text-sm text-slate-600 dark:text-slate-300"></p>
-      </div>
+        <!-- Today's mission -->
+        <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 space-y-3 shadow-sm">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm">eco</span>Today's Mission</p>
+          <div id="dash-mission-body" class="space-y-3"></div>
+        </div>
 
-      <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-1"></p>
+        <!-- Closest progress -->
+        <div class="card p-4 space-y-2">
+          <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Closest Progress</p>
+          <div id="dash-progress-body" class="space-y-2"></div>
+        </div>
+
+        <!-- Garden preview -->
+        <div class="garden-shelf rounded-3xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Garden</p>
+            <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-1">View Garden →</button>
+          </div>
+          <div id="dash-garden-preview" class="flex items-center justify-center gap-4"></div>
+        </div>
+
+        <!-- Recent win -->
+        <div class="win-banner rounded-2xl px-4 py-3 flex items-center gap-3">
+          <span class="relative text-2xl flex-shrink-0"><span class="sparkle-dot" aria-hidden="true">✨</span><span id="dash-win-icon">🍃</span></span>
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300">Recent win</p>
+            <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate"></p>
+          </div>
+        </div>
+
+        <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-1"></p>
+      </div>
     </section>
 
     <!-- WORKOUT -->
@@ -562,8 +595,8 @@ const HEALTH_LABELS = {
 };
 
 const HEALTH_ANIM = {
-  seed:'p-still', sprout:'p-sway', growing:'p-sway', thriving:'p-sway',
-  blooming:'p-bloom', wilting:'p-still', dormant:'p-still'
+  seed:'p-hero-still', sprout:'p-hero-float', growing:'p-hero-float', thriving:'p-hero-float',
+  blooming:'p-hero-bloom', wilting:'p-hero-still', dormant:'p-hero-still'
 };
 
 // ── Growth / home page helpers ───────────────────────────────────────────────
@@ -850,7 +883,7 @@ function renderPlantHero(sessionDates, hasHistory) {
   emoji.textContent = p.emoji;
 
   if (!hasHistory) {
-    emoji.className = 'relative text-9xl leading-none p-sway';
+    emoji.className = 'relative text-9xl leading-none p-hero-float';
     show('dash-hero-empty'); hide('dash-hero-body');
     return;
   }
@@ -858,7 +891,7 @@ function renderPlantHero(sessionDates, hasHistory) {
 
   const health = getPlantHealth(sessionDates);
   const [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
-  emoji.className = `relative text-9xl leading-none ${HEALTH_ANIM[health] || 'p-sway'}`;
+  emoji.className = `relative text-9xl leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
 
   document.getElementById('plant-name-label').textContent = p.name;
   document.getElementById('plant-status-label').textContent = statusMsg;
@@ -869,7 +902,7 @@ function renderPlantHero(sessionDates, hasHistory) {
   const pct = Math.round(inLevel / GROWTH_PER_LEVEL * 100);
   const remaining = GROWTH_PER_LEVEL - inLevel;
 
-  document.getElementById('plant-level-label').textContent = `· Level ${level}`;
+  document.getElementById('plant-level-label').textContent = `Level ${level}`;
   document.getElementById('growth-pct-label').textContent = `${pct}% to next leaf`;
   const bar = document.getElementById('growth-bar-fill');
   bar.style.width = `${pct}%`;
@@ -919,12 +952,12 @@ function renderTodayMission() {
       </div>`;
   } else {
     body.innerHTML = `
-      <p class="text-sm text-slate-600 dark:text-slate-300">Log any workout today</p>
-      <div class="flex items-center justify-between text-xs">
-        <span class="text-slate-400">Reward</span>
-        <span class="font-semibold text-brand-500">+1 Growth</span>
+      <p class="text-base font-semibold text-slate-700 dark:text-slate-200">Log any workout today</p>
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
+        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400">+1 Growth 🍃</span>
       </div>
-      <button data-action="start-growing" class="btn btn-green w-full py-3"><span class="ms text-base">fitness_center</span>Start Growing</button>`;
+      <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg">fitness_center</span>Start Growing</button>`;
   }
 }
 
@@ -932,21 +965,26 @@ function renderClosestProgress() {
   const body = document.getElementById('dash-progress-body');
   const best = findClosestProgression();
   if (!best) {
-    body.innerHTML = '<p class="text-sm text-slate-400 text-center py-2">Your next progression will appear here after your first workout.</p>';
+    body.innerHTML = '<p class="text-sm text-slate-400 text-center py-3">Your next progression will appear here after your first workout.</p>';
     return;
   }
-  const setsCount = best.targetReps.length || 1;
-  const pct = Math.max(0, Math.min(100, Math.round(((setsCount*12) - best.remaining) / (setsCount*12) * 100)));
   const detail = best.ready ? 'Ready to increase next session 🎉' :
-    `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next weight increase`;
+    `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next leaf`;
+  const nodes = best.lastSets.map((r, i) => {
+    const filled = r >= 12;
+    const node = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
+    const branch = i < best.lastSets.length - 1 ? '<div class="flex-1 h-0.5 bg-brand-200 dark:bg-brand-800 rounded-full min-w-2"></div>' : '';
+    return node + branch;
+  }).join('');
   body.innerHTML = `
     <div class="flex items-center justify-between">
       <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(best.name)}</p>
       <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group}">${MG_LABEL[best.group]||best.group}</span>
     </div>
-    <p class="text-xs text-slate-400">${best.weight} ${best.unit} · last set${best.lastSets.length!==1?'s':''}: ${best.lastSets.join(' • ')} reps</p>
-    <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden" role="progressbar" aria-label="Progress toward next weight increase" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
-      <div class="h-full bg-brand-500 rounded-full transition-all duration-700" style="width:${pct}%"></div>
+    <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
+    <div class="flex items-center gap-1.5 py-1">
+      ${nodes}
+      <span class="text-xl ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
     </div>
     <p class="text-xs font-semibold text-brand-500">${detail}</p>`;
 }
@@ -956,19 +994,23 @@ function renderGardenPreview() {
   const current = userProfile.plant;
   wrap.innerHTML = Object.entries(PLANTS).map(([key, p]) => {
     const isCurrent = key === current;
-    return `<div class="flex flex-col items-center gap-1">
-      <div class="w-11 h-11 rounded-full flex items-center justify-center text-2xl ${isCurrent ? 'bg-brand-50 dark:bg-brand-950/40 ring-2 ring-brand-400' : 'bg-slate-100 dark:bg-slate-800 opacity-50'}">
-        ${isCurrent ? p.emoji : '<span class="ms text-base text-slate-400">lock</span>'}
+    return `<div class="flex flex-col items-center gap-1.5">
+      <div class="relative w-14 h-14 flex items-end justify-center">
+        <div class="pot-base w-9 h-5 ${isCurrent ? 'bg-amber-300/80 dark:bg-amber-700/60' : 'bg-slate-200 dark:bg-slate-700'}"></div>
+        <span class="absolute bottom-3 text-2xl ${isCurrent ? 'p-sway' : 'opacity-30 grayscale'}">${isCurrent ? p.emoji : '🌱'}</span>
+        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5">lock</span>' : ''}
       </div>
-      <span class="text-[10px] ${isCurrent ? 'font-semibold text-brand-500' : 'text-slate-400'}">${isCurrent ? p.name : '???'}</span>
+      <span class="text-[10px] ${isCurrent ? 'font-semibold text-brand-600 dark:text-brand-400' : 'text-slate-400'}">${isCurrent ? p.name : '???'}</span>
     </div>`;
   }).join('');
 }
 
 function renderRecentWin() {
-  const el = document.getElementById('dash-win-text');
+  const iconEl = document.getElementById('dash-win-icon');
+  const textEl = document.getElementById('dash-win-text');
   const win = findRecentWin();
-  el.textContent = win ? `${win.icon} ${win.text}` : 'Your first win will appear here.';
+  iconEl.textContent = win ? win.icon : '🌱';
+  textEl.textContent = win ? win.text : 'Your first win will appear here.';
 }
 
 function renderEncouragement() {
