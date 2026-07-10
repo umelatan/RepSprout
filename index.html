@@ -61,6 +61,7 @@ body{font-family:'Inter',sans-serif}
 .btn-pop:hover{box-shadow:0 8px 16px -6px rgba(34,197,94,.4)}
 .dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
 .pot-base{border-radius:0 0 .85rem .85rem}
+.aw-input{padding:.4rem .3rem;text-align:center;font-weight:600}
 .btn:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #16a34a;outline-offset:2px;border-radius:.5rem}
 @media (prefers-reduced-motion:reduce){
   .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill{animation:none!important;transition:none!important}
@@ -285,55 +286,33 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </section>
 
     <!-- WORKOUT -->
-    <section id="workout-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
+    <section id="workout-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4 pb-8">
       <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="log">Log Session</button>
-        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="history">History</button>
+        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="groups">Groups</button>
         <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="exercises">Exercises</button>
+        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="history">History</button>
       </div>
 
-      <div id="wt-log" style="display:none" class="card p-4 space-y-4">
-        <div>
-          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Muscle Group</p>
-          <div class="flex flex-wrap gap-2">
-            <button class="mg-chip px-3 py-1.5 rounded-lg border text-xs font-semibold mg-upper" data-mg="upper">Upper Body</button>
-            <button class="mg-chip px-3 py-1.5 rounded-lg border text-xs font-semibold mg-lower" data-mg="lower">Lower Body</button>
-            <button class="mg-chip px-3 py-1.5 rounded-lg border text-xs font-semibold mg-core" data-mg="core">Core</button>
-            <button class="mg-chip px-3 py-1.5 rounded-lg border text-xs font-semibold mg-full" data-mg="full">Full Body</button>
-            <button class="mg-chip px-3 py-1.5 rounded-lg border text-xs font-semibold mg-cardio" data-mg="cardio">Cardio</button>
-          </div>
-        </div>
-        <div id="session-ex-list" class="space-y-3"></div>
-        <button id="add-ex-to-session-btn" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
-          <span class="ms text-base">add</span>Add Exercise
+      <!-- Groups -->
+      <div id="wt-groups" style="display:none" class="space-y-3">
+        <div id="groups-list" class="space-y-3"></div>
+        <button id="create-group-btn" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+          <span class="ms text-base" aria-hidden="true">add</span>Create workout group
         </button>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Calories Burned</label>
-            <div class="flex gap-2">
-              <input id="session-cal-burned" type="number" placeholder="350" min="0" style="width:auto;flex:1">
-              <button id="import-cal-photo-btn" title="Import from photo" class="btn btn-outline px-3 flex-shrink-0"><span class="ms text-base">photo_camera</span></button>
-            </div>
-          </div>
-          <div>
-            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Duration (min)</label>
-            <input id="session-duration" type="number" placeholder="60" min="0">
-          </div>
-        </div>
-        <textarea id="session-notes" rows="2" placeholder="Notes (optional)..." class="resize-none"></textarea>
-        <button id="save-session-btn" class="btn btn-green w-full py-3"><span class="ms text-base">save</span>Save Session</button>
       </div>
 
+      <!-- Exercises -->
+      <div id="wt-exercises" style="display:none" class="space-y-3">
+        <input id="ex-search" type="text" placeholder="Search exercises">
+        <div id="exercise-library-list" class="space-y-2"></div>
+        <button id="new-exercise-btn" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+          <span class="ms text-base" aria-hidden="true">add</span>Add exercise
+        </button>
+      </div>
+
+      <!-- History -->
       <div id="wt-history" style="display:none">
         <div id="session-history-list" class="space-y-3"></div>
-      </div>
-
-      <div id="wt-exercises" style="display:none">
-        <div class="flex justify-between items-center mb-3">
-          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">My Exercise Library</p>
-          <button id="new-exercise-btn" class="btn btn-green text-xs px-3 py-1.5"><span class="ms text-sm">add</span>New</button>
-        </div>
-        <div id="exercise-library-list" class="space-y-2"></div>
       </div>
     </section>
 
@@ -415,6 +394,27 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </nav>
 </div>
 
+<!-- ══════════ ACTIVE WORKOUT ══════════ -->
+<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-slate-50 dark:bg-slate-950 flex flex-col">
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-3 py-3 flex items-center gap-2 flex-shrink-0">
+    <button id="aw-exit-btn" class="p-2 text-slate-400 hover:text-red-400 flex-shrink-0" title="Exit workout"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    <div class="text-center min-w-0 flex-1">
+      <h2 id="aw-group-name" class="font-display font-bold text-sm text-slate-800 dark:text-white truncate"></h2>
+      <p id="aw-progress-label" class="text-[11px] text-slate-400"></p>
+    </div>
+    <span id="aw-elapsed" class="font-display font-bold text-sm text-brand-500 flex-shrink-0" style="min-width:2.5rem;text-align:right"></span>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-4 space-y-2.5 pb-28" id="aw-exercise-list"></main>
+
+  <div class="fixed bottom-0 inset-x-0 p-4 bg-gradient-to-t from-slate-50 dark:from-slate-950 via-slate-50/95 dark:via-slate-950/95 to-transparent">
+    <div class="max-w-md mx-auto flex gap-2">
+      <button id="aw-add-exercise-btn" class="btn btn-outline flex-shrink-0 px-4" title="Add exercise"><span class="ms text-lg" aria-hidden="true">add</span></button>
+      <button id="aw-finish-btn" class="btn btn-green btn-pop flex-1 py-3.5 text-base">Finish workout</button>
+    </div>
+  </div>
+</div>
+
 <!-- Mobile drawer -->
 <div id="mob-drawer" style="display:none" class="fixed inset-0 z-50 md:hidden">
   <div id="mob-drawer-bg" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
@@ -444,6 +444,57 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
 <!-- ══════════ MODALS ══════════ -->
 
+<!-- Choose today's workout group (Start Growing) -->
+<div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Choose today's workout</h3>
+      <button id="group-picker-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <div id="group-picker-list" class="space-y-3"></div>
+  </div>
+</div>
+
+<!-- Create / edit workout group -->
+<div id="group-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[88vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 id="group-modal-title" class="font-display font-bold text-slate-800 dark:text-white">New workout group</h3>
+      <button id="group-modal-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <div class="flex gap-1.5">
+      <div class="h-1 flex-1 rounded-full bg-brand-500" id="gm-p1"></div>
+      <div class="h-1 flex-1 rounded-full bg-slate-200 dark:bg-slate-700" id="gm-p2"></div>
+      <div class="h-1 flex-1 rounded-full bg-slate-200 dark:bg-slate-700" id="gm-p3"></div>
+    </div>
+
+    <div id="gm-step1" class="space-y-3">
+      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Group name</label><input id="gm-name" type="text" placeholder="e.g. Upper Body A"></div>
+      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Description (optional)</label><input id="gm-desc" type="text" placeholder="e.g. Push-focused, heavier days"></div>
+      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Color</label><div id="gm-color-picker" class="flex gap-2"></div></div>
+      <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
+        <button id="gm-duplicate-btn" type="button" style="display:none" class="text-slate-400 hover:underline py-2">Duplicate</button>
+        <button id="gm-delete-btn" type="button" style="display:none" class="text-red-400 hover:underline py-2">Delete group</button>
+      </div>
+    </div>
+
+    <div id="gm-step2" style="display:none" class="space-y-3">
+      <input id="gm-ex-search" type="text" placeholder="Search exercises">
+      <div id="gm-ex-picklist" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
+      <button id="gm-add-new-ex" type="button" class="text-xs font-semibold text-brand-500 hover:underline py-1">+ Create new exercise</button>
+    </div>
+
+    <div id="gm-step3" style="display:none" class="space-y-2">
+      <div id="gm-config-list" class="space-y-2 max-h-72 overflow-y-auto"></div>
+    </div>
+
+    <div class="flex items-center gap-2 pt-2">
+      <button id="gm-back-btn" type="button" class="btn btn-outline flex-1 py-2.5">Back</button>
+      <button id="gm-next-btn" type="button" class="btn btn-green flex-1 py-2.5">Next</button>
+    </div>
+  </div>
+</div>
+
 <!-- Pick exercise for session -->
 <div id="pick-ex-modal" style="display:none" class="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
@@ -458,25 +509,99 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 </div>
 
 <!-- New / edit exercise -->
-<div id="exercise-modal" style="display:none" class="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+<div id="exercise-modal" style="display:none" class="fixed inset-0 z-[68] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[88vh] overflow-y-auto">
     <div class="flex items-center justify-between">
-      <h3 id="ex-modal-title" class="font-display font-bold text-slate-800 dark:text-white">New Exercise</h3>
+      <h3 id="ex-modal-title" class="font-display font-bold text-slate-800 dark:text-white">New exercise</h3>
       <button id="ex-modal-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
     </div>
     <div><label class="text-xs font-semibold text-slate-400 block mb-1">Name</label><input id="ex-name" type="text" placeholder="e.g. Lat Pulldown"></div>
-    <div><label class="text-xs font-semibold text-slate-400 block mb-1">Muscle Group</label><select id="ex-group"><option value="upper">Upper Body</option><option value="lower">Lower Body</option><option value="core">Core</option><option value="full">Full Body</option><option value="cardio">Cardio</option></select></div>
     <div class="flex gap-3">
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Starting Weight</label><input id="ex-weight" type="number" placeholder="60" min="0" step="0.5"></div>
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Category</label><select id="ex-group"><option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option><option value="full">Full body</option><option value="cardio">Cardio</option><option value="mobility">Mobility</option><option value="other">Other</option></select></div>
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Equipment</label><select id="ex-equipment"><option value="">—</option><option value="Barbell">Barbell</option><option value="Dumbbell">Dumbbell</option><option value="Machine">Machine</option><option value="Cable">Cable</option><option value="Bodyweight">Bodyweight</option><option value="Other">Other</option></select></div>
+    </div>
+    <div class="flex gap-3">
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Starting weight</label><input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5"></div>
       <div class="w-20"><label class="text-xs font-semibold text-slate-400 block mb-1">Unit</label><select id="ex-unit"><option value="kg">kg</option><option value="lbs">lbs</option></select></div>
     </div>
+    <div class="flex gap-3">
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Sets</label><input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" placeholder="3"></div>
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Rep range</label>
+        <div class="flex items-center gap-1.5">
+          <input id="ex-min-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="8">
+          <span class="text-slate-400 text-xs flex-shrink-0">–</span>
+          <input id="ex-max-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="12">
+        </div>
+      </div>
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Increment</label><input id="ex-weight-increment" type="number" inputmode="decimal" min="0" step="0.5" placeholder="2.5"></div>
+    </div>
+
+    <button id="ex-modal-more-toggle" type="button" class="text-xs font-semibold text-brand-500 hover:underline flex items-center gap-1 py-1">
+      <span class="ms text-sm" id="ex-modal-more-icon" aria-hidden="true">expand_more</span>More details
+    </button>
+    <div id="ex-modal-more" style="display:none" class="space-y-3">
+      <div class="flex gap-3">
+        <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Rest (seconds)</label><input id="ex-rest" type="number" inputmode="numeric" min="0" step="5" placeholder="90"></div>
+        <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Machine / seat setup</label><input id="ex-machine-setup" type="text" placeholder="e.g. seat 4"></div>
+      </div>
+      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="ex-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
+      <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+        <input id="ex-progression-enabled" type="checkbox" class="w-4 h-4 accent-brand-500" checked style="width:auto">
+        Double progression enabled
+      </label>
+    </div>
+
     <input type="hidden" id="ex-modal-id">
-    <button id="ex-modal-save" class="btn btn-green w-full py-2.5">Save Exercise</button>
+    <button id="ex-modal-save" class="btn btn-green w-full py-2.5">Save exercise</button>
+  </div>
+</div>
+
+<!-- Finish workout summary -->
+<div id="finish-modal" style="display:none" class="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="text-center space-y-1">
+      <p class="text-2xl" aria-hidden="true">🌿</p>
+      <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Workout complete</h3>
+      <p id="finish-group-name" class="text-sm font-semibold text-brand-500"></p>
+      <p id="finish-meta" class="text-xs text-slate-400"></p>
+    </div>
+
+    <div id="finish-recommendations" class="space-y-2"></div>
+
+    <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center justify-between">
+      <span class="text-xs font-semibold text-brand-600 dark:text-brand-300">Plant reward</span>
+      <span id="finish-growth-reward" class="text-base font-extrabold text-brand-600 dark:text-brand-400"></span>
+    </div>
+
+    <button id="finish-more-toggle" type="button" class="text-xs font-semibold text-brand-500 hover:underline flex items-center gap-1 py-1">
+      <span class="ms text-sm" id="finish-more-icon" aria-hidden="true">expand_more</span>Additional details
+    </button>
+    <div id="finish-more" style="display:none" class="space-y-3">
+      <div class="flex gap-3">
+        <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label><input id="finish-duration" type="number" inputmode="numeric" min="1"></div>
+        <div class="flex-1">
+          <label class="text-xs font-semibold text-slate-400 block mb-1">Calories burned (optional)</label>
+          <div class="flex gap-2">
+            <input id="finish-cal-burned" type="number" inputmode="numeric" placeholder="350" min="0" style="width:auto;flex:1">
+            <button id="import-cal-photo-btn" title="Import from photo" class="btn btn-outline px-3 flex-shrink-0"><span class="ms text-base" aria-hidden="true">photo_camera</span></button>
+          </div>
+        </div>
+      </div>
+      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="finish-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
+    </div>
+
+    <div class="space-y-2 pt-1">
+      <button id="finish-save-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Save workout</button>
+      <div class="flex items-center justify-center gap-4 text-xs font-semibold">
+        <button id="finish-continue-btn" class="text-slate-400 hover:underline py-2">Continue editing</button>
+        <button id="finish-discard-btn" class="text-red-400 hover:underline py-2">Discard</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Import calories from workout photo -->
-<div id="cal-photo-modal" style="display:none" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+<div id="cal-photo-modal" style="display:none" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h3 class="font-display font-bold text-slate-800 dark:text-white text-sm">Import Calories from Photo</h3>
@@ -526,11 +651,24 @@ const db   = getDatabase(app);
 const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let me = null, userProfile = {}, exercises = {}, sessions = {};
+let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
-let activeWorkoutTab = 'log', selectedMuscleGroup = 'upper';
-let sessionExercises = []; // [{exerciseId, name, group, weight, unit, targetReps, sets:[{reps}]}]
+let activeWorkoutTab = 'groups';
 let dataRefs = [];
+
+// Active (in-progress) workout — lives only in memory until Finish+Save,
+// same durability model the old single-form logger already used.
+let activeSession = null; // { groupId, groupName, groupColor, startedAt, exercises:[{exerciseId,name,category,unit,weight,minReps,maxReps,weightIncrement,defaultSets,progressionEnabled,targetReps,sets:[{weight,reps,rir,completed}],skipped,notes,expanded}] }
+let awTimerHandle = null;
+
+// Group-builder modal state
+let groupModalStep = 1;
+let groupModalId = null;
+let groupModalDraft = null; // { name, description, color, exercises:[{exerciseId,defaultSets,minReps,maxReps,notes}] }
+
+// Small preset palette for workout-group accents — same denormalize-once
+// pattern as PLANT_THEME, so colors live in one place, not scattered.
+const GROUP_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ec4899', '#14b8a6'];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -627,14 +765,57 @@ const ENCOURAGEMENT = [
 ];
 
 // ── Progression ────────────────────────────────────────────────────────────
-function nextProgression(targetReps, completedReps) {
-  // completedReps = array of actual reps logged per set
-  const allHit = completedReps.every((r,i) => r >= (targetReps[i] || 8));
+// minReps/maxReps default to 8/12 so exercises created before these fields
+// existed keep behaving exactly as before.
+function nextProgression(targetReps, completedReps, minReps = 8, maxReps = 12) {
+  const allHit = completedReps.every((r,i) => r >= (targetReps[i] ?? minReps));
   if (!allHit) return { reps: targetReps, weightUp: false };
-  if (targetReps.every(r => r >= 12)) return { reps: [8,8,8], weightUp: true };
+  if (targetReps.every(r => r >= maxReps)) return { reps: targetReps.map(() => minReps), weightUp: true };
   const next = [...targetReps];
-  for (let i = 0; i < next.length; i++) { if (next[i] < 12) { next[i]++; break; } }
+  for (let i = 0; i < next.length; i++) { if (next[i] < maxReps) { next[i]++; break; } }
   return { reps: next, weightUp: false };
+}
+
+function round1(n) { return Math.round(n * 10) / 10; }
+
+// Plain-language progression recommendation for one logged exercise.
+// completedSets: [{reps, completed}]. Consumes nextProgression() rather
+// than re-deriving the increase/hold decision independently.
+function buildProgressionRecommendation(ex) {
+  if (ex.skipped) return { type:'skipped', text:'No recommendation — exercise skipped.' };
+  const sets = ex.sets || [];
+  // Require every set completed, not just "at least one" — completedReps must
+  // line up positionally with targetReps or the recommendation would compare
+  // the wrong set against the wrong target.
+  if (!sets.length || !sets.every(s => s.completed)) return { type:'incomplete', text:'No recommendation due to incomplete sets.' };
+
+  const minReps = ex.minReps ?? 8, maxReps = ex.maxReps ?? 12;
+  const completedReps = sets.map(s => s.reps || 0);
+  if (completedReps.some(r => r < minReps)) {
+    return { type:'regress', text:'Your reps fell below the target range. Consider repeating or reducing the weight.' };
+  }
+
+  const targetReps = ex.targetReps || completedReps.map(() => minReps);
+  const { weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
+  if (weightUp) {
+    const nextWeight = ex.weightIncrement ? `Try ${round1((ex.weight||0) + ex.weightIncrement)} ${ex.unit} next session.` : 'Ready to increase next session.';
+    return { type:'ready', text:`Ready to grow. ${nextWeight}` };
+  }
+  return { type:'build', text:`Stay at ${ex.weight||0} ${ex.unit}. Reach ${maxReps} reps on all ${targetReps.length} sets before increasing.` };
+}
+
+// Most recent logged sets for an exercise, scanning session history newest
+// first. Shared by the active-workout "previous" preview and the Home
+// dashboard's Closest Progress card, so history is only ever scanned once.
+function getLastLoggedSets(exerciseId) {
+  const dates = Object.keys(sessions).sort().reverse();
+  for (const date of dates) {
+    for (const s of Object.values(sessions[date] || {})) {
+      const match = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (match) return { weight: match.weight, unit: match.unit, sets: match.sets || [] };
+    }
+  }
+  return null;
 }
 
 // ── OpenAI ────────────────────────────────────────────────────────────────
@@ -712,13 +893,17 @@ function cleanupListeners() { dataRefs.forEach(r => off(r)); dataRefs = []; }
 function subscribeData() {
   cleanupListeners();
   const rExercises = ref(db, `exercises/${uid()}`);
-  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); }, e => console.error(e));
+  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); }, e => console.error(e));
   dataRefs.push(rExercises);
+
+  const rGroups = ref(db, `groups/${uid()}`);
+  onValue(rGroups, snap => { groups = snap.val() || {}; renderGroupsList(); renderExerciseLibrary(); }, e => console.error(e));
+  dataRefs.push(rGroups);
 
   const rSessions = ref(db, `sessions/${uid()}`);
   onValue(rSessions, snap => {
     sessions = snap.val() || {};
-    renderDashboard(); renderHistory(); renderCalendar();
+    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList();
   }, e => console.error(e));
   dataRefs.push(rSessions);
 
@@ -784,7 +969,7 @@ function goView(v) {
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
-  if (v === 'workout' && !activeWorkoutTab) switchWorkoutTab('log');
+  if (v === 'workout' && !activeWorkoutTab) switchWorkoutTab('groups');
   if (v === 'workout' && activeWorkoutTab) switchWorkoutTab(activeWorkoutTab);
 }
 
@@ -817,7 +1002,16 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
 });
 
 // ── Dashboard render ────────────────────────────────────────────────────────
-const MG_LABEL = { upper:'Upper Body', lower:'Lower Body', core:'Core', full:'Full Body', cardio:'Cardio' };
+const MG_LABEL = { upper:'Upper body', lower:'Lower body', core:'Core', full:'Full body', cardio:'Cardio', mobility:'Mobility', other:'Other' };
+
+// Which saved groups currently include this exercise — used both to show
+// "Used in ..." on an exercise row and to decide whether deleting it needs
+// to archive instead (so group references never dangle).
+function groupsUsingExercise(exerciseId) {
+  return Object.entries(groups)
+    .filter(([, g]) => !g.archived && (g.exercises || []).some(ge => ge.exerciseId === exerciseId))
+    .map(([id, g]) => ({ id, name: g.name }));
+}
 
 function allSessionDates() {
   const dates = [];
@@ -837,30 +1031,24 @@ function totalLoggedSessions() {
 // weightUpFlag/targetReps state that nextProgression() already maintains
 // rather than recomputing progression from raw history.
 function findClosestProgression() {
-  const dates = Object.keys(sessions).sort().reverse();
-  const seen = new Set();
   let best = null;
   let readyFallback = null;
-  for (const date of dates) {
-    const daySessions = sessions[date] || {};
-    for (const s of Object.values(daySessions)) {
-      for (const loggedEx of (s.exercises || [])) {
-        if (!loggedEx.exerciseId || seen.has(loggedEx.exerciseId)) continue;
-        seen.add(loggedEx.exerciseId);
-        const exDef = exercises[loggedEx.exerciseId];
-        if (!exDef) continue;
-        const targetReps = exDef.targetReps || [8,8,8];
-        const remaining = targetReps.reduce((sum, r) => sum + Math.max(0, 12 - r), 0);
-        const entry = {
-          name: exDef.name, group: exDef.muscleGroup,
-          weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
-          targetReps, lastSets: (loggedEx.sets || []).map(st => st.reps || 0),
-          remaining, ready: !!exDef.weightUpFlag
-        };
-        if (entry.ready) { if (!readyFallback) readyFallback = entry; continue; }
-        if (!best || entry.remaining < best.remaining) best = entry;
-      }
-    }
+  for (const [id, exDef] of Object.entries(exercises)) {
+    if (exDef.archived) continue;
+    const last = getLastLoggedSets(id);
+    if (!last) continue;
+    const targetReps = exDef.targetReps || [8,8,8];
+    const maxReps = exDef.maxReps ?? 12;
+    const remaining = targetReps.reduce((sum, r) => sum + Math.max(0, maxReps - r), 0);
+    const entry = {
+      name: exDef.name, group: exDef.muscleGroup,
+      weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
+      weightIncrement: exDef.weightIncrement || 0,
+      targetReps, lastSets: last.sets.map(st => st.reps || 0),
+      remaining, ready: !!exDef.weightUpFlag
+    };
+    if (entry.ready) { if (!readyFallback) readyFallback = entry; continue; }
+    if (!best || entry.remaining < best.remaining) best = entry;
   }
   return best || readyFallback;
 }
@@ -982,7 +1170,7 @@ function renderTodayMission() {
       </div>
       <p class="text-sm text-slate-500 dark:text-slate-400">Your sprout grew today.</p>
       <div class="flex items-center gap-2 text-xs text-slate-400">
-        <span class="px-2 py-0.5 rounded-lg border font-semibold mg-${s.muscleGroup}">${MG_LABEL[s.muscleGroup]||s.muscleGroup}</span>
+        <span class="px-2 py-0.5 rounded-lg text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
         <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
       </div>
       <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
@@ -1015,8 +1203,9 @@ function renderClosestProgress() {
       <p class="text-sm text-slate-400 text-center">Your next progression will appear after your first workout.</p>`;
     return;
   }
-  const detail = best.ready ? 'Ready to increase next session 🎉' :
-    `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next leaf`;
+  const detail = best.ready
+    ? (best.weightIncrement ? `Ready to grow — try ${round1(best.weight + best.weightIncrement)} ${best.unit} next session 🎉` : 'Ready to increase next session 🎉')
+    : `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next leaf`;
   const nodes = best.lastSets.map((r, i) => {
     const filled = r >= 12;
     const node = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
@@ -1139,83 +1328,26 @@ function switchWorkoutTab(tab) {
     b.style.color      = on ? '#22c55e' : '';
     if (document.documentElement.classList.contains('dark')) b.style.background = on ? '#1e293b' : 'transparent';
   });
-  ['log','history','exercises'].forEach(t => {
+  ['groups','exercises','history'].forEach(t => {
     document.getElementById('wt-'+t).style.display = t === tab ? '' : 'none';
   });
+  if (tab === 'groups')    renderGroupsList();
   if (tab === 'history')   renderHistory();
   if (tab === 'exercises') renderExerciseLibrary();
-  if (tab === 'log')       renderSessionLog();
 }
 
 document.querySelectorAll('.wt-tab').forEach(b => b.addEventListener('click', () => switchWorkoutTab(b.dataset.tab)));
 
-// Muscle group chips
-document.querySelectorAll('.mg-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    selectedMuscleGroup = chip.dataset.mg;
-    document.querySelectorAll('.mg-chip').forEach(c => c.style.opacity = c.dataset.mg === selectedMuscleGroup ? '1' : '0.4');
-  });
-});
+// ── Reusable exercise picker ─────────────────────────────────────────────────
+// Used by the group builder (adding exercises to a group) and by the active
+// workout screen (adding an unscheduled exercise). Whoever opens it decides
+// what happens on selection — the modal itself has no built-in destination.
+let pickExOnSelect = null;
+let pickExExclude = [];
 
-// ── Session log ─────────────────────────────────────────────────────────────
-function renderSessionLog() {
-  const list = document.getElementById('session-ex-list');
-  list.innerHTML = '';
-  sessionExercises.forEach((ex, idx) => {
-    const div = document.createElement('div');
-    div.className = 'p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2';
-    const mgClass = `mg-${ex.group}`;
-    const weightUp = ex.weightUp ? `<span class="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold">⬆️ Increase weight next!</span>` : '';
-    div.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${mgClass}">${ex.group}</span>
-          <span class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(ex.name)}</span>
-          ${weightUp}
-        </div>
-        <button class="remove-session-ex text-slate-300 hover:text-red-400 p-1" data-idx="${idx}"><span class="ms text-base">close</span></button>
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="text-xs text-slate-400">Weight</label>
-        <input type="number" class="ex-weight-input" data-idx="${idx}" value="${ex.weight||0}" min="0" step="0.5" style="width:80px">
-        <span class="text-xs text-slate-400">${ex.unit||'kg'}</span>
-        <span class="text-xs text-slate-400 ml-2">Target: <span class="font-bold text-brand-500">${ex.targetReps.join('/')}</span></span>
-      </div>
-      <div class="space-y-1" id="sets-${idx}">
-        ${ex.sets.map((s,si) => `
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-400 w-10">Set ${si+1}</span>
-            <input type="number" class="set-reps-input" data-idx="${idx}" data-set="${si}" value="${s.reps||ex.targetReps[si]||8}" min="0" max="30" style="width:70px">
-            <span class="text-xs text-slate-400">reps (target: ${ex.targetReps[si]||8})</span>
-          </div>`).join('')}
-      </div>
-      <button class="add-set-btn text-xs text-brand-500 font-semibold hover:underline" data-idx="${idx}">+ Add set</button>
-    `;
-    list.appendChild(div);
-  });
-
-  list.querySelectorAll('.remove-session-ex').forEach(b =>
-    b.addEventListener('click', () => { sessionExercises.splice(+b.dataset.idx, 1); renderSessionLog(); })
-  );
-  list.querySelectorAll('.ex-weight-input').forEach(inp =>
-    inp.addEventListener('change', () => { sessionExercises[+inp.dataset.idx].weight = +inp.value; })
-  );
-  list.querySelectorAll('.set-reps-input').forEach(inp =>
-    inp.addEventListener('change', () => { sessionExercises[+inp.dataset.idx].sets[+inp.dataset.set].reps = +inp.value; })
-  );
-  list.querySelectorAll('.add-set-btn').forEach(b =>
-    b.addEventListener('click', () => {
-      const i = +b.dataset.idx; const ex = sessionExercises[i];
-      ex.sets.push({ reps: ex.targetReps[ex.sets.length] || 8 });
-      ex.targetReps.push(8);
-      renderSessionLog();
-    })
-  );
-}
-
-// Add exercise to session
-document.getElementById('add-ex-to-session-btn').addEventListener('click', openPickExModal);
-function openPickExModal() {
+function openPickExModal(onSelect, excludeIds = []) {
+  pickExOnSelect = onSelect;
+  pickExExclude = excludeIds;
   renderPickExList('');
   document.getElementById('pick-ex-modal').style.display = '';
   document.getElementById('pick-ex-search').value = '';
@@ -1229,73 +1361,29 @@ document.getElementById('pick-ex-new').addEventListener('click', () => {
 
 function renderPickExList(q) {
   const list = document.getElementById('pick-ex-list');
-  const items = Object.entries(exercises).filter(([,ex]) => !q || ex.name?.toLowerCase().includes(q.toLowerCase()));
+  const items = Object.entries(exercises).filter(([id,ex]) =>
+    !ex.archived && !pickExExclude.includes(id) && (!q || ex.name?.toLowerCase().includes(q.toLowerCase())));
   if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No exercises yet. Create one!</p>'; return; }
   list.innerHTML = items.map(([id, ex]) => `
     <button class="pick-ex-item w-full flex items-center justify-between p-3 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all text-left" data-id="${id}">
       <div>
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-400">Target: ${(ex.targetReps||[8,8,8]).join('/')} @ ${ex.currentWeight||0} ${ex.unit||'kg'}</p>
+        <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup} · ${ex.currentWeight||0} ${ex.unit||'kg'}</p>
       </div>
-      <span class="ms text-xl text-brand-500">add</span>
+      <span class="ms text-xl text-brand-500" aria-hidden="true">add</span>
     </button>
   `).join('');
   list.querySelectorAll('.pick-ex-item').forEach(b =>
     b.addEventListener('click', () => {
-      const ex = exercises[b.dataset.id];
-      sessionExercises.push({
-        exerciseId: b.dataset.id, name: ex.name, group: ex.muscleGroup,
-        weight: ex.currentWeight || 0, unit: ex.unit || 'kg',
-        targetReps: [...(ex.targetReps || [8,8,8])],
-        weightUp: ex.weightUpFlag || false,
-        sets: (ex.targetReps || [8,8,8]).map(r => ({ reps: r }))
-      });
       document.getElementById('pick-ex-modal').style.display = 'none';
-      renderSessionLog();
+      pickExOnSelect?.(b.dataset.id);
     })
   );
 }
 
-// Save session
-document.getElementById('save-session-btn').addEventListener('click', async () => {
-  if (!sessionExercises.length) { alert('Add at least one exercise.'); return; }
-  const today = todayStr();
-  const burned = +document.getElementById('session-cal-burned').value || 0;
-  const dur    = +document.getElementById('session-duration').value   || 0;
-  const notes  = document.getElementById('session-notes').value.trim();
-  const sessionData = {
-    muscleGroup: selectedMuscleGroup,
-    caloriesBurned: burned, duration: dur, notes, date: today,
-    exercises: sessionExercises.map(ex => ({
-      exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.group,
-      weight: ex.weight, unit: ex.unit,
-      targetReps: ex.targetReps,
-      sets: ex.sets
-    }))
-  };
-  const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
-  await set(sessionRef, sessionData);
-
-  // Update exercise progressions
-  for (const ex of sessionExercises) {
-    if (!ex.exerciseId) continue;
-    const completedReps = ex.sets.map(s => s.reps);
-    const { reps: nextReps, weightUp } = nextProgression(ex.targetReps, completedReps);
-    const updates = { targetReps: nextReps, currentWeight: ex.weight, weightUpFlag: weightUp };
-    await set(ref(db, `exercises/${uid()}/${ex.exerciseId}`), { ...exercises[ex.exerciseId], ...updates });
-    if (weightUp) alert(`🎉 You hit 12/12/12 on ${ex.name}! Increase the weight next session.`);
-  }
-
-  sessionExercises = [];
-  document.getElementById('session-cal-burned').value = '';
-  document.getElementById('session-duration').value   = '';
-  document.getElementById('session-notes').value      = '';
-  renderSessionLog();
-  alert('Session saved! 💪');
-  switchWorkoutTab('history');
-});
-
-// Import calories from photo
+// Import calories from photo — used from the Finish Workout summary's
+// "Additional details" section, since strength users rarely know accurate
+// calorie burn and it should never compete with sets/reps for attention.
 document.getElementById('import-cal-photo-btn').addEventListener('click', () => {
   document.getElementById('cal-photo-modal').style.display = '';
 });
@@ -1317,23 +1405,41 @@ document.getElementById('cal-photo-analyze-btn').addEventListener('click', async
   try {
     const b64 = await fileToBase64(file);
     const result = await extractCaloriesFromPhoto(b64);
-    document.getElementById('session-cal-burned').value = result.calories_burned || '';
-    if (result.duration_minutes) document.getElementById('session-duration').value = result.duration_minutes;
+    document.getElementById('finish-cal-burned').value = result.calories_burned || '';
     document.getElementById('cal-photo-modal').style.display = 'none';
   } catch(e) { alert('Error: ' + e.message); }
   finally { this.disabled = false; document.getElementById('cal-analyzing').style.display = 'none'; }
 });
 
 // ── Exercise library ────────────────────────────────────────────────────────
+function resizeTargetReps(current, length, minReps, maxReps) {
+  const base = current && current.length ? current : [];
+  const out = [];
+  for (let i = 0; i < length; i++) {
+    const v = base[i] ?? minReps;
+    out.push(Math.max(minReps, Math.min(maxReps, v)));
+  }
+  return out;
+}
+
 function renderExerciseLibrary() {
   const list = document.getElementById('exercise-library-list');
-  const items = Object.entries(exercises);
+  const q = (document.getElementById('ex-search').value || '').toLowerCase();
+  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived && (!q || ex.name?.toLowerCase().includes(q)));
   if (!items.length) {
-    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No exercises yet. Tap New to add your first.</p>';
+    const msg = Object.keys(exercises).length
+      ? 'No exercises match your search.'
+      : 'Create your first exercise to begin building a routine.';
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${msg}</p>`;
     return;
   }
   list.innerHTML = items.map(([id, ex]) => {
-    const weightUpBadge = ex.weightUpFlag ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-600 px-2 py-0.5 rounded-full font-bold ml-2">⬆️ Increase weight</span>' : '';
+    const weightUpBadge = ex.weightUpFlag ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-600 px-2 py-0.5 rounded-full font-bold ml-2">⬆️ Ready to increase</span>' : '';
+    const meta1 = [ex.equipment, MG_LABEL[ex.muscleGroup]||ex.muscleGroup].filter(Boolean).join(' · ');
+    const sets = ex.defaultSets || (ex.targetReps||[8,8,8]).length;
+    const meta2 = `${sets} set${sets!==1?'s':''} · ${ex.minReps??8}–${ex.maxReps??12} reps`;
+    const usedIn = groupsUsingExercise(id);
+    const usedLine = usedIn.length ? `<p class="text-[11px] text-brand-500 mt-0.5">Used in ${usedIn.map(g=>esc(g.name)).join(', ')}</p>` : '';
     return `
       <div class="card p-3 flex items-center justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -1341,68 +1447,658 @@ function renderExerciseLibrary() {
             <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
             ${weightUpBadge}
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">Target: <span class="font-bold text-brand-500">${(ex.targetReps||[8,8,8]).join('/')}</span> @ ${ex.currentWeight||0} ${ex.unit||'kg'}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${meta1}</p>
+          <p class="text-xs text-slate-400">${meta2}</p>
+          ${usedLine}
         </div>
-        <div class="flex gap-1">
-          <button class="edit-ex p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all" data-id="${id}"><span class="ms text-base">edit</span></button>
-          <button class="del-ex p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all" data-id="${id}"><span class="ms text-base">delete</span></button>
+        <div class="flex gap-1 flex-shrink-0">
+          <button class="edit-ex p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all" data-id="${id}"><span class="ms text-base" aria-hidden="true">edit</span></button>
+          <button class="del-ex p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all" data-id="${id}"><span class="ms text-base" aria-hidden="true">delete</span></button>
         </div>
       </div>`;
   }).join('');
 
   list.querySelectorAll('.edit-ex').forEach(b => b.addEventListener('click', () => openExerciseModal(b.dataset.id)));
   list.querySelectorAll('.del-ex').forEach(b => b.addEventListener('click', async () => {
-    if (confirm('Delete this exercise?')) await remove(ref(db, `exercises/${uid()}/${b.dataset.id}`));
+    const id = b.dataset.id;
+    const usedIn = groupsUsingExercise(id);
+    const warning = usedIn.length ? ` It will stay in: ${usedIn.map(g=>g.name).join(', ')}.` : '';
+    if (!confirm(`Archive "${exercises[id].name}"? It will be hidden from your library and new groups, but past workouts and any groups using it are unaffected.${warning}`)) return;
+    await set(ref(db, `exercises/${uid()}/${id}/archived`), true);
   }));
 }
 
+document.getElementById('ex-search').addEventListener('input', renderExerciseLibrary);
 document.getElementById('new-exercise-btn').addEventListener('click', () => openExerciseModal());
+
+function setExerciseModalMore(open) {
+  document.getElementById('ex-modal-more').style.display = open ? '' : 'none';
+  document.getElementById('ex-modal-more-icon').textContent = open ? 'expand_less' : 'expand_more';
+}
+document.getElementById('ex-modal-more-toggle').addEventListener('click', () => {
+  setExerciseModalMore(document.getElementById('ex-modal-more').style.display === 'none');
+});
 
 function openExerciseModal(id = null) {
   const ex = id ? exercises[id] : null;
-  document.getElementById('ex-modal-title').textContent = id ? 'Edit Exercise' : 'New Exercise';
+  document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'New exercise';
   document.getElementById('ex-name').value    = ex?.name || '';
   document.getElementById('ex-group').value   = ex?.muscleGroup || 'upper';
+  document.getElementById('ex-equipment').value = ex?.equipment || '';
   document.getElementById('ex-weight').value  = ex?.currentWeight || '';
   document.getElementById('ex-unit').value    = ex?.unit || 'kg';
+  document.getElementById('ex-sets').value    = ex?.defaultSets || (ex?.targetReps||[8,8,8]).length || 3;
+  document.getElementById('ex-min-reps').value = ex?.minReps ?? 8;
+  document.getElementById('ex-max-reps').value = ex?.maxReps ?? 12;
+  document.getElementById('ex-weight-increment').value = ex?.weightIncrement || '';
+  document.getElementById('ex-rest').value = ex?.restSeconds || '';
+  document.getElementById('ex-machine-setup').value = ex?.machineSetup || '';
+  document.getElementById('ex-notes').value = ex?.notes || '';
+  document.getElementById('ex-progression-enabled').checked = ex?.progressionEnabled !== false;
   document.getElementById('ex-modal-id').value = id || '';
+  setExerciseModalMore(false);
   document.getElementById('exercise-modal').style.display = '';
 }
 document.getElementById('ex-modal-close').addEventListener('click', () => document.getElementById('exercise-modal').style.display = 'none');
 document.getElementById('ex-modal-save').addEventListener('click', async () => {
-  const name   = document.getElementById('ex-name').value.trim();
-  const group  = document.getElementById('ex-group').value;
-  const weight = +document.getElementById('ex-weight').value || 0;
-  const unit   = document.getElementById('ex-unit').value;
-  const id     = document.getElementById('ex-modal-id').value;
+  const name = document.getElementById('ex-name').value.trim();
   if (!name) { alert('Enter an exercise name.'); return; }
+  const id = document.getElementById('ex-modal-id').value;
   const existing = id ? (exercises[id] || {}) : {};
-  const data = { ...existing, name, muscleGroup: group, currentWeight: weight, unit,
-                 targetReps: existing.targetReps || [8,8,8], weightUpFlag: existing.weightUpFlag || false };
+  const minReps = Math.max(1, +document.getElementById('ex-min-reps').value || 8);
+  const maxReps = Math.max(minReps, +document.getElementById('ex-max-reps').value || 12);
+  const defaultSets = Math.max(1, +document.getElementById('ex-sets').value || 3);
+  const data = {
+    ...existing,
+    name,
+    muscleGroup: document.getElementById('ex-group').value,
+    equipment: document.getElementById('ex-equipment').value || null,
+    currentWeight: +document.getElementById('ex-weight').value || 0,
+    unit: document.getElementById('ex-unit').value,
+    defaultSets, minReps, maxReps,
+    weightIncrement: +document.getElementById('ex-weight-increment').value || null,
+    restSeconds: +document.getElementById('ex-rest').value || null,
+    machineSetup: document.getElementById('ex-machine-setup').value.trim() || null,
+    notes: document.getElementById('ex-notes').value.trim() || null,
+    progressionEnabled: document.getElementById('ex-progression-enabled').checked,
+    targetReps: resizeTargetReps(existing.targetReps, defaultSets, minReps, maxReps),
+    weightUpFlag: existing.weightUpFlag || false
+  };
   if (id) await set(ref(db, `exercises/${uid()}/${id}`), data);
   else    await set(push(ref(db, `exercises/${uid()}`)), data);
   document.getElementById('exercise-modal').style.display = 'none';
 });
 
+// ── Workout groups ───────────────────────────────────────────────────────────
+function lastCompletedDate(groupId) {
+  const dates = Object.keys(sessions).sort().reverse();
+  for (const date of dates) {
+    if (Object.values(sessions[date] || {}).some(s => s.groupId === groupId)) return date;
+  }
+  return null;
+}
+
+function relativeDays(dateStr) {
+  const diff = Math.round((new Date(todayStr()+'T12:00:00') - new Date(dateStr+'T12:00:00')) / 86400000);
+  if (diff <= 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  return `${diff} days ago`;
+}
+
+function renderGroupsList() {
+  const list = document.getElementById('groups-list');
+  const items = Object.entries(groups).filter(([,g]) => !g.archived);
+  if (!items.length) {
+    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Group your exercises into a workout you can repeat.</p>';
+    return;
+  }
+  list.innerHTML = items.map(([id, g]) => {
+    const exList = (g.exercises || []).map(ge => exercises[ge.exerciseId]).filter(Boolean);
+    const preview = exList.slice(0,3).map(e => esc(e.name)).join(', ') + (exList.length > 3 ? '…' : '');
+    const lastDate = lastCompletedDate(id);
+    const lastLabel = lastDate ? `Last completed ${relativeDays(lastDate)}` : 'Not completed yet';
+    const color = g.color || GROUP_COLORS[0];
+    return `
+      <div class="card p-4 space-y-2" style="border-left:3px solid ${color}">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-display font-bold text-sm text-slate-800 dark:text-white">${esc(g.name)}</p>
+            <p class="text-xs text-slate-400">${exList.length} exercise${exList.length!==1?'s':''} · ${lastLabel}</p>
+          </div>
+          <button class="edit-group-btn p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex-shrink-0" data-id="${id}"><span class="ms text-lg" aria-hidden="true">edit</span></button>
+        </div>
+        ${preview ? `<p class="text-xs text-slate-400 truncate">${preview}</p>` : ''}
+        <button class="start-group-btn btn w-full py-2.5" style="background:${color};color:white" data-id="${id}">Start</button>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.start-group-btn').forEach(b => b.addEventListener('click', () => startWorkoutSession(b.dataset.id)));
+  list.querySelectorAll('.edit-group-btn').forEach(b => b.addEventListener('click', () => openGroupModal(b.dataset.id)));
+}
+
+document.getElementById('create-group-btn').addEventListener('click', () => openGroupModal());
+
+// ── Group builder modal (3 steps: details -> pick exercises -> configure) ───
+function openGroupModal(id = null) {
+  groupModalId = id;
+  const g = id ? groups[id] : null;
+  groupModalDraft = g
+    ? { name: g.name, description: g.description || '', color: g.color || GROUP_COLORS[0], exercises: (g.exercises || []).map(ge => ({ ...ge })) }
+    : { name: '', description: '', color: GROUP_COLORS[0], exercises: [] };
+  document.getElementById('group-modal-title').textContent = id ? 'Edit workout group' : 'New workout group';
+  document.getElementById('gm-duplicate-btn').style.display = id ? '' : 'none';
+  document.getElementById('gm-delete-btn').style.display = id ? '' : 'none';
+  groupModalStep = 1;
+  renderGmStep();
+  document.getElementById('group-modal').style.display = '';
+}
+document.getElementById('group-modal-close').addEventListener('click', () => document.getElementById('group-modal').style.display = 'none');
+
+function renderGmStep() {
+  [1,2,3].forEach(n => {
+    document.getElementById('gm-step'+n).style.display = n === groupModalStep ? '' : 'none';
+    document.getElementById('gm-p'+n).className = `h-1 flex-1 rounded-full ${n <= groupModalStep ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'}`;
+  });
+  document.getElementById('gm-back-btn').style.display = groupModalStep === 1 ? 'none' : '';
+  document.getElementById('gm-next-btn').textContent = groupModalStep === 3 ? 'Save group' : 'Next';
+
+  if (groupModalStep === 1) {
+    document.getElementById('gm-name').value = groupModalDraft.name;
+    document.getElementById('gm-desc').value = groupModalDraft.description;
+    renderGmColorPicker();
+  } else if (groupModalStep === 2) {
+    renderGmExPicklist('');
+  } else {
+    renderGmConfigList();
+  }
+}
+
+function renderGmColorPicker() {
+  const wrap = document.getElementById('gm-color-picker');
+  wrap.innerHTML = GROUP_COLORS.map(c => `
+    <button type="button" class="gm-color-swatch w-8 h-8 rounded-full flex-shrink-0" data-color="${c}"
+      style="background:${c};${groupModalDraft.color === c ? `box-shadow:0 0 0 2px white, 0 0 0 4px ${c}` : ''}"></button>
+  `).join('');
+  wrap.querySelectorAll('.gm-color-swatch').forEach(b => b.addEventListener('click', () => {
+    groupModalDraft.color = b.dataset.color;
+    renderGmColorPicker();
+  }));
+}
+
+function renderGmExPicklist(q) {
+  const list = document.getElementById('gm-ex-picklist');
+  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived && (!q || ex.name?.toLowerCase().includes(q.toLowerCase())));
+  if (!items.length) {
+    list.innerHTML = Object.keys(exercises).length
+      ? '<p class="text-xs text-slate-400 text-center py-3">No exercises match your search.</p>'
+      : '<p class="text-xs text-slate-400 text-center py-3">No exercises yet — create your first one below.</p>';
+    return;
+  }
+  const selectedIds = new Set(groupModalDraft.exercises.map(ge => ge.exerciseId));
+  list.innerHTML = items.map(([id, ex]) => `
+    <label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all cursor-pointer">
+      <input type="checkbox" class="gm-ex-check w-4 h-4 accent-brand-500 flex-shrink-0" style="width:auto" data-id="${id}" ${selectedIds.has(id) ? 'checked' : ''}>
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup}</p>
+      </div>
+    </label>
+  `).join('');
+  list.querySelectorAll('.gm-ex-check').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) {
+      const ex = exercises[cb.dataset.id];
+      groupModalDraft.exercises.push({ exerciseId: cb.dataset.id, defaultSets: ex.defaultSets || 3, minReps: ex.minReps ?? 8, maxReps: ex.maxReps ?? 12, notes: '' });
+    } else {
+      groupModalDraft.exercises = groupModalDraft.exercises.filter(ge => ge.exerciseId !== cb.dataset.id);
+    }
+  }));
+}
+document.getElementById('gm-ex-search').addEventListener('input', e => renderGmExPicklist(e.target.value));
+document.getElementById('gm-add-new-ex').addEventListener('click', () => openExerciseModal());
+
+function renderGmConfigList() {
+  const list = document.getElementById('gm-config-list');
+  if (!groupModalDraft.exercises.length) {
+    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No exercises selected yet.</p>';
+    return;
+  }
+  list.innerHTML = groupModalDraft.exercises.map((ge, i) => {
+    const ex = exercises[ge.exerciseId];
+    if (!ex) return '';
+    return `
+      <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-0 truncate">${esc(ex.name)}</p>
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button class="gm-move-up p-1 text-slate-400 hover:text-brand-500 disabled:opacity-30" data-idx="${i}" ${i===0?'disabled':''}><span class="ms text-lg" aria-hidden="true">arrow_upward</span></button>
+            <button class="gm-move-down p-1 text-slate-400 hover:text-brand-500 disabled:opacity-30" data-idx="${i}" ${i===groupModalDraft.exercises.length-1?'disabled':''}><span class="ms text-lg" aria-hidden="true">arrow_downward</span></button>
+            <button class="gm-remove-ex p-1 text-slate-400 hover:text-red-400" data-idx="${i}"><span class="ms text-lg" aria-hidden="true">close</span></button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-400">Sets</label>
+          <input type="number" class="gm-cfg-sets" data-idx="${i}" value="${ge.defaultSets}" min="1" max="10" style="width:56px">
+          <label class="text-xs text-slate-400 ml-1">Reps</label>
+          <input type="number" class="gm-cfg-min" data-idx="${i}" value="${ge.minReps}" min="1" max="50" style="width:52px">
+          <span class="text-slate-400 text-xs">–</span>
+          <input type="number" class="gm-cfg-max" data-idx="${i}" value="${ge.maxReps}" min="1" max="50" style="width:52px">
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.gm-move-up').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.idx;
+    [groupModalDraft.exercises[i-1], groupModalDraft.exercises[i]] = [groupModalDraft.exercises[i], groupModalDraft.exercises[i-1]];
+    renderGmConfigList();
+  }));
+  list.querySelectorAll('.gm-move-down').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.idx;
+    [groupModalDraft.exercises[i+1], groupModalDraft.exercises[i]] = [groupModalDraft.exercises[i], groupModalDraft.exercises[i+1]];
+    renderGmConfigList();
+  }));
+  list.querySelectorAll('.gm-remove-ex').forEach(b => b.addEventListener('click', () => {
+    groupModalDraft.exercises.splice(+b.dataset.idx, 1);
+    renderGmConfigList();
+  }));
+  list.querySelectorAll('.gm-cfg-sets').forEach(inp => inp.addEventListener('change', () => { groupModalDraft.exercises[+inp.dataset.idx].defaultSets = Math.max(1, +inp.value || 3); }));
+  list.querySelectorAll('.gm-cfg-min').forEach(inp => inp.addEventListener('change', () => { groupModalDraft.exercises[+inp.dataset.idx].minReps = +inp.value || 8; }));
+  list.querySelectorAll('.gm-cfg-max').forEach(inp => inp.addEventListener('change', () => { groupModalDraft.exercises[+inp.dataset.idx].maxReps = +inp.value || 12; }));
+}
+
+document.getElementById('gm-back-btn').addEventListener('click', () => { groupModalStep--; renderGmStep(); });
+document.getElementById('gm-next-btn').addEventListener('click', async () => {
+  if (groupModalStep === 1) {
+    const name = document.getElementById('gm-name').value.trim();
+    if (!name) { alert('Enter a group name.'); return; }
+    groupModalDraft.name = name;
+    groupModalDraft.description = document.getElementById('gm-desc').value.trim();
+    groupModalStep = 2;
+    renderGmStep();
+  } else if (groupModalStep === 2) {
+    if (!groupModalDraft.exercises.length) { alert('Select at least one exercise.'); return; }
+    groupModalStep = 3;
+    renderGmStep();
+  } else {
+    const data = {
+      name: groupModalDraft.name,
+      description: groupModalDraft.description || null,
+      color: groupModalDraft.color,
+      exercises: groupModalDraft.exercises,
+      updatedAt: Date.now()
+    };
+    if (groupModalId) await set(ref(db, `groups/${uid()}/${groupModalId}`), { ...groups[groupModalId], ...data });
+    else await set(push(ref(db, `groups/${uid()}`)), { ...data, createdAt: Date.now() });
+    document.getElementById('group-modal').style.display = 'none';
+    switchWorkoutTab('groups');
+  }
+});
+
+document.getElementById('gm-duplicate-btn').addEventListener('click', async () => {
+  const copy = { ...groupModalDraft, name: `${groupModalDraft.name} copy`, exercises: groupModalDraft.exercises.map(ge => ({ ...ge })) };
+  await set(push(ref(db, `groups/${uid()}`)), { ...copy, description: copy.description || null, createdAt: Date.now(), updatedAt: Date.now() });
+  document.getElementById('group-modal').style.display = 'none';
+  switchWorkoutTab('groups');
+});
+document.getElementById('gm-delete-btn').addEventListener('click', async () => {
+  if (!groupModalId) return;
+  if (!confirm(`Delete "${groupModalDraft.name}"? Past workouts logged from it stay in your history.`)) return;
+  await remove(ref(db, `groups/${uid()}/${groupModalId}`));
+  document.getElementById('group-modal').style.display = 'none';
+  switchWorkoutTab('groups');
+});
+
+// ── Group picker (Home's "Start Growing") ────────────────────────────────────
+function openGroupPicker() {
+  const list = document.getElementById('group-picker-list');
+  const items = Object.entries(groups).filter(([,g]) => !g.archived);
+  if (!items.length) {
+    list.innerHTML = `
+      <p class="text-sm text-slate-400 text-center py-2">You have not created a workout group yet.</p>
+      <button id="gp-create-first" class="btn btn-green btn-pop w-full py-3">Create your first group</button>
+      <button id="gp-browse-ex" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Browse exercises</button>`;
+    document.getElementById('gp-create-first').addEventListener('click', () => {
+      document.getElementById('group-picker-modal').style.display = 'none';
+      goView('workout'); switchWorkoutTab('groups');
+      openGroupModal();
+    });
+    document.getElementById('gp-browse-ex').addEventListener('click', () => {
+      document.getElementById('group-picker-modal').style.display = 'none';
+      goView('workout'); switchWorkoutTab('exercises');
+    });
+  } else {
+    list.innerHTML = items.map(([id, g]) => {
+      const exCount = (g.exercises || []).length;
+      const lastDate = lastCompletedDate(id);
+      const lastLabel = lastDate ? `Last done ${relativeDays(lastDate)}` : 'Not completed yet';
+      const color = g.color || GROUP_COLORS[0];
+      return `
+        <div class="card p-4 space-y-2" style="border-left:3px solid ${color}">
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">${esc(g.name)}</p>
+          <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''} · ${lastLabel}</p>
+          <button class="gp-start-btn btn w-full py-2.5" style="background:${color};color:white" data-id="${id}">Start</button>
+        </div>`;
+    }).join('');
+    list.querySelectorAll('.gp-start-btn').forEach(b => b.addEventListener('click', () => {
+      document.getElementById('group-picker-modal').style.display = 'none';
+      startWorkoutSession(b.dataset.id);
+    }));
+  }
+  document.getElementById('group-picker-modal').style.display = '';
+}
+document.getElementById('group-picker-close').addEventListener('click', () => document.getElementById('group-picker-modal').style.display = 'none');
+
+// ── Active workout ────────────────────────────────────────────────────────────
+function startWorkoutSession(groupId) {
+  const g = groups[groupId];
+  if (!g) return;
+  document.getElementById('group-picker-modal').style.display = 'none';
+  const exList = (g.exercises || []).map(ge => {
+    const ex = exercises[ge.exerciseId];
+    if (!ex) return null;
+    const minReps = ge.minReps ?? ex.minReps ?? 8;
+    const maxReps = ge.maxReps ?? ex.maxReps ?? 12;
+    const setCount = ge.defaultSets || ex.defaultSets || (ex.targetReps || [8,8,8]).length || 3;
+    const targetReps = resizeTargetReps(ex.targetReps, setCount, minReps, maxReps);
+    return {
+      exerciseId: ge.exerciseId, name: ex.name, category: ex.muscleGroup, unit: ex.unit || 'kg',
+      weight: ex.currentWeight || 0, minReps, maxReps,
+      weightIncrement: ex.weightIncrement || 0,
+      progressionEnabled: ex.progressionEnabled !== false,
+      targetReps,
+      sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps: '', rir: '', completed: false })),
+      skipped: false, notes: '', expanded: false
+    };
+  }).filter(Boolean);
+  if (!exList.length) { alert('This group has no exercises yet — add some first.'); return; }
+  exList[0].expanded = true;
+
+  activeSession = { groupId, groupName: g.name, groupColor: g.color || GROUP_COLORS[0], startedAt: Date.now(), exercises: exList };
+  document.getElementById('aw-group-name').textContent = g.name;
+  goView('workout');
+  show('active-workout-view'); hide('app-view');
+  startAwTimer();
+  renderActiveWorkout();
+}
+
+function startAwTimer() {
+  clearInterval(awTimerHandle);
+  awTimerHandle = setInterval(updateAwElapsed, 1000);
+  updateAwElapsed();
+}
+function updateAwElapsed() {
+  if (!activeSession) return;
+  const secs = Math.floor((Date.now() - activeSession.startedAt) / 1000);
+  document.getElementById('aw-elapsed').textContent = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
+}
+
+function renderActiveWorkout() {
+  const list = document.getElementById('aw-exercise-list');
+  const total = activeSession.exercises.length;
+  const done = activeSession.exercises.filter(ex => ex.skipped || (ex.sets.length && ex.sets.every(s => s.completed))).length;
+  document.getElementById('aw-progress-label').textContent = `${done} of ${total} exercises completed`;
+  list.innerHTML = activeSession.exercises.map((ex, idx) => renderAwCard(ex, idx)).join('');
+}
+
+function renderAwCard(ex, idx) {
+  const allDone = ex.sets.length && ex.sets.every(s => s.completed);
+  const last = getLastLoggedSets(ex.exerciseId);
+  const prevLine = last ? `${last.weight||0} ${last.unit||ex.unit} · ${last.sets.map(s=>s.reps||0).join(' · ')}` : 'First time';
+  const badge = ex.skipped
+    ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex-shrink-0">Skipped</span>'
+    : allDone ? '<span class="ms text-brand-500 text-lg flex-shrink-0" aria-hidden="true">check_circle</span>' : '';
+  const setsHtml = ex.sets.map((s, si) => renderAwSetRow(ex, idx, s, si)).join('');
+  return `
+    <div class="card p-0 overflow-hidden ${ex.skipped ? 'opacity-60' : ''}">
+      <button class="aw-card-toggle w-full flex items-center justify-between gap-2 p-3.5 text-left" data-idx="${idx}">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
+            ${badge}
+          </div>
+          <p class="text-xs text-slate-400 truncate">Previous: ${prevLine}</p>
+        </div>
+        <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">${ex.expanded ? 'expand_less' : 'expand_more'}</span>
+      </button>
+      ${ex.expanded ? `
+        <div class="px-3.5 pb-3.5 space-y-2.5 border-t border-slate-100 dark:border-slate-800 pt-3">
+          <p class="text-xs text-slate-400">Target: <span class="font-semibold text-brand-500">${ex.sets.length} sets · ${ex.minReps}–${ex.maxReps} reps</span></p>
+          <div class="space-y-1">${setsHtml}</div>
+          <button class="aw-add-set text-xs font-semibold text-brand-500 hover:underline py-1" data-idx="${idx}">+ Add set</button>
+          <input type="text" class="aw-notes text-xs" data-idx="${idx}" value="${esc(ex.notes)}" placeholder="Exercise notes (optional)">
+          <button class="aw-skip-toggle text-xs font-semibold text-slate-400 hover:underline py-1" data-idx="${idx}">${ex.skipped ? 'Unskip exercise' : 'Skip exercise'}</button>
+        </div>
+      ` : ''}
+    </div>`;
+}
+
+function renderAwSetRow(ex, idx, s, si) {
+  return `
+    <div class="flex items-center gap-1 py-1 ${s.completed ? 'bg-brand-50/70 dark:bg-brand-950/25 rounded-lg px-1.5 -mx-1.5' : ''}">
+      <span class="w-8 text-[11px] text-slate-400 flex-shrink-0">Set ${si+1}</span>
+      <input type="number" inputmode="decimal" class="aw-input aw-set-weight" data-idx="${idx}" data-set="${si}" value="${s.weight||''}" placeholder="0" style="width:48px">
+      <span class="text-[10px] text-slate-400 flex-shrink-0">${ex.unit}</span>
+      <input type="number" inputmode="numeric" class="aw-input aw-set-reps" data-idx="${idx}" data-set="${si}" value="${s.reps||''}" placeholder="${ex.targetReps[si]??ex.minReps}" style="width:42px">
+      <span class="text-[10px] text-slate-400 flex-shrink-0">reps</span>
+      <input type="number" inputmode="numeric" class="aw-input aw-set-rir" data-idx="${idx}" data-set="${si}" value="${s.rir??''}" placeholder="RIR" style="width:40px">
+      <button class="aw-set-complete w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${s.completed?'bg-brand-500 text-white':'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'}" data-idx="${idx}" data-set="${si}"><span class="ms text-base" aria-hidden="true">check</span></button>
+      ${ex.sets.length > 1 ? `<button class="aw-set-remove w-5 h-5 flex-shrink-0 text-slate-300 hover:text-red-400" data-idx="${idx}" data-set="${si}"><span class="ms text-sm" aria-hidden="true">close</span></button>` : '<span class="w-5 flex-shrink-0"></span>'}
+    </div>`;
+}
+
+document.getElementById('aw-exercise-list').addEventListener('click', e => {
+  const toggle = e.target.closest('.aw-card-toggle');
+  if (toggle) {
+    const idx = +toggle.dataset.idx;
+    const wasExpanded = activeSession.exercises[idx].expanded;
+    activeSession.exercises.forEach(ex => ex.expanded = false);
+    activeSession.exercises[idx].expanded = !wasExpanded;
+    renderActiveWorkout();
+    return;
+  }
+  const addSet = e.target.closest('.aw-add-set');
+  if (addSet) {
+    const ex = activeSession.exercises[+addSet.dataset.idx];
+    ex.sets.push({ weight: ex.sets[ex.sets.length-1]?.weight || ex.weight, reps:'', rir:'', completed:false });
+    ex.targetReps.push(ex.minReps);
+    renderActiveWorkout();
+    return;
+  }
+  const skip = e.target.closest('.aw-skip-toggle');
+  if (skip) {
+    activeSession.exercises[+skip.dataset.idx].skipped = !activeSession.exercises[+skip.dataset.idx].skipped;
+    renderActiveWorkout();
+    return;
+  }
+  const complete = e.target.closest('.aw-set-complete');
+  if (complete) {
+    const ex = activeSession.exercises[+complete.dataset.idx];
+    const s = ex.sets[+complete.dataset.set];
+    if (!s.completed && !s.reps) { alert('Enter reps before marking this set complete.'); return; }
+    s.completed = !s.completed;
+    renderActiveWorkout();
+    return;
+  }
+  const removeSet = e.target.closest('.aw-set-remove');
+  if (removeSet) {
+    const ex = activeSession.exercises[+removeSet.dataset.idx];
+    ex.sets.splice(+removeSet.dataset.set, 1);
+    ex.targetReps.splice(+removeSet.dataset.set, 1);
+    renderActiveWorkout();
+  }
+});
+
+document.getElementById('aw-exercise-list').addEventListener('change', e => {
+  const idx = e.target.dataset.idx;
+  if (idx === undefined) return;
+  const ex = activeSession.exercises[+idx];
+  if (e.target.classList.contains('aw-set-weight')) ex.sets[+e.target.dataset.set].weight = +e.target.value || 0;
+  else if (e.target.classList.contains('aw-set-reps')) ex.sets[+e.target.dataset.set].reps = +e.target.value || 0;
+  else if (e.target.classList.contains('aw-set-rir')) ex.sets[+e.target.dataset.set].rir = e.target.value === '' ? '' : +e.target.value;
+  else if (e.target.classList.contains('aw-notes')) ex.notes = e.target.value;
+});
+
+document.getElementById('aw-exit-btn').addEventListener('click', () => {
+  if (!confirm('Exit this workout? Nothing will be saved.')) return;
+  clearInterval(awTimerHandle);
+  activeSession = null;
+  hide('active-workout-view'); show('app-view');
+});
+
+document.getElementById('aw-add-exercise-btn').addEventListener('click', () => {
+  const excludeIds = activeSession.exercises.map(e => e.exerciseId);
+  openPickExModal(id => {
+    const ex = exercises[id];
+    const minReps = ex.minReps ?? 8, maxReps = ex.maxReps ?? 12;
+    const targetReps = resizeTargetReps(ex.targetReps, ex.defaultSets || 3, minReps, maxReps);
+    activeSession.exercises.forEach(e => e.expanded = false);
+    activeSession.exercises.push({
+      exerciseId: id, name: ex.name, category: ex.muscleGroup, unit: ex.unit || 'kg',
+      weight: ex.currentWeight || 0, minReps, maxReps, weightIncrement: ex.weightIncrement || 0,
+      progressionEnabled: ex.progressionEnabled !== false,
+      targetReps, sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps:'', rir:'', completed:false })),
+      skipped:false, notes:'', expanded:true
+    });
+    renderActiveWorkout();
+  }, excludeIds);
+});
+
+// ── Finish workout ───────────────────────────────────────────────────────────
+document.getElementById('aw-finish-btn').addEventListener('click', () => {
+  const totalSets = activeSession.exercises.reduce((sum, ex) => sum + ex.sets.filter(s => s.completed).length, 0);
+  if (!totalSets) { alert('Log at least one completed set before finishing.'); return; }
+
+  document.getElementById('finish-group-name').textContent = activeSession.groupName;
+  const mins = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
+  document.getElementById('finish-meta').textContent = `${mins} min · ${totalSets} working set${totalSets!==1?'s':''}`;
+
+  const recsBox = document.getElementById('finish-recommendations');
+  const recCards = activeSession.exercises.map(ex => {
+    if (!ex.progressionEnabled) return '';
+    const rec = buildProgressionRecommendation(ex);
+    if (rec.type === 'incomplete' || rec.type === 'skipped') return '';
+    return `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${rec.text}</p>
+    </div>`;
+  }).filter(Boolean).join('');
+  recsBox.innerHTML = recCards || '<p class="text-sm text-slate-400 text-center py-2">Complete all sets on an exercise to see a recommendation.</p>';
+
+  document.getElementById('finish-growth-reward').textContent = '+1 Growth';
+  document.getElementById('finish-duration').value = mins;
+  document.getElementById('finish-cal-burned').value = '';
+  document.getElementById('finish-notes').value = '';
+  document.getElementById('finish-more').style.display = 'none';
+  document.getElementById('finish-more-icon').textContent = 'expand_more';
+  document.getElementById('finish-modal').style.display = '';
+});
+
+document.getElementById('finish-more-toggle').addEventListener('click', () => {
+  const open = document.getElementById('finish-more').style.display === 'none';
+  document.getElementById('finish-more').style.display = open ? '' : 'none';
+  document.getElementById('finish-more-icon').textContent = open ? 'expand_less' : 'expand_more';
+});
+
+document.getElementById('finish-continue-btn').addEventListener('click', () => {
+  document.getElementById('finish-modal').style.display = 'none';
+});
+
+document.getElementById('finish-discard-btn').addEventListener('click', () => {
+  if (!confirm('Discard this workout? This cannot be undone.')) return;
+  clearInterval(awTimerHandle);
+  activeSession = null;
+  document.getElementById('finish-modal').style.display = 'none';
+  hide('active-workout-view'); show('app-view');
+  goView('dashboard');
+});
+
+document.getElementById('finish-save-btn').addEventListener('click', async () => {
+  const today = todayStr();
+  // durationSeconds is the actual measured elapsed time; the minutes shown
+  // to the user (and stored as `duration`) can be manually corrected below.
+  const durationSeconds = Math.floor((Date.now() - activeSession.startedAt) / 1000);
+  const autoMinutes = Math.max(1, Math.round(durationSeconds / 60));
+  const duration = Math.max(1, +document.getElementById('finish-duration').value || autoMinutes);
+  const caloriesBurned = +document.getElementById('finish-cal-burned').value || 0;
+  const notes = document.getElementById('finish-notes').value.trim();
+
+  const sessionData = {
+    groupId: activeSession.groupId,
+    groupName: activeSession.groupName,
+    groupColor: activeSession.groupColor,
+    muscleGroup: activeSession.exercises[0]?.category || 'full',
+    startedAt: activeSession.startedAt,
+    completedAt: Date.now(),
+    durationSeconds,
+    duration,
+    caloriesBurned: caloriesBurned || null,
+    notes: notes || null,
+    date: today,
+    exercises: activeSession.exercises.map(ex => ({
+      exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.category,
+      weight: ex.sets[0]?.weight || ex.weight, unit: ex.unit,
+      targetReps: ex.targetReps, skipped: ex.skipped, notes: ex.notes || null,
+      sets: ex.sets.map(s => ({ weight: s.weight||0, reps: s.completed ? (s.reps||0) : 0, rir: s.rir===''?null:s.rir, completed: !!s.completed }))
+    }))
+  };
+  const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
+  await set(sessionRef, sessionData);
+
+  for (const ex of activeSession.exercises) {
+    if (!ex.exerciseId || ex.skipped || !ex.progressionEnabled) continue;
+    if (!ex.sets.length || !ex.sets.every(s => s.completed)) continue;
+    const completedReps = ex.sets.map(s => s.reps || 0);
+    const { reps: nextReps, weightUp } = nextProgression(ex.targetReps, completedReps, ex.minReps, ex.maxReps);
+    const weightUsed = ex.sets[0]?.weight || ex.weight;
+    await set(ref(db, `exercises/${uid()}/${ex.exerciseId}`), { ...exercises[ex.exerciseId], targetReps: nextReps, currentWeight: weightUsed, weightUpFlag: weightUp });
+  }
+
+  clearInterval(awTimerHandle);
+  activeSession = null;
+  document.getElementById('finish-modal').style.display = 'none';
+  hide('active-workout-view'); show('app-view');
+  goView('dashboard');
+});
+
 // ── Session history ─────────────────────────────────────────────────────────
+// Legacy sessions (logged before groups existed) only carry a muscleGroup
+// enum, not a groupColor — this keeps their calendar/history color meaning
+// stable instead of everything old going gray.
+const LEGACY_MG_COLOR = { upper:'#3b82f6', lower:'#f97316', core:'#a855f7', full:'#22c55e', cardio:'#ef4444' };
+
+function sessionLabel(s) { return s.groupName || MG_LABEL[s.muscleGroup] || s.muscleGroup; }
+function sessionColor(s) { return s.groupColor || LEGACY_MG_COLOR[s.muscleGroup] || GROUP_COLORS[0]; }
+
+function exerciseHistoryLine(ex) {
+  if (ex.skipped) return `<p class="text-sm text-slate-400">• ${esc(ex.name)} — skipped</p>`;
+  const reps = (ex.sets||[]).map(st => st.reps+'r').join('/');
+  return `<p class="text-sm text-slate-600 dark:text-slate-300">• ${esc(ex.name)} — ${ex.weight}${ex.unit} · ${reps}</p>`;
+}
+
 function renderHistory() {
   const list = document.getElementById('session-history-list');
   const allDays = Object.entries(sessions).sort((a,b) => b[0].localeCompare(a[0]));
-  if (!allDays.length) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No sessions logged yet.</p>'; return; }
-  const mgLabel = { upper:'Upper Body', lower:'Lower Body', core:'Core', full:'Full Body', cardio:'Cardio' };
+  if (!allDays.length) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Your completed workouts will appear here.</p>'; return; }
   list.innerHTML = allDays.flatMap(([date, daySessions]) =>
-    Object.values(daySessions).map(s => `
-      <div class="card p-4 space-y-2">
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-bold text-slate-400">${fmtDate(date)}</p>
-          <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${s.muscleGroup}">${mgLabel[s.muscleGroup]||s.muscleGroup}</span>
+    Object.entries(daySessions).map(([sessionId, s]) => `
+      <div class="card p-4 space-y-2" style="border-left:3px solid ${sessionColor(s)}">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-slate-400">${fmtDate(date)}</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(sessionLabel(s))}</p>
+          </div>
+          <button class="del-session p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}"><span class="ms text-lg" aria-hidden="true">delete</span></button>
         </div>
         <div class="space-y-1">
-          ${(s.exercises||[]).map(ex => `<p class="text-sm text-slate-600 dark:text-slate-300">• ${esc(ex.name)} — ${ex.weight}${ex.unit} · ${ex.sets.map(st=>st.reps+'r').join('/')}</p>`).join('')}
+          ${(s.exercises||[]).map(exerciseHistoryLine).join('')}
         </div>
-        ${s.caloriesBurned ? `<p class="text-xs text-brand-500 font-semibold">🔥 ${s.caloriesBurned} kcal burned · ${s.duration||0} min</p>` : ''}
+        <p class="text-xs text-slate-400">${s.duration||0} min${s.caloriesBurned ? ` · 🔥 ${s.caloriesBurned} kcal` : ''}</p>
       </div>`)
   ).join('');
+
+  list.querySelectorAll('.del-session').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Delete this workout from your history?')) return;
+    await remove(ref(db, `sessions/${uid()}/${b.dataset.date}/${b.dataset.id}`));
+  }));
 }
 
 // ── Calendar ────────────────────────────────────────────────────────────────
@@ -1418,23 +2114,22 @@ function renderCalendar() {
   const today  = todayStr();
   grid.innerHTML = '';
 
-  // Build date → session map
+  // Build date → color map
   const dateMap = {};
   Object.entries(sessions).forEach(([date, daySessions]) => {
     const firstSession = Object.values(daySessions||{})[0];
-    if (firstSession) dateMap[date] = firstSession.muscleGroup;
+    if (firstSession) dateMap[date] = sessionColor(firstSession);
   });
 
   for (let i = 0; i < offset; i++) { const d = document.createElement('div'); grid.appendChild(d); }
   for (let d = 1; d <= days; d++) {
     const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const mg = dateMap[ds];
+    const color = dateMap[ds];
     const cell = document.createElement('button');
     cell.className = 'aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all hover:bg-brand-50 dark:hover:bg-brand-950/30 relative';
     const isToday = ds === today;
     if (isToday) cell.classList.add('ring-2', 'ring-brand-500');
-    cell.style.color = mg ? 'white' : '';
-    if (mg) cell.classList.add(`cal-${mg}`);
+    if (color) { cell.style.background = color; cell.style.color = 'white'; }
     else cell.classList.add('text-slate-600', 'dark:text-slate-300');
     cell.textContent = d;
     cell.addEventListener('click', () => showCalDetail(ds));
@@ -1448,14 +2143,13 @@ function showCalDetail(ds) {
   const content= document.getElementById('cal-detail-content');
   title.textContent = fmtDate(ds);
   const daySessions = sessions[ds] || {};
-  const mgLabel = { upper:'Upper Body', lower:'Lower Body', core:'Core', full:'Full Body', cardio:'Cardio' };
   if (!Object.keys(daySessions).length) {
     content.innerHTML = '<p class="text-sm text-slate-400">Rest day</p>';
   } else {
     content.innerHTML = Object.values(daySessions).map(s => `
       <div class="space-y-1">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${mgLabel[s.muscleGroup]||s.muscleGroup} · ${s.duration||0} min ${s.caloriesBurned ? '· 🔥 '+s.caloriesBurned+' kcal' : ''}</p>
-        ${(s.exercises||[]).map(ex => `<p class="text-xs text-slate-500">• ${esc(ex.name)} ${ex.weight}${ex.unit} · ${ex.sets.map(st=>st.reps+'r').join('/')}</p>`).join('')}
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(sessionLabel(s))} · ${s.duration||0} min${s.caloriesBurned ? ' · 🔥 '+s.caloriesBurned+' kcal' : ''}</p>
+        ${(s.exercises||[]).map(ex => `<p class="text-xs text-slate-500">${ex.skipped ? `• ${esc(ex.name)} — skipped` : `• ${esc(ex.name)} ${ex.weight}${ex.unit} · ${(ex.sets||[]).map(st=>st.reps+'r').join('/')}`}</p>`).join('')}
       </div>`).join('');
   }
   detail.style.display = '';
@@ -1466,7 +2160,7 @@ document.getElementById('dash-mission-card').addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
-  if (action === 'start-growing' || action === 'log-another') { goView('workout'); switchWorkoutTab('log'); }
+  if (action === 'start-growing' || action === 'log-another') openGroupPicker();
   if (action === 'view-workout') { goView('workout'); switchWorkoutTab('history'); }
 });
 document.getElementById('dash-view-garden').addEventListener('click', () => goView('profile'));
