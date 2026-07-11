@@ -80,8 +80,16 @@ body{font-family:'Inter',sans-serif}
 .water-ripple-loop{position:absolute;bottom:-4px;left:50%;width:2.5rem;height:.6rem;margin-left:-1.25rem;border-radius:50%;border:1.5px solid rgba(34,197,94,.5);animation:waterRippleLoop 2.4s ease-out infinite;pointer-events:none}
 .water-static-drop{position:absolute;opacity:.85;pointer-events:none}
 .water-static-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%);pointer-events:none}
+/* Mission-card plant-evolution icon: the ring's stroke-dashoffset transitions
+   smoothly on every progress update (see the inline style on #mission-stage-ring),
+   and .stage-pop plays once when the resolved stage itself changes — never on
+   a routine re-render at the same stage. */
+@keyframes stagePop{0%{transform:scale(.55);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes stageGlowPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.55;transform:scale(1.1)}}
+.stage-pop{animation:stagePop .5s ease-out}
+.stage-glow{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;animation:stageGlowPulse 2s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow{animation:none!important;transition:none!important}
 }
 input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
@@ -262,9 +270,28 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <div class="max-w-2xl w-full mx-auto px-4 md:px-6 mt-2 relative z-10 space-y-6">
 
         <!-- Today's mission — the one strong card on the page -->
-        <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 space-y-3 shadow-sm">
-          <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
-          <div id="dash-mission-body" class="space-y-3"></div>
+        <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div class="flex-1 min-w-0 space-y-3">
+              <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
+              <div id="dash-mission-body" class="space-y-3"></div>
+            </div>
+            <!-- The one plant-evolution icon in the app — same growth state as the
+                 hero progress bar above, via getPlantGrowthState(). Not a second
+                 growth system, just a second view of the same numbers. -->
+            <div class="flex flex-row sm:flex-col items-center justify-center gap-2 self-center sm:self-start flex-shrink-0">
+              <div id="mission-stage-icon" class="relative w-16 h-16 flex-shrink-0" role="img" aria-label="">
+                <svg viewBox="0 0 64 64" class="w-16 h-16" style="transform:rotate(-90deg)" aria-hidden="true">
+                  <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
+                  <circle id="mission-stage-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset .6s ease"></circle>
+                </svg>
+                <div id="mission-stage-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
+                  <span id="mission-stage-emoji" class="text-2xl leading-none" aria-hidden="true">🌱</span>
+                </div>
+              </div>
+              <p id="mission-stage-name" class="text-[10px] font-semibold text-slate-400 text-center leading-tight"></p>
+            </div>
+          </div>
         </div>
 
         <!-- Ambient stats — quiet, secondary -->
@@ -355,6 +382,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <div id="profile-plant-emoji" class="text-6xl p-bloom">🌱</div>
         <p id="profile-plant-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
         <p id="profile-plant-status" class="text-sm text-slate-400"></p>
+        <p id="profile-plant-stage" class="text-xs font-semibold text-brand-500"></p>
         <p class="text-xs text-slate-400 pt-2">🌐 Garden sharing with friends — <span class="text-brand-500 font-semibold">coming soon</span></p>
       </div>
 
@@ -1014,7 +1042,99 @@ const HEALTH_ANIM = {
 };
 
 // ── Growth / home page helpers ───────────────────────────────────────────────
-const GROWTH_PER_LEVEL = 5; // workouts logged per plant level
+const GROWTH_PER_LEVEL = 5; // legacy "leaves per level" divisor — reused below as the post-bloom prestige pace, not deleted
+
+// ── Plant evolution stages ───────────────────────────────────────────────────
+// growthPoints is one cumulative, never-resets number persisted at
+// userProfile.growthPoints (0-100 == overall progress percent toward full
+// bloom, capped for stage purposes; points earned beyond 100 become
+// "bonus growth" once bloomed — see getPlantGrowthState()). This is the one
+// growth number in the app: the Home progress bar, the mission-card icon,
+// the Garden page, and the stage-change celebration all read it through
+// getPlantGrowthState() below, never independently.
+const GROWTH_STAGE_NAMES = ['Sprout', 'Seedling', 'Young Plant', 'Bud', 'Bloom'];
+const GROWTH_STAGE_THRESHOLDS = [0, 20, 40, 60, 80]; // percent at which each stage begins
+const GROWTH_TOTAL_STAGES = GROWTH_STAGE_NAMES.length;
+const GROWTH_POINTS_FOR_BLOOM = 100;
+
+// No per-species, per-stage art exists yet (PLANTS only carries one emoji per
+// plant — its final form). Stages 1-3 use a genuinely species-agnostic
+// fallback progression (seed -> sprout -> fuller plant) rather than inventing
+// fake species-specific art. Stages 4-5 use the REAL selected-plant emoji —
+// stage 4 ("Bud") renders it at reduced scale/opacity as a partial reveal of
+// the plant's true form, stage 5 at full scale/opacity. This is reported as
+// a known asset gap in the implementation summary, not hidden.
+const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
+
+// Participation vs. strength-progress point values. Participation rewards
+// simply showing up; the larger strength-progress values only fire when
+// nextProgression() (the existing double-progression engine — never
+// re-derived here) reports a genuine milestone. Tune freely; nothing else
+// depends on these exact numbers.
+const GROWTH_AWARD = {
+  completedWorkingSet: 0.4,
+  completedExercise: 0.6,
+  completedWorkout: 2,
+  improvedReps: 3,       // beat the previous comparable session's total reps
+  readyToIncrease: 8,     // nextProgression() reports weightUp — maxed every target set
+  newWeightCompleted: 8   // this session's weight is higher than last time AND fully completed
+};
+
+// ── The single source of truth for plant growth state ───────────────────────
+// Every UI surface that shows growth (Home progress bar + label, mission-card
+// icon, Garden page, stage-change celebration) calls this and only this —
+// see section 2 of the implementing task for the full list. Pure function:
+// no DOM reads, no persistence side effects.
+function getPlantGrowthState({ plantId, growthPoints }) {
+  const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Plant' };
+  const gp = Math.max(0, growthPoints || 0);
+  const overallProgressPercent = Math.min(100, Math.round(gp));
+  const isFinalStage = overallProgressPercent >= 100;
+
+  let currentStage = 1;
+  for (let i = GROWTH_STAGE_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (overallProgressPercent >= GROWTH_STAGE_THRESHOLDS[i]) { currentStage = i + 1; break; }
+  }
+  const stageName = GROWTH_STAGE_NAMES[currentStage - 1];
+  const stageStart = GROWTH_STAGE_THRESHOLDS[currentStage - 1];
+  const stageEnd = currentStage < GROWTH_TOTAL_STAGES ? GROWTH_STAGE_THRESHOLDS[currentStage] : 100;
+  const stageSpan = stageEnd - stageStart;
+  const currentStageProgressPercent = stageSpan > 0 ? Math.round(((overallProgressPercent - stageStart) / stageSpan) * 100) : 100;
+  const nextStage = currentStage < GROWTH_TOTAL_STAGES ? currentStage + 1 : null;
+  const nextStageName = nextStage ? GROWTH_STAGE_NAMES[nextStage - 1] : null;
+  const remainingToNextStage = nextStage ? Math.max(0, stageEnd - overallProgressPercent) : 0;
+
+  // Stage 4 shows the real plant emoji as a dim, partial reveal; stage 5 is
+  // the real plant emoji at full strength; stages 1-3 use the generic fallback.
+  const selectedAsset = currentStage >= 4 ? plant.emoji : (GROWTH_STAGE_FALLBACK_EMOJI[currentStage - 1] || plant.emoji);
+  const selectedAssetOpacity = currentStage === 4 ? 0.55 : 1;
+  const selectedAssetScale = currentStage === 4 ? 0.82 : 0.7 + (currentStage - 1) * 0.075;
+
+  const bonusGrowthPoints = Math.max(0, gp - GROWTH_POINTS_FOR_BLOOM);
+
+  const growthReason = isFinalStage
+    ? `${plant.name} is in full bloom.`
+    : nextStage === GROWTH_TOTAL_STAGES
+      ? 'A bud is beginning to form.'
+      : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'New leaves are forming.';
+
+  return {
+    currentStage, totalStages: GROWTH_TOTAL_STAGES, stageName,
+    overallProgressPercent, currentStageProgressPercent,
+    nextStage, nextStageName, remainingToNextStage,
+    selectedAsset, selectedAssetOpacity, selectedAssetScale,
+    isFinalStage, bonusGrowthPoints, growthReason
+  };
+}
+
+// Convenience wrapper reading the current user's own plant + growth points —
+// every render call site below uses this instead of calling
+// getPlantGrowthState() with hand-assembled arguments, so there's exactly one
+// place that decides which plant/points belong to "the current growth state."
+function currentGrowthState() {
+  return getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: userProfile.growthPoints || 0 });
+}
+
 const ENCOURAGEMENT = [
   'Small reps become big strength.',
   'Every plant starts as a seed.',
@@ -1074,6 +1194,66 @@ function getLastLoggedSets(exerciseId) {
     }
   }
   return null;
+}
+
+// Pure — computes how much plant growth a completed (not-yet-saved) workout
+// is worth, plus the per-exercise progression updates the caller should
+// persist. Reuses nextProgression()'s own weightUp/reps result for every
+// strength-progress decision; never re-derives the increase/hold call
+// independently. Safe to call twice (finish-summary preview + the real
+// save) since it has no side effects of its own — see finish-save-btn.
+function computeWorkoutGrowth(sessionExercises) {
+  let participationGrowth = 0, repProgressGrowth = 0, weightUnlockGrowth = 0;
+  const growthDetail = [];
+  const perExerciseUpdates = [];
+  let anyWorkingSetCompleted = false;
+
+  for (const ex of sessionExercises) {
+    if (ex.skipped) continue;
+    const completedWorkingSets = workingSetsFor(ex).filter(s => s.completed).length;
+    if (completedWorkingSets > 0) {
+      anyWorkingSetCompleted = true;
+      participationGrowth += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise;
+    }
+
+    if (!ex.exerciseId || !ex.progressionEnabled) continue;
+    if (!ex.sets.length || !ex.sets.every(s => s.completed)) continue;
+    // progressionInputFor() trims warm-up sets — same helper the finish-summary
+    // recommendation and the exercise-update loop below both already use, so
+    // the working-set/target alignment can't drift between the three call sites.
+    const input = progressionInputFor(ex);
+    if (!input.sets.length) continue;
+    const minReps = ex.minReps ?? 8, maxReps = ex.maxReps ?? 12;
+    const completedReps = input.sets.map(s => s.reps || 0);
+    const targetReps = input.targetReps;
+    if (completedReps.some(r => r < minReps)) continue; // below target range — no strength bonus
+
+    const { reps: nextReps, weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
+    perExerciseUpdates.push({ exerciseId: ex.exerciseId, targetReps: nextReps, weightUp, weight: ex.weight });
+
+    const wasReadyToIncrease = !!exercises[ex.exerciseId]?.weightUpFlag;
+    const previous = getLastLoggedSets(ex.exerciseId);
+    const previousTotalReps = previous ? previous.sets.reduce((s,r) => s + (r.reps||0), 0) : null;
+    const currentTotalReps = completedReps.reduce((s,r) => s+r, 0);
+
+    if (wasReadyToIncrease && previous && ex.weight > (previous.weight || 0)) {
+      weightUnlockGrowth += GROWTH_AWARD.newWeightCompleted;
+      growthDetail.push({ exerciseId: ex.exerciseId, name: ex.name, category: 'newWeightCompleted', points: GROWTH_AWARD.newWeightCompleted });
+    } else if (weightUp) {
+      repProgressGrowth += GROWTH_AWARD.readyToIncrease;
+      growthDetail.push({ exerciseId: ex.exerciseId, name: ex.name, category: 'readyToIncrease', points: GROWTH_AWARD.readyToIncrease });
+    } else if (previousTotalReps != null && currentTotalReps > previousTotalReps) {
+      repProgressGrowth += GROWTH_AWARD.improvedReps;
+      growthDetail.push({ exerciseId: ex.exerciseId, name: ex.name, category: 'improvedReps', points: GROWTH_AWARD.improvedReps });
+    }
+  }
+  if (anyWorkingSetCompleted) participationGrowth += GROWTH_AWARD.completedWorkout;
+
+  participationGrowth = round1(participationGrowth);
+  repProgressGrowth = round1(repProgressGrowth);
+  weightUnlockGrowth = round1(weightUnlockGrowth);
+  const totalGrowthAwarded = round1(participationGrowth + repProgressGrowth + weightUnlockGrowth);
+  return { participationGrowth, repProgressGrowth, weightUnlockGrowth, totalGrowthAwarded, growthDetail, perExerciseUpdates };
 }
 
 // ── OpenAI ────────────────────────────────────────────────────────────────
@@ -1384,22 +1564,27 @@ function renderPlantHero(sessionDates, hasHistory) {
   emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
 
-  const totalSessions = totalLoggedSessions();
-  const level = Math.floor(totalSessions / GROWTH_PER_LEVEL) + 1;
-  const inLevel = totalSessions % GROWTH_PER_LEVEL;
-  const pct = Math.round(inLevel / GROWTH_PER_LEVEL * 100);
-  const remaining = GROWTH_PER_LEVEL - inLevel;
-
-  levelBadge.textContent = `Level ${level}`;
-  document.getElementById('growth-pct-label').textContent = `${pct}% to next leaf`;
+  const growth = currentGrowthState();
+  levelBadge.textContent = growth.isFinalStage ? `${growth.stageName} 🌸` : `Stage ${growth.currentStage} · ${growth.stageName}`;
+  document.getElementById('growth-pct-label').textContent = growth.isFinalStage ? 'Fully bloomed' : `${growth.overallProgressPercent}% grown`;
   const bar = document.getElementById('growth-bar-fill');
-  bar.style.width = `${pct}%`;
+  bar.style.width = `${growth.overallProgressPercent}%`;
   bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
-  bar.parentElement.setAttribute('aria-valuenow', String(pct));
+  bar.parentElement.setAttribute('aria-valuenow', String(growth.overallProgressPercent));
   bar.parentElement.setAttribute('aria-valuemin', '0');
   bar.parentElement.setAttribute('aria-valuemax', '100');
-  document.getElementById('growth-next-label').textContent =
-    `${remaining} more workout${remaining===1?'':'s'} until a new leaf 🍃`;
+  if (growth.isFinalStage) {
+    // Fully bloomed plants stay in their final form permanently (section 16)
+    // — extra growth keeps counting toward the pre-existing "leaf" prestige
+    // track instead of a second, disconnected stage system.
+    const inLevel = growth.bonusGrowthPoints % GROWTH_PER_LEVEL;
+    const prestigeLevel = Math.floor(growth.bonusGrowthPoints / GROWTH_PER_LEVEL) + 1;
+    document.getElementById('growth-next-label').textContent =
+      `Prestige leaf ${prestigeLevel} · ${round1(GROWTH_PER_LEVEL - inLevel)} more growth until the next one 🍃`;
+  } else {
+    document.getElementById('growth-next-label').textContent =
+      `${growth.remainingToNextStage}% more growth until ${growth.nextStageName}`;
+  }
 }
 
 function renderDashStats(sessionDates, hasHistory) {
@@ -1418,11 +1603,16 @@ function renderDashStats(sessionDates, hasHistory) {
   document.getElementById('last-session-val').textContent = lastDate ? fmtDate(lastDate) : '—';
 }
 
+// Tracks the stage shown on the previous call so the mission-card icon only
+// plays its stage-change pop on an actual transition, never on a routine
+// re-render at the same stage (which would falsely "celebrate" every refresh).
+let lastRenderedMissionStage = null;
 function renderTodayMission() {
   const body = document.getElementById('dash-mission-body');
   const today = todayStr();
   const todaySessions = sessions[today] || {};
   const done = Object.keys(todaySessions).length > 0;
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
 
   if (done) {
     const s = Object.values(todaySessions)[0];
@@ -1430,7 +1620,7 @@ function renderTodayMission() {
       <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-sm">
         <span class="ms text-xl" aria-hidden="true">check_circle</span>Mission complete
       </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Your sprout grew today.</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Your ${esc(plantName)} grew today.</p>
       <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="px-2 py-0.5 rounded-lg text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
         <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
@@ -1444,10 +1634,43 @@ function renderTodayMission() {
       <p class="text-base font-semibold text-slate-700 dark:text-slate-200">Log any workout today</p>
       <div class="flex items-center justify-between">
         <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
-        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>+1 Growth</span>
+        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>Grows your plant</span>
       </div>
       <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>`;
   }
+
+  renderMissionStageIcon();
+}
+
+// The one plant-evolution icon in the app (mission card). Reads the exact
+// same getPlantGrowthState() result as the hero progress bar — see
+// currentGrowthState() — so the bar and the icon can never disagree.
+function renderMissionStageIcon() {
+  const growth = currentGrowthState();
+  const theme = PLANT_THEME[userProfile.plant] || DEFAULT_THEME;
+  const CIRCUMFERENCE = 2 * Math.PI * 28;
+
+  const ring = document.getElementById('mission-stage-ring');
+  ring.setAttribute('stroke', theme.primary);
+  ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
+  ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - growth.currentStageProgressPercent / 100));
+
+  const emojiEl = document.getElementById('mission-stage-emoji');
+  emojiEl.textContent = growth.selectedAsset;
+  emojiEl.style.opacity = growth.selectedAssetOpacity;
+  emojiEl.style.transform = `scale(${growth.selectedAssetScale})`;
+
+  document.getElementById('mission-stage-icon').setAttribute('aria-label',
+    `Plant growth stage ${growth.currentStage} of ${growth.totalStages}: ${growth.stageName}`);
+  document.getElementById('mission-stage-name').textContent = growth.stageName;
+
+  const wrap = document.getElementById('mission-stage-emoji-wrap');
+  wrap.classList.remove('stage-pop');
+  if (lastRenderedMissionStage !== null && lastRenderedMissionStage !== growth.currentStage) {
+    // Re-adding the class on the next frame restarts the animation reliably.
+    requestAnimationFrame(() => wrap.classList.add('stage-pop'));
+  }
+  lastRenderedMissionStage = growth.currentStage;
 }
 
 function renderClosestProgress() {
@@ -1521,7 +1744,31 @@ function renderEncouragement() {
   document.getElementById('dash-encouragement').textContent = ENCOURAGEMENT[dayIndex % ENCOURAGEMENT.length];
 }
 
+// One-time migration for users who logged workouts before growthPoints
+// existed. There's no reliable way to reconstruct exactly which past sessions
+// improved reps or unlocked weight, so this seeds a participation-only
+// baseline (never a full retroactive strength-progress replay) rather than
+// leaving long-time users looking like they're starting over at a sprout.
+// Brand-new users with zero history are NOT bootstrapped — 0 is their real
+// value, not a migration case.
+let growthBootstrapChecked = false;
+function ensureGrowthPointsBootstrap() {
+  if (growthBootstrapChecked) return;
+  if (userProfile.growthPoints != null) { growthBootstrapChecked = true; return; }
+  const totalSessions = totalLoggedSessions();
+  // 0 here is ambiguous — a genuinely brand-new user, or sessions/{uid} just
+  // hasn't loaded yet (profile and sessions arrive via independent, unordered
+  // onValue listeners). Leave growthBootstrapChecked false and re-check on the
+  // next render either way; the check itself is cheap.
+  if (!totalSessions) return;
+  growthBootstrapChecked = true;
+  const estimated = Math.min(100, round1(totalSessions * (GROWTH_AWARD.completedWorkout + GROWTH_AWARD.completedExercise)));
+  userProfile.growthPoints = estimated;
+  set(ref(db, `users/${uid()}/growthPoints`), estimated).catch(e => console.error('Failed to bootstrap growth points:', e));
+}
+
 function renderDashboard() {
+  ensureGrowthPointsBootstrap();
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
   renderPlantHero(sessionDates, hasHistory);
@@ -1545,9 +1792,19 @@ function renderProfile() {
   const health = getPlantHealth(sessionDates);
   const [hl1, hl2] = HEALTH_LABELS[health] || ['',''];
 
-  document.getElementById('profile-plant-emoji').textContent  = p.emoji;
+  // Same getPlantGrowthState() result as the Home hero and mission-card icon —
+  // the Garden page is "your current plant," not a separate collectible-form
+  // display, so it shows the same in-progress stage rather than jumping to bloom.
+  const growth = currentGrowthState();
+  const emojiEl = document.getElementById('profile-plant-emoji');
+  emojiEl.textContent = growth.selectedAsset;
+  emojiEl.style.opacity = growth.selectedAssetOpacity;
+  emojiEl.className = `text-6xl ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
   document.getElementById('profile-plant-name').textContent   = `${p.name} — ${hl1}`;
   document.getElementById('profile-plant-status').textContent = hl2;
+  document.getElementById('profile-plant-stage').textContent  = growth.isFinalStage
+    ? 'Fully bloomed 🌸'
+    : `Stage ${growth.currentStage} of ${growth.totalStages} · ${growth.stageName} — ${growth.remainingToNextStage}% to ${growth.nextStageName}`;
 
   if (goals.calories) document.getElementById('goal-cal').value  = goals.calories;
   if (goals.protein)  document.getElementById('goal-pro').value  = goals.protein;
@@ -3347,7 +3604,11 @@ function openFinishSummary() {
   }).filter(Boolean).join('');
   recsBox.innerHTML = recCards || '<p class="text-sm text-slate-400 text-center py-2">Complete all sets on an exercise to see a recommendation.</p>';
 
-  document.getElementById('finish-growth-reward').textContent = '+1 Growth';
+  // Preview only — computeWorkoutGrowth() has no side effects, so calling it
+  // here to show the number doesn't award anything. The real award happens
+  // once, inside finish-save-btn's handler, after the session is persisted.
+  const preview = computeWorkoutGrowth(activeSession.exercises);
+  document.getElementById('finish-growth-reward').textContent = `+${preview.totalGrowthAwarded} Growth`;
   document.getElementById('finish-duration').value = mins;
   document.getElementById('finish-cal-burned').value = '';
   document.getElementById('finish-notes').value = '';
@@ -3378,6 +3639,10 @@ document.getElementById('finish-discard-btn').addEventListener('click', () => {
 });
 
 document.getElementById('finish-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('finish-save-btn');
+  if (btn.disabled) return; // guard against double-submit — also the idempotency guard for growth awarding below
+  btn.disabled = true; const prevLabel = btn.textContent; btn.textContent = 'Saving…';
+
   const today = todayStr();
   // durationSeconds is the actual measured elapsed time; the minutes shown
   // to the user (and stored as `duration`) can be manually corrected below.
@@ -3411,36 +3676,65 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
       }))
     }))
   };
-  const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
-  await set(sessionRef, sessionData);
+  try {
+    const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
+    await set(sessionRef, sessionData);
 
-  // Warm-up sets never reach the progression engine — progressionInputFor()
-  // trims them out so the positional rep-vs-target comparison only ever sees
-  // real working sets, exactly like a grouped workout always has.
-  for (const ex of activeSession.exercises) {
-    if (!ex.exerciseId || ex.skipped || !ex.progressionEnabled) continue;
-    if (!ex.sets.length || !ex.sets.every(s => s.completed)) continue;
-    const input = progressionInputFor(ex);
-    if (!input.sets.length) continue;
-    const completedReps = input.sets.map(s => s.reps || 0);
-    const { reps: nextReps, weightUp } = nextProgression(input.targetReps, completedReps, ex.minReps, ex.maxReps);
-    await set(ref(db, `exercises/${uid()}/${ex.exerciseId}`), { ...exercises[ex.exerciseId], targetReps: nextReps, currentWeight: ex.weight, weightUpFlag: weightUp });
+    // Growth is computed once here — never re-derived from raw history at
+    // render time — and applied exactly once per saved session. The
+    // finish-save-btn disabled-guard above is what actually prevents a
+    // duplicate award (re-entrancy is blocked at the source); the event
+    // record below is for auditability/debugging, not a second dedupe gate.
+    const previousGrowth = currentGrowthState();
+    const result = computeWorkoutGrowth(activeSession.exercises);
+    const newGrowthPoints = round1((userProfile.growthPoints || 0) + result.totalGrowthAwarded);
+    userProfile.growthPoints = newGrowthPoints; // optimistic; onValue confirms shortly after
+    const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: newGrowthPoints });
+
+    // Warm-up sets never reach the progression engine — progressionInputFor()
+    // (consumed inside computeWorkoutGrowth() above) trims them out so the
+    // positional rep-vs-target comparison only ever sees real working sets.
+    for (const upd of result.perExerciseUpdates) {
+      await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
+    }
+    await set(ref(db, `users/${uid()}/growthPoints`), newGrowthPoints);
+    await set(ref(db, `users/${uid()}/growthEvents/${sessionRef.key}`), {
+      workoutSessionId: sessionRef.key,
+      participationGrowth: result.participationGrowth,
+      repProgressGrowth: result.repProgressGrowth,
+      weightUnlockGrowth: result.weightUnlockGrowth,
+      totalGrowthAwarded: result.totalGrowthAwarded,
+      previousStage: previousGrowth.currentStage,
+      newStage: newGrowth.currentStage,
+      createdAt: Date.now()
+    });
+
+    stopPlantWatering();
+    clearInterval(awTimerHandle);
+    clearActiveSessionDraft();
+    document.getElementById('finish-modal').style.display = 'none';
+    hide('active-workout-view'); show('app-view');
+
+    if (newGrowth.currentStage !== previousGrowth.currentStage) {
+      const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
+      showToast(newGrowth.isFinalStage
+        ? `🌸 Your ${plantName} is in full bloom!`
+        : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`);
+    }
+
+    if (sessionType === 'quick') {
+      // The completed session is already safely saved at this point — offer
+      // "save as group" as a fully optional follow-up, never a precondition.
+      openSaveAsGroupPrompt(activeSession.exercises);
+    } else {
+      goView('dashboard');
+    }
+    activeSession = null;
+  } catch (e) {
+    console.error('Failed to save workout:', e);
+    alert('Something went wrong saving your workout. Please try again.');
+    btn.disabled = false; btn.textContent = prevLabel;
   }
-
-  stopPlantWatering();
-  clearInterval(awTimerHandle);
-  clearActiveSessionDraft();
-  document.getElementById('finish-modal').style.display = 'none';
-  hide('active-workout-view'); show('app-view');
-
-  if (sessionType === 'quick') {
-    // The completed session is already safely saved at this point — offer
-    // "save as group" as a fully optional follow-up, never a precondition.
-    openSaveAsGroupPrompt(activeSession.exercises);
-  } else {
-    goView('dashboard');
-  }
-  activeSession = null;
 });
 
 // ── Optional: save a completed Quick Workout as a reusable group ───────────
