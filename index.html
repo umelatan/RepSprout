@@ -999,18 +999,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
-<!-- Shown once a save actually succeeds — never before. "Yes" reopens Add to
-     this day for the same date; "No" closes every activity-creation surface
-     and returns to the plain calendar with that date highlighted. -->
-<div id="calendar-added-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cac-title" style="display:none" class="fixed inset-0 z-[79] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 text-center">
-    <p class="text-2xl" aria-hidden="true">✅</p>
-    <h3 id="cac-title" class="font-display font-bold text-base text-slate-800 dark:text-white">Activity added</h3>
-    <p class="text-sm text-slate-500 dark:text-slate-400">Would you like to add another activity to this day?</p>
-    <button id="cac-add-another-btn" class="btn btn-green btn-pop w-full py-3.5 text-base" style="min-height:48px">Yes, add another</button>
-    <button id="cac-back-btn" class="btn btn-outline w-full py-3.5 text-base" style="min-height:48px">No, back to calendar</button>
-  </div>
-</div>
 
 <!-- Shared multi-select exercise picker for Quick Workout — used when
      scheduling a future one, logging a past one, and starting one today from
@@ -4412,55 +4400,19 @@ function openCalendarDaySheet(date) {
 }
 document.getElementById('cds-close').addEventListener('click', () => document.getElementById('calendar-day-sheet').style.display = 'none');
 
-// ── "Activity added" confirmation — shown only after a save has actually
-// succeeded. "Yes" reopens Add to this day for the same date (so the user
-// can add a Workout Group, Quick Workout, Other Activity, or Recovery Day
-// without retyping the date); "No" closes every activity-creation surface
-// and returns to the plain calendar grid with that date still highlighted.
-let calendarAddedConfirmDate = null;
-let calendarAddedConfirmReturnFocusEl = null;
-function showActivityAddedConfirm(date) {
-  calendarAddedConfirmDate = date;
-  calendarAddedConfirmReturnFocusEl = document.activeElement;
-  // Every activity-creation surface closes here — the confirmation is the
-  // one thing left on screen once a save succeeds.
+// Shown only after a save has actually succeeded — same shape as the delete
+// flow's toast (see .cds-del-session below), just without an Undo action.
+// Closes every activity-creation surface, refreshes the day sheet for the
+// same date (so the new entry is immediately visible), and keeps that date
+// highlighted in the grid underneath.
+function finishActivityAdded(date) {
   ['calendar-add-modal', 'calendar-group-picker-modal', 'activity-library-modal',
    'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal'
   ].forEach(id => { document.getElementById(id).style.display = 'none'; });
-  const modal = document.getElementById('calendar-added-confirm-modal');
-  modal.style.display = '';
-  const primaryBtn = document.getElementById('cac-add-another-btn');
-  requestAnimationFrame(() => primaryBtn.focus());
-}
-function closeActivityAddedConfirm() {
-  document.getElementById('calendar-added-confirm-modal').style.display = 'none';
-  calendarAddedConfirmReturnFocusEl?.focus?.();
-  calendarAddedConfirmReturnFocusEl = null;
-}
-document.getElementById('cac-add-another-btn').addEventListener('click', () => {
-  const date = calendarAddedConfirmDate;
-  document.getElementById('calendar-added-confirm-modal').style.display = 'none';
-  renderDashboard(); renderCalendar();
-  openCalendarAddPicker(date);
-});
-document.getElementById('cac-back-btn').addEventListener('click', () => {
-  const date = calendarAddedConfirmDate;
-  closeActivityAddedConfirm();
-  document.getElementById('calendar-day-sheet').style.display = 'none';
   calendarSelectedDate = date;
-  renderDashboard(); renderCalendar();
-});
-// Minimal focus trap + Escape handling for the confirmation dialog — it only
-// ever has two focusable elements, so cycling between them covers Tab/Shift+Tab.
-document.getElementById('calendar-added-confirm-modal').addEventListener('keydown', e => {
-  if (e.key === 'Escape') { e.preventDefault(); document.getElementById('cac-back-btn').click(); return; }
-  if (e.key !== 'Tab') return;
-  const focusable = [document.getElementById('cac-add-another-btn'), document.getElementById('cac-back-btn')];
-  const idx = focusable.indexOf(document.activeElement);
-  e.preventDefault();
-  const next = e.shiftKey ? (idx <= 0 ? focusable.length - 1 : idx - 1) : (idx === focusable.length - 1 ? 0 : idx + 1);
-  focusable[next].focus();
-});
+  renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+  showToast('Activity added');
+}
 
 function wireCalDaySheetActions(date) {
   const relation = dateRelation(date);
@@ -4483,7 +4435,7 @@ function wireCalDaySheetActions(date) {
         onConfirm: async details => {
           const { previousGrowth, newGrowth } = await logOtherActivitySession(date, entry.activityId, details);
           celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-          showActivityAddedConfirm(date);
+          finishActivityAdded(date);
         }
       });
     } else {
@@ -4492,7 +4444,7 @@ function wireCalDaySheetActions(date) {
       try {
         const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
         celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-        showActivityAddedConfirm(date);
+        finishActivityAdded(date);
       } catch (err) {
         console.error('Failed to save Recovery Day:', err);
         alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -4519,7 +4471,7 @@ function wireCalDaySheetActions(date) {
         const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
         celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
       }
-      showActivityAddedConfirm(date);
+      finishActivityAdded(date);
     } catch (err) {
       console.error('Failed to save Recovery Day:', err);
       alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -4555,14 +4507,14 @@ function openCalendarAddPicker(date) {
           onConfirm: async details => {
             const { previousGrowth, newGrowth } = await logPastWorkoutGroup(date, groupId, details);
             celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-            showActivityAddedConfirm(date);
+            finishActivityAdded(date);
           }
         });
       } else {
         // A single tap-to-select group, not a fillable form — on failure there's
         // nothing to "keep open", so retry by reopening the add picker instead.
         saveCalendarEntry(date, null, { type: 'group', status: 'planned', workoutGroupId: groupId })
-          .then(() => showActivityAddedConfirm(date))
+          .then(() => finishActivityAdded(date))
           .catch(e => { console.error('Failed to plan workout group:', e); alert(e.message || 'Could not save this plan. Please try again.'); openCalendarAddPicker(date); });
       }
     });
@@ -4589,7 +4541,7 @@ function openCalendarAddPicker(date) {
             onConfirm: async details => {
               const { previousGrowth, newGrowth } = await logPastQuickWorkout(date, ids, details);
               celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-              showActivityAddedConfirm(date);
+              finishActivityAdded(date);
             }
           });
         }
@@ -4601,7 +4553,7 @@ function openCalendarAddPicker(date) {
         // keeps the selection intact and shows the message.
         onConfirm: async ids => {
           await saveCalendarEntry(date, null, { type: 'quick', status: 'planned', plannedExerciseIds: ids });
-          showActivityAddedConfirm(date);
+          finishActivityAdded(date);
         }
       });
     }
@@ -4621,7 +4573,7 @@ function openCalendarAddPicker(date) {
             const { previousGrowth, newGrowth } = await logOtherActivitySession(date, activityId, details);
             celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
           }
-          showActivityAddedConfirm(date);
+          finishActivityAdded(date);
         }
       });
     });
@@ -4640,7 +4592,7 @@ function openCalendarAddPicker(date) {
         celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
       }
       document.getElementById('calendar-add-modal').style.display = 'none';
-      showActivityAddedConfirm(date);
+      finishActivityAdded(date);
     } catch (e) {
       console.error('Failed to save Recovery Day:', e);
       alert(e.message || 'Could not save Recovery Day. Please try again.');
@@ -4754,7 +4706,7 @@ document.getElementById('actform-save-btn').addEventListener('click', async () =
 });
 
 // ── Generic duration/calories/notes step ─────────────────────────────────────
-// onConfirm should perform the save (and call showActivityAddedConfirm() on
+// onConfirm should perform the save (and call finishActivityAdded() on
 // success) and let errors propagate — this wrapper is what actually decides
 // whether the modal closes. A thrown error keeps the modal open with the
 // entered data intact and shows the real message; success is the only path
