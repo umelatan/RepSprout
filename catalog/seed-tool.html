@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RepSprout — Catalogue Seed Tool (dev only)</title>
+<meta name="robots" content="noindex">
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;color:#0f172a;background:#f8fafc}
+  h1{font-size:1.25rem}
+  p.note{color:#64748b;font-size:.875rem}
+  button{font:inherit;padding:.6rem 1rem;border-radius:.5rem;border:1px solid #cbd5e1;background:white;cursor:pointer;margin-right:.5rem;margin-bottom:.5rem}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.primary{background:#16a34a;color:white;border-color:#16a34a}
+  pre{background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:.5rem;max-height:420px;overflow:auto;font-size:.8rem;white-space:pre-wrap}
+  .status{font-size:.875rem;margin:.5rem 0;padding:.5rem .75rem;border-radius:.5rem;background:#f1f5f9}
+</style>
+</head>
+<body>
+<h1>🌱 RepSprout Catalogue Seed Tool</h1>
+<p class="note">
+  This is a standalone dev page — it is not linked from the app and is not loaded by index.html.
+  It runs the same idempotent seed described in <code>catalog/plantRegistrySeed.js</code> against the
+  real Firebase project. Nothing here connects to gameplay or changes the running app; it only
+  writes to <code>catalog/plants</code> and <code>catalog/collections</code> in Firebase RTDB.
+</p>
+<p class="note">
+  <strong>Before running this for the first time</strong>, add the <code>catalog</code> rule from
+  <code>database.rules.json</code> to the Firebase Console (Realtime Database → Rules) — same manual
+  step already required for every other rule change in this project, since there is no CLI deploy
+  pipeline here.
+</p>
+
+<div id="auth-status" class="status">Checking sign-in…</div>
+<button id="sign-in-btn">Sign in with Google</button>
+<button id="sign-out-btn" style="display:none">Sign out</button>
+
+<h2>1. Validate</h2>
+<p class="note">Checks the in-code catalogue for the same problems <code>validatePlantRegistry()</code> would catch — run this before seeding.</p>
+<button id="validate-btn">Validate registry</button>
+
+<h2>2. Seed</h2>
+<p class="note">Upserts every catalogue plant/collection into Firebase. Safe to run repeatedly — existing records are updated in place, never duplicated.</p>
+<button id="seed-btn" class="primary" disabled>Run seed</button>
+
+<h2>Log</h2>
+<pre id="log">Waiting…</pre>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, set, get }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+import { PLANTS, CATEGORIES, COLLECTIONS } from './plantRegistry.js';
+import { validatePlantRegistry } from './plantRegistryValidation.js';
+import { seedPlantRegistry } from './plantRegistrySeed.js';
+
+// Same project as index.html — this seeds the SAME Firebase database, not a separate store.
+const firebaseConfig = {
+  apiKey: "AIzaSyBShWo9SfdFhU_w9tZhdxeozAgE3a0hoCA",
+  authDomain: "repsprout.firebaseapp.com",
+  databaseURL: "https://repsprout-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "repsprout",
+  storageBucket: "repsprout.firebasestorage.app",
+  messagingSenderId: "234404325168",
+  appId: "1:234404325168:web:f36e38f282d7eda5c9caf5",
+  measurementId: "G-P030D292SB"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+const logEl = document.getElementById('log');
+function log(line) { logEl.textContent += `\n${line}`; logEl.scrollTop = logEl.scrollHeight; }
+
+onAuthStateChanged(auth, user => {
+  document.getElementById('auth-status').textContent = user ? `Signed in as ${user.email}` : 'Not signed in.';
+  document.getElementById('sign-in-btn').style.display = user ? 'none' : '';
+  document.getElementById('sign-out-btn').style.display = user ? '' : 'none';
+  document.getElementById('seed-btn').disabled = !user;
+});
+document.getElementById('sign-in-btn').addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()));
+document.getElementById('sign-out-btn').addEventListener('click', () => signOut(auth));
+
+document.getElementById('validate-btn').addEventListener('click', () => {
+  logEl.textContent = `Catalogue: ${PLANTS.length} plants, ${Object.keys(COLLECTIONS).length} collections, ${Object.keys(CATEGORIES).length} categories.`;
+  const errors = validatePlantRegistry(PLANTS, CATEGORIES, COLLECTIONS);
+  if (!errors.length) { log('\n✅ No validation errors.'); return; }
+  log(`\n❌ ${errors.length} validation error(s):`);
+  errors.forEach(e => log(' - ' + e));
+});
+
+document.getElementById('seed-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('seed-btn');
+  btn.disabled = true;
+  logEl.textContent = 'Seeding…';
+  try {
+    const results = await seedPlantRegistry({ db, ref, set, get }, { onProgress: p => log(`  ${p.displayName}`) });
+    log('\n✅ Done.');
+    log(JSON.stringify(results, null, 2));
+  } catch (e) {
+    log('\n❌ Seed failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
