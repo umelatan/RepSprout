@@ -65,19 +65,23 @@ body{font-family:'Inter',sans-serif}
 @keyframes toastIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 #toast.show{display:flex!important;animation:toastIn .2s ease-out}
 .btn:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #16a34a;outline-offset:2px;border-radius:.5rem}
-/* Continuous watering loop while a set is active — every element loops
-   (infinite), so presence/absence in the DOM is the only thing that turns
-   it on or off; there is no separate JS timer to fall out of sync. */
-@keyframes waterDropLoop{0%{opacity:0;transform:translateY(-14px) scale(.6)}20%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:.85;transform:translateY(16px) scale(1)}100%{opacity:0;transform:translateY(22px) scale(.7)}}
+/* Continuous watering "rain" while a set is active. Each individual droplet
+   plays a short one-shot fall (that's what a real droplet does — it falls
+   once and lands); the CONTINUOUS effect comes from JS re-triggering a new
+   one every ~300-600ms for as long as setStatus stays "active" (see
+   startPlantWatering() in the module script). The ambient glow/ripple stay
+   plain CSS `infinite` loops since those are a background wash, not discrete
+   drops, and only exist in the DOM while watering is running. */
+@keyframes waterDropFall{0%{opacity:0;transform:translateY(-18px) scale(.6)}15%{opacity:1;transform:translateY(-4px) scale(1)}80%{opacity:.9;transform:translateY(20px) scale(1)}100%{opacity:0;transform:translateY(26px) scale(.7)}}
 @keyframes waterGlowLoop{0%,100%{opacity:.22;transform:scale(.95)}50%{opacity:.5;transform:scale(1.08)}}
 @keyframes waterRippleLoop{0%{opacity:0;transform:scale(.5)}45%{opacity:.45;transform:scale(1)}100%{opacity:0;transform:scale(1.35)}}
-.water-drop-loop{position:absolute;animation:waterDropLoop 1.8s ease-in-out infinite;pointer-events:none;will-change:transform,opacity}
+.water-drop-fall{position:absolute;top:-10px;animation:waterDropFall .85s cubic-bezier(.4,0,1,.6) forwards;pointer-events:none;will-change:transform,opacity}
 .water-glow-loop{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.4),transparent 70%);animation:waterGlowLoop 2.4s ease-in-out infinite;pointer-events:none;will-change:transform,opacity}
 .water-ripple-loop{position:absolute;bottom:-4px;left:50%;width:2.5rem;height:.6rem;margin-left:-1.25rem;border-radius:50%;border:1.5px solid rgba(34,197,94,.5);animation:waterRippleLoop 2.4s ease-out infinite;pointer-events:none}
 .water-static-drop{position:absolute;opacity:.85;pointer-events:none}
 .water-static-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%);pointer-events:none}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-loop,.water-glow-loop,.water-ripple-loop{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop{animation:none!important;transition:none!important}
 }
 input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
@@ -829,6 +833,7 @@ let dataRefs = [];
 // same durability model the old single-form logger already used.
 let activeSession = null; // { groupId, groupName, groupColor, startedAt, exercises:[{exerciseId,name,category,unit,weight,minReps,maxReps,weightIncrement,defaultSets,progressionEnabled,targetReps,sets:[{weight,reps,rir,completed}],skipped,notes,expanded}] }
 let awTimerHandle = null;
+let waterTimeoutHandle = null; // recurring setTimeout id driving the droplet-spawn loop
 
 // Group-builder modal state
 let groupModalStep = 1;
@@ -2269,7 +2274,11 @@ function progressionInputFor(ex) {
 
 // ── Guided workout: top-level render dispatcher ─────────────────────────────
 function renderGuidedWorkout() {
-  if (!activeSession) return;
+  if (!activeSession) { stopPlantWatering(); return; }
+  // Stop any running watering loop before every phase-driven re-render — cancel-set,
+  // skip-set, next-exercise, etc. all route through here, so this one call covers all
+  // of them. renderActiveSetPhase() below restarts it if the new phase is still active-set.
+  stopPlantWatering();
   const total = activeSession.exercises.length;
   const doneCount = activeSession.exercises.filter(exerciseIsDone).length;
   document.getElementById('aw-progress-label').textContent = activeSession.sessionType === 'quick'
@@ -2355,21 +2364,58 @@ function renderExercisePhase(ex) {
     </div>`;
 }
 
-// Done/End Workout open a modal on top of this screen without changing
-// activeSession.phase away from 'active-set' — the watering loop would still
-// be technically "current", just visually covered by the modal backdrop.
-// Clearing it here stops the animation immediately rather than leaving it
-// merely obscured, and costs nothing since the phase-driven re-render will
-// recreate it from scratch if the set is still active afterwards.
+// ── Continuous plant watering while a set is active ─────────────────────────
+// A real JS-driven loop, not a one-shot animation and not a fire-and-forget
+// CSS `infinite` rule: every cycle re-checks activeSession.phase itself and
+// self-terminates the moment it's no longer 'active-set', so it can never
+// drift out of sync with app state. Also makes refresh-resume free — whatever
+// causes renderActiveSetPhase() to run (including a fresh page load that
+// restores an in-progress draft) calls startPlantWatering() the same way.
+const WATER_MAX_CONCURRENT_DROPLETS = 4; // bounds DOM growth — never more live droplets than this
+const WATER_DROP_LEFT_POSITIONS = [32, 40, 48, 56, 64, 70];
+
 function stopPlantWatering() {
+  clearTimeout(waterTimeoutHandle);
+  waterTimeoutHandle = null;
   const stage = document.getElementById('plant-water-stage');
-  if (stage) stage.innerHTML = '🌱';
+  if (stage) stage.querySelectorAll('.water-drop-fall').forEach(d => d.remove());
 }
 
-// A set in progress — the plant stays continuously watered for as long as
-// this phase is rendered, single "Done" action. The loop is pure markup
-// (CSS `infinite` animations), not a JS timer: presence of this screen IS
-// the watering state, so it can never drift out of sync with setStatus.
+function spawnWaterDroplet(stage) {
+  if (stage.querySelectorAll('.water-drop-fall').length >= WATER_MAX_CONCURRENT_DROPLETS) return;
+  const drop = document.createElement('span');
+  drop.className = 'water-drop-fall';
+  drop.setAttribute('aria-hidden', 'true');
+  drop.textContent = '💧';
+  const left = WATER_DROP_LEFT_POSITIONS[Math.floor(Math.random() * WATER_DROP_LEFT_POSITIONS.length)];
+  drop.style.left = `${left}%`;
+  drop.style.fontSize = `${(0.75 + Math.random() * 0.4).toFixed(2)}rem`;
+  drop.addEventListener('animationend', () => drop.remove());
+  stage.appendChild(drop);
+}
+
+function scheduleNextWaterDroplet() {
+  waterTimeoutHandle = setTimeout(() => {
+    if (!activeSession || activeSession.phase !== 'active-set') { stopPlantWatering(); return; }
+    const stage = document.getElementById('plant-water-stage');
+    if (!stage) { stopPlantWatering(); return; } // plant not on screen right now (e.g. a modal took over)
+    if (!document.hidden) spawnWaterDroplet(stage); // tab hidden: keep the loop alive, just don't render
+    scheduleNextWaterDroplet();
+  }, 300 + Math.random() * 300); // 300–600ms between drops, randomized so it never looks metronomic
+}
+
+function startPlantWatering() {
+  if (waterTimeoutHandle) return; // already running — never stack multiple loops
+  scheduleNextWaterDroplet();
+}
+
+// A set in progress — droplets keep spawning for as long as this phase is
+// rendered. The screen itself doesn't loop anything via CSS `infinite`
+// anymore (that was the bug: a fixed handful of pre-placed elements looks
+// identical to "one droplet, then it stops" once you stop watching closely,
+// and is invisible entirely if this markup is ever served from a stale PWA
+// cache). Instead JS owns the loop directly, per-droplet, driven by
+// activeSession.phase — see startPlantWatering() above.
 function renderActiveSetPhase(ex) {
   const main = document.getElementById('aw-main');
   const footer = document.getElementById('aw-footer');
@@ -2380,9 +2426,6 @@ function renderActiveSetPhase(ex) {
        <span class="water-static-drop" style="left:38%;top:8%;font-size:1rem" aria-hidden="true">💧</span>
        <span class="water-static-drop" style="left:60%;top:18%;font-size:.8rem" aria-hidden="true">💧</span>`
     : `<span class="water-glow-loop" aria-hidden="true"></span>
-       <span class="water-drop-loop" style="left:44%;top:-8px;font-size:1.1rem;animation-delay:0s" aria-hidden="true">💧</span>
-       <span class="water-drop-loop" style="left:56%;top:-8px;font-size:.9rem;animation-delay:.6s" aria-hidden="true">💧</span>
-       <span class="water-drop-loop" style="left:50%;top:-8px;font-size:.75rem;animation-delay:1.2s" aria-hidden="true">💧</span>
        <span class="water-ripple-loop" aria-hidden="true"></span>`;
   main.innerHTML = `
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
@@ -2393,6 +2436,7 @@ function renderActiveSetPhase(ex) {
       <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
       <p class="text-sm font-semibold text-brand-500" role="status">Set ${setNum} in progress</p>
     </div>`;
+  if (!reducedMotion) startPlantWatering(); // reduced motion: static markup only, loop never starts
   footer.innerHTML = `
     <button data-action="done-set" class="btn btn-green btn-pop w-full py-3.5 text-base">Done</button>
     <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-2">
@@ -2586,6 +2630,7 @@ async function applyRestDefault(secs) {
 
 // ── Set logging sheet ────────────────────────────────────────────────────────
 function openLogSetSheet() {
+  stopPlantWatering();
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
   const si = currentSetIndex(ex);
   if (si === -1) return;
@@ -2699,7 +2744,6 @@ function handleAwAction(action) {
       renderGuidedWorkout(); saveActiveSessionDraft();
       break;
     case 'done-set':
-      stopPlantWatering();
       openLogSetSheet();
       break;
     case 'skip-set': {
@@ -2749,7 +2793,6 @@ function handleAwAction(action) {
       document.getElementById('queue-modal').style.display = '';
       break;
     case 'open-end-review':
-      stopPlantWatering();
       openEndReview();
       break;
     case 'add-exercise':
@@ -2802,6 +2845,7 @@ document.getElementById('aw-footer').addEventListener('click', e => {
 document.getElementById('aw-end-btn').addEventListener('click', openEndReview);
 
 function openEndReview() {
+  stopPlantWatering(); // aw-end-btn calls this directly, bypassing handleAwAction's switch
   const total = activeSession.exercises.length;
   const doneCount = activeSession.exercises.filter(exerciseIsDone).length;
   const workingSetsTotal = activeSession.exercises.reduce((sum, ex) => sum + workingSetsFor(ex).filter(s => s.completed).length, 0);
@@ -2827,6 +2871,7 @@ document.getElementById('end-review-finish-btn').addEventListener('click', () =>
 document.getElementById('end-review-discard-btn').addEventListener('click', () => {
   if (!confirm('Discard this workout? This cannot be undone.')) return;
   document.getElementById('end-review-modal').style.display = 'none';
+  stopPlantWatering();
   clearInterval(awTimerHandle);
   clearActiveSessionDraft();
   activeSession = null;
@@ -2963,6 +3008,7 @@ document.getElementById('finish-continue-btn').addEventListener('click', () => {
 
 document.getElementById('finish-discard-btn').addEventListener('click', () => {
   if (!confirm('Discard this workout? This cannot be undone.')) return;
+  stopPlantWatering();
   clearInterval(awTimerHandle);
   clearActiveSessionDraft();
   activeSession = null;
@@ -3021,6 +3067,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     await set(ref(db, `exercises/${uid()}/${ex.exerciseId}`), { ...exercises[ex.exerciseId], targetReps: nextReps, currentWeight: ex.weight, weightUpFlag: weightUp });
   }
 
+  stopPlantWatering();
   clearInterval(awTimerHandle);
   clearActiveSessionDraft();
   document.getElementById('finish-modal').style.display = 'none';
