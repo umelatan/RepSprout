@@ -4334,7 +4334,10 @@ function renderPlannedEntryCard(planned, relation) {
   }
   return `
     <div class="card p-4 space-y-2">
-      <p class="text-xs font-semibold text-brand-500">${relation === 'today' ? "Today's Plan" : 'Planned'}</p>
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-xs font-semibold text-brand-500">${relation === 'today' ? "Today's Plan" : 'Planned'}</p>
+        ${relation === 'future' ? `<button class="cds-del-planned p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-entry-id="${planned.id}" aria-label="Delete planned activity"><span class="ms text-base" aria-hidden="true">delete</span></button>` : ''}
+      </div>
       <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
       <p class="text-xs text-slate-400">${esc(meta)}</p>
       ${primaryLabel ? `<button id="cds-primary-btn" class="btn btn-green btn-pop w-full py-3 text-sm" data-entry-id="${planned.id}" data-type="${planned.type}">${esc(primaryLabel)}</button>` : ''}
@@ -4375,13 +4378,11 @@ function openCalendarDaySheet(date) {
     b.disabled = true;
     try {
       await remove(ref(db, `sessions/${uid()}/${delDate}/${delId}`));
-      calendarSelectedDate = date;
-      renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+      closeCalendarActivityWindows(date);
       showToast('Activity deleted', snapshot ? async () => {
         try {
           await set(ref(db, `sessions/${uid()}/${delDate}/${delId}`), snapshot);
           renderDashboard(); renderCalendar();
-          if (calendarSelectedDate === delDate) openCalendarDaySheet(delDate);
           showToast('Activity restored');
         } catch (err) {
           console.error('Failed to restore activity:', err);
@@ -4394,23 +4395,55 @@ function openCalendarDaySheet(date) {
       b.disabled = false;
     }
   }));
+  // Deleting a still-planned (future) activity — same pattern as deleting a
+  // completed one above, just against calendarEntries instead of sessions.
+  document.getElementById('cds-body').querySelectorAll('.cds-del-planned').forEach(b => b.addEventListener('click', async () => {
+    if (b.disabled) return;
+    if (!confirm('Delete this planned activity?')) return;
+    const entryId = b.dataset.entryId;
+    const snapshot = entriesForDate(date)[entryId];
+    b.disabled = true;
+    try {
+      await deleteCalendarEntry(date, entryId);
+      closeCalendarActivityWindows(date);
+      showToast('Activity deleted', snapshot ? async () => {
+        try {
+          await set(ref(db, `users/${uid()}/calendarEntries/${date}/${entryId}`), snapshot);
+          renderDashboard(); renderCalendar();
+          showToast('Activity restored');
+        } catch (err) {
+          console.error('Failed to restore planned activity:', err);
+          alert('Could not restore this activity. Please try again.');
+        }
+      } : null);
+    } catch (e) {
+      console.error('Failed to delete planned activity:', e);
+      alert('Could not delete this activity. Please try again.');
+      b.disabled = false;
+    }
+  }));
   document.getElementById('cds-add-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
   wireCalDaySheetActions(date);
   document.getElementById('calendar-day-sheet').style.display = '';
 }
 document.getElementById('cds-close').addEventListener('click', () => document.getElementById('calendar-day-sheet').style.display = 'none');
 
-// Shown only after a save has actually succeeded — same shape as the delete
-// flow's toast (see .cds-del-session below), just without an Undo action.
-// Closes every activity-creation surface, refreshes the day sheet for the
-// same date (so the new entry is immediately visible), and keeps that date
-// highlighted in the grid underneath.
-function finishActivityAdded(date) {
+// Shared "done — back to the plain calendar" step for both adding and
+// deleting an activity: close every activity-creation surface and the day
+// sheet itself, refresh the grid, and keep the date highlighted underneath.
+// The toast (added/deleted/restored) is shown by the caller right after.
+function closeCalendarActivityWindows(date) {
   ['calendar-add-modal', 'calendar-group-picker-modal', 'activity-library-modal',
-   'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal'
+   'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal',
+   'calendar-day-sheet'
   ].forEach(id => { document.getElementById(id).style.display = 'none'; });
   calendarSelectedDate = date;
-  renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+  renderDashboard(); renderCalendar();
+}
+
+// Shown only after a save has actually succeeded.
+function finishActivityAdded(date) {
+  closeCalendarActivityWindows(date);
   showToast('Activity added');
 }
 
