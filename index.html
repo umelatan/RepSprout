@@ -451,6 +451,20 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
 <!-- ══════════ MODALS ══════════ -->
 
+<!-- Resume an in-progress workout found on load -->
+<div id="resume-session-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 text-center">
+    <p class="text-2xl" aria-hidden="true">🌱</p>
+    <h3 class="font-display font-bold text-base text-slate-800 dark:text-white">Workout in progress</h3>
+    <p id="resume-name" class="text-sm font-semibold text-brand-500"></p>
+    <p id="resume-meta" class="text-xs text-slate-400"></p>
+    <div class="space-y-2 pt-1">
+      <button id="resume-btn" class="btn btn-green btn-pop w-full py-3">Resume</button>
+      <button id="resume-end-btn" class="text-xs font-semibold text-red-400 hover:underline w-full text-center py-2">End Workout</button>
+    </div>
+  </div>
+</div>
+
 <!-- Choose today's workout group (Start Growing) -->
 <div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
@@ -515,8 +529,20 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <h3 class="font-display font-bold text-slate-800 dark:text-white">Add Exercise</h3>
       <button id="pick-ex-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
     </div>
-    <input id="pick-ex-search" type="text" placeholder="Search...">
-    <div id="pick-ex-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
+    <div class="flex gap-2">
+      <input id="pick-ex-search" type="text" placeholder="Search..." style="flex:2">
+      <select id="pick-ex-category" style="flex:1">
+        <option value="">All</option>
+        <option value="upper">Upper body</option>
+        <option value="lower">Lower body</option>
+        <option value="core">Core</option>
+        <option value="full">Full body</option>
+        <option value="cardio">Cardio</option>
+        <option value="mobility">Mobility</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div id="pick-ex-list" class="space-y-2 max-h-72 overflow-y-auto"></div>
     <p class="text-xs text-slate-400 text-center">Don't see it? <button id="pick-ex-new" class="text-brand-500 font-semibold">Create new</button></p>
   </div>
 </div>
@@ -610,6 +636,24 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <button id="finish-discard-btn" class="text-red-400 hover:underline py-2">Discard</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Optional: save a completed Quick Workout as a reusable group -->
+<div id="save-as-group-modal" style="display:none" class="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <div class="text-center space-y-1">
+      <p class="text-2xl" aria-hidden="true">🌿</p>
+      <h3 class="font-display font-bold text-base text-slate-800 dark:text-white">You completed a useful combination today.</h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Save it as a routine you can repeat?</p>
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 block mb-1">Group name</label>
+      <input id="sag-name" type="text" placeholder="e.g. Hotel Gym Session">
+      <p id="sag-error" style="display:none" class="text-xs text-red-500 mt-1"></p>
+    </div>
+    <button id="sag-save-btn" class="btn btn-green btn-pop w-full py-3">Save as group</button>
+    <button id="sag-skip-btn" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Not now</button>
   </div>
 </div>
 
@@ -899,6 +943,7 @@ function bootApp(prof) {
   applyTheme(prof.theme || 'dark');
   subscribeData();
   goView('dashboard');
+  checkResumableSession();
 }
 
 function cleanupListeners() { dataRefs.forEach(r => off(r)); dataRefs = []; }
@@ -1364,31 +1409,44 @@ let pickExExclude = [];
 function openPickExModal(onSelect, excludeIds = []) {
   pickExOnSelect = onSelect;
   pickExExclude = excludeIds;
-  renderPickExList('');
-  document.getElementById('pick-ex-modal').style.display = '';
   document.getElementById('pick-ex-search').value = '';
+  document.getElementById('pick-ex-category').value = '';
+  renderPickExList();
+  document.getElementById('pick-ex-modal').style.display = '';
 }
 document.getElementById('pick-ex-close').addEventListener('click', () => document.getElementById('pick-ex-modal').style.display = 'none');
-document.getElementById('pick-ex-search').addEventListener('input', e => renderPickExList(e.target.value));
+document.getElementById('pick-ex-search').addEventListener('input', renderPickExList);
+document.getElementById('pick-ex-category').addEventListener('change', renderPickExList);
 document.getElementById('pick-ex-new').addEventListener('click', () => {
   document.getElementById('pick-ex-modal').style.display = 'none';
   openExerciseModal();
 });
 
-function renderPickExList(q) {
+function renderPickExList() {
+  const q = document.getElementById('pick-ex-search').value.toLowerCase();
+  const cat = document.getElementById('pick-ex-category').value;
   const list = document.getElementById('pick-ex-list');
   const items = Object.entries(exercises).filter(([id,ex]) =>
-    !ex.archived && !pickExExclude.includes(id) && (!q || ex.name?.toLowerCase().includes(q.toLowerCase())));
-  if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No exercises yet. Create one!</p>'; return; }
-  list.innerHTML = items.map(([id, ex]) => `
-    <button class="pick-ex-item w-full flex items-center justify-between p-3 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all text-left" data-id="${id}">
-      <div>
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup} · ${ex.currentWeight||0} ${ex.unit||'kg'}</p>
+    !ex.archived && !pickExExclude.includes(id) &&
+    (!q || ex.name?.toLowerCase().includes(q)) &&
+    (!cat || ex.muscleGroup === cat));
+  if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No exercises match. Create one!</p>'; return; }
+  list.innerHTML = items.map(([id, ex]) => {
+    const sets = ex.defaultSets || (ex.targetReps||[8,8,8]).length;
+    const last = getLastLoggedSets(id);
+    const prevLine = last ? `Last: ${last.weight||0} ${last.unit||ex.unit||'kg'} · ${last.sets.map(s=>s.reps||0).join(', ')}` : 'Your previous sets will appear after your first session.';
+    const meta1 = [ex.equipment, MG_LABEL[ex.muscleGroup]||ex.muscleGroup].filter(Boolean).join(' · ');
+    return `
+    <button class="pick-ex-item w-full flex items-center justify-between gap-2 p-3 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all text-left" data-id="${id}">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400">${meta1}</p>
+        <p class="text-xs text-slate-400">${sets} sets · ${ex.minReps??8}–${ex.maxReps??12} reps</p>
+        <p class="text-[11px] text-brand-500 truncate">${prevLine}</p>
       </div>
-      <span class="ms text-xl text-brand-500" aria-hidden="true">add</span>
-    </button>
-  `).join('');
+      <span class="ms text-xl text-brand-500 flex-shrink-0" aria-hidden="true">add</span>
+    </button>`;
+  }).join('');
   list.querySelectorAll('.pick-ex-item').forEach(b =>
     b.addEventListener('click', () => {
       document.getElementById('pick-ex-modal').style.display = 'none';
@@ -1898,6 +1956,10 @@ document.getElementById('gm-delete-btn').addEventListener('click', async functio
 });
 
 // ── Group picker (Home's "Start Growing") ────────────────────────────────────
+const QUICK_WORKOUT_COLOR = '#22c55e';
+
+function closeGroupPicker() { document.getElementById('group-picker-modal').style.display = 'none'; }
+
 function openGroupPicker() {
   const list = document.getElementById('group-picker-list');
   const items = Object.entries(groups).filter(([,g]) => !g.archived);
@@ -1907,23 +1969,22 @@ function openGroupPicker() {
       <p class="text-sm text-slate-400 text-center py-2">Create your first exercise before starting a workout.</p>
       <button id="gp-create-exercise" class="btn btn-green btn-pop w-full py-3">Create exercise</button>`;
     document.getElementById('gp-create-exercise').addEventListener('click', () => {
-      document.getElementById('group-picker-modal').style.display = 'none';
+      closeGroupPicker();
       goView('workout'); switchWorkoutTab('exercises');
       openExerciseModal();
     });
   } else if (!items.length) {
+    // No saved groups yet, but exercises exist — Quick Workout becomes the
+    // primary path since there's nothing to pick from, group creation is secondary.
     list.innerHTML = `
-      <p class="text-sm text-slate-400 text-center py-2">Create a workout group to start growing.</p>
-      <button id="gp-create-first" class="btn btn-green btn-pop w-full py-3">Create workout group</button>
-      <button id="gp-browse-ex" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Add another exercise</button>`;
+      <p class="text-sm text-slate-400 text-center py-2">No workout groups yet. You can create a group or start a Quick Workout.</p>
+      <button id="gp-start-quick-primary" class="btn btn-green btn-pop w-full py-3">Start Quick Workout</button>
+      <button id="gp-create-first" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Create workout group</button>`;
+    document.getElementById('gp-start-quick-primary').addEventListener('click', startQuickWorkout);
     document.getElementById('gp-create-first').addEventListener('click', () => {
-      document.getElementById('group-picker-modal').style.display = 'none';
+      closeGroupPicker();
       goView('workout'); switchWorkoutTab('groups');
       openGroupModal();
-    });
-    document.getElementById('gp-browse-ex').addEventListener('click', () => {
-      document.getElementById('group-picker-modal').style.display = 'none';
-      goView('workout'); switchWorkoutTab('exercises');
     });
   } else {
     list.innerHTML = items.map(([id, g]) => {
@@ -1937,47 +1998,125 @@ function openGroupPicker() {
           <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''} · ${lastLabel}</p>
           <button class="gp-start-btn btn w-full py-2.5" style="background:${color};color:white" data-id="${id}">Start</button>
         </div>`;
-    }).join('');
+    }).join('') + `
+      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Quick Workout</p>
+          <p class="text-[11px] text-slate-400">Build today's workout as you go.</p>
+        </div>
+        <button id="gp-start-quick" class="btn btn-outline w-full py-2.5">Start Quick Workout</button>
+      </div>`;
     list.querySelectorAll('.gp-start-btn').forEach(b => b.addEventListener('click', () => {
-      document.getElementById('group-picker-modal').style.display = 'none';
+      closeGroupPicker();
       startWorkoutSession(b.dataset.id);
     }));
+    document.getElementById('gp-start-quick').addEventListener('click', startQuickWorkout);
   }
   document.getElementById('group-picker-modal').style.display = '';
 }
 document.getElementById('group-picker-close').addEventListener('click', () => document.getElementById('group-picker-modal').style.display = 'none');
 
+// ── Active workout draft persistence (resume after refresh) ────────────────
+// Deliberately localStorage, not Firebase — an in-progress workout is
+// transient scratch state, not data worth syncing across devices or paying
+// a network round trip for on every set logged.
+function activeSessionDraftKey() { return `rs_active_session_${uid()}`; }
+function saveActiveSessionDraft() {
+  if (!activeSession) return;
+  try { localStorage.setItem(activeSessionDraftKey(), JSON.stringify(activeSession)); } catch (e) {}
+}
+function clearActiveSessionDraft() {
+  try { localStorage.removeItem(activeSessionDraftKey()); } catch (e) {}
+}
+function loadActiveSessionDraft() {
+  try { const raw = localStorage.getItem(activeSessionDraftKey()); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
+
+function checkResumableSession() {
+  if (activeSession) return; // already mid-workout in this tab — never offer a second one
+  const draft = loadActiveSessionDraft();
+  if (!draft || !Array.isArray(draft.exercises)) return;
+  const name = draft.sessionType === 'quick' ? 'Quick Workout' : (draft.groupName || 'Workout');
+  const done = draft.exercises.filter(ex => ex.skipped || (ex.sets.length && ex.sets.every(s => s.completed))).length;
+  const mins = Math.max(0, Math.round((Date.now() - draft.startedAt) / 60000));
+  document.getElementById('resume-name').textContent = name;
+  document.getElementById('resume-meta').textContent = `${done} of ${draft.exercises.length} exercises completed · ${mins} min elapsed`;
+  document.getElementById('resume-session-modal').style.display = '';
+}
+
+document.getElementById('resume-btn').addEventListener('click', () => {
+  const draft = loadActiveSessionDraft();
+  document.getElementById('resume-session-modal').style.display = 'none';
+  if (!draft) return;
+  activeSession = draft;
+  document.getElementById('aw-group-name').textContent = draft.sessionType === 'quick' ? 'Quick Workout' : draft.groupName;
+  goView('workout');
+  show('active-workout-view'); hide('app-view');
+  startAwTimer();
+  renderActiveWorkout();
+});
+document.getElementById('resume-end-btn').addEventListener('click', () => {
+  if (!confirm('End this workout without saving? This cannot be undone.')) return;
+  clearActiveSessionDraft();
+  document.getElementById('resume-session-modal').style.display = 'none';
+});
+
 // ── Active workout ────────────────────────────────────────────────────────────
+// Builds one active-session exercise entry from a saved exercise definition,
+// optionally overridden by a group's per-exercise sets/rep-range config.
+// The single source both startWorkoutSession() and addExerciseToActiveSession()
+// build from, so a grouped workout and a Quick Workout never diverge.
+function buildSessionExercise(exerciseId, overrides = {}) {
+  const ex = exercises[exerciseId];
+  if (!ex) return null;
+  const minReps = overrides.minReps ?? ex.minReps ?? 8;
+  const maxReps = overrides.maxReps ?? ex.maxReps ?? 12;
+  const setCount = overrides.defaultSets || ex.defaultSets || (ex.targetReps || [8,8,8]).length || 3;
+  const targetReps = resizeTargetReps(ex.targetReps, setCount, minReps, maxReps);
+  return {
+    exerciseId, name: ex.name, category: ex.muscleGroup, unit: ex.unit || 'kg',
+    weight: ex.currentWeight || 0, minReps, maxReps,
+    weightIncrement: ex.weightIncrement || 0,
+    progressionEnabled: ex.progressionEnabled !== false,
+    targetReps,
+    sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps: '', rir: '', completed: false })),
+    skipped: false, notes: '', expanded: false
+  };
+}
+
 function startWorkoutSession(groupId) {
+  if (activeSession) { alert('Finish or exit your current workout before starting another.'); return; }
   const g = groups[groupId];
   if (!g) return;
   document.getElementById('group-picker-modal').style.display = 'none';
-  const exList = (g.exercises || []).map(ge => {
-    const ex = exercises[ge.exerciseId];
-    if (!ex) return null;
-    const minReps = ge.minReps ?? ex.minReps ?? 8;
-    const maxReps = ge.maxReps ?? ex.maxReps ?? 12;
-    const setCount = ge.defaultSets || ex.defaultSets || (ex.targetReps || [8,8,8]).length || 3;
-    const targetReps = resizeTargetReps(ex.targetReps, setCount, minReps, maxReps);
-    return {
-      exerciseId: ge.exerciseId, name: ex.name, category: ex.muscleGroup, unit: ex.unit || 'kg',
-      weight: ex.currentWeight || 0, minReps, maxReps,
-      weightIncrement: ex.weightIncrement || 0,
-      progressionEnabled: ex.progressionEnabled !== false,
-      targetReps,
-      sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps: '', rir: '', completed: false })),
-      skipped: false, notes: '', expanded: false
-    };
-  }).filter(Boolean);
+  const exList = (g.exercises || []).map(ge => buildSessionExercise(ge.exerciseId, ge)).filter(Boolean);
   if (!exList.length) { alert('This group has no exercises yet — add some first.'); return; }
   exList[0].expanded = true;
 
-  activeSession = { groupId, groupName: g.name, groupColor: g.color || GROUP_COLORS[0], startedAt: Date.now(), exercises: exList };
+  activeSession = { groupId, groupName: g.name, groupColor: g.color || GROUP_COLORS[0], sessionType: 'group', startedAt: Date.now(), exercises: exList };
   document.getElementById('aw-group-name').textContent = g.name;
   goView('workout');
   show('active-workout-view'); hide('app-view');
   startAwTimer();
   renderActiveWorkout();
+  saveActiveSessionDraft();
+}
+
+// A Quick Workout is a session *type*, not a saved routine — no group is
+// ever created for it unless the user explicitly asks via "Save as group"
+// after finishing. Reuses the exact same active-session/set-logging/finish
+// engine as a grouped workout; only groupId/groupName/groupColor are empty.
+function startQuickWorkout() {
+  if (activeSession) { alert('Finish or exit your current workout before starting another.'); return; }
+  closeGroupPicker();
+  activeSession = { groupId: null, groupName: null, groupColor: null, sessionType: 'quick', startedAt: Date.now(), exercises: [] };
+  document.getElementById('aw-group-name').textContent = 'Quick Workout';
+  goView('workout');
+  show('active-workout-view'); hide('app-view');
+  startAwTimer();
+  renderActiveWorkout();
+  saveActiveSessionDraft();
+  openPickExModal(id => addExerciseToActiveSession(id), []);
 }
 
 function startAwTimer() {
@@ -2025,7 +2164,10 @@ function renderAwCard(ex, idx) {
           <div class="space-y-1">${setsHtml}</div>
           <button class="aw-add-set text-xs font-semibold text-brand-500 hover:underline py-1" data-idx="${idx}">+ Add set</button>
           <input type="text" class="aw-notes text-xs" data-idx="${idx}" value="${esc(ex.notes)}" placeholder="Exercise notes (optional)">
-          <button class="aw-skip-toggle text-xs font-semibold text-slate-400 hover:underline py-1" data-idx="${idx}">${ex.skipped ? 'Unskip exercise' : 'Skip exercise'}</button>
+          <div class="flex items-center gap-4">
+            <button class="aw-skip-toggle text-xs font-semibold text-slate-400 hover:underline py-1" data-idx="${idx}">${ex.skipped ? 'Unskip exercise' : 'Skip exercise'}</button>
+            ${!ex.sets.some(s => s.completed) ? `<button class="aw-remove-ex text-xs font-semibold text-red-400 hover:underline py-1" data-idx="${idx}">Remove</button>` : ''}
+          </div>
         </div>
       ` : ''}
     </div>`;
@@ -2061,12 +2203,21 @@ document.getElementById('aw-exercise-list').addEventListener('click', e => {
     ex.sets.push({ weight: ex.sets[ex.sets.length-1]?.weight || ex.weight, reps:'', rir:'', completed:false });
     ex.targetReps.push(ex.minReps);
     renderActiveWorkout();
+    saveActiveSessionDraft();
     return;
   }
   const skip = e.target.closest('.aw-skip-toggle');
   if (skip) {
     activeSession.exercises[+skip.dataset.idx].skipped = !activeSession.exercises[+skip.dataset.idx].skipped;
     renderActiveWorkout();
+    saveActiveSessionDraft();
+    return;
+  }
+  const removeEx = e.target.closest('.aw-remove-ex');
+  if (removeEx) {
+    activeSession.exercises.splice(+removeEx.dataset.idx, 1);
+    renderActiveWorkout();
+    saveActiveSessionDraft();
     return;
   }
   const complete = e.target.closest('.aw-set-complete');
@@ -2076,6 +2227,7 @@ document.getElementById('aw-exercise-list').addEventListener('click', e => {
     if (!s.completed && !s.reps) { alert('Enter reps before marking this set complete.'); return; }
     s.completed = !s.completed;
     renderActiveWorkout();
+    saveActiveSessionDraft();
     return;
   }
   const removeSet = e.target.closest('.aw-set-remove');
@@ -2084,6 +2236,7 @@ document.getElementById('aw-exercise-list').addEventListener('click', e => {
     ex.sets.splice(+removeSet.dataset.set, 1);
     ex.targetReps.splice(+removeSet.dataset.set, 1);
     renderActiveWorkout();
+    saveActiveSessionDraft();
   }
 });
 
@@ -2095,31 +2248,39 @@ document.getElementById('aw-exercise-list').addEventListener('change', e => {
   else if (e.target.classList.contains('aw-set-reps')) ex.sets[+e.target.dataset.set].reps = +e.target.value || 0;
   else if (e.target.classList.contains('aw-set-rir')) ex.sets[+e.target.dataset.set].rir = e.target.value === '' ? '' : +e.target.value;
   else if (e.target.classList.contains('aw-notes')) ex.notes = e.target.value;
+  saveActiveSessionDraft();
 });
 
 document.getElementById('aw-exit-btn').addEventListener('click', () => {
   if (!confirm('Exit this workout? Nothing will be saved.')) return;
+  clearActiveSessionDraft();
   clearInterval(awTimerHandle);
   activeSession = null;
   hide('active-workout-view'); show('app-view');
 });
 
+// Shared by the "+" add-exercise button and Quick Workout's auto-opened
+// picker — one place that decides how an exercise enters the active session,
+// regardless of whether the workout is grouped or freeform.
+function addExerciseToActiveSession(id) {
+  const already = activeSession.exercises.some(e => e.exerciseId === id);
+  if (already) {
+    const name = exercises[id]?.name || 'this exercise';
+    if (!confirm(`You've already added ${name} to this workout. Add it again?`)) return;
+  }
+  const entry = buildSessionExercise(id);
+  if (!entry) return;
+  entry.expanded = true;
+  activeSession.exercises.forEach(e => e.expanded = false);
+  activeSession.exercises.push(entry);
+  renderActiveWorkout();
+  saveActiveSessionDraft();
+}
+
 document.getElementById('aw-add-exercise-btn').addEventListener('click', () => {
-  const excludeIds = activeSession.exercises.map(e => e.exerciseId);
-  openPickExModal(id => {
-    const ex = exercises[id];
-    const minReps = ex.minReps ?? 8, maxReps = ex.maxReps ?? 12;
-    const targetReps = resizeTargetReps(ex.targetReps, ex.defaultSets || 3, minReps, maxReps);
-    activeSession.exercises.forEach(e => e.expanded = false);
-    activeSession.exercises.push({
-      exerciseId: id, name: ex.name, category: ex.muscleGroup, unit: ex.unit || 'kg',
-      weight: ex.currentWeight || 0, minReps, maxReps, weightIncrement: ex.weightIncrement || 0,
-      progressionEnabled: ex.progressionEnabled !== false,
-      targetReps, sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps:'', rir:'', completed:false })),
-      skipped:false, notes:'', expanded:true
-    });
-    renderActiveWorkout();
-  }, excludeIds);
+  // No excludeIds — repeating an exercise (e.g. supersets) is allowed, just
+  // confirmed rather than silently duplicated.
+  openPickExModal(id => addExerciseToActiveSession(id), []);
 });
 
 // ── Finish workout ───────────────────────────────────────────────────────────
@@ -2165,6 +2326,7 @@ document.getElementById('finish-continue-btn').addEventListener('click', () => {
 document.getElementById('finish-discard-btn').addEventListener('click', () => {
   if (!confirm('Discard this workout? This cannot be undone.')) return;
   clearInterval(awTimerHandle);
+  clearActiveSessionDraft();
   activeSession = null;
   document.getElementById('finish-modal').style.display = 'none';
   hide('active-workout-view'); show('app-view');
@@ -2181,10 +2343,12 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   const caloriesBurned = +document.getElementById('finish-cal-burned').value || 0;
   const notes = document.getElementById('finish-notes').value.trim();
 
+  const sessionType = activeSession.sessionType || 'group';
   const sessionData = {
     groupId: activeSession.groupId,
     groupName: activeSession.groupName,
     groupColor: activeSession.groupColor,
+    sessionType,
     muscleGroup: activeSession.exercises[0]?.category || 'full',
     startedAt: activeSession.startedAt,
     completedAt: Date.now(),
@@ -2213,10 +2377,70 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   }
 
   clearInterval(awTimerHandle);
-  activeSession = null;
+  clearActiveSessionDraft();
   document.getElementById('finish-modal').style.display = 'none';
   hide('active-workout-view'); show('app-view');
+
+  if (sessionType === 'quick') {
+    // The completed session is already safely saved at this point — offer
+    // "save as group" as a fully optional follow-up, never a precondition.
+    openSaveAsGroupPrompt(activeSession.exercises);
+  } else {
+    goView('dashboard');
+  }
+  activeSession = null;
+});
+
+// ── Optional: save a completed Quick Workout as a reusable group ───────────
+// Purely optional and secondary — the workout is already saved by the time
+// this shows, so a failure here never risks the workout itself.
+let saveAsGroupExercises = null;
+
+function openSaveAsGroupPrompt(sessionExercises) {
+  saveAsGroupExercises = sessionExercises.filter(ex => !ex.skipped && ex.exerciseId);
+  if (!saveAsGroupExercises.length) { goView('dashboard'); return; }
+  document.getElementById('sag-name').value = '';
+  hide('sag-error');
+  const btn = document.getElementById('sag-save-btn');
+  btn.disabled = false; btn.textContent = 'Save as group';
+  document.getElementById('save-as-group-modal').style.display = '';
+}
+
+document.getElementById('sag-skip-btn').addEventListener('click', () => {
+  document.getElementById('save-as-group-modal').style.display = 'none';
   goView('dashboard');
+});
+
+document.getElementById('sag-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('sag-save-btn');
+  if (btn.disabled) return;
+  const name = document.getElementById('sag-name').value.trim();
+  if (!name) { document.getElementById('sag-error').textContent = 'Enter a group name.'; show('sag-error'); return; }
+  hide('sag-error');
+
+  const prevLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    // Sets/rep-range come from what was actually performed, not the reps
+    // logged this session — those stay session-specific, never copied as a
+    // permanent default.
+    const groupExercises = saveAsGroupExercises.map(ex => ({
+      exerciseId: ex.exerciseId, defaultSets: ex.sets.length, minReps: ex.minReps, maxReps: ex.maxReps, notes: ''
+    }));
+    await set(push(ref(db, `users/${uid()}/groups`)), {
+      name, description: null, color: GROUP_COLORS[0],
+      exercises: groupExercises, createdAt: Date.now(), updatedAt: Date.now()
+    });
+    document.getElementById('save-as-group-modal').style.display = 'none';
+    showToast('Workout group created.');
+    goView('dashboard');
+  } catch (err) {
+    console.error('Failed to save workout as a group:', err);
+    document.getElementById('sag-error').textContent = 'Could not save this group. Check your connection and try again.';
+    show('sag-error');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
 });
 
 // ── Session history ─────────────────────────────────────────────────────────
@@ -2225,8 +2449,8 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
 // stable instead of everything old going gray.
 const LEGACY_MG_COLOR = { upper:'#3b82f6', lower:'#f97316', core:'#a855f7', full:'#22c55e', cardio:'#ef4444' };
 
-function sessionLabel(s) { return s.groupName || MG_LABEL[s.muscleGroup] || s.muscleGroup; }
-function sessionColor(s) { return s.groupColor || LEGACY_MG_COLOR[s.muscleGroup] || GROUP_COLORS[0]; }
+function sessionLabel(s) { return s.sessionType === 'quick' ? 'Quick Workout' : (s.groupName || MG_LABEL[s.muscleGroup] || s.muscleGroup); }
+function sessionColor(s) { return s.sessionType === 'quick' ? QUICK_WORKOUT_COLOR : (s.groupColor || LEGACY_MG_COLOR[s.muscleGroup] || GROUP_COLORS[0]); }
 
 function exerciseHistoryLine(ex) {
   if (ex.skipped) return `<p class="text-sm text-slate-400">• ${esc(ex.name)} — skipped</p>`;
