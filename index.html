@@ -382,6 +382,34 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <button id="save-openai-key-btn" class="btn btn-green text-sm px-4 py-2">Save Key</button>
       </div>
 
+      <div class="card p-4 space-y-3">
+        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Rest Timer</h3>
+        <div class="space-y-2">
+          <button type="button" id="rtm-exercise-btn" class="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">
+            <span class="font-semibold text-slate-700 dark:text-slate-200 block">Use exercise rest times</span>
+            <span class="text-[11px] text-slate-400">Recommended for exercises with different rest needs.</span>
+          </button>
+          <button type="button" id="rtm-global-btn" class="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm">
+            <span class="font-semibold text-slate-700 dark:text-slate-200 block">Use one default for all exercises</span>
+            <span class="text-[11px] text-slate-400">Use the same rest duration throughout workouts.</span>
+          </button>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-400 block mb-1">Global default rest duration</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" class="settings-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="60">60 sec</button>
+            <button type="button" class="settings-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="90">90 sec</button>
+            <button type="button" class="settings-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="120">2 min</button>
+            <button type="button" class="settings-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="180">3 min</button>
+            <button type="button" class="settings-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="custom">Custom</button>
+          </div>
+          <input id="settings-rest-custom" type="number" inputmode="numeric" min="0" step="5" placeholder="Seconds" style="display:none" class="mt-1.5">
+          <input type="hidden" id="settings-rest-value">
+          <p id="settings-rest-fallback-note" class="text-[11px] text-slate-400 mt-1" role="status"></p>
+        </div>
+        <button id="save-rest-settings-btn" class="btn btn-green text-sm px-4 py-2">Save Rest Settings</button>
+      </div>
+
       <div class="card p-4 space-y-2">
         <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Progression Mode</h3>
         <div class="flex items-center gap-3 p-3 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-950/30">
@@ -524,22 +552,66 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
-<!-- One-time default rest duration picker -->
-<div id="rest-default-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+<!-- Generic rest-duration chooser. Reused by the first-rest fallback prompt and
+     every scoped action inside "Change rest duration" — the title/subtitle and
+     what happens when a value is chosen are supplied by whoever calls
+     openDurationPicker(), so there's exactly one duration-entry UI in the app. -->
+<div id="duration-picker-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 text-center">
     <p class="text-2xl" aria-hidden="true">⏱️</p>
-    <h3 class="font-display font-bold text-base text-slate-800 dark:text-white">Choose your default rest time</h3>
-    <p class="text-xs text-slate-400">You won't be asked again — change it anytime from here.</p>
+    <h3 id="duration-picker-title" class="font-display font-bold text-base text-slate-800 dark:text-white">Choose a rest time</h3>
+    <p id="duration-picker-subtitle" class="text-xs text-slate-400"></p>
     <div class="grid grid-cols-2 gap-2">
-      <button class="rest-default-opt btn btn-outline py-3" data-secs="60">60 seconds</button>
-      <button class="rest-default-opt btn btn-outline py-3" data-secs="90">90 seconds</button>
-      <button class="rest-default-opt btn btn-outline py-3" data-secs="120">2 minutes</button>
-      <button class="rest-default-opt btn btn-outline py-3" data-secs="180">3 minutes</button>
+      <button class="duration-picker-opt btn btn-outline py-3" data-secs="60">60 seconds</button>
+      <button class="duration-picker-opt btn btn-outline py-3" data-secs="90">90 seconds</button>
+      <button class="duration-picker-opt btn btn-outline py-3" data-secs="120">2 minutes</button>
+      <button class="duration-picker-opt btn btn-outline py-3" data-secs="180">3 minutes</button>
     </div>
     <div class="flex items-center gap-2">
-      <input id="rest-default-custom" type="number" inputmode="numeric" placeholder="Custom seconds">
-      <button id="rest-default-custom-btn" class="btn btn-green px-4 flex-shrink-0">Use</button>
+      <input id="duration-picker-custom" type="number" inputmode="numeric" placeholder="Custom seconds">
+      <button id="duration-picker-custom-btn" class="btn btn-green px-4 flex-shrink-0">Use</button>
     </div>
+    <button id="duration-picker-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Cancel</button>
+  </div>
+</div>
+
+<!-- First-rest fallback: after picking a duration for an exercise with no
+     usable rest value, ask how RepSprout should remember it. Only shown in
+     exercise_specific mode — global_default mode has nowhere else for an
+     exercise-scoped choice to go, so it skips straight to saving the default. -->
+<div id="rest-scope-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 text-center">
+    <h3 id="rest-scope-title" class="font-display font-bold text-base text-slate-800 dark:text-white"></h3>
+    <div class="space-y-2">
+      <button id="rest-scope-once-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Just this workout</button>
+      <button id="rest-scope-exercise-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Save for <span id="rest-scope-ex-name"></span></button>
+      <button id="rest-scope-global-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Use as my default for all exercises</button>
+    </div>
+    <button id="rest-scope-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Cancel</button>
+  </div>
+</div>
+
+<!-- Rest screen's "Change rest duration" — five explicit, non-overlapping
+     scopes instead of one ambiguous Save button. -->
+<div id="change-rest-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2 max-h-[85vh] overflow-y-auto">
+    <h3 class="font-display font-bold text-base text-slate-800 dark:text-white text-center pb-1">Change rest duration</h3>
+    <button id="cr-this-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">
+      Change this rest<span class="block text-[11px] text-slate-400 font-normal">Only the current countdown</span>
+    </button>
+    <button id="cr-exercise-today-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">
+      Change for this exercise today<span class="block text-[11px] text-slate-400 font-normal">All remaining sets of this exercise, today only</span>
+    </button>
+    <button id="cr-exercise-default-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">
+      Update exercise default<span class="block text-[11px] text-slate-400 font-normal">This and future workouts</span>
+    </button>
+    <button id="cr-global-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">
+      Use one default for all exercises<span class="block text-[11px] text-slate-400 font-normal">Switches rest mode; ignores exercise-specific times</span>
+    </button>
+    <button id="cr-exercise-mode-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">
+      Use exercise rest times<span class="block text-[11px] text-slate-400 font-normal">Switches back to per-exercise rest times</span>
+    </button>
+    <button id="cr-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Cancel</button>
   </div>
 </div>
 
@@ -589,6 +661,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <button id="group-picker-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
     </div>
     <div id="group-picker-list" class="space-y-3"></div>
+    <button id="group-picker-rest-settings" type="button" class="text-[11px] font-semibold text-slate-400 hover:underline w-full text-center py-1">⏱ Rest timer settings</button>
   </div>
 </div>
 
@@ -695,10 +768,21 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <span class="ms text-sm" id="ex-modal-more-icon" aria-hidden="true">expand_more</span>More details
     </button>
     <div id="ex-modal-more" style="display:none" class="space-y-3">
-      <div class="flex gap-3">
-        <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Rest (seconds)</label><input id="ex-rest" type="number" inputmode="numeric" min="0" step="5" placeholder="90"></div>
-        <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Machine / seat setup</label><input id="ex-machine-setup" type="text" placeholder="e.g. seat 4"></div>
+      <div>
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Rest duration</label>
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="">No default</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="60">60 sec</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="90">90 sec</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="120">2 min</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="180">3 min</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="custom">Custom</button>
+        </div>
+        <input id="ex-rest-custom" type="number" inputmode="numeric" min="0" step="5" placeholder="Seconds" style="display:none" class="mt-1.5">
+        <input type="hidden" id="ex-rest-value">
+        <p class="text-[11px] text-slate-400 mt-1">Optional. RepSprout can use your global rest time instead.</p>
       </div>
+      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Machine / seat setup</label><input id="ex-machine-setup" type="text" placeholder="e.g. seat 4"></div>
       <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="ex-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
       <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
         <input id="ex-progression-enabled" type="checkbox" class="w-4 h-4 accent-brand-500" checked style="width:auto">
@@ -1473,7 +1557,66 @@ function renderProfile() {
   get(ref(db, `users/${uid()}/openaiKey`)).then(s => {
     if (s.val()) document.getElementById('openai-key-input').value = s.val();
   });
+
+  setSettingsRestMode(userProfile.restTimerMode || 'exercise_specific');
+  setSettingsRestChip(userProfile.restSeconds || null);
 }
+
+// ── Rest Timer settings (profile view) ──────────────────────────────────────
+let settingsRestMode = 'exercise_specific';
+function setSettingsRestMode(mode) {
+  settingsRestMode = mode;
+  const dark = document.documentElement.classList.contains('dark');
+  [['rtm-exercise-btn', mode === 'exercise_specific'], ['rtm-global-btn', mode === 'global_default']].forEach(([id, on]) => {
+    const btn = document.getElementById(id);
+    btn.style.borderColor = on ? '#22c55e' : (dark ? '#334155' : '#e2e8f0');
+    btn.style.background = on ? (dark ? 'rgba(34,197,94,.12)' : '#f0fdf4') : 'transparent';
+  });
+  document.getElementById('settings-rest-fallback-note').textContent = mode === 'global_default'
+    ? 'This becomes the only automatic rest duration.'
+    : 'Used as a fallback for exercises with no saved rest time.';
+}
+document.getElementById('rtm-exercise-btn').addEventListener('click', () => setSettingsRestMode('exercise_specific'));
+document.getElementById('rtm-global-btn').addEventListener('click', () => setSettingsRestMode('global_default'));
+
+function setSettingsRestChip(secs) {
+  document.getElementById('settings-rest-value').value = secs ?? '';
+  const isCustom = secs != null && !EX_REST_PRESETS.includes(secs);
+  document.querySelectorAll('.settings-rest-chip').forEach(chip => {
+    const selected = chip.dataset.secs === 'custom' ? isCustom : +chip.dataset.secs === secs;
+    chip.classList.toggle('btn-green', selected);
+    chip.classList.toggle('btn-outline', !selected);
+  });
+  document.getElementById('settings-rest-custom').style.display = isCustom ? '' : 'none';
+  if (isCustom) document.getElementById('settings-rest-custom').value = secs;
+}
+document.querySelectorAll('.settings-rest-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (chip.dataset.secs === 'custom') {
+      setSettingsRestChip(+document.getElementById('settings-rest-custom').value || 90);
+      document.getElementById('settings-rest-custom').style.display = '';
+      document.getElementById('settings-rest-custom').focus();
+    } else {
+      setSettingsRestChip(+chip.dataset.secs);
+    }
+  });
+});
+document.getElementById('settings-rest-custom').addEventListener('input', () => {
+  const v = +document.getElementById('settings-rest-custom').value;
+  document.getElementById('settings-rest-value').value = v > 0 ? v : '';
+});
+document.getElementById('save-rest-settings-btn').addEventListener('click', async () => {
+  const secs = +document.getElementById('settings-rest-value').value || null;
+  if (settingsRestMode === 'global_default' && !secs) { alert('Choose a default rest time first.'); return; }
+  await saveRestTimerMode(settingsRestMode);
+  if (secs) await saveGlobalRestSeconds(secs);
+  alert('Rest settings saved!');
+});
+
+document.getElementById('group-picker-rest-settings').addEventListener('click', () => {
+  closeGroupPicker();
+  goView('profile');
+});
 
 document.getElementById('save-goals-btn').addEventListener('click', async () => {
   await set(ref(db, `users/${uid()}/goals`), {
@@ -1670,6 +1813,39 @@ document.getElementById('ex-modal-more-toggle').addEventListener('click', () => 
   setExerciseModalMore(document.getElementById('ex-modal-more').style.display === 'none');
 });
 
+// Exercise-creation "Rest duration" chip row — secs is null for "No default"
+// (exercise.restSeconds stays null, so resolveRestDuration() falls through to
+// the user's global default), a preset, or a custom value.
+const EX_REST_PRESETS = [60, 90, 120, 180];
+function setExRestChip(secs) {
+  document.getElementById('ex-rest-value').value = secs ?? '';
+  const isCustom = secs != null && !EX_REST_PRESETS.includes(secs);
+  document.querySelectorAll('.ex-rest-chip').forEach(chip => {
+    const selected = chip.dataset.secs === 'custom' ? isCustom
+      : chip.dataset.secs === '' ? secs == null
+      : +chip.dataset.secs === secs;
+    chip.classList.toggle('btn-green', selected);
+    chip.classList.toggle('btn-outline', !selected);
+  });
+  document.getElementById('ex-rest-custom').style.display = isCustom ? '' : 'none';
+  if (isCustom) document.getElementById('ex-rest-custom').value = secs;
+}
+document.querySelectorAll('.ex-rest-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (chip.dataset.secs === 'custom') {
+      setExRestChip(+document.getElementById('ex-rest-custom').value || 90);
+      document.getElementById('ex-rest-custom').style.display = '';
+      document.getElementById('ex-rest-custom').focus();
+    } else {
+      setExRestChip(chip.dataset.secs === '' ? null : +chip.dataset.secs);
+    }
+  });
+});
+document.getElementById('ex-rest-custom').addEventListener('input', () => {
+  const v = +document.getElementById('ex-rest-custom').value;
+  document.getElementById('ex-rest-value').value = v > 0 ? v : '';
+});
+
 function openExerciseModal(id = null) {
   const ex = id ? exercises[id] : null;
   document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'New exercise';
@@ -1682,7 +1858,7 @@ function openExerciseModal(id = null) {
   document.getElementById('ex-min-reps').value = ex?.minReps ?? 8;
   document.getElementById('ex-max-reps').value = ex?.maxReps ?? 12;
   document.getElementById('ex-weight-increment').value = ex?.weightIncrement || '';
-  document.getElementById('ex-rest').value = ex?.restSeconds || '';
+  setExRestChip(ex?.restSeconds || null);
   document.getElementById('ex-machine-setup').value = ex?.machineSetup || '';
   document.getElementById('ex-notes').value = ex?.notes || '';
   document.getElementById('ex-progression-enabled').checked = ex?.progressionEnabled !== false;
@@ -1711,7 +1887,7 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
     unit: document.getElementById('ex-unit').value,
     defaultSets, minReps, maxReps,
     weightIncrement: +document.getElementById('ex-weight-increment').value || null,
-    restSeconds: +document.getElementById('ex-rest').value || null,
+    restSeconds: +document.getElementById('ex-rest-value').value || null,
     machineSetup: document.getElementById('ex-machine-setup').value.trim() || null,
     notes: document.getElementById('ex-notes').value.trim() || null,
     progressionEnabled: document.getElementById('ex-progression-enabled').checked,
@@ -2487,14 +2663,77 @@ function goToNextExercise() {
   }
 }
 
+// ── Centralized rest-duration resolution ────────────────────────────────────
+// The single place that decides how long a rest should be. Every call site —
+// starting a rest, the "Change rest duration" scoped actions, Quick Workout,
+// grouped workouts — goes through this so the priority rules can never drift
+// out of sync between them. Pure function, no DOM/state reads, so it's easy
+// to reason about (and test) in isolation.
+//
+// Priority: session override always wins. Otherwise: exercise_specific mode
+// tries the exercise's own default, then the global default; global_default
+// mode uses only the global default and ignores the exercise value entirely.
+// seconds === null means nothing usable was found — the caller must prompt,
+// never invent a duration.
+function resolveRestDuration({ restTimerMode, exerciseRestSeconds, globalDefaultRestSeconds, sessionOverrideSeconds }) {
+  if (sessionOverrideSeconds) return { seconds: sessionOverrideSeconds, source: 'session_override' };
+  if (restTimerMode === 'global_default') {
+    return globalDefaultRestSeconds ? { seconds: globalDefaultRestSeconds, source: 'global_default' } : { seconds: null, source: null };
+  }
+  if (exerciseRestSeconds) return { seconds: exerciseRestSeconds, source: 'exercise_default' };
+  if (globalDefaultRestSeconds) return { seconds: globalDefaultRestSeconds, source: 'global_default' };
+  return { seconds: null, source: null };
+}
+
+function currentRestTimerMode() { return userProfile.restTimerMode || 'exercise_specific'; }
+
+// Gathers the four resolveRestDuration() inputs for one session-exercise entry.
+// exerciseRestSeconds is looked up live from the `exercises` dict (not
+// snapshotted at session start) so an in-session "Update exercise default"
+// takes effect immediately without any extra sync step.
+function resolveRestForSessionExercise(sessionEx) {
+  return resolveRestDuration({
+    restTimerMode: currentRestTimerMode(),
+    exerciseRestSeconds: exercises[sessionEx.exerciseId]?.restSeconds || null,
+    globalDefaultRestSeconds: userProfile.restSeconds || null,
+    sessionOverrideSeconds: sessionEx.restSecondsOverride || null
+  });
+}
+
+async function saveExerciseRestSeconds(exerciseId, secs) {
+  if (exercises[exerciseId]) exercises[exerciseId].restSeconds = secs; // optimistic; onValue confirms shortly after
+  try { await set(ref(db, `exercises/${uid()}/${exerciseId}/restSeconds`), secs); } catch (e) { console.error('Failed to save exercise rest duration:', e); }
+}
+async function saveGlobalRestSeconds(secs) {
+  userProfile.restSeconds = secs;
+  try { await set(ref(db, `users/${uid()}/restSeconds`), secs); } catch (e) { console.error('Failed to save default rest duration:', e); }
+}
+async function saveRestTimerMode(mode) {
+  userProfile.restTimerMode = mode;
+  try { await set(ref(db, `users/${uid()}/restTimerMode`), mode); } catch (e) { console.error('Failed to save rest timer mode:', e); }
+}
+
 // ── Rest timer — absolute-timestamp based so it survives refresh/backgrounding ─
 function startRest() {
-  if (!userProfile.restSeconds) { openRestDefaultPicker(true); return; }
-  const ms = userProfile.restSeconds * 1000;
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const { seconds, source } = resolveRestForSessionExercise(ex);
+  if (!seconds) { openFirstRestPrompt(ex); return; }
+  beginRestTimer(seconds, source);
+}
+
+// Applies a resolved duration+source to the running timer. Never called with
+// an invented duration — callers only reach here once resolveRestDuration()
+// (or a user's explicit choice) has produced a real value. restSource is
+// persisted alongside restEndsAt so a refresh shows the same label without
+// re-resolving (and therefore without any risk of resolving to a different
+// value than the one the countdown actually started with).
+function beginRestTimer(seconds, source) {
+  const ms = seconds * 1000;
   activeSession.restDurationMs = ms;
   activeSession.restEndsAt = Date.now() + ms;
   activeSession.restPausedRemainingMs = null;
   activeSession.restReady = false;
+  activeSession.restSource = source;
   activeSession.phase = 'resting';
   renderGuidedWorkout();
   saveActiveSessionDraft();
@@ -2598,6 +2837,7 @@ function renderRestingPhase(ex) {
       <p id="rest-countdown" class="font-display font-extrabold text-5xl text-brand-500 tabular-nums" role="timer"></p>
       <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
       <p class="text-xs text-slate-400 pt-1">Next: Set ${nextSetNum} of ${totalTarget}</p>
+      <p class="text-[11px] text-slate-400" role="status">${esc(restSourceLabel(activeSession.restSource, ex.name))}</p>
     </div>`;
   footer.innerHTML = `
     <button data-action="start-next-early" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Next Set Early</button>
@@ -2610,23 +2850,143 @@ function renderRestingPhase(ex) {
   updateRestCountdownDisplay(activeSession.restPausedRemainingMs ?? (activeSession.restEndsAt - Date.now()));
 }
 
-// ── One-time default rest duration ──────────────────────────────────────────
-let restDefaultResumeAfterPick = false;
-function openRestDefaultPicker(resumeAfter) {
-  restDefaultResumeAfterPick = resumeAfter;
-  document.getElementById('rest-default-modal').style.display = '';
+// ── Subtle "where did this duration come from" label on the rest screen ────
+function restSourceLabel(source, exerciseName) {
+  switch (source) {
+    case 'exercise_default': return `Using ${exerciseName} rest time`;
+    case 'global_default':   return 'Using your default rest time';
+    case 'session_override': return "Using today's override";
+    case 'manual_override':  return 'Using a one-time adjustment';
+    default: return '';
+  }
 }
-document.querySelectorAll('.rest-default-opt').forEach(b => b.addEventListener('click', () => applyRestDefault(+b.dataset.secs)));
-document.getElementById('rest-default-custom-btn').addEventListener('click', () => {
-  const v = +document.getElementById('rest-default-custom').value;
-  if (v > 0) applyRestDefault(v);
+
+// ── Generic rest-duration chooser modal ─────────────────────────────────────
+// One duration-entry UI, reused by the first-rest prompt and every scoped
+// action in "Change rest duration". Whoever opens it supplies the copy and
+// the onChoose callback; this modal has no built-in opinion about scope.
+let durationPickerOnChoose = null;
+function openDurationPicker({ title, subtitle, initialSeconds, onChoose }) {
+  document.getElementById('duration-picker-title').textContent = title || 'Choose a rest time';
+  document.getElementById('duration-picker-subtitle').textContent = subtitle || '';
+  const isCustom = initialSeconds && ![60,90,120,180].includes(initialSeconds);
+  document.getElementById('duration-picker-custom').value = isCustom ? initialSeconds : '';
+  durationPickerOnChoose = onChoose;
+  document.getElementById('duration-picker-modal').style.display = '';
+}
+function closeDurationPicker() {
+  document.getElementById('duration-picker-modal').style.display = 'none';
+  durationPickerOnChoose = null;
+}
+document.querySelectorAll('.duration-picker-opt').forEach(b => b.addEventListener('click', () => {
+  const cb = durationPickerOnChoose; closeDurationPicker(); if (cb) cb(+b.dataset.secs);
+}));
+document.getElementById('duration-picker-custom-btn').addEventListener('click', () => {
+  const v = +document.getElementById('duration-picker-custom').value;
+  if (v > 0) { const cb = durationPickerOnChoose; closeDurationPicker(); if (cb) cb(v); }
 });
-async function applyRestDefault(secs) {
-  userProfile.restSeconds = secs;
-  document.getElementById('rest-default-modal').style.display = 'none';
-  try { await set(ref(db, `users/${uid()}/restSeconds`), secs); } catch (e) { console.error('Failed to save rest duration preference:', e); }
-  if (restDefaultResumeAfterPick) startRest();
+document.getElementById('duration-picker-cancel-btn').addEventListener('click', closeDurationPicker);
+
+// ── First-rest fallback prompt ──────────────────────────────────────────────
+// Reached only when resolveRestForSessionExercise() came back with no usable
+// duration. In global_default mode there's only one place a choice can go
+// (the global default), so it skips the scope step entirely — matches
+// section 14's "Choose one rest time to use for all exercises" prompt.
+function openFirstRestPrompt(ex) {
+  if (currentRestTimerMode() === 'global_default') {
+    openDurationPicker({
+      title: 'Choose one rest time to use for all exercises',
+      subtitle: 'You can change this anytime from Rest Timer settings.',
+      onChoose: async secs => { await saveGlobalRestSeconds(secs); beginRestTimer(secs, 'global_default'); }
+    });
+    return;
+  }
+  openDurationPicker({
+    title: `Choose a rest time for ${ex.name}`,
+    subtitle: "Next you'll choose how to remember it.",
+    onChoose: secs => openRestScopeModal(ex, secs)
+  });
 }
+let restScopeState = null;
+function openRestScopeModal(ex, secs) {
+  restScopeState = { ex, secs };
+  const label = secs % 60 === 0 ? `${secs/60} min` : `${secs} sec`;
+  document.getElementById('rest-scope-title').textContent = `Use ${label} for ${ex.name} — just now, or remember it?`;
+  document.getElementById('rest-scope-ex-name').textContent = ex.name;
+  document.getElementById('rest-scope-modal').style.display = '';
+}
+function closeRestScopeModal() { document.getElementById('rest-scope-modal').style.display = 'none'; restScopeState = null; }
+document.getElementById('rest-scope-cancel-btn').addEventListener('click', closeRestScopeModal);
+document.getElementById('rest-scope-once-btn').addEventListener('click', () => {
+  const { ex, secs } = restScopeState; closeRestScopeModal();
+  ex.restSecondsOverride = secs; // session-only — exercise/user settings untouched
+  beginRestTimer(secs, 'session_override');
+});
+document.getElementById('rest-scope-exercise-btn').addEventListener('click', async () => {
+  const { ex, secs } = restScopeState; closeRestScopeModal();
+  await saveExerciseRestSeconds(ex.exerciseId, secs);
+  beginRestTimer(secs, 'exercise_default');
+});
+document.getElementById('rest-scope-global-btn').addEventListener('click', async () => {
+  const { ex, secs } = restScopeState; closeRestScopeModal();
+  await saveGlobalRestSeconds(secs);
+  beginRestTimer(secs, 'global_default');
+});
+
+// ── Rest screen's "Change rest duration" — five explicit, non-overlapping scopes ─
+function openChangeRestModal() { document.getElementById('change-rest-modal').style.display = ''; }
+function closeChangeRestModal() { document.getElementById('change-rest-modal').style.display = 'none'; }
+document.getElementById('cr-cancel-btn').addEventListener('click', closeChangeRestModal);
+
+document.getElementById('cr-this-btn').addEventListener('click', () => {
+  closeChangeRestModal();
+  openDurationPicker({
+    title: 'Change this rest',
+    subtitle: 'Applies only to the current countdown.',
+    initialSeconds: activeSession.restDurationMs ? activeSession.restDurationMs / 1000 : null,
+    onChoose: secs => beginRestTimer(secs, 'manual_override')
+  });
+});
+document.getElementById('cr-exercise-today-btn').addEventListener('click', () => {
+  closeChangeRestModal();
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  openDurationPicker({
+    title: `Change for ${ex.name} today`,
+    subtitle: "Used for all remaining sets of this exercise in today's workout.",
+    initialSeconds: ex.restSecondsOverride || null,
+    onChoose: secs => { ex.restSecondsOverride = secs; beginRestTimer(secs, 'session_override'); }
+  });
+});
+document.getElementById('cr-exercise-default-btn').addEventListener('click', () => {
+  closeChangeRestModal();
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  openDurationPicker({
+    title: `Update ${ex.name}'s rest duration`,
+    subtitle: 'Used for this and future workouts.',
+    initialSeconds: exercises[ex.exerciseId]?.restSeconds || null,
+    onChoose: async secs => { await saveExerciseRestSeconds(ex.exerciseId, secs); beginRestTimer(secs, 'exercise_default'); }
+  });
+});
+document.getElementById('cr-global-btn').addEventListener('click', () => {
+  closeChangeRestModal();
+  openDurationPicker({
+    title: 'Choose your default rest time',
+    subtitle: 'Used for every exercise from now on.',
+    initialSeconds: userProfile.restSeconds || null,
+    onChoose: async secs => {
+      await saveRestTimerMode('global_default');
+      await saveGlobalRestSeconds(secs);
+      beginRestTimer(secs, 'global_default');
+    }
+  });
+});
+document.getElementById('cr-exercise-mode-btn').addEventListener('click', async () => {
+  closeChangeRestModal();
+  await saveRestTimerMode('exercise_specific');
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const { seconds, source } = resolveRestForSessionExercise(ex);
+  if (seconds) beginRestTimer(seconds, source); else openFirstRestPrompt(ex);
+});
 
 // ── Set logging sheet ────────────────────────────────────────────────────────
 function openLogSetSheet() {
@@ -2826,7 +3186,7 @@ function handleAwAction(action) {
       toggleRestPause();
       break;
     case 'change-rest-duration':
-      openRestDefaultPicker(false);
+      openChangeRestModal();
       break;
     case 'start-next-set':
       completeRest();
