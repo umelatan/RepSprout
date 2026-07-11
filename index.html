@@ -1020,6 +1020,26 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
+<!-- Edit a completed workout's exercise/set breakdown — from the "What did
+     you do on this day?" window. Add exercises from the saved library,
+     remove one from this session, and correct weight/reps per set. Purely a
+     history correction: saving here never re-runs growth or progression. -->
+<div id="edit-session-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 id="esm-title" class="font-display font-bold text-slate-800 dark:text-white">Edit workout</h3>
+      <button id="esm-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <p id="esm-subtitle" class="text-xs text-slate-400"></p>
+    <div id="esm-ex-list" class="space-y-3"></div>
+    <button id="esm-add-ex-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+      <span class="ms text-base" aria-hidden="true">add</span>Add exercise
+    </button>
+    <p id="esm-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
+    <button id="esm-save-btn" class="btn btn-green w-full py-3 text-sm" style="min-height:48px">Save changes</button>
+  </div>
+</div>
+
 <!-- ══════════ FIREBASE CONFIG ══════════ -->
 <script>
 const firebaseConfig = {
@@ -4298,11 +4318,17 @@ function dateRelation(date) {
 }
 
 function renderCalDaySessionCard(date, sessionId, s) {
+  // Only strength sessions (group/quick) have an editable exercise/set
+  // breakdown — Other Activity and Recovery Day sessions have no exercises.
+  const editable = s.sessionType === 'group' || s.sessionType === 'quick';
   return `
     <div class="card p-3 space-y-1" style="border-left:3px solid ${sessionColor(s)}">
       <div class="flex items-center justify-between gap-2">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${s.activityIcon ? s.activityIcon + ' ' : ''}${esc(sessionLabel(s))}</p>
-        <button class="cds-del-session p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}"><span class="ms text-base" aria-hidden="true">delete</span></button>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          ${editable ? `<button class="cds-edit-session p-1 text-slate-300 hover:text-brand-500" data-date="${date}" data-id="${sessionId}" aria-label="Edit workout"><span class="ms text-base" aria-hidden="true">edit</span></button>` : ''}
+          <button class="cds-del-session p-1 text-slate-300 hover:text-red-400" data-date="${date}" data-id="${sessionId}" aria-label="Delete workout"><span class="ms text-base" aria-hidden="true">delete</span></button>
+        </div>
       </div>
       ${(s.exercises||[]).length ? `<div class="space-y-0.5">${s.exercises.map(exerciseHistoryLine).join('')}</div>` : ''}
       <p class="text-xs text-slate-400">${s.duration||0} min${s.caloriesBurned ? ` · 🔥 ${s.caloriesBurned} kcal` : ''}${s.notes ? ` · ${esc(s.notes)}` : ''}</p>
@@ -4422,11 +4448,109 @@ function openCalendarDaySheet(date) {
       b.disabled = false;
     }
   }));
+  document.getElementById('cds-body').querySelectorAll('.cds-edit-session').forEach(b => b.addEventListener('click', () => openEditSessionModal(b.dataset.date, b.dataset.id)));
   document.getElementById('cds-add-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
   wireCalDaySheetActions(date);
   document.getElementById('calendar-day-sheet').style.display = '';
 }
 document.getElementById('cds-close').addEventListener('click', () => document.getElementById('calendar-day-sheet').style.display = 'none');
+
+// ── Editing a completed workout's exercises/sets ─────────────────────────────
+// A history-correction tool, not a re-log: saving here only overwrites the
+// stored exercises array for this exact session — it never touches
+// growthPoints, weightUpFlag/targetReps, or streaks. Those were already
+// settled at the time this session was originally saved.
+let esmDraft = null, esmDate = null, esmSessionId = null;
+
+// Shapes a freshly-picked library exercise into the same per-session record
+// shape sessions/{uid}/{date}/{id}.exercises already stores, so an edited
+// session round-trips through set() with no special-casing on read.
+function newSessionExerciseFromLibrary(exerciseId) {
+  const built = buildSessionExercise(exerciseId);
+  if (!built) return null;
+  return {
+    exerciseId: built.exerciseId, name: built.name, muscleGroup: built.category,
+    weight: built.weight, unit: built.unit, targetReps: built.targetReps, skipped: false, notes: '',
+    sets: built.targetReps.map(r => ({ weight: built.weight, reps: r, rir: null, completed: true, warmup: false, completedAt: Date.now() }))
+  };
+}
+
+function renderEsmExList() {
+  const list = document.getElementById('esm-ex-list');
+  if (!esmDraft.exercises.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No exercises yet — add one below.</p>'; return; }
+  list.innerHTML = esmDraft.exercises.map((ex, i) => `
+    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+        <button class="esm-del-ex p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-idx="${i}" aria-label="Remove ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">delete</span></button>
+      </div>
+      <div class="space-y-1.5">
+        ${(ex.sets||[]).map((s, j) => `
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 w-10 flex-shrink-0">Set ${j+1}</span>
+            <input type="number" inputmode="decimal" class="esm-set-weight" style="width:4.5rem;text-align:center" data-idx="${i}" data-set="${j}" value="${s.weight||0}" aria-label="${esc(ex.name)} set ${j+1} weight">
+            <span class="text-xs text-slate-400 flex-shrink-0">${esc(ex.unit||'kg')} ×</span>
+            <input type="number" inputmode="numeric" class="esm-set-reps" style="width:3.5rem;text-align:center" data-idx="${i}" data-set="${j}" value="${s.reps||0}" aria-label="${esc(ex.name)} set ${j+1} reps">
+            <span class="text-xs text-slate-400 flex-shrink-0">reps</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+  list.querySelectorAll('.esm-del-ex').forEach(b => b.addEventListener('click', () => {
+    esmDraft.exercises.splice(+b.dataset.idx, 1);
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-set-weight').forEach(inp => inp.addEventListener('change', () => {
+    esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].weight = +inp.value || 0;
+  }));
+  list.querySelectorAll('.esm-set-reps').forEach(inp => inp.addEventListener('change', () => {
+    esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].reps = +inp.value || 0;
+  }));
+}
+
+function openEditSessionModal(date, sessionId) {
+  const s = sessions[date]?.[sessionId];
+  if (!s) return;
+  esmDate = date; esmSessionId = sessionId;
+  esmDraft = JSON.parse(JSON.stringify(s)); // deep clone so closing without saving discards edits cleanly
+  if (!Array.isArray(esmDraft.exercises)) esmDraft.exercises = [];
+  document.getElementById('esm-title').textContent = `Edit ${sessionLabel(s)}`;
+  document.getElementById('esm-subtitle').textContent = fmtDate(date);
+  document.getElementById('esm-error').style.display = 'none';
+  renderEsmExList();
+  document.getElementById('edit-session-modal').style.display = '';
+}
+document.getElementById('esm-close').addEventListener('click', () => document.getElementById('edit-session-modal').style.display = 'none');
+document.getElementById('esm-add-ex-btn').addEventListener('click', () => {
+  const excludeIds = esmDraft.exercises.map(ex => ex.exerciseId);
+  document.getElementById('edit-session-modal').style.display = 'none';
+  openPickExModal(id => {
+    const entry = newSessionExerciseFromLibrary(id);
+    if (entry) esmDraft.exercises.push(entry);
+    document.getElementById('edit-session-modal').style.display = '';
+    renderEsmExList();
+  }, excludeIds);
+});
+document.getElementById('esm-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('esm-save-btn');
+  if (btn.disabled) return;
+  const prevLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  document.getElementById('esm-error').style.display = 'none';
+  try {
+    await set(ref(db, `sessions/${uid()}/${esmDate}/${esmSessionId}`), esmDraft);
+    document.getElementById('edit-session-modal').style.display = 'none';
+    renderDashboard(); renderHistory(); renderCalendar();
+    if (calendarSelectedDate === esmDate) openCalendarDaySheet(esmDate);
+    showToast('Workout updated');
+  } catch (e) {
+    console.error('Failed to save workout edits:', e);
+    const errEl = document.getElementById('esm-error');
+    errEl.textContent = e.message || 'Could not save changes. Please try again.';
+    errEl.style.display = '';
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
 
 // Shared "done — back to the plain calendar" step for both adding and
 // deleting an activity: close every activity-creation surface and the day
