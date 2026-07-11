@@ -1304,26 +1304,155 @@ function currentGrowthState() {
   return getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: userProfile.growthPoints || 0 });
 }
 
-// Applies a growth-point delta to userProfile.growthPoints and persists it —
-// the one place that actually mutates growth points, used by both the
-// strength-workout save flow and the lighter "log other activity"/"log
-// recovery day" flows, so growth can never drift or be computed twice for
-// the same event. Returns the before/after state for a stage-change toast.
-async function awardGrowthPoints(points) {
+// ── Plant growth: always derived fresh from remaining activity history ─────
+// userProfile.growthPoints is NOT a running counter that add/edit/delete
+// nudge up or down — that drifts the moment a deletion, edit, or duplicate
+// can't be perfectly reversed. Instead it is always the OUTPUT of replaying
+// every currently-existing session chronologically (see recalculatePlantGrowth()
+// below). Add, edit, and delete all funnel through the same
+// recalculateAndPersistPlantGrowth() — none of them increments or
+// decrements the stored value directly. This means growthPoints can never
+// drift regardless of how many times a session is added, edited, deleted,
+// or restored, or in what order.
+//
+// Canonical source of truth: `sessions/{uid}/{date}/{id}` — the exact same
+// records History, the Calendar day sheet, streaks, and Closest Progress
+// already treat as canonical. Nothing else (not growthEvents, not a cached
+// total) is ever consulted to compute the number itself.
+function recalculatePlantGrowth() {
+  const allSessions = [];
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    Object.entries(daySessions || {}).forEach(([id, s]) => { if (s) allSessions.push({ date, id, session: s }); });
+  });
+  // Chronological by the date the activity is attributed to (matching
+  // getLastLoggedSets()/every other "most recent" reading in the app),
+  // then by completedAt as a same-day tiebreak.
+  allSessions.sort((a, b) => a.date === b.date
+    ? (a.session.completedAt || 0) - (b.session.completedAt || 0)
+    : a.date.localeCompare(b.date));
+
+  // Walking simulation of "what getLastLoggedSets()/exercises[id].weightUpFlag
+  // would have reported at this point in time, given only the sessions that
+  // still exist" — replacing the live global lookups computeWorkoutGrowth()
+  // uses at save-time, which only ever reflect the CURRENT moment, not a
+  // specific point in a replayed timeline.
+  const lastSeenByExercise = {};    // exerciseId -> { weight, sets:[{reps}] }
+  const readyToIncreaseByExercise = {}; // exerciseId -> boolean
+
+  let total = 0;
+  const perSession = [];
+
+  for (const { date, id, session: s } of allSessions) {
+    let participation = 0, repProgress = 0, weightUnlock = 0;
+
+    if (s.sessionType === 'recovery') {
+      participation = RECOVERY_DAY_GROWTH;
+    } else if (s.sessionType === 'other') {
+      participation = OTHER_ACTIVITY_GROWTH;
+    } else {
+      // group or quick — a strength session with an exercise/set breakdown.
+      let anyWorkingSetCompleted = false;
+      for (const ex of (s.exercises || [])) {
+        if (ex.skipped) continue;
+        const workingSets = workingSetsFor(ex);
+        const completedWorkingSets = workingSets.filter(st => st.completed).length;
+        if (completedWorkingSets > 0) {
+          anyWorkingSetCompleted = true;
+          participation += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise;
+        }
+        if (!ex.exerciseId || ex.progressionEnabled === false) continue;
+        if (!workingSets.length || !workingSets.every(st => st.completed)) continue;
+
+        // Older saved sessions (before minReps/maxReps started being
+        // snapshotted per session) fall back to the exercise's CURRENT
+        // rep range — a documented, unavoidable limitation for that history,
+        // not a bug: the original range was never persisted alongside them.
+        const exDef = exercises[ex.exerciseId] || {};
+        const minReps = ex.minReps ?? exDef.minReps ?? 8;
+        const maxReps = ex.maxReps ?? exDef.maxReps ?? 12;
+        const completedReps = workingSets.map(st => st.reps || 0);
+        const targetReps = (ex.targetReps || []).slice(0, completedReps.length);
+
+        if (completedReps.some(r => r < minReps)) {
+          lastSeenByExercise[ex.exerciseId] = { weight: ex.weight, sets: workingSets };
+          continue; // below target range — no strength bonus, but still "the last time this was done"
+        }
+
+        const { weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
+        const wasReadyToIncrease = !!readyToIncreaseByExercise[ex.exerciseId];
+        const previous = lastSeenByExercise[ex.exerciseId];
+        const previousTotalReps = previous ? previous.sets.reduce((sum, st) => sum + (st.reps || 0), 0) : null;
+        const currentTotalReps = completedReps.reduce((sum, r) => sum + r, 0);
+
+        if (wasReadyToIncrease && previous && ex.weight > (previous.weight || 0)) {
+          weightUnlock += GROWTH_AWARD.newWeightCompleted;
+        } else if (weightUp) {
+          repProgress += GROWTH_AWARD.readyToIncrease;
+        } else if (previousTotalReps != null && currentTotalReps > previousTotalReps) {
+          repProgress += GROWTH_AWARD.improvedReps;
+        }
+
+        lastSeenByExercise[ex.exerciseId] = { weight: ex.weight, sets: workingSets };
+        readyToIncreaseByExercise[ex.exerciseId] = weightUp;
+      }
+      if (anyWorkingSetCompleted) participation += GROWTH_AWARD.completedWorkout;
+    }
+
+    participation = round1(participation); repProgress = round1(repProgress); weightUnlock = round1(weightUnlock);
+    const totalGrowthAwarded = round1(participation + repProgress + weightUnlock);
+    total = round1(total + totalGrowthAwarded);
+    if (totalGrowthAwarded > 0) {
+      perSession.push({ date, id, participationGrowth: participation, repProgressGrowth: repProgress, weightUnlockGrowth: weightUnlock, totalGrowthAwarded });
+    }
+  }
+
+  return { totalGrowthPoints: total, perSession };
+}
+
+// The only function that writes users/{uid}/growthPoints. Called after
+// every mutation that can change growth (add, edit, delete, restore) instead
+// of adding/subtracting a delta — see recalculatePlantGrowth() above for why.
+async function recalculateAndPersistPlantGrowth() {
   const previousGrowth = currentGrowthState();
-  const newGrowthPoints = round1((userProfile.growthPoints || 0) + points);
-  userProfile.growthPoints = newGrowthPoints; // optimistic; onValue confirms shortly after
-  const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: newGrowthPoints });
-  await set(ref(db, `users/${uid()}/growthPoints`), newGrowthPoints);
+  const { totalGrowthPoints, perSession } = recalculatePlantGrowth();
+  userProfile.growthPoints = totalGrowthPoints; // optimistic; onValue confirms shortly after
+  const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: totalGrowthPoints });
+  await set(ref(db, `users/${uid()}/growthPoints`), totalGrowthPoints);
+  // Audit trail only — regenerated fresh from the same replay every time, so
+  // a session that no longer exists can never leave a stale/orphaned event
+  // behind, and recalculatePlantGrowth() never reads this back in.
+  syncGrowthEvents(perSession).catch(e => console.error('Failed to sync growth event audit trail:', e));
   return { previousGrowth, newGrowth };
 }
 
-function celebrateStageChangeIfNeeded(previousGrowth, newGrowth) {
-  if (newGrowth.currentStage === previousGrowth.currentStage) return;
+async function syncGrowthEvents(perSession) {
+  const events = {};
+  for (const p of perSession) {
+    events[p.id] = {
+      sourceType: 'session', sourceId: p.id, date: p.date,
+      participationGrowth: p.participationGrowth, repProgressGrowth: p.repProgressGrowth,
+      weightUnlockGrowth: p.weightUnlockGrowth, totalGrowthAwarded: p.totalGrowthAwarded,
+      active: true, createdAt: Date.now()
+    };
+  }
+  await set(ref(db, `users/${uid()}/growthEvents`), events);
+}
+
+// Neutral, non-judgmental copy either direction — growth moving down when
+// history is edited/deleted is a correction, never a punishment. Returns
+// null when the stage didn't change, so callers can skip a toast entirely.
+function stageChangeMessage(previousGrowth, newGrowth) {
+  if (newGrowth.currentStage === previousGrowth.currentStage) return null;
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
-  showToast(newGrowth.isFinalStage
-    ? `🌸 Your ${plantName} is in full bloom!`
-    : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`);
+  if (newGrowth.currentStage > previousGrowth.currentStage) {
+    return newGrowth.isFinalStage ? `🌸 Your ${plantName} is in full bloom!` : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`;
+  }
+  return 'Plant progress updated.';
+}
+
+function celebrateStageChangeIfNeeded(previousGrowth, newGrowth) {
+  const msg = stageChangeMessage(previousGrowth, newGrowth);
+  if (msg) showToast(msg);
 }
 
 const ENCOURAGEMENT = [
@@ -2003,31 +2132,34 @@ function renderEncouragement() {
   document.getElementById('dash-encouragement').textContent = ENCOURAGEMENT[dayIndex % ENCOURAGEMENT.length];
 }
 
-// One-time migration for users who logged workouts before growthPoints
-// existed. There's no reliable way to reconstruct exactly which past sessions
-// improved reps or unlocked weight, so this seeds a participation-only
-// baseline (never a full retroactive strength-progress replay) rather than
-// leaving long-time users looking like they're starting over at a sprout.
-// Brand-new users with zero history are NOT bootstrapped — 0 is their real
-// value, not a migration case.
-let growthBootstrapChecked = false;
-function ensureGrowthPointsBootstrap() {
-  if (growthBootstrapChecked) return;
-  if (userProfile.growthPoints != null) { growthBootstrapChecked = true; return; }
+// Repairs two situations with the same fix: a user who has never had
+// growthPoints stored (old accounts from before this existed), and a user
+// whose stored growthPoints no longer matches what recalculatePlantGrowth()
+// derives from their current history (stale from the old add/subtract
+// behavior, or from any past bug). Both are "the stored value disagrees with
+// the canonical records" — recalculating and overwriting is the same repair
+// either way. Runs once per page load; does not touch personality-plant
+// selection or collectible-plant data, only growthPoints/growthEvents.
+let growthConsistencyChecked = false;
+function ensureGrowthConsistency() {
+  if (growthConsistencyChecked) return;
   const totalSessions = totalLoggedSessions();
-  // 0 here is ambiguous — a genuinely brand-new user, or sessions/{uid} just
-  // hasn't loaded yet (profile and sessions arrive via independent, unordered
-  // onValue listeners). Leave growthBootstrapChecked false and re-check on the
-  // next render either way; the check itself is cheap.
-  if (!totalSessions) return;
-  growthBootstrapChecked = true;
-  const estimated = Math.min(100, round1(totalSessions * (GROWTH_AWARD.completedWorkout + GROWTH_AWARD.completedExercise)));
-  userProfile.growthPoints = estimated;
-  set(ref(db, `users/${uid()}/growthPoints`), estimated).catch(e => console.error('Failed to bootstrap growth points:', e));
+  // 0 is ambiguous — a genuinely brand-new user, or sessions/{uid} just
+  // hasn't loaded yet (profile and sessions arrive via independent,
+  // unordered onValue listeners). If growthPoints is already unset, treat 0
+  // sessions as "nothing to repair yet" and recheck on the next render
+  // rather than locking in growthPoints = 0 prematurely.
+  if (!totalSessions && userProfile.growthPoints == null) return;
+  growthConsistencyChecked = true;
+  const { totalGrowthPoints } = recalculatePlantGrowth();
+  if (Math.abs((userProfile.growthPoints ?? -1) - totalGrowthPoints) < 0.05) return; // already consistent
+  userProfile.growthPoints = totalGrowthPoints;
+  set(ref(db, `users/${uid()}/growthPoints`), totalGrowthPoints)
+    .catch(e => console.error('Failed to repair growth points:', e));
 }
 
 function renderDashboard() {
-  ensureGrowthPointsBootstrap();
+  ensureGrowthConsistency();
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
   renderPlantHero(sessionDates, hasHistory);
@@ -3933,6 +4065,12 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     exercises: activeSession.exercises.map(ex => ({
       exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.category,
       weight: ex.weight, unit: ex.unit,
+      // minReps/maxReps/weightIncrement/progressionEnabled are snapshotted
+      // here (not just targetReps) so a future full growth recalculation —
+      // see recalculatePlantGrowth() — can replay this exact session
+      // correctly without depending on whatever the exercise library's rep
+      // range happens to be at recalculation time.
+      minReps: ex.minReps, maxReps: ex.maxReps, weightIncrement: ex.weightIncrement, progressionEnabled: ex.progressionEnabled,
       targetReps: ex.targetReps, skipped: ex.skipped, notes: ex.notes || null,
       sets: ex.sets.map(s => ({
         weight: s.weight||0, reps: s.completed ? (s.reps||0) : 0, rir: s.rir===''?null:s.rir,
@@ -3943,13 +4081,17 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   try {
     const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
     await set(sessionRef, sessionData);
+    // Optimistic local mirror — recalculateAndPersistPlantGrowth() reads
+    // `sessions` directly and would otherwise race the onValue listener that
+    // normally keeps it in sync (which fires asynchronously, after this write).
+    (sessions[today] ??= {})[sessionRef.key] = sessionData;
 
-    // Growth is computed once here — never re-derived from raw history at
-    // render time — and applied exactly once per saved session, via the
-    // shared awardGrowthPoints() helper. The finish-save-btn disabled-guard
-    // above is what actually prevents a duplicate award (re-entrancy is
-    // blocked at the source); the event record below is for auditability/
-    // debugging, not a second dedupe gate.
+    // computeWorkoutGrowth() here is only used to decide the per-exercise
+    // progression update (targetReps/weightUpFlag/currentWeight) — the
+    // actual growthPoints value is never taken from its totalGrowthAwarded.
+    // recalculateAndPersistPlantGrowth() below re-derives growth from scratch
+    // from every remaining session (including the one just saved), which is
+    // what makes it agree with the state after any future edit or deletion.
     const result = computeWorkoutGrowth(activeSession.exercises);
 
     // Warm-up sets never reach the progression engine — progressionInputFor()
@@ -3958,17 +4100,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     for (const upd of result.perExerciseUpdates) {
       await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
     }
-    const { previousGrowth, newGrowth } = await awardGrowthPoints(result.totalGrowthAwarded);
-    await set(ref(db, `users/${uid()}/growthEvents/${sessionRef.key}`), {
-      workoutSessionId: sessionRef.key,
-      participationGrowth: result.participationGrowth,
-      repProgressGrowth: result.repProgressGrowth,
-      weightUnlockGrowth: result.weightUnlockGrowth,
-      totalGrowthAwarded: result.totalGrowthAwarded,
-      previousStage: previousGrowth.currentStage,
-      newStage: newGrowth.currentStage,
-      createdAt: Date.now()
-    });
+    const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
 
     // If today's calendar had this workout planned (via the Calendar or via
     // Home's "today's mission" already reading that plan), mark it completed
@@ -4240,7 +4372,8 @@ async function logOtherActivitySession(date, activityId, { duration, calories, n
   };
   const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
   await set(sessionRef, sessionData);
-  const { previousGrowth, newGrowth } = await awardGrowthPoints(OTHER_ACTIVITY_GROWTH);
+  (sessions[date] ??= {})[sessionRef.key] = sessionData; // see finish-save-btn's identical mirror for why
+  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
   await linkPlannedEntryToCompletedSession(date, 'activity', null, sessionRef.key, mins);
   return { sessionId: sessionRef.key, previousGrowth, newGrowth };
 }
@@ -4253,7 +4386,8 @@ async function logRecoveryDaySession(date, { notes } = {}) {
   };
   const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
   await set(sessionRef, sessionData);
-  const { previousGrowth, newGrowth } = await awardGrowthPoints(RECOVERY_DAY_GROWTH);
+  (sessions[date] ??= {})[sessionRef.key] = sessionData;
+  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
   await linkPlannedEntryToCompletedSession(date, 'recovery', null, sessionRef.key, 0);
   return { sessionId: sessionRef.key, previousGrowth, newGrowth };
 }
@@ -4283,18 +4417,20 @@ async function logPastStrengthSession(date, meta, exList, { duration, calories, 
     durationSeconds: mins * 60, duration: mins, caloriesBurned: calories || null, notes: notes || null, date,
     exercises: completedExercises.map(ex => ({
       exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.category, weight: ex.weight, unit: ex.unit,
+      minReps: ex.minReps, maxReps: ex.maxReps, weightIncrement: ex.weightIncrement, progressionEnabled: ex.progressionEnabled,
       targetReps: ex.targetReps, skipped: false, notes: '',
       sets: ex.sets.map(s => ({ weight: s.weight || 0, reps: s.reps || 0, rir: null, completed: true, warmup: false, completedAt: s.completedAt }))
     }))
   };
   const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
   await set(sessionRef, sessionData);
+  (sessions[date] ??= {})[sessionRef.key] = sessionData;
 
   const result = computeWorkoutGrowth(completedExercises);
   for (const upd of result.perExerciseUpdates) {
     await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
   }
-  const { previousGrowth, newGrowth } = await awardGrowthPoints(result.totalGrowthAwarded);
+  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
   await linkPlannedEntryToCompletedSession(date, meta.sessionType, meta.groupId || null, sessionRef.key, mins);
   return { sessionId: sessionRef.key, previousGrowth, newGrowth };
 }
@@ -4404,10 +4540,20 @@ function openCalendarDaySheet(date) {
     b.disabled = true;
     try {
       await remove(ref(db, `sessions/${uid()}/${delDate}/${delId}`));
+      if (sessions[delDate]) delete sessions[delDate][delId]; // mirror before recalculating — see finish-save-btn
+      // Deleting a completed activity always recalculates plant growth from
+      // the remaining history — never subtracts this session's original
+      // reward, since that can't be trusted after other edits/deletions.
+      // No stage-change toast here: "Activity deleted" (with Undo) already
+      // owns this moment: the bar/icon updating on the next render is
+      // feedback enough without a second, competing toast.
+      await recalculateAndPersistPlantGrowth();
       closeCalendarActivityWindows(date);
       showToast('Activity deleted', snapshot ? async () => {
         try {
           await set(ref(db, `sessions/${uid()}/${delDate}/${delId}`), snapshot);
+          (sessions[delDate] ??= {})[delId] = snapshot;
+          await recalculateAndPersistPlantGrowth();
           renderDashboard(); renderCalendar();
           showToast('Activity restored');
         } catch (err) {
@@ -4538,6 +4684,11 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
   document.getElementById('esm-error').style.display = 'none';
   try {
     await set(ref(db, `sessions/${uid()}/${esmDate}/${esmSessionId}`), esmDraft);
+    (sessions[esmDate] ??= {})[esmSessionId] = esmDraft; // mirror before recalculating — see finish-save-btn
+    // Editing sets/reps or adding/removing an exercise changes what this
+    // session is worth, so recalculate from scratch same as add/delete —
+    // never adjust the stored total by a guessed difference.
+    await recalculateAndPersistPlantGrowth();
     document.getElementById('edit-session-modal').style.display = 'none';
     renderDashboard(); renderHistory(); renderCalendar();
     if (calendarSelectedDate === esmDate) openCalendarDaySheet(esmDate);
@@ -4565,10 +4716,13 @@ function closeCalendarActivityWindows(date) {
   renderDashboard(); renderCalendar();
 }
 
-// Shown only after a save has actually succeeded.
-function finishActivityAdded(date) {
+// Shown only after a save has actually succeeded. A stage-change message
+// (see stageChangeMessage()) takes priority over the generic confirmation
+// when one is worth showing — there's only one toast slot, and a stage
+// change is more noteworthy than "Activity added."
+function finishActivityAdded(date, message) {
   closeCalendarActivityWindows(date);
-  showToast('Activity added');
+  showToast(message || 'Activity added');
 }
 
 function wireCalDaySheetActions(date) {
@@ -4591,8 +4745,7 @@ function wireCalDaySheetActions(date) {
         initialDuration: entry.plannedDuration || act?.defaultDuration, confirmLabel: 'Mark Complete',
         onConfirm: async details => {
           const { previousGrowth, newGrowth } = await logOtherActivitySession(date, entry.activityId, details);
-          celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-          finishActivityAdded(date);
+          finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
         }
       });
     } else {
@@ -4600,8 +4753,7 @@ function wireCalDaySheetActions(date) {
       btn.disabled = true; btn.textContent = 'Saving…';
       try {
         const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
-        celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-        finishActivityAdded(date);
+        finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
       } catch (err) {
         console.error('Failed to save Recovery Day:', err);
         alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -4622,13 +4774,14 @@ function wireCalDaySheetActions(date) {
     const prevLabel = btn.textContent;
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
+      let message = null;
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
       } else {
         const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
-        celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+        message = stageChangeMessage(previousGrowth, newGrowth);
       }
-      finishActivityAdded(date);
+      finishActivityAdded(date, message);
     } catch (err) {
       console.error('Failed to save Recovery Day:', err);
       alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -4663,8 +4816,7 @@ function openCalendarAddPicker(date) {
           // "Activity added" only ever appears once logPastWorkoutGroup resolves.
           onConfirm: async details => {
             const { previousGrowth, newGrowth } = await logPastWorkoutGroup(date, groupId, details);
-            celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-            finishActivityAdded(date);
+            finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
           }
         });
       } else {
@@ -4697,8 +4849,7 @@ function openCalendarAddPicker(date) {
             title: 'Log Quick Workout', subtitle: fmtDate(date), initialDuration: 30, confirmLabel: 'Log Workout',
             onConfirm: async details => {
               const { previousGrowth, newGrowth } = await logPastQuickWorkout(date, ids, details);
-              celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-              finishActivityAdded(date);
+              finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
             }
           });
         }
@@ -4724,13 +4875,14 @@ function openCalendarAddPicker(date) {
         title: act?.name || 'Activity', subtitle: fmtDate(date), showCalories: relation !== 'future',
         initialDuration: act?.defaultDuration, confirmLabel: relation === 'future' ? 'Schedule Activity' : 'Log Activity',
         onConfirm: async details => {
+          let message = null;
           if (relation === 'future') {
             await saveCalendarEntry(date, null, { type: 'activity', status: 'planned', activityId, plannedDuration: details.duration, notes: details.notes });
           } else {
             const { previousGrowth, newGrowth } = await logOtherActivitySession(date, activityId, details);
-            celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+            message = stageChangeMessage(previousGrowth, newGrowth);
           }
-          finishActivityAdded(date);
+          finishActivityAdded(date, message);
         }
       });
     });
@@ -4742,14 +4894,15 @@ function openCalendarAddPicker(date) {
     const prevLabel = btn.textContent;
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
+      let message = null;
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
       } else {
         const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
-        celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+        message = stageChangeMessage(previousGrowth, newGrowth);
       }
       document.getElementById('calendar-add-modal').style.display = 'none';
-      finishActivityAdded(date);
+      finishActivityAdded(date, message);
     } catch (e) {
       console.error('Failed to save Recovery Day:', e);
       alert(e.message || 'Could not save Recovery Day. Please try again.');
