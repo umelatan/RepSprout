@@ -65,12 +65,19 @@ body{font-family:'Inter',sans-serif}
 @keyframes toastIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 #toast.show{display:flex!important;animation:toastIn .2s ease-out}
 .btn:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #16a34a;outline-offset:2px;border-radius:.5rem}
-@keyframes waterDrop{0%{opacity:0;transform:translateY(-16px) scale(.6)}25%{opacity:1;transform:translateY(0) scale(1)}75%{opacity:1;transform:translateY(10px) scale(1)}100%{opacity:0;transform:translateY(18px) scale(.7)}}
-@keyframes waterGlow{0%{opacity:0;transform:scale(.85)}40%{opacity:.8;transform:scale(1.15)}100%{opacity:0;transform:scale(1)}}
-.water-drop{position:absolute;animation:waterDrop 1.1s ease-in-out forwards;pointer-events:none}
-.water-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.4),transparent 70%);animation:waterGlow 1.1s ease-in-out forwards;pointer-events:none}
+/* Continuous watering loop while a set is active — every element loops
+   (infinite), so presence/absence in the DOM is the only thing that turns
+   it on or off; there is no separate JS timer to fall out of sync. */
+@keyframes waterDropLoop{0%{opacity:0;transform:translateY(-14px) scale(.6)}20%{opacity:1;transform:translateY(0) scale(1)}70%{opacity:.85;transform:translateY(16px) scale(1)}100%{opacity:0;transform:translateY(22px) scale(.7)}}
+@keyframes waterGlowLoop{0%,100%{opacity:.22;transform:scale(.95)}50%{opacity:.5;transform:scale(1.08)}}
+@keyframes waterRippleLoop{0%{opacity:0;transform:scale(.5)}45%{opacity:.45;transform:scale(1)}100%{opacity:0;transform:scale(1.35)}}
+.water-drop-loop{position:absolute;animation:waterDropLoop 1.8s ease-in-out infinite;pointer-events:none;will-change:transform,opacity}
+.water-glow-loop{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.4),transparent 70%);animation:waterGlowLoop 2.4s ease-in-out infinite;pointer-events:none;will-change:transform,opacity}
+.water-ripple-loop{position:absolute;bottom:-4px;left:50%;width:2.5rem;height:.6rem;margin-left:-1.25rem;border-radius:50%;border:1.5px solid rgba(34,197,94,.5);animation:waterRippleLoop 2.4s ease-out infinite;pointer-events:none}
+.water-static-drop{position:absolute;opacity:.85;pointer-events:none}
+.water-static-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%);pointer-events:none}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop,.water-glow{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-loop,.water-glow-loop,.water-ripple-loop{animation:none!important;transition:none!important}
 }
 input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
@@ -2348,14 +2355,41 @@ function renderExercisePhase(ex) {
     </div>`;
 }
 
-// A set in progress — brief plant-watering feedback, single "Done" action.
+// Done/End Workout open a modal on top of this screen without changing
+// activeSession.phase away from 'active-set' — the watering loop would still
+// be technically "current", just visually covered by the modal backdrop.
+// Clearing it here stops the animation immediately rather than leaving it
+// merely obscured, and costs nothing since the phase-driven re-render will
+// recreate it from scratch if the set is still active afterwards.
+function stopPlantWatering() {
+  const stage = document.getElementById('plant-water-stage');
+  if (stage) stage.innerHTML = '🌱';
+}
+
+// A set in progress — the plant stays continuously watered for as long as
+// this phase is rendered, single "Done" action. The loop is pure markup
+// (CSS `infinite` animations), not a JS timer: presence of this screen IS
+// the watering state, so it can never drift out of sync with setStatus.
 function renderActiveSetPhase(ex) {
   const main = document.getElementById('aw-main');
   const footer = document.getElementById('aw-footer');
   const setNum = completedWorkingCount(ex) + 1;
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wateringMarkup = reducedMotion
+    ? `<span class="water-static-glow" aria-hidden="true"></span>
+       <span class="water-static-drop" style="left:38%;top:8%;font-size:1rem" aria-hidden="true">💧</span>
+       <span class="water-static-drop" style="left:60%;top:18%;font-size:.8rem" aria-hidden="true">💧</span>`
+    : `<span class="water-glow-loop" aria-hidden="true"></span>
+       <span class="water-drop-loop" style="left:44%;top:-8px;font-size:1.1rem;animation-delay:0s" aria-hidden="true">💧</span>
+       <span class="water-drop-loop" style="left:56%;top:-8px;font-size:.9rem;animation-delay:.6s" aria-hidden="true">💧</span>
+       <span class="water-drop-loop" style="left:50%;top:-8px;font-size:.75rem;animation-delay:1.2s" aria-hidden="true">💧</span>
+       <span class="water-ripple-loop" aria-hidden="true"></span>`;
   main.innerHTML = `
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
-      <div id="plant-water-stage" class="relative text-6xl" aria-hidden="true">🌱</div>
+      <div id="plant-water-stage" class="relative text-6xl" aria-hidden="true">
+        ${wateringMarkup}
+        <span class="relative">🌱</span>
+      </div>
       <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
       <p class="text-sm font-semibold text-brand-500" role="status">Set ${setNum} in progress</p>
     </div>`;
@@ -2366,18 +2400,6 @@ function renderActiveSetPhase(ex) {
       <button data-action="change-weight" class="text-slate-400 hover:underline py-2">Change weight</button>
       <button data-action="skip-set" class="text-red-400 hover:underline py-2">Skip set</button>
     </div>`;
-  triggerPlantWatering();
-}
-
-function triggerPlantWatering() {
-  const stage = document.getElementById('plant-water-stage');
-  if (!stage) return;
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const glow = document.createElement('span'); glow.className = 'water-glow';
-  const drop = document.createElement('span'); drop.className = 'water-drop'; drop.textContent = '💧';
-  drop.style.left = '50%'; drop.style.top = '-6px'; drop.style.transform = 'translateX(-50%)'; drop.style.fontSize = '1.25rem';
-  stage.appendChild(glow); stage.appendChild(drop);
-  setTimeout(() => { glow.remove(); drop.remove(); }, 1300);
 }
 
 function renderExerciseCompletePhase(ex) {
@@ -2677,6 +2699,7 @@ function handleAwAction(action) {
       renderGuidedWorkout(); saveActiveSessionDraft();
       break;
     case 'done-set':
+      stopPlantWatering();
       openLogSetSheet();
       break;
     case 'skip-set': {
@@ -2726,6 +2749,7 @@ function handleAwAction(action) {
       document.getElementById('queue-modal').style.display = '';
       break;
     case 'open-end-review':
+      stopPlantWatering();
       openEndReview();
       break;
     case 'add-exercise':
@@ -2785,7 +2809,12 @@ function openEndReview() {
   document.getElementById('end-review-remaining').textContent = `${Math.max(0, total-doneCount)} exercise${(total-doneCount)!==1?'s':''}`;
   document.getElementById('end-review-modal').style.display = '';
 }
-document.getElementById('end-review-continue-btn').addEventListener('click', () => document.getElementById('end-review-modal').style.display = 'none');
+document.getElementById('end-review-continue-btn').addEventListener('click', () => {
+  document.getElementById('end-review-modal').style.display = 'none';
+  // Re-render so a still-active set resumes its watering loop rather than
+  // staying in the cleared state stopPlantWatering() left it in.
+  renderGuidedWorkout();
+});
 document.getElementById('end-review-queue-btn').addEventListener('click', () => {
   document.getElementById('end-review-modal').style.display = 'none';
   renderQueue();
