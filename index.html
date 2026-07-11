@@ -372,10 +372,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         </div>
         <div id="cal-grid" class="grid grid-cols-7 gap-1"></div>
       </div>
-      <div id="cal-detail" style="display:none" class="card p-4">
-        <h4 id="cal-detail-title" class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 mb-3"></h4>
-        <div id="cal-detail-content" class="space-y-2"></div>
-      </div>
     </section>
 
     <!-- GARDEN / PROFILE -->
@@ -742,7 +738,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 </div>
 
 <!-- Pick exercise for session -->
-<div id="pick-ex-modal" style="display:none" class="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+<div id="pick-ex-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
     <div class="flex items-center justify-between">
       <h3 class="font-display font-bold text-slate-800 dark:text-white">Add Exercise</h3>
@@ -908,6 +904,117 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
+<!-- Calendar day sheet — bottom sheet (modal on desktop) opened by tapping any
+     calendar date. Content varies by past/today/future — see openCalendarDaySheet(). -->
+<div id="calendar-day-sheet" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <div>
+        <p id="cds-date-label" class="text-xs text-slate-400"></p>
+        <h3 id="cds-title" class="font-display font-bold text-base text-slate-800 dark:text-white"></h3>
+      </div>
+      <button id="cds-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <div id="cds-body" class="space-y-3"></div>
+  </div>
+</div>
+
+<!-- "Add to this day" — one tap, then a simple 4-way choice, per the task's
+     "instead of immediately showing a huge list, use a simple flow." -->
+<div id="calendar-add-modal" style="display:none" class="fixed inset-0 z-[73] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <h3 id="cap-title" class="font-display font-bold text-base text-slate-800 dark:text-white text-center pb-1">Add to this day</h3>
+    <button id="cap-group-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Workout Group</button>
+    <button id="cap-quick-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Quick Workout</button>
+    <button id="cap-activity-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Other Activity</button>
+    <button id="cap-recovery-btn" type="button" class="btn btn-outline w-full py-3 text-sm text-left px-4">Recovery Day</button>
+    <button id="cap-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Cancel</button>
+  </div>
+</div>
+
+<!-- Calendar's own workout-group picker — callback-based (openCalendarGroupPicker),
+     independent from Home's group-picker-modal so the two never interfere. -->
+<div id="calendar-group-picker-modal" style="display:none" class="fixed inset-0 z-[74] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 id="cgp-title" class="font-display font-bold text-slate-800 dark:text-white">Choose a workout group</h3>
+      <button id="cgp-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <div id="cgp-list" class="space-y-2"></div>
+  </div>
+</div>
+
+<!-- Activity Library — built-in activities plus this user's custom ones. -->
+<div id="activity-library-modal" style="display:none" class="fixed inset-0 z-[74] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 id="actlib-title" class="font-display font-bold text-slate-800 dark:text-white">Choose an activity</h3>
+      <button id="actlib-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <input id="actlib-search" type="text" placeholder="Search activities">
+    <div id="actlib-list" class="space-y-1.5"></div>
+    <button id="actlib-create-btn" type="button" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+      <span class="ms text-base" aria-hidden="true">add</span>Create Custom Activity
+    </button>
+  </div>
+</div>
+
+<!-- Create/edit a reusable custom activity. -->
+<div id="custom-activity-form-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Create Custom Activity</h3>
+      <button id="actform-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <div><label class="text-xs font-semibold text-slate-400 block mb-1">Name</label><input id="actform-name" type="text" placeholder="e.g. Hiking"></div>
+    <div class="flex gap-3">
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Category</label><select id="actform-category"></select></div>
+      <div class="w-20"><label class="text-xs font-semibold text-slate-400 block mb-1">Icon</label><input id="actform-icon" type="text" placeholder="🥾" maxlength="4"></div>
+    </div>
+    <div class="flex gap-3">
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Default duration (min)</label><input id="actform-duration" type="number" inputmode="numeric" min="0" step="5" placeholder="45"></div>
+      <div class="w-20"><label class="text-xs font-semibold text-slate-400 block mb-1">Color</label><input id="actform-color" type="color" value="#22c55e" style="padding:.25rem;height:2.5rem"></div>
+    </div>
+    <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes (optional)</label><textarea id="actform-notes" rows="2" class="resize-none" placeholder="Optional notes..."></textarea></div>
+    <button id="actform-save-btn" class="btn btn-green w-full py-2.5">Save activity</button>
+  </div>
+</div>
+
+<!-- Generic duration/calories/notes step — reused for logging OR planning an
+     activity/recovery day/past strength workout. Title, whether calories
+     shows, and what happens on confirm are all supplied by the opener. -->
+<div id="activity-detail-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <h3 id="actdetail-title" class="font-display font-bold text-base text-slate-800 dark:text-white text-center"></h3>
+    <p id="actdetail-subtitle" class="text-xs text-slate-400 text-center"></p>
+    <div class="flex gap-3">
+      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label><input id="actdetail-duration" type="number" inputmode="numeric" min="0" step="5"></div>
+      <div id="actdetail-calories-wrap" class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Calories (optional)</label><input id="actdetail-calories" type="number" inputmode="numeric" min="0" placeholder="—"></div>
+    </div>
+    <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes (optional)</label><input id="actdetail-notes" type="text" placeholder="Optional notes..."></div>
+    <button id="actdetail-confirm-btn" class="btn btn-green w-full py-2.5"></button>
+    <button id="actdetail-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Cancel</button>
+  </div>
+</div>
+
+<!-- Retroactively logging a Quick Workout for a past date: no live guided
+     flow (that assumes "right now"), just build a list of exercises then log
+     them all at target reps in one step — see logPastQuickWorkout(). -->
+<div id="past-quick-builder-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Log Quick Workout</h3>
+      <button id="pqb-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+    </div>
+    <p id="pqb-date-label" class="text-xs text-slate-400"></p>
+    <div id="pqb-list" class="space-y-1.5"></div>
+    <button id="pqb-add-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+      <span class="ms text-base" aria-hidden="true">add</span>Add exercise
+    </button>
+    <button id="pqb-save-btn" class="btn btn-green w-full py-2.5">Log Quick Workout</button>
+  </div>
+</div>
+
 <!-- ══════════ FIREBASE CONFIG ══════════ -->
 <script>
 const firebaseConfig = {
@@ -938,7 +1045,7 @@ const db   = getDatabase(app);
 const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {};
+let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'groups';
 let dataRefs = [];
@@ -957,6 +1064,41 @@ let groupModalDraft = null; // { name, description, color, exercises:[{exerciseI
 // Small preset palette for workout-group accents — same denormalize-once
 // pattern as PLANT_THEME, so colors live in one place, not scattered.
 const GROUP_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ec4899', '#14b8a6'];
+
+// ── Activity Library ─────────────────────────────────────────────────────────
+// "Other activities" (non-strength) — Calendar and Home both log/plan these
+// the same way strength workouts are logged, just without the progression
+// engine. Built-ins are a fixed local catalogue (like PLANTS); custom ones a
+// user creates live in Firebase at users/{uid}/activities and are merged in
+// by allActivities() so every call site sees one flat list either way.
+const ACTIVITY_CATEGORIES = ['Strength', 'Pilates', 'Yoga', 'Cardio', 'Running', 'Walking', 'Recovery', 'Mobility', 'Sport', 'Custom'];
+const ACTIVITY_CATEGORY_COLOR = {
+  Strength: '#22c55e', Pilates: '#a855f7', Yoga: '#a855f7', Cardio: '#f97316',
+  Running: '#3b82f6', Walking: '#3b82f6', Recovery: '#94a3b8', Mobility: '#14b8a6',
+  Sport: '#f97316', Custom: '#64748b'
+};
+const RECOVERY_COLOR = '#94a3b8';
+
+const BUILTIN_ACTIVITIES = [
+  { id: 'act_reformer_pilates', name: 'Reformer Pilates', category: 'Pilates', icon: '🤸', defaultDuration: 50, color: ACTIVITY_CATEGORY_COLOR.Pilates },
+  { id: 'act_mat_pilates',      name: 'Mat Pilates',      category: 'Pilates', icon: '🧘', defaultDuration: 45, color: ACTIVITY_CATEGORY_COLOR.Pilates },
+  { id: 'act_yoga',             name: 'Yoga',             category: 'Yoga',    icon: '🧘', defaultDuration: 45, color: ACTIVITY_CATEGORY_COLOR.Yoga },
+  { id: 'act_hiit',             name: 'HIIT',             category: 'Cardio',  icon: '🔥', defaultDuration: 30, color: ACTIVITY_CATEGORY_COLOR.Cardio },
+  { id: 'act_zumba',            name: 'Zumba',            category: 'Cardio',  icon: '💃', defaultDuration: 45, color: ACTIVITY_CATEGORY_COLOR.Cardio },
+  { id: 'act_spin',             name: 'Spin',             category: 'Cardio',  icon: '🚴', defaultDuration: 45, color: ACTIVITY_CATEGORY_COLOR.Cardio },
+  { id: 'act_boxing',           name: 'Boxing',           category: 'Sport',   icon: '🥊', defaultDuration: 45, color: ACTIVITY_CATEGORY_COLOR.Sport },
+  { id: 'act_active_stretch',   name: 'Active Stretching', category: 'Mobility', icon: '🙆', defaultDuration: 20, color: ACTIVITY_CATEGORY_COLOR.Mobility },
+  { id: 'act_running',          name: 'Running',          category: 'Running', icon: '🏃', defaultDuration: 30, color: ACTIVITY_CATEGORY_COLOR.Running },
+  { id: 'act_jogging',          name: 'Jogging',          category: 'Running', icon: '🏃', defaultDuration: 30, color: ACTIVITY_CATEGORY_COLOR.Running },
+  { id: 'act_walking',          name: 'Walking',          category: 'Walking', icon: '🚶', defaultDuration: 30, color: ACTIVITY_CATEGORY_COLOR.Walking },
+  { id: 'act_swimming',         name: 'Swimming',         category: 'Cardio',  icon: '🏊', defaultDuration: 30, color: ACTIVITY_CATEGORY_COLOR.Cardio },
+  { id: 'act_cycling',          name: 'Cycling',          category: 'Cardio',  icon: '🚴', defaultDuration: 40, color: ACTIVITY_CATEGORY_COLOR.Cardio }
+].map(a => ({ ...a, isBuiltIn: true }));
+const BUILTIN_ACTIVITIES_BY_ID = Object.fromEntries(BUILTIN_ACTIVITIES.map(a => [a.id, a]));
+
+/** One flat {id: activity} map — built-ins plus this user's custom activities. */
+function allActivities() { return { ...BUILTIN_ACTIVITIES_BY_ID, ...customActivities }; }
+function getActivity(id) { return allActivities()[id] || null; }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -1135,6 +1277,28 @@ function getPlantGrowthState({ plantId, growthPoints }) {
 // place that decides which plant/points belong to "the current growth state."
 function currentGrowthState() {
   return getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: userProfile.growthPoints || 0 });
+}
+
+// Applies a growth-point delta to userProfile.growthPoints and persists it —
+// the one place that actually mutates growth points, used by both the
+// strength-workout save flow and the lighter "log other activity"/"log
+// recovery day" flows, so growth can never drift or be computed twice for
+// the same event. Returns the before/after state for a stage-change toast.
+async function awardGrowthPoints(points) {
+  const previousGrowth = currentGrowthState();
+  const newGrowthPoints = round1((userProfile.growthPoints || 0) + points);
+  userProfile.growthPoints = newGrowthPoints; // optimistic; onValue confirms shortly after
+  const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: newGrowthPoints });
+  await set(ref(db, `users/${uid()}/growthPoints`), newGrowthPoints);
+  return { previousGrowth, newGrowth };
+}
+
+function celebrateStageChangeIfNeeded(previousGrowth, newGrowth) {
+  if (newGrowth.currentStage === previousGrowth.currentStage) return;
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
+  showToast(newGrowth.isFinalStage
+    ? `🌸 Your ${plantName} is in full bloom!`
+    : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`);
 }
 
 const ENCOURAGEMENT = [
@@ -1350,6 +1514,20 @@ function subscribeData() {
     renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList();
   }, e => console.error(e));
   dataRefs.push(rSessions);
+
+  // Planned/completed calendar entries and user-created activities — both
+  // nested under users/{uid} so they inherit the existing per-user rule
+  // instead of needing new top-level Firebase Security Rules entries.
+  const rCalendarEntries = ref(db, `users/${uid()}/calendarEntries`);
+  onValue(rCalendarEntries, snap => {
+    calendarEntries = snap.val() || {};
+    renderDashboard(); renderCalendar();
+  }, e => console.error(e));
+  dataRefs.push(rCalendarEntries);
+
+  const rActivities = ref(db, `users/${uid()}/activities`);
+  onValue(rActivities, snap => { customActivities = snap.val() || {}; }, e => console.error(e));
+  dataRefs.push(rActivities);
 
   const rProfile = ref(db, `users/${uid()}`);
   onValue(rProfile, snap => {
@@ -1609,14 +1787,55 @@ function renderDashStats(sessionDates, hasHistory) {
 // plays its stage-change pop on an actual transition, never on a routine
 // re-render at the same stage (which would falsely "celebrate" every refresh).
 let lastRenderedMissionStage = null;
+// Today's Mission, when the calendar has something planned for today —
+// same data currentGrowthState()-style single source as the Calendar day
+// sheet (firstIncompletePlannedEntry()), just rendered with data-action
+// buttons instead of ids since this card uses event delegation.
+function renderHomeMissionPlannedCard(planned) {
+  let label, meta, primaryLabel, primaryAction;
+  if (planned.type === 'group') {
+    const g = groups[planned.workoutGroupId];
+    label = g?.name || 'Workout Group';
+    meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''}`;
+    primaryLabel = 'Start Workout'; primaryAction = 'today-start-group';
+  } else if (planned.type === 'quick') {
+    label = 'Quick Workout'; meta = 'Build it as you go';
+    primaryLabel = 'Start Quick Workout'; primaryAction = 'today-start-quick';
+  } else if (planned.type === 'activity') {
+    const act = getActivity(planned.activityId);
+    label = `${act?.icon ? act.icon + ' ' : ''}${act?.name || 'Activity'}`;
+    meta = `${planned.plannedDuration || act?.defaultDuration || 30} min planned`;
+    primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-activity-complete';
+  } else {
+    label = '🍃 Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
+    primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-recovery-complete';
+  }
+  return `
+    <p class="text-xs font-semibold text-brand-500">Today's Mission</p>
+    <p class="text-base font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
+    <p class="text-xs text-slate-400">${esc(meta)}</p>
+    <button data-action="${primaryAction}" data-entry-id="${planned.id}" class="btn btn-green btn-pop w-full py-3.5 text-base">${esc(primaryLabel)}</button>
+    <div class="flex items-center justify-center gap-4 pt-1 text-xs font-semibold flex-wrap">
+      <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Workout</button>
+      <button data-action="today-add-another" class="text-slate-400 hover:underline py-2">Add Another Activity</button>
+      <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
+    </div>`;
+}
+
 function renderTodayMission() {
   const body = document.getElementById('dash-mission-body');
   const today = todayStr();
   const todaySessions = sessions[today] || {};
   const done = Object.keys(todaySessions).length > 0;
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
+  // A still-incomplete planned activity always takes priority over "done for
+  // today" — multiple planned activities advance one at a time (task spec:
+  // "after it is completed, automatically show the next planned activity").
+  const planned = firstIncompletePlannedEntry(today);
 
-  if (done) {
+  if (planned) {
+    body.innerHTML = renderHomeMissionPlannedCard(planned);
+  } else if (done) {
     const s = Object.values(todaySessions)[0];
     body.innerHTML = `
       <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-sm">
@@ -1638,7 +1857,11 @@ function renderTodayMission() {
         <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
         <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>Grows your plant</span>
       </div>
-      <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>`;
+      <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>
+      <div class="flex items-center justify-center gap-4 pt-1 text-xs font-semibold flex-wrap">
+        <button data-action="today-log-activity" class="text-slate-400 hover:underline py-2">Log other activity</button>
+        <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
+      </div>`;
   }
 
   renderMissionStageIcon();
@@ -3683,15 +3906,12 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     await set(sessionRef, sessionData);
 
     // Growth is computed once here — never re-derived from raw history at
-    // render time — and applied exactly once per saved session. The
-    // finish-save-btn disabled-guard above is what actually prevents a
-    // duplicate award (re-entrancy is blocked at the source); the event
-    // record below is for auditability/debugging, not a second dedupe gate.
-    const previousGrowth = currentGrowthState();
+    // render time — and applied exactly once per saved session, via the
+    // shared awardGrowthPoints() helper. The finish-save-btn disabled-guard
+    // above is what actually prevents a duplicate award (re-entrancy is
+    // blocked at the source); the event record below is for auditability/
+    // debugging, not a second dedupe gate.
     const result = computeWorkoutGrowth(activeSession.exercises);
-    const newGrowthPoints = round1((userProfile.growthPoints || 0) + result.totalGrowthAwarded);
-    userProfile.growthPoints = newGrowthPoints; // optimistic; onValue confirms shortly after
-    const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: newGrowthPoints });
 
     // Warm-up sets never reach the progression engine — progressionInputFor()
     // (consumed inside computeWorkoutGrowth() above) trims them out so the
@@ -3699,7 +3919,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     for (const upd of result.perExerciseUpdates) {
       await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
     }
-    await set(ref(db, `users/${uid()}/growthPoints`), newGrowthPoints);
+    const { previousGrowth, newGrowth } = await awardGrowthPoints(result.totalGrowthAwarded);
     await set(ref(db, `users/${uid()}/growthEvents/${sessionRef.key}`), {
       workoutSessionId: sessionRef.key,
       participationGrowth: result.participationGrowth,
@@ -3711,18 +3931,20 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
       createdAt: Date.now()
     });
 
+    // If today's calendar had this workout planned (via the Calendar or via
+    // Home's "today's mission" already reading that plan), mark it completed
+    // and link it to the session that just satisfied it. A workout started
+    // any other way (Home's group picker with nothing planned, etc.) simply
+    // has no matching plan to link — nothing else about this save changes.
+    await linkPlannedEntryToCompletedSession(today, sessionType === 'quick' ? 'quick' : 'group', activeSession.groupId, sessionRef.key, duration);
+
     stopPlantWatering();
     clearInterval(awTimerHandle);
     clearActiveSessionDraft();
     document.getElementById('finish-modal').style.display = 'none';
     hide('active-workout-view'); show('app-view');
 
-    if (newGrowth.currentStage !== previousGrowth.currentStage) {
-      const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
-      showToast(newGrowth.isFinalStage
-        ? `🌸 Your ${plantName} is in full bloom!`
-        : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`);
-    }
+    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
 
     if (sessionType === 'quick') {
       // The completed session is already safely saved at this point — offer
@@ -3797,8 +4019,18 @@ document.getElementById('sag-save-btn').addEventListener('click', async () => {
 // stable instead of everything old going gray.
 const LEGACY_MG_COLOR = { upper:'#3b82f6', lower:'#f97316', core:'#a855f7', full:'#22c55e', cardio:'#ef4444' };
 
-function sessionLabel(s) { return s.sessionType === 'quick' ? 'Quick Workout' : (s.groupName || MG_LABEL[s.muscleGroup] || s.muscleGroup); }
-function sessionColor(s) { return s.sessionType === 'quick' ? QUICK_WORKOUT_COLOR : (s.groupColor || LEGACY_MG_COLOR[s.muscleGroup] || GROUP_COLORS[0]); }
+function sessionLabel(s) {
+  if (s.sessionType === 'recovery') return 'Recovery Day';
+  if (s.sessionType === 'other') return s.activityName || 'Activity';
+  if (s.sessionType === 'quick') return 'Quick Workout';
+  return s.groupName || MG_LABEL[s.muscleGroup] || s.muscleGroup;
+}
+function sessionColor(s) {
+  if (s.sessionType === 'recovery') return RECOVERY_COLOR;
+  if (s.sessionType === 'other') return s.activityColor || ACTIVITY_CATEGORY_COLOR[s.activityCategory] || ACTIVITY_CATEGORY_COLOR.Custom;
+  if (s.sessionType === 'quick') return QUICK_WORKOUT_COLOR;
+  return s.groupColor || LEGACY_MG_COLOR[s.muscleGroup] || GROUP_COLORS[0];
+}
 
 function exerciseHistoryLine(ex) {
   if (ex.skipped) return `<p class="text-sm text-slate-400">• ${esc(ex.name)} — skipped</p>`;
@@ -3816,14 +4048,14 @@ function renderHistory() {
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
             <p class="text-xs font-bold text-slate-400">${fmtDate(date)}</p>
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(sessionLabel(s))}</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${s.sessionType === 'recovery' ? '🍃 ' : (s.activityIcon ? s.activityIcon + ' ' : '')}${esc(sessionLabel(s))}</p>
           </div>
           <button class="del-session p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}"><span class="ms text-lg" aria-hidden="true">delete</span></button>
         </div>
         <div class="space-y-1">
           ${(s.exercises||[]).map(exerciseHistoryLine).join('')}
         </div>
-        <p class="text-xs text-slate-400">${s.duration||0} min${s.caloriesBurned ? ` · 🔥 ${s.caloriesBurned} kcal` : ''}</p>
+        <p class="text-xs text-slate-400">${s.duration||0} min${s.caloriesBurned ? ` · 🔥 ${s.caloriesBurned} kcal` : ''}${s.notes ? ` · ${esc(s.notes)}` : ''}</p>
       </div>`)
   ).join('');
 
@@ -3837,6 +4069,43 @@ function renderHistory() {
 document.getElementById('cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); });
 document.getElementById('cal-next').addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth=0; calYear++; } renderCalendar(); });
 
+// Up to 3 subtle indicators per day, "+X" beyond that. Completed strength =
+// solid green dot, planned strength = outlined green dot, Pilates/Yoga =
+// purple, Cardio = orange, Walking/Running = blue, Recovery Day = grey leaf
+// (grayscale+dimmed 🍃 — Unicode has no literal grey-leaf glyph). Planned
+// (not-yet-completed) non-strength items reuse the same color, just
+// outlined/dimmed instead of solid, so "planned vs completed" reads the
+// same way across every indicator, not just strength ones.
+function dayIndicators(date) {
+  const items = [];
+  Object.values(sessions[date] || {}).forEach(s => {
+    if (s.sessionType === 'recovery') items.push({ kind: 'leaf', filled: true });
+    else if (s.sessionType === 'other') items.push({ kind: 'dot', color: s.activityColor || ACTIVITY_CATEGORY_COLOR[s.activityCategory] || ACTIVITY_CATEGORY_COLOR.Custom, filled: true });
+    else items.push({ kind: 'dot', color: ACTIVITY_CATEGORY_COLOR.Strength, filled: true }); // completed group/quick
+  });
+  Object.values(calendarEntries[date] || {}).forEach(e => {
+    if (e.status !== 'planned') return; // completed plans are already represented via their linked session above
+    if (e.type === 'recovery') items.push({ kind: 'leaf', filled: false });
+    else if (e.type === 'activity') {
+      const act = getActivity(e.activityId);
+      items.push({ kind: 'dot', color: act?.color || ACTIVITY_CATEGORY_COLOR[act?.category] || ACTIVITY_CATEGORY_COLOR.Custom, filled: false });
+    } else items.push({ kind: 'dot', color: ACTIVITY_CATEGORY_COLOR.Strength, filled: false }); // planned group/quick
+  });
+  return items;
+}
+function renderDayIndicators(date) {
+  const items = dayIndicators(date);
+  const shown = items.slice(0, 3);
+  const overflow = items.length - shown.length;
+  const dots = shown.map(it => it.kind === 'leaf'
+    ? `<span class="text-[9px] grayscale ${it.filled ? 'opacity-80' : 'opacity-35'}" aria-hidden="true">🍃</span>`
+    : it.filled
+      ? `<span class="w-1.5 h-1.5 rounded-full inline-block flex-shrink-0" style="background:${it.color}" aria-hidden="true"></span>`
+      : `<span class="w-1.5 h-1.5 rounded-full inline-block flex-shrink-0" style="border:1.5px solid ${it.color}" aria-hidden="true"></span>`
+  ).join('');
+  return `<span class="flex items-center justify-center gap-0.5 h-2.5">${dots}${overflow > 0 ? `<span class="text-[8px] font-bold text-slate-400 leading-none">+${overflow}</span>` : ''}</span>`;
+}
+
 function renderCalendar() {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-title').textContent = `${MONTHS[calMonth]} ${calYear}`;
@@ -3846,54 +4115,585 @@ function renderCalendar() {
   const today  = todayStr();
   grid.innerHTML = '';
 
-  // Build date → color map
-  const dateMap = {};
-  Object.entries(sessions).forEach(([date, daySessions]) => {
-    const firstSession = Object.values(daySessions||{})[0];
-    if (firstSession) dateMap[date] = sessionColor(firstSession);
-  });
-
   for (let i = 0; i < offset; i++) { const d = document.createElement('div'); grid.appendChild(d); }
   for (let d = 1; d <= days; d++) {
     const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const color = dateMap[ds];
     const cell = document.createElement('button');
-    cell.className = 'aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all hover:bg-brand-50 dark:hover:bg-brand-950/30 relative';
-    const isToday = ds === today;
-    if (isToday) cell.classList.add('ring-2', 'ring-brand-500');
-    if (color) { cell.style.background = color; cell.style.color = 'white'; }
-    else cell.classList.add('text-slate-600', 'dark:text-slate-300');
-    cell.textContent = d;
-    cell.addEventListener('click', () => showCalDetail(ds));
+    cell.className = 'aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all hover:bg-brand-50 dark:hover:bg-brand-950/30 relative text-slate-600 dark:text-slate-300 gap-0.5';
+    if (ds === today) cell.classList.add('ring-2', 'ring-brand-500');
+    cell.innerHTML = `<span>${d}</span>${renderDayIndicators(ds)}`;
+    cell.addEventListener('click', () => openCalendarDaySheet(ds));
     grid.appendChild(cell);
   }
 }
 
-function showCalDetail(ds) {
-  const detail = document.getElementById('cal-detail');
-  const title  = document.getElementById('cal-detail-title');
-  const content= document.getElementById('cal-detail-content');
-  title.textContent = fmtDate(ds);
-  const daySessions = sessions[ds] || {};
-  if (!Object.keys(daySessions).length) {
-    content.innerHTML = '<p class="text-sm text-slate-400">Rest day</p>';
-  } else {
-    content.innerHTML = Object.values(daySessions).map(s => `
-      <div class="space-y-1">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(sessionLabel(s))} · ${s.duration||0} min${s.caloriesBurned ? ' · 🔥 '+s.caloriesBurned+' kcal' : ''}</p>
-        ${(s.exercises||[]).map(ex => `<p class="text-xs text-slate-500">${ex.skipped ? `• ${esc(ex.name)} — skipped` : `• ${esc(ex.name)} ${ex.weight}${ex.unit} · ${(ex.sets||[]).map(st=>st.reps+'r').join('/')}`}</p>`).join('')}
-      </div>`).join('');
-  }
-  detail.style.display = '';
+// ── Calendar entries: planning + completion status ──────────────────────────
+// A CalendarEntry is a thin status/plan record — one per planned or logged
+// non-detail item on a given date. Strength workouts still store their full
+// exercise/set detail in `sessions` exactly as before (zero changes to that
+// model); a CalendarEntry for a strength workout just points at the session
+// via workoutSessionId once completed. Other activities and Recovery Days
+// have no separate detailed record: the CalendarEntry itself, plus a
+// lightweight `sessions` entry once actually logged (so every existing
+// history/streak/dashboard code path that already reads `sessions` keeps
+// working for these too, unchanged), together ARE the record.
+//
+// Nested under users/{uid} so it inherits the existing per-user Firebase
+// rule instead of needing a new top-level rule.
+function entriesForDate(date) { return calendarEntries[date] || {}; }
+function plannedEntriesForDate(date) {
+  return Object.entries(entriesForDate(date)).filter(([, e]) => e.status === 'planned').sort((a, b) => (a[1].createdAt||0) - (b[1].createdAt||0));
+}
+function firstIncompletePlannedEntry(date) {
+  const planned = plannedEntriesForDate(date);
+  return planned.length ? { id: planned[0][0], ...planned[0][1] } : null;
 }
 
+async function saveCalendarEntry(date, id, data) {
+  const now = Date.now();
+  const path = `users/${uid()}/calendarEntries/${date}`;
+  const entryRef = id ? ref(db, `${path}/${id}`) : push(ref(db, path));
+  const entryId = id || entryRef.key;
+  const existing = entriesForDate(date)[entryId] || {};
+  const entry = { ...existing, ...data, id: entryId, date, createdAt: existing.createdAt || now, updatedAt: now };
+  await set(entryRef, entry);
+  return entry;
+}
+async function deleteCalendarEntry(date, id) {
+  await remove(ref(db, `users/${uid()}/calendarEntries/${date}/${id}`));
+}
+
+// Called right after a strength session is saved. If today's calendar had
+// this exact workout (same type, same group for grouped workouts) planned,
+// mark that plan completed and link it to the session that satisfied it.
+// A workout started with nothing planned simply has no match — no-op.
+async function linkPlannedEntryToCompletedSession(date, type, workoutGroupId, workoutSessionId, completedDuration) {
+  const match = plannedEntriesForDate(date).find(([, e]) => e.type === type && (type !== 'group' || e.workoutGroupId === workoutGroupId));
+  if (!match) return;
+  const [entryId, entry] = match;
+  await saveCalendarEntry(date, entryId, { ...entry, status: 'completed', workoutSessionId, completedDuration });
+}
+
+// ── Logging non-strength activities & Recovery Days ──────────────────────────
+// Neither of these ever touches computeWorkoutGrowth() / the double-
+// progression engine — only a flat participation-sized growth award, per
+// "other activities contribute to consistency, not double progression."
+const OTHER_ACTIVITY_GROWTH = GROWTH_AWARD.completedWorkout;
+const RECOVERY_DAY_GROWTH = GROWTH_AWARD.completedExercise;
+
+async function logOtherActivitySession(date, activityId, { duration, calories, notes } = {}) {
+  const activity = getActivity(activityId);
+  if (!activity) throw new Error('Unknown activity.');
+  const mins = duration || activity.defaultDuration || 30;
+  const sessionData = {
+    sessionType: 'other', activityId, activityName: activity.name, activityCategory: activity.category,
+    activityIcon: activity.icon || '🏃', activityColor: activity.color || ACTIVITY_CATEGORY_COLOR[activity.category] || ACTIVITY_CATEGORY_COLOR.Custom,
+    muscleGroup: 'other', startedAt: Date.now(), completedAt: Date.now(),
+    durationSeconds: mins * 60, duration: mins, caloriesBurned: calories || null, notes: notes || null,
+    date, exercises: []
+  };
+  const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
+  await set(sessionRef, sessionData);
+  const { previousGrowth, newGrowth } = await awardGrowthPoints(OTHER_ACTIVITY_GROWTH);
+  await linkPlannedEntryToCompletedSession(date, 'activity', null, sessionRef.key, mins);
+  return { sessionId: sessionRef.key, previousGrowth, newGrowth };
+}
+
+async function logRecoveryDaySession(date, { notes } = {}) {
+  const sessionData = {
+    sessionType: 'recovery', muscleGroup: 'recovery', startedAt: Date.now(), completedAt: Date.now(),
+    durationSeconds: 0, duration: 0, caloriesBurned: null, notes: notes || null,
+    date, exercises: []
+  };
+  const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
+  await set(sessionRef, sessionData);
+  const { previousGrowth, newGrowth } = await awardGrowthPoints(RECOVERY_DAY_GROWTH);
+  await linkPlannedEntryToCompletedSession(date, 'recovery', null, sessionRef.key, 0);
+  return { sessionId: sessionRef.key, previousGrowth, newGrowth };
+}
+
+// ── Retroactive strength logging for a past date ─────────────────────────────
+// The live guided set-by-set flow assumes "right now" (rest timers, active
+// timestamps), so it isn't reused for a past date. Instead every set is
+// logged completed at its target reps/weight — a reasonable retroactive
+// default — then run through the exact same growth+progression pipeline
+// finish-save-btn uses, so history/progression never diverge by entry point.
+// Known limitation: getLastLoggedSets() compares against the most recently
+// DATED session regardless of when it was actually logged, so backfilling a
+// date older than an already-logged more recent session can produce a
+// misleading "previous session" comparison for growth purposes. Fine for the
+// intended "I forgot to log yesterday" use case; noted for anything further back.
+async function logPastStrengthSession(date, meta, exList, { duration, calories, notes } = {}) {
+  if (!exList.length) throw new Error('No exercises to log.');
+  const completedExercises = exList.map(ex => ({
+    ...ex,
+    sets: ex.sets.map((s, i) => ({ ...s, reps: ex.targetReps[i], completed: true, completedAt: Date.now() }))
+  }));
+  const mins = duration || 30;
+  const sessionData = {
+    groupId: meta.groupId || null, groupName: meta.groupName || null, groupColor: meta.groupColor || null, sessionType: meta.sessionType,
+    muscleGroup: completedExercises[0]?.category || 'full',
+    startedAt: Date.now(), completedAt: Date.now(),
+    durationSeconds: mins * 60, duration: mins, caloriesBurned: calories || null, notes: notes || null, date,
+    exercises: completedExercises.map(ex => ({
+      exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.category, weight: ex.weight, unit: ex.unit,
+      targetReps: ex.targetReps, skipped: false, notes: '',
+      sets: ex.sets.map(s => ({ weight: s.weight || 0, reps: s.reps || 0, rir: null, completed: true, warmup: false, completedAt: s.completedAt }))
+    }))
+  };
+  const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
+  await set(sessionRef, sessionData);
+
+  const result = computeWorkoutGrowth(completedExercises);
+  for (const upd of result.perExerciseUpdates) {
+    await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
+  }
+  const { previousGrowth, newGrowth } = await awardGrowthPoints(result.totalGrowthAwarded);
+  await linkPlannedEntryToCompletedSession(date, meta.sessionType, meta.groupId || null, sessionRef.key, mins);
+  return { sessionId: sessionRef.key, previousGrowth, newGrowth };
+}
+
+async function logPastWorkoutGroup(date, groupId, opts = {}) {
+  const g = groups[groupId];
+  if (!g) throw new Error('Unknown workout group.');
+  const exList = (g.exercises || []).map(ge => buildSessionExercise(ge.exerciseId, ge)).filter(Boolean);
+  return logPastStrengthSession(date, { sessionType: 'group', groupId, groupName: g.name, groupColor: g.color || GROUP_COLORS[0] }, exList, opts);
+}
+async function logPastQuickWorkout(date, exerciseIds, opts = {}) {
+  const exList = exerciseIds.map(id => buildSessionExercise(id)).filter(Boolean);
+  return logPastStrengthSession(date, { sessionType: 'quick' }, exList, opts);
+}
+
+// ── Calendar day sheet ────────────────────────────────────────────────────────
+function dateRelation(date) {
+  const today = todayStr();
+  if (date === today) return 'today';
+  return date < today ? 'past' : 'future';
+}
+
+function renderCalDaySessionCard(date, sessionId, s) {
+  return `
+    <div class="card p-3 space-y-1" style="border-left:3px solid ${sessionColor(s)}">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${s.activityIcon ? s.activityIcon + ' ' : ''}${esc(sessionLabel(s))}</p>
+        <button class="cds-del-session p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}"><span class="ms text-base" aria-hidden="true">delete</span></button>
+      </div>
+      ${(s.exercises||[]).length ? `<div class="space-y-0.5">${s.exercises.map(exerciseHistoryLine).join('')}</div>` : ''}
+      <p class="text-xs text-slate-400">${s.duration||0} min${s.caloriesBurned ? ` · 🔥 ${s.caloriesBurned} kcal` : ''}${s.notes ? ` · ${esc(s.notes)}` : ''}</p>
+    </div>`;
+}
+
+// Shown when today/future has a planned (not-yet-completed) entry — the
+// exact "Today's Plan" / planned-activity layout from the task spec, reused
+// for future dates too (minus the immediately-actionable primary button,
+// since a future plan can't be started yet).
+function renderPlannedEntryCard(planned, relation) {
+  let label, meta, primaryLabel;
+  if (planned.type === 'group') {
+    const g = groups[planned.workoutGroupId];
+    label = g?.name || 'Workout Group';
+    meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''}`;
+    primaryLabel = relation === 'today' ? 'Start Workout' : null;
+  } else if (planned.type === 'quick') {
+    label = 'Quick Workout'; meta = 'Build it as you go';
+    primaryLabel = relation === 'today' ? 'Start Quick Workout' : null;
+  } else if (planned.type === 'activity') {
+    const act = getActivity(planned.activityId);
+    label = `${act?.icon ? act.icon + ' ' : ''}${act?.name || 'Activity'}`;
+    meta = `${planned.plannedDuration || act?.defaultDuration || 30} min planned`;
+    primaryLabel = relation === 'today' ? 'Mark Complete' : null;
+  } else {
+    label = '🍃 Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
+    primaryLabel = relation === 'today' ? 'Mark Complete' : null;
+  }
+  return `
+    <div class="card p-4 space-y-2">
+      <p class="text-xs font-semibold text-brand-500">${relation === 'today' ? "Today's Plan" : 'Planned'}</p>
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
+      <p class="text-xs text-slate-400">${esc(meta)}</p>
+      ${primaryLabel ? `<button id="cds-primary-btn" class="btn btn-green btn-pop w-full py-3 text-sm" data-entry-id="${planned.id}" data-type="${planned.type}">${esc(primaryLabel)}</button>` : ''}
+      <div class="flex items-center justify-center gap-3 text-xs font-semibold pt-1 flex-wrap">
+        <button id="cds-change-btn" class="text-brand-500 hover:underline py-1.5" data-entry-id="${planned.id}">Change Workout</button>
+        <button id="cds-add-another-btn" class="text-slate-400 hover:underline py-1.5">Add Another Activity</button>
+        <button id="cds-mark-recovery-btn" class="text-slate-400 hover:underline py-1.5">Mark Recovery Day</button>
+      </div>
+    </div>`;
+}
+
+function openCalendarDaySheet(date) {
+  const relation = dateRelation(date);
+  const completedList = Object.entries(sessions[date] || {});
+  const planned = firstIncompletePlannedEntry(date);
+
+  document.getElementById('cds-date-label').textContent = fmtDate(date);
+  let html = '';
+  if (completedList.length) html += `<div class="space-y-2">${completedList.map(([id, s]) => renderCalDaySessionCard(date, id, s)).join('')}</div>`;
+
+  if (planned && relation !== 'past') {
+    document.getElementById('cds-title').textContent = relation === 'today' ? "What are you doing today?" : 'Plan this day';
+    html += renderPlannedEntryCard(planned, relation);
+  } else {
+    document.getElementById('cds-title').textContent = relation === 'past' ? 'What did you do on this day?' : relation === 'today' ? 'What are you doing today?' : 'Plan this day';
+    html += `<button id="cds-add-btn" class="btn btn-green btn-pop w-full py-3 text-sm">Add To This Day</button>`;
+  }
+
+  document.getElementById('cds-body').innerHTML = html;
+  document.getElementById('cds-body').querySelectorAll('.cds-del-session').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Delete this from your history?')) return;
+    await remove(ref(db, `sessions/${uid()}/${b.dataset.date}/${b.dataset.id}`));
+    renderCalendar();
+    openCalendarDaySheet(date);
+  }));
+  document.getElementById('cds-add-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
+  wireCalDaySheetActions(date);
+  document.getElementById('calendar-day-sheet').style.display = '';
+}
+document.getElementById('cds-close').addEventListener('click', () => document.getElementById('calendar-day-sheet').style.display = 'none');
+
+function wireCalDaySheetActions(date) {
+  const relation = dateRelation(date);
+  document.getElementById('cds-primary-btn')?.addEventListener('click', e => {
+    const { entryId, type } = e.currentTarget.dataset;
+    const entry = entriesForDate(date)[entryId];
+    if (type === 'group') {
+      document.getElementById('calendar-day-sheet').style.display = 'none';
+      startWorkoutSession(entry.workoutGroupId);
+    } else if (type === 'quick') {
+      document.getElementById('calendar-day-sheet').style.display = 'none';
+      startQuickWorkout();
+    } else if (type === 'activity') {
+      const act = getActivity(entry.activityId);
+      openActivityDetailModal({
+        title: `Log ${act?.name || 'Activity'}`, subtitle: 'Mark this as done for today.',
+        initialDuration: entry.plannedDuration || act?.defaultDuration, confirmLabel: 'Mark Complete',
+        onConfirm: async details => {
+          const { previousGrowth, newGrowth } = await logOtherActivitySession(date, entry.activityId, details);
+          celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+          renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+        }
+      });
+    } else {
+      logRecoveryDaySession(date).then(({ previousGrowth, newGrowth }) => {
+        celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+        renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+      });
+    }
+  });
+  document.getElementById('cds-change-btn')?.addEventListener('click', async e => {
+    await deleteCalendarEntry(date, e.currentTarget.dataset.entryId);
+    renderCalendar();
+    openCalendarAddPicker(date);
+  });
+  document.getElementById('cds-add-another-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
+  document.getElementById('cds-mark-recovery-btn')?.addEventListener('click', async () => {
+    if (relation === 'future') {
+      await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
+      renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+    } else {
+      const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
+      celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+      renderDashboard(); renderCalendar(); openCalendarDaySheet(date);
+    }
+  });
+}
+
+// ── "Add to this day" — the simple 4-way flow ────────────────────────────────
+let calendarAddPickerDate = null;
+function openCalendarAddPicker(date) {
+  calendarAddPickerDate = date;
+  const relation = dateRelation(date);
+  document.getElementById('cap-title').textContent = relation === 'future' ? 'Plan this day' : 'Add to this day';
+  document.getElementById('cap-group-btn').textContent = 'Workout Group';
+  document.getElementById('cap-quick-btn').textContent = relation === 'today' ? 'Start Quick Workout' : relation === 'past' ? 'Log Quick Workout' : 'Schedule Quick Workout';
+  document.getElementById('cap-activity-btn').textContent = relation === 'future' ? 'Schedule Other Activity' : 'Log Other Activity';
+  document.getElementById('cap-recovery-btn').textContent = relation === 'future' ? 'Plan Recovery Day' : 'Mark as Recovery Day';
+  document.getElementById('calendar-day-sheet').style.display = 'none';
+  document.getElementById('calendar-add-modal').style.display = '';
+
+  const finishAndReopenSheet = () => { document.getElementById('calendar-add-modal').style.display = 'none'; renderDashboard(); renderCalendar(); openCalendarDaySheet(date); };
+
+  document.getElementById('cap-group-btn').onclick = () => {
+    document.getElementById('calendar-add-modal').style.display = 'none';
+    openCalendarGroupPicker(relation === 'past' ? 'Which workout group did you do?' : 'Choose a workout group', groupId => {
+      if (relation === 'past') {
+        const g = groups[groupId];
+        openActivityDetailModal({
+          title: `Log ${g?.name || 'Workout'}`, subtitle: fmtDate(date), initialDuration: 30, confirmLabel: 'Log Workout',
+          onConfirm: async details => {
+            try {
+              const { previousGrowth, newGrowth } = await logPastWorkoutGroup(date, groupId, details);
+              celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+            } catch (e) { console.error('Failed to log past workout:', e); alert(e.message || 'Could not log this workout.'); }
+            finishAndReopenSheet();
+          }
+        });
+      } else {
+        saveCalendarEntry(date, null, { type: 'group', status: 'planned', workoutGroupId: groupId }).then(finishAndReopenSheet);
+      }
+    });
+  };
+
+  document.getElementById('cap-quick-btn').onclick = () => {
+    document.getElementById('calendar-add-modal').style.display = 'none';
+    if (relation === 'today') { document.getElementById('calendar-day-sheet').style.display = 'none'; startQuickWorkout(); }
+    else if (relation === 'past') { openPastQuickBuilder(date); }
+    else { saveCalendarEntry(date, null, { type: 'quick', status: 'planned' }).then(finishAndReopenSheet); }
+  };
+
+  document.getElementById('cap-activity-btn').onclick = () => {
+    document.getElementById('calendar-add-modal').style.display = 'none';
+    openActivityLibrary(activityId => {
+      const act = getActivity(activityId);
+      openActivityDetailModal({
+        title: act?.name || 'Activity', subtitle: fmtDate(date), showCalories: relation !== 'future',
+        initialDuration: act?.defaultDuration, confirmLabel: relation === 'future' ? 'Schedule Activity' : 'Log Activity',
+        onConfirm: async details => {
+          if (relation === 'future') {
+            await saveCalendarEntry(date, null, { type: 'activity', status: 'planned', activityId, plannedDuration: details.duration, notes: details.notes });
+          } else {
+            const { previousGrowth, newGrowth } = await logOtherActivitySession(date, activityId, details);
+            celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+          }
+          finishAndReopenSheet();
+        }
+      });
+    });
+  };
+
+  document.getElementById('cap-recovery-btn').onclick = async () => {
+    document.getElementById('calendar-add-modal').style.display = 'none';
+    if (relation === 'future') {
+      await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
+    } else {
+      const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
+      celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+    }
+    finishAndReopenSheet();
+  };
+}
+document.getElementById('cap-cancel-btn').addEventListener('click', () => {
+  document.getElementById('calendar-add-modal').style.display = 'none';
+  if (calendarAddPickerDate) openCalendarDaySheet(calendarAddPickerDate);
+});
+
+// ── Calendar's own workout-group picker (callback-based) ─────────────────────
+function openCalendarGroupPicker(title, onSelect) {
+  document.getElementById('cgp-title').textContent = title;
+  const list = document.getElementById('cgp-list');
+  const items = Object.entries(groups).filter(([, g]) => !g.archived);
+  if (!items.length) {
+    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-2">No workout groups yet. Create one from Workout → Groups first.</p>';
+  } else {
+    list.innerHTML = items.map(([id, g]) => {
+      const exCount = (g.exercises || []).length;
+      return `<button class="cgp-item w-full text-left card p-3" style="border-left:3px solid ${g.color || GROUP_COLORS[0]}" data-id="${id}">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(g.name)}</p>
+        <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''}</p>
+      </button>`;
+    }).join('');
+    list.querySelectorAll('.cgp-item').forEach(b => b.addEventListener('click', () => {
+      document.getElementById('calendar-group-picker-modal').style.display = 'none';
+      onSelect(b.dataset.id);
+    }));
+  }
+  document.getElementById('calendar-group-picker-modal').style.display = '';
+}
+document.getElementById('cgp-close').addEventListener('click', () => document.getElementById('calendar-group-picker-modal').style.display = 'none');
+
+// ── Activity Library ─────────────────────────────────────────────────────────
+let activityLibraryOnSelect = null;
+function renderActivityLibraryList() {
+  const q = document.getElementById('actlib-search').value.trim().toLowerCase();
+  const list = document.getElementById('actlib-list');
+  const items = Object.entries(allActivities()).filter(([, a]) => !q || a.name.toLowerCase().includes(q));
+  if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No activities match.</p>'; return; }
+  list.innerHTML = items.map(([id, a]) => `
+    <button class="actlib-item w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all text-left" data-id="${id}">
+      <span class="text-xl flex-shrink-0" aria-hidden="true">${a.icon || '🏃'}</span>
+      <span class="min-w-0"><span class="block text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(a.name)}</span><span class="block text-xs text-slate-400">${esc(a.category)}${a.defaultDuration ? ' · ' + a.defaultDuration + ' min' : ''}</span></span>
+    </button>`).join('');
+  list.querySelectorAll('.actlib-item').forEach(b => b.addEventListener('click', () => {
+    document.getElementById('activity-library-modal').style.display = 'none';
+    activityLibraryOnSelect?.(b.dataset.id);
+  }));
+}
+function openActivityLibrary(onSelect) {
+  activityLibraryOnSelect = onSelect;
+  document.getElementById('actlib-search').value = '';
+  renderActivityLibraryList();
+  document.getElementById('activity-library-modal').style.display = '';
+}
+document.getElementById('actlib-close').addEventListener('click', () => document.getElementById('activity-library-modal').style.display = 'none');
+document.getElementById('actlib-search').addEventListener('input', renderActivityLibraryList);
+document.getElementById('actlib-create-btn').addEventListener('click', () => {
+  document.getElementById('activity-library-modal').style.display = 'none';
+  openCustomActivityForm();
+});
+
+// ── Create Custom Activity ────────────────────────────────────────────────────
+function openCustomActivityForm() {
+  document.getElementById('actform-name').value = '';
+  const catSel = document.getElementById('actform-category');
+  catSel.innerHTML = ACTIVITY_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  catSel.value = 'Custom';
+  document.getElementById('actform-icon').value = '';
+  document.getElementById('actform-duration').value = '';
+  document.getElementById('actform-color').value = '#22c55e';
+  document.getElementById('actform-notes').value = '';
+  document.getElementById('custom-activity-form-modal').style.display = '';
+}
+document.getElementById('actform-close').addEventListener('click', () => {
+  document.getElementById('custom-activity-form-modal').style.display = 'none';
+  document.getElementById('activity-library-modal').style.display = '';
+});
+document.getElementById('actform-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('actform-save-btn');
+  if (btn.disabled) return;
+  const name = document.getElementById('actform-name').value.trim();
+  if (!name) { alert('Enter an activity name.'); return; }
+  const category = document.getElementById('actform-category').value;
+  const data = {
+    name, category,
+    icon: document.getElementById('actform-icon').value.trim() || '🏃',
+    defaultDuration: +document.getElementById('actform-duration').value || 30,
+    color: document.getElementById('actform-color').value || ACTIVITY_CATEGORY_COLOR[category] || ACTIVITY_CATEGORY_COLOR.Custom,
+    notes: document.getElementById('actform-notes').value.trim() || null,
+    isBuiltIn: false
+  };
+  btn.disabled = true; const prevLabel = btn.textContent; btn.textContent = 'Saving…';
+  try {
+    const newRef = push(ref(db, `users/${uid()}/activities`));
+    await set(newRef, data);
+    customActivities[newRef.key] = data; // optimistic; onValue confirms shortly after
+    document.getElementById('custom-activity-form-modal').style.display = 'none';
+    activityLibraryOnSelect?.(newRef.key); // continue whatever flow opened the library
+  } catch (e) {
+    console.error('Failed to save activity:', e);
+    alert('Could not save this activity. Please try again.');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
+
+// ── Generic duration/calories/notes step ─────────────────────────────────────
+let activityDetailOnConfirm = null;
+function openActivityDetailModal({ title, subtitle, showCalories = true, initialDuration, confirmLabel, onConfirm }) {
+  document.getElementById('actdetail-title').textContent = title || 'Details';
+  document.getElementById('actdetail-subtitle').textContent = subtitle || '';
+  document.getElementById('actdetail-duration').value = initialDuration || '';
+  document.getElementById('actdetail-calories').value = '';
+  document.getElementById('actdetail-notes').value = '';
+  document.getElementById('actdetail-calories-wrap').style.display = showCalories ? '' : 'none';
+  document.getElementById('actdetail-confirm-btn').textContent = confirmLabel || 'Save';
+  activityDetailOnConfirm = onConfirm;
+  document.getElementById('activity-detail-modal').style.display = '';
+}
+document.getElementById('actdetail-cancel-btn').addEventListener('click', () => {
+  document.getElementById('activity-detail-modal').style.display = 'none';
+  activityDetailOnConfirm = null;
+});
+document.getElementById('actdetail-confirm-btn').addEventListener('click', async () => {
+  const cb = activityDetailOnConfirm;
+  const details = {
+    duration: +document.getElementById('actdetail-duration').value || null,
+    calories: +document.getElementById('actdetail-calories').value || null,
+    notes: document.getElementById('actdetail-notes').value.trim() || null
+  };
+  document.getElementById('activity-detail-modal').style.display = 'none';
+  activityDetailOnConfirm = null;
+  if (cb) await cb(details);
+});
+
+// ── Retroactive Quick Workout builder (past dates) ───────────────────────────
+let pqbDate = null, pqbExerciseIds = [];
+function renderPqbList() {
+  const list = document.getElementById('pqb-list');
+  if (!pqbExerciseIds.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No exercises added yet.</p>'; return; }
+  list.innerHTML = pqbExerciseIds.map(id => `
+    <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+      <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(exercises[id]?.name || 'Exercise')}</span>
+      <button class="pqb-remove text-slate-300 hover:text-red-400 p-1" data-id="${id}"><span class="ms text-lg" aria-hidden="true">close</span></button>
+    </div>`).join('');
+  list.querySelectorAll('.pqb-remove').forEach(b => b.addEventListener('click', () => {
+    pqbExerciseIds = pqbExerciseIds.filter(id => id !== b.dataset.id);
+    renderPqbList();
+  }));
+}
+function openPastQuickBuilder(date) {
+  pqbDate = date; pqbExerciseIds = [];
+  document.getElementById('pqb-date-label').textContent = fmtDate(date);
+  renderPqbList();
+  document.getElementById('past-quick-builder-modal').style.display = '';
+}
+document.getElementById('pqb-close').addEventListener('click', () => document.getElementById('past-quick-builder-modal').style.display = 'none');
+document.getElementById('pqb-add-btn').addEventListener('click', () => {
+  document.getElementById('past-quick-builder-modal').style.display = 'none';
+  openPickExModal(id => {
+    pqbExerciseIds.push(id);
+    document.getElementById('past-quick-builder-modal').style.display = '';
+    renderPqbList();
+  }, pqbExerciseIds);
+});
+document.getElementById('pqb-save-btn').addEventListener('click', async () => {
+  if (!pqbExerciseIds.length) { alert('Add at least one exercise.'); return; }
+  const btn = document.getElementById('pqb-save-btn');
+  if (btn.disabled) return;
+  btn.disabled = true; const prevLabel = btn.textContent; btn.textContent = 'Saving…';
+  try {
+    const { previousGrowth, newGrowth } = await logPastQuickWorkout(pqbDate, pqbExerciseIds);
+    document.getElementById('past-quick-builder-modal').style.display = 'none';
+    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+    renderDashboard(); renderCalendar();
+    openCalendarDaySheet(pqbDate);
+  } catch (e) {
+    console.error('Failed to log quick workout:', e);
+    alert('Could not log this workout. Please try again.');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
+
 // ── Dashboard quick actions ─────────────────────────────────────────────────
-document.getElementById('dash-mission-card').addEventListener('click', e => {
+document.getElementById('dash-mission-card').addEventListener('click', async e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
+  const today = todayStr();
   if (action === 'start-growing' || action === 'log-another') openGroupPicker();
   if (action === 'view-workout') { goView('workout'); switchWorkoutTab('history'); }
+
+  // Today's Mission reading a calendar plan — Change/Add Another both reuse
+  // the exact same Calendar "Add to this day" flow rather than a second copy.
+  if (action === 'today-start-group') {
+    const entry = entriesForDate(today)[btn.dataset.entryId];
+    if (entry) startWorkoutSession(entry.workoutGroupId);
+  }
+  if (action === 'today-start-quick') startQuickWorkout();
+  if (action === 'today-mark-activity-complete') {
+    const entry = entriesForDate(today)[btn.dataset.entryId];
+    const act = entry && getActivity(entry.activityId);
+    openActivityDetailModal({
+      title: `Log ${act?.name || 'Activity'}`, subtitle: 'Mark this as done for today.',
+      initialDuration: entry?.plannedDuration || act?.defaultDuration, confirmLabel: 'Mark Complete',
+      onConfirm: async details => {
+        const { previousGrowth, newGrowth } = await logOtherActivitySession(today, entry.activityId, details);
+        celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+        renderDashboard();
+      }
+    });
+  }
+  if (action === 'today-mark-recovery-complete' || action === 'today-mark-recovery') {
+    const { previousGrowth, newGrowth } = await logRecoveryDaySession(today);
+    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+    renderDashboard();
+  }
+  if (action === 'today-change-workout') {
+    const entry = firstIncompletePlannedEntry(today);
+    if (entry) await deleteCalendarEntry(today, entry.id);
+    renderDashboard();
+    openCalendarAddPicker(today);
+  }
+  if (action === 'today-add-another' || action === 'today-log-activity') openCalendarAddPicker(today);
 });
 document.getElementById('dash-view-garden').addEventListener('click', () => goView('profile'));
 
