@@ -271,14 +271,15 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
         <!-- Today's mission — the one strong card on the page -->
         <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 shadow-sm">
-          <div class="flex items-start justify-between gap-4">
-            <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
+          <div class="flow-root">
             <!-- The one plant-evolution icon in the app — same growth state as the
                  hero progress bar above, via getPlantGrowthState(). Not a second
-                 growth system, just a second view of the same numbers. Pinned to
-                 its own header row (rather than stacked with the mission body) so
-                 it stays top-right as a status indicator at every screen width. -->
-            <div class="flex flex-col items-center gap-1 flex-shrink-0">
+                 growth system, just a second view of the same numbers. Floated
+                 (not a flex sibling) so the label and "Mission complete" text
+                 actually wrap alongside it instead of starting only below a
+                 full-width icon row; flow-root on the parent contains the float
+                 so the card doesn't collapse short of it. -->
+            <div class="float-right ml-4 mb-2 flex flex-col items-center gap-1 flex-shrink-0">
               <div id="mission-stage-icon" class="relative w-14 h-14 flex-shrink-0" role="img" aria-label="">
                 <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
                   <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
@@ -290,8 +291,9 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
               </div>
               <p id="mission-stage-name" class="text-[10px] font-semibold text-slate-400 text-center leading-tight"></p>
             </div>
+            <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
+            <div id="dash-mission-body" class="space-y-3 mt-3"></div>
           </div>
-          <div id="dash-mission-body" class="space-y-3 mt-3"></div>
         </div>
 
         <!-- Ambient stats — quiet, secondary -->
