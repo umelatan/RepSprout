@@ -997,21 +997,23 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
-<!-- Retroactively logging a Quick Workout for a past date: no live guided
-     flow (that assumes "right now"), just build a list of exercises then log
-     them all at target reps in one step — see logPastQuickWorkout(). -->
-<div id="past-quick-builder-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+<!-- Shared multi-select exercise picker for Quick Workout — used when
+     scheduling a future one, logging a past one, and starting one today from
+     the Calendar/Home, so all three link to the same saved exercise library
+     (the Workout page's Exercises tab) through one consistent UI instead of
+     three different pickers. Checkbox-list pattern mirrors the workout-group
+     builder's own exercise picklist. See openMultiExercisePicker(). -->
+<div id="multi-ex-picker-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
     <div class="flex items-center justify-between">
-      <h3 class="font-display font-bold text-slate-800 dark:text-white">Log Quick Workout</h3>
-      <button id="pqb-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+      <h3 id="mep-title" class="font-display font-bold text-slate-800 dark:text-white">Choose exercises</h3>
+      <button id="mep-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
     </div>
-    <p id="pqb-date-label" class="text-xs text-slate-400"></p>
-    <div id="pqb-list" class="space-y-1.5"></div>
-    <button id="pqb-add-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
-      <span class="ms text-base" aria-hidden="true">add</span>Add exercise
-    </button>
-    <button id="pqb-save-btn" class="btn btn-green w-full py-2.5">Log Quick Workout</button>
+    <p id="mep-subtitle" class="text-xs text-slate-400"></p>
+    <input id="mep-search" type="text" placeholder="Search exercises">
+    <div id="mep-list" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
+    <p id="mep-error" style="display:none" class="text-xs text-red-500 text-center">Select at least one exercise.</p>
+    <button id="mep-confirm-btn" class="btn btn-green w-full py-2.5"></button>
   </div>
 </div>
 
@@ -1791,6 +1793,15 @@ let lastRenderedMissionStage = null;
 // same data currentGrowthState()-style single source as the Calendar day
 // sheet (firstIncompletePlannedEntry()), just rendered with data-action
 // buttons instead of ids since this card uses event delegation.
+// Shared by the Home mission card and the Calendar day sheet — a planned
+// Quick Workout links to the same saved exercise library either way, so
+// both surfaces describe it the same way instead of two separate strings.
+function describePlannedQuickWorkout(exerciseIds) {
+  if (!exerciseIds || !exerciseIds.length) return 'Build it as you go';
+  const names = exerciseIds.map(id => exercises[id]?.name).filter(Boolean);
+  return `${exerciseIds.length} exercise${exerciseIds.length!==1?'s':''} planned${names.length ? ': ' + names.join(', ') : ''}`;
+}
+
 function renderHomeMissionPlannedCard(planned) {
   let label, meta, primaryLabel, primaryAction;
   if (planned.type === 'group') {
@@ -1799,7 +1810,7 @@ function renderHomeMissionPlannedCard(planned) {
     meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''}`;
     primaryLabel = 'Start Workout'; primaryAction = 'today-start-group';
   } else if (planned.type === 'quick') {
-    label = 'Quick Workout'; meta = 'Build it as you go';
+    label = 'Quick Workout'; meta = describePlannedQuickWorkout(planned.plannedExerciseIds);
     primaryLabel = 'Start Quick Workout'; primaryAction = 'today-start-quick';
   } else if (planned.type === 'activity') {
     const act = getActivity(planned.activityId);
@@ -2887,12 +2898,17 @@ function startWorkoutSession(groupId) {
 // ever created for it unless the user explicitly asks via "Save as group"
 // after finishing. Reuses the exact same active-session/set-logging/finish
 // engine as a grouped workout; only groupId/groupName/groupColor are empty.
-function startQuickWorkout() {
+// exerciseIds optionally pre-loads exercises chosen via the shared multi-
+// select picker (e.g. a Calendar/Home plan) — omitted, it falls back to the
+// original behavior of starting empty and immediately prompting for one.
+function startQuickWorkout(exerciseIds = []) {
   if (activeSession) { alert('Finish or exit your current workout before starting another.'); return; }
   closeGroupPicker();
+  const exList = exerciseIds.map(id => buildSessionExercise(id)).filter(Boolean);
+  if (exList.length) exList[0].entered = true;
   activeSession = {
     groupId: null, groupName: null, groupColor: null, sessionType: 'quick', startedAt: Date.now(),
-    exercises: [], currentExerciseIndex: 0, phase: 'exercise',
+    exercises: exList, currentExerciseIndex: 0, phase: 'exercise',
     activeSetStartedAt: null, restEndsAt: null, restDurationMs: null, restPausedRemainingMs: null
   };
   document.getElementById('aw-group-name').textContent = 'Quick Workout';
@@ -2901,7 +2917,7 @@ function startQuickWorkout() {
   startAwTimer();
   renderGuidedWorkout();
   saveActiveSessionDraft();
-  openPickExModal(id => addExerciseToActiveSession(id), []);
+  if (!exList.length) openPickExModal(id => addExerciseToActiveSession(id), []);
 }
 
 function startAwTimer() {
@@ -4295,7 +4311,7 @@ function renderPlannedEntryCard(planned, relation) {
     meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''}`;
     primaryLabel = relation === 'today' ? 'Start Workout' : null;
   } else if (planned.type === 'quick') {
-    label = 'Quick Workout'; meta = 'Build it as you go';
+    label = 'Quick Workout'; meta = describePlannedQuickWorkout(planned.plannedExerciseIds);
     primaryLabel = relation === 'today' ? 'Start Quick Workout' : null;
   } else if (planned.type === 'activity') {
     const act = getActivity(planned.activityId);
@@ -4360,7 +4376,7 @@ function wireCalDaySheetActions(date) {
       startWorkoutSession(entry.workoutGroupId);
     } else if (type === 'quick') {
       document.getElementById('calendar-day-sheet').style.display = 'none';
-      startQuickWorkout();
+      startQuickWorkout(entry.plannedExerciseIds || []);
     } else if (type === 'activity') {
       const act = getActivity(entry.activityId);
       openActivityDetailModal({
@@ -4435,9 +4451,39 @@ function openCalendarAddPicker(date) {
 
   document.getElementById('cap-quick-btn').onclick = () => {
     document.getElementById('calendar-add-modal').style.display = 'none';
-    if (relation === 'today') { document.getElementById('calendar-day-sheet').style.display = 'none'; startQuickWorkout(); }
-    else if (relation === 'past') { openPastQuickBuilder(date); }
-    else { saveCalendarEntry(date, null, { type: 'quick', status: 'planned' }).then(finishAndReopenSheet); }
+    // All three date relations link to the same saved exercise library
+    // through one picker — see openMultiExercisePicker().
+    if (relation === 'today') {
+      openMultiExercisePicker({
+        title: 'Start Quick Workout', subtitle: 'Pick from your saved exercises — you can still add more once you start.',
+        confirmLabel: 'Start Quick Workout',
+        onConfirm: async ids => { document.getElementById('calendar-day-sheet').style.display = 'none'; startQuickWorkout(ids); }
+      });
+    } else if (relation === 'past') {
+      openMultiExercisePicker({
+        title: 'Log Quick Workout', subtitle: fmtDate(date), confirmLabel: 'Continue', requireAtLeastOne: true,
+        onConfirm: ids => {
+          openActivityDetailModal({
+            title: 'Log Quick Workout', subtitle: fmtDate(date), initialDuration: 30, confirmLabel: 'Log Workout',
+            onConfirm: async details => {
+              try {
+                const { previousGrowth, newGrowth } = await logPastQuickWorkout(date, ids, details);
+                celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+              } catch (e) { console.error('Failed to log quick workout:', e); alert(e.message || 'Could not log this workout.'); }
+              finishAndReopenSheet();
+            }
+          });
+        }
+      });
+    } else {
+      openMultiExercisePicker({
+        title: 'Schedule Quick Workout', subtitle: fmtDate(date), confirmLabel: 'Schedule Quick Workout',
+        onConfirm: async ids => {
+          await saveCalendarEntry(date, null, { type: 'quick', status: 'planned', plannedExerciseIds: ids });
+          finishAndReopenSheet();
+        }
+      });
+    }
   };
 
   document.getElementById('cap-activity-btn').onclick = () => {
@@ -4604,53 +4650,57 @@ document.getElementById('actdetail-confirm-btn').addEventListener('click', async
   if (cb) await cb(details);
 });
 
-// ── Retroactive Quick Workout builder (past dates) ───────────────────────────
-let pqbDate = null, pqbExerciseIds = [];
-function renderPqbList() {
-  const list = document.getElementById('pqb-list');
-  if (!pqbExerciseIds.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No exercises added yet.</p>'; return; }
-  list.innerHTML = pqbExerciseIds.map(id => `
-    <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-      <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(exercises[id]?.name || 'Exercise')}</span>
-      <button class="pqb-remove text-slate-300 hover:text-red-400 p-1" data-id="${id}"><span class="ms text-lg" aria-hidden="true">close</span></button>
-    </div>`).join('');
-  list.querySelectorAll('.pqb-remove').forEach(b => b.addEventListener('click', () => {
-    pqbExerciseIds = pqbExerciseIds.filter(id => id !== b.dataset.id);
-    renderPqbList();
+// ── Shared multi-select exercise picker for Quick Workout ───────────────────
+// One picker, backed by the same saved exercise library as the Workout page
+// (the `exercises` object) and styled like the group builder's own checkbox
+// picklist — used for scheduling a future Quick Workout, logging a past one,
+// and pre-loading exercises before starting one today, so all three link to
+// the same list instead of three different pickers.
+let mepSelectedIds = new Set();
+let mepOnConfirm = null;
+let mepRequireAtLeastOne = false;
+function renderMultiExercisePickerList(q) {
+  const list = document.getElementById('mep-list');
+  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived && (!q || ex.name?.toLowerCase().includes(q.toLowerCase())));
+  if (!items.length) {
+    list.innerHTML = Object.keys(exercises).length
+      ? '<p class="text-xs text-slate-400 text-center py-3">No exercises match your search.</p>'
+      : '<p class="text-xs text-slate-400 text-center py-3">No exercises yet — create one from Workout → Exercises first.</p>';
+    return;
+  }
+  list.innerHTML = items.map(([id, ex]) => `
+    <label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all cursor-pointer">
+      <input type="checkbox" class="mep-check w-4 h-4 accent-brand-500 flex-shrink-0" style="width:auto" data-id="${id}" ${mepSelectedIds.has(id) ? 'checked' : ''}>
+      <div class="min-w-0">
+        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup}</p>
+      </div>
+    </label>`).join('');
+  list.querySelectorAll('.mep-check').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) { mepSelectedIds.add(cb.dataset.id); document.getElementById('mep-error').style.display = 'none'; }
+    else mepSelectedIds.delete(cb.dataset.id);
   }));
 }
-function openPastQuickBuilder(date) {
-  pqbDate = date; pqbExerciseIds = [];
-  document.getElementById('pqb-date-label').textContent = fmtDate(date);
-  renderPqbList();
-  document.getElementById('past-quick-builder-modal').style.display = '';
+function openMultiExercisePicker({ title, subtitle, initialSelectedIds = [], confirmLabel, requireAtLeastOne = false, onConfirm }) {
+  document.getElementById('mep-title').textContent = title || 'Choose exercises';
+  document.getElementById('mep-subtitle').textContent = subtitle || '';
+  document.getElementById('mep-search').value = '';
+  document.getElementById('mep-error').style.display = 'none';
+  document.getElementById('mep-confirm-btn').textContent = confirmLabel || 'Confirm';
+  mepSelectedIds = new Set(initialSelectedIds);
+  mepOnConfirm = onConfirm;
+  mepRequireAtLeastOne = requireAtLeastOne;
+  renderMultiExercisePickerList('');
+  document.getElementById('multi-ex-picker-modal').style.display = '';
 }
-document.getElementById('pqb-close').addEventListener('click', () => document.getElementById('past-quick-builder-modal').style.display = 'none');
-document.getElementById('pqb-add-btn').addEventListener('click', () => {
-  document.getElementById('past-quick-builder-modal').style.display = 'none';
-  openPickExModal(id => {
-    pqbExerciseIds.push(id);
-    document.getElementById('past-quick-builder-modal').style.display = '';
-    renderPqbList();
-  }, pqbExerciseIds);
-});
-document.getElementById('pqb-save-btn').addEventListener('click', async () => {
-  if (!pqbExerciseIds.length) { alert('Add at least one exercise.'); return; }
-  const btn = document.getElementById('pqb-save-btn');
-  if (btn.disabled) return;
-  btn.disabled = true; const prevLabel = btn.textContent; btn.textContent = 'Saving…';
-  try {
-    const { previousGrowth, newGrowth } = await logPastQuickWorkout(pqbDate, pqbExerciseIds);
-    document.getElementById('past-quick-builder-modal').style.display = 'none';
-    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
-    renderDashboard(); renderCalendar();
-    openCalendarDaySheet(pqbDate);
-  } catch (e) {
-    console.error('Failed to log quick workout:', e);
-    alert('Could not log this workout. Please try again.');
-  } finally {
-    btn.disabled = false; btn.textContent = prevLabel;
-  }
+document.getElementById('mep-close').addEventListener('click', () => document.getElementById('multi-ex-picker-modal').style.display = 'none');
+document.getElementById('mep-search').addEventListener('input', e => renderMultiExercisePickerList(e.target.value));
+document.getElementById('mep-confirm-btn').addEventListener('click', async () => {
+  const ids = [...mepSelectedIds];
+  if (mepRequireAtLeastOne && !ids.length) { document.getElementById('mep-error').style.display = ''; return; }
+  const cb = mepOnConfirm;
+  document.getElementById('multi-ex-picker-modal').style.display = 'none';
+  if (cb) await cb(ids);
 });
 
 // ── Dashboard quick actions ─────────────────────────────────────────────────
@@ -4668,7 +4718,10 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
     const entry = entriesForDate(today)[btn.dataset.entryId];
     if (entry) startWorkoutSession(entry.workoutGroupId);
   }
-  if (action === 'today-start-quick') startQuickWorkout();
+  if (action === 'today-start-quick') {
+    const entry = entriesForDate(today)[btn.dataset.entryId];
+    startQuickWorkout(entry?.plannedExerciseIds || []);
+  }
   if (action === 'today-mark-activity-complete') {
     const entry = entriesForDate(today)[btn.dataset.entryId];
     const act = entry && getActivity(entry.activityId);
