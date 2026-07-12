@@ -3943,8 +3943,12 @@ function openLogSetSheet() {
   document.getElementById('ls-weight-editor').style.display = 'none';
   document.getElementById('ls-change-weight-btn').setAttribute('aria-expanded', 'false');
 
-  document.getElementById('ls-reps').value = '';
-  document.getElementById('ls-reps').placeholder = String(ex.targetReps[si] ?? ex.minReps);
+  // Pre-filled (not just a placeholder) so hitting the recommended number
+  // needs zero taps — "Complete Set" works immediately. Still a plain
+  // editable value: typing over it or using +/- both work exactly as before.
+  const recommendedReps = ex.targetReps[si] ?? ex.minReps;
+  document.getElementById('ls-reps').value = recommendedReps;
+  document.getElementById('ls-reps').placeholder = String(recommendedReps);
 
   const last = getLastLoggedSets(ex.exerciseId);
   document.getElementById('ls-prev-workout-row').style.display = last ? '' : 'none';
@@ -3974,9 +3978,10 @@ function openLogSetSheet() {
   document.getElementById('log-set-modal').style.display = '';
   startLsIdleWatering();
 }
-// The field starts empty with the recommended reps shown only as a
-// placeholder, so the very first +/- tap should step from THAT number, not
-// from 0 — otherwise "+" always lands on 1 regardless of what's recommended.
+// The field opens pre-filled with the recommended reps (see openLogSetSheet),
+// so the common case — completed exactly what was recommended — needs no
+// interaction at all. The placeholder fallback below only matters if the
+// value is ever cleared out entirely (e.g. the user deletes it by hand).
 function announceReps(val) {
   document.getElementById('ls-reps-announce').textContent = `${val} reps`;
 }
@@ -3991,6 +3996,12 @@ document.getElementById('ls-reps-plus').addEventListener('click', () => {
   const base = inp.value !== '' ? +inp.value : (+inp.placeholder || 0);
   inp.value = base + 1;
   announceReps(inp.value);
+});
+// Tapping into the field selects the pre-filled value, so typing a
+// different number overwrites it in one go instead of requiring a manual
+// clear first.
+document.getElementById('ls-reps').addEventListener('focus', () => {
+  document.getElementById('ls-reps').select();
 });
 
 // Short "watering burst" + "Set complete" beat before the sheet actually
