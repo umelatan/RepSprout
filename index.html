@@ -94,9 +94,15 @@ body{font-family:'Inter',sans-serif}
 @keyframes stagePop{0%{transform:scale(.55);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}
 @keyframes stageGlowPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.55;transform:scale(1.1)}}
 .stage-pop{animation:stagePop .5s ease-out}
-.stage-glow{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;animation:stageGlowPulse 2s ease-in-out infinite}
+.stage-glow{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;animation:stageGlowPulse 2.4s ease-in-out infinite}
+/* Occasional sparkle on the mission-card growth icon — a single JS-spawned,
+   self-removing flourish (see scheduleMissionSparkle()), not a continuous
+   loop, so it shows up every 8-14s rather than every glow pulse. */
+@keyframes missionSparkleOnce{0%{transform:scale(.4) rotate(0deg);opacity:0}30%{opacity:1}65%{transform:scale(1.15) rotate(12deg);opacity:1}100%{transform:scale(.5) rotate(20deg);opacity:0}}
+.mission-sparkle-once{position:absolute;top:-2px;right:-2px;font-size:.7rem;animation:missionSparkleOnce 1.3s ease-out 1;pointer-events:none}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop{animation:none!important;transition:none!important}
+  .stage-glow{opacity:.4}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once{animation:none!important;transition:none!important}
 }
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
@@ -295,6 +301,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
                  so the card doesn't collapse short of it. -->
             <div class="float-right ml-4 mb-2 flex flex-col items-center gap-1 flex-shrink-0">
               <div id="mission-stage-icon" class="relative w-14 h-14 flex-shrink-0" role="img" aria-label="">
+                <span id="mission-stage-glow" class="stage-glow" aria-hidden="true"></span>
                 <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
                   <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
                   <circle id="mission-stage-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset .6s ease"></circle>
@@ -2140,6 +2147,8 @@ function renderMissionStageIcon() {
   ring.setAttribute('stroke', theme.primary);
   ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
   ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - growth.currentStageProgressPercent / 100));
+  document.getElementById('mission-stage-glow').style.background = `radial-gradient(circle, ${theme.glow}, transparent 70%)`;
+  startMissionSparkle();
 
   const emojiEl = document.getElementById('mission-stage-emoji');
   emojiEl.textContent = growth.selectedAsset;
@@ -2157,6 +2166,39 @@ function renderMissionStageIcon() {
     requestAnimationFrame(() => wrap.classList.add('stage-pop'));
   }
   lastRenderedMissionStage = growth.currentStage;
+}
+
+// Occasional sparkle on the mission-card growth icon — deliberately much
+// rarer than the glow's own 2.4s pulse (every 8-14s, one-shot, self-removing)
+// so it reads as "occasionally," not "every loop." Self-stops the moment the
+// dashboard isn't the visible view or the icon leaves the DOM, same
+// self-checking pattern as startPlantWatering()'s droplet loop — no need to
+// hook goView() explicitly.
+let missionSparkleHandle = null;
+function stopMissionSparkle() {
+  clearTimeout(missionSparkleHandle);
+  missionSparkleHandle = null;
+}
+function scheduleMissionSparkle() {
+  missionSparkleHandle = setTimeout(() => {
+    const icon = document.getElementById('mission-stage-icon');
+    const dashView = document.getElementById('dashboard-view');
+    if (!icon || !dashView || dashView.style.display === 'none') { stopMissionSparkle(); return; }
+    if (!document.hidden) {
+      const spark = document.createElement('span');
+      spark.className = 'mission-sparkle-once';
+      spark.setAttribute('aria-hidden', 'true');
+      spark.textContent = '✨';
+      spark.addEventListener('animationend', () => spark.remove());
+      icon.appendChild(spark);
+    }
+    scheduleMissionSparkle();
+  }, 8000 + Math.random() * 6000);
+}
+function startMissionSparkle() {
+  if (missionSparkleHandle) return; // already looping — never stack timers
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  scheduleMissionSparkle();
 }
 
 function renderClosestProgress() {
