@@ -2659,7 +2659,7 @@ function renderGroupsList() {
     const lastLabel = lastDate ? `Last completed ${relativeDays(lastDate)}` : 'Not completed yet';
     const color = g.color || GROUP_COLORS[0];
     return `
-      <div class="card p-4 space-y-2" style="border-left:3px solid ${color}">
+      <div class="card p-4 space-y-2" style="border:1px solid ${color}">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
             <p class="font-display font-bold text-sm text-slate-800 dark:text-white">${esc(g.name)}</p>
@@ -2959,7 +2959,7 @@ function openGroupPicker() {
       const lastLabel = lastDate ? `Last done ${relativeDays(lastDate)}` : 'Not completed yet';
       const color = g.color || GROUP_COLORS[0];
       return `
-        <div class="card p-4 space-y-2" style="border-left:3px solid ${color}">
+        <div class="card p-4 space-y-2" style="border:1px solid ${color}">
           <p class="font-display font-bold text-sm text-slate-800 dark:text-white">${esc(g.name)}</p>
           <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''} · ${lastLabel}</p>
           <button class="gp-start-btn btn w-full py-2.5" style="background:${color};color:white" data-id="${id}">Start</button>
@@ -3989,7 +3989,7 @@ function renderQueueRow(ex, idx) {
   if (state === 'current') {
     icon = 'play_circle'; iconColor = 'text-brand-500';
     nameColor = 'text-brand-700 dark:text-brand-300 font-bold';
-    rowExtra = 'bg-brand-50 dark:bg-brand-950/40 border-l-4 border-brand-500 pl-2';
+    rowExtra = 'bg-brand-50 dark:bg-brand-950/40 border border-brand-500';
     const setNum = Math.min(completedWorkingCount(ex) + 1, ex.targetReps.length);
     detail = `Current · Set ${setNum} of ${ex.targetReps.length}`;
     detailColor = 'text-brand-600 dark:text-brand-400 font-medium';
@@ -4460,7 +4460,7 @@ function renderHistory() {
   if (!allDays.length) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Your completed workouts will appear here.</p>'; return; }
   list.innerHTML = allDays.flatMap(([date, daySessions]) =>
     Object.entries(daySessions).map(([sessionId, s]) => `
-      <div class="card p-4 space-y-2" style="border-left:3px solid ${sessionColor(s)}">
+      <div class="card p-4 space-y-2" style="border:1px solid ${sessionColor(s)}">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
             <p class="text-xs font-bold text-slate-400">${fmtDate(date)}</p>
@@ -4703,7 +4703,7 @@ function renderCalDaySessionCard(date, sessionId, s) {
   // breakdown — Other Activity and Recovery Day sessions have no exercises.
   const editable = s.sessionType === 'group' || s.sessionType === 'quick';
   return `
-    <div class="card p-3 space-y-1" style="border-left:3px solid ${sessionColor(s)}">
+    <div class="card p-3 space-y-1" style="border:1px solid ${sessionColor(s)}">
       <div class="flex items-center justify-between gap-2">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${s.activityIcon ? s.activityIcon + ' ' : ''}${esc(sessionLabel(s))}</p>
         <div class="flex items-center gap-1 flex-shrink-0">
@@ -5171,7 +5171,7 @@ function openCalendarGroupPicker(title, onSelect) {
   } else {
     list.innerHTML = items.map(([id, g]) => {
       const exCount = (g.exercises || []).length;
-      return `<button class="cgp-item w-full text-left card p-3" style="border-left:3px solid ${g.color || GROUP_COLORS[0]}" data-id="${id}">
+      return `<button class="cgp-item w-full text-left card p-3" style="border:1px solid ${g.color || GROUP_COLORS[0]}" data-id="${id}">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(g.name)}</p>
         <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''}</p>
       </button>`;
