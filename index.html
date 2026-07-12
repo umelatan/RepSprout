@@ -3465,7 +3465,6 @@ function renderRestingPhase(ex) {
   const main = document.getElementById('aw-main');
   const footer = document.getElementById('aw-footer');
   const nextSetNum = completedWorkingCount(ex) + 1;
-  const totalTarget = ex.targetReps.length;
 
   // Rest may have finished while the tab was backgrounded/refreshed.
   if (!activeSession.restReady && activeSession.restEndsAt && activeSession.restEndsAt <= Date.now()) {
@@ -3489,8 +3488,7 @@ function renderRestingPhase(ex) {
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rest</p>
       <p id="rest-countdown" class="font-display font-extrabold text-5xl text-brand-500 tabular-nums" role="timer"></p>
       <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-      <p class="text-xs text-slate-400 pt-1">Next: Set ${nextSetNum} of ${totalTarget}</p>
-      <p class="text-[11px] text-slate-400" role="status">${esc(restSourceLabel(activeSession.restSource, ex.name))}</p>
+      <div class="pt-1 space-y-0.5" role="status">${renderRestUpNext(ex)}</div>
     </div>`;
   footer.innerHTML = `
     <button data-action="start-next-early" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Next Set Early</button>
@@ -3503,15 +3501,36 @@ function renderRestingPhase(ex) {
   updateRestCountdownDisplay(activeSession.restPausedRemainingMs ?? (activeSession.restEndsAt - Date.now()));
 }
 
-// ── Subtle "where did this duration come from" label on the rest screen ────
-function restSourceLabel(source, exerciseName) {
-  switch (source) {
-    case 'exercise_default': return `Using ${exerciseName} rest time`;
-    case 'global_default':   return 'Using your default rest time';
-    case 'session_override': return "Using today's override";
-    case 'manual_override':  return 'Using a one-time adjustment';
-    default: return '';
+// ── Rest screen "Up Next" preview ───────────────────────────────────────────
+// Pure display logic over the existing workout queue/order (activeSession.
+// exercises + currentExerciseIndex) — never changes when resting happens or
+// how sets/exercises advance, just what the rest screen previews while it's
+// showing. Three cases: more sets left on this exercise, the next exercise
+// in the queue once this one's target sets are done, or a wrap-up note when
+// this is the last exercise in the workout.
+function renderRestUpNext(ex) {
+  const nextSetNum = completedWorkingCount(ex) + 1;
+  const totalTarget = ex.targetReps.length;
+
+  if (nextSetNum <= totalTarget) {
+    return `
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Up Next</p>
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+      <p class="text-xs text-slate-400">Set ${nextSetNum} of ${totalTarget}</p>`;
   }
+
+  const nextEx = activeSession.exercises[activeSession.currentExerciseIndex + 1];
+  if (nextEx) {
+    const sets = nextEx.targetReps.length;
+    return `
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">After this exercise</p>
+      <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(nextEx.name)}</p>
+      <p class="text-xs text-slate-400">${sets} set${sets!==1?'s':''} • ${nextEx.minReps}–${nextEx.maxReps} reps</p>`;
+  }
+
+  return `
+    <p class="text-sm font-semibold text-brand-500">🌱 Final exercise</p>
+    <p class="text-xs text-slate-400">You're almost done for today.</p>`;
 }
 
 // ── Generic rest-duration chooser modal ─────────────────────────────────────
