@@ -1132,10 +1132,15 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
-<!-- Edit a completed workout's exercise/set breakdown — from the "What did
-     you do on this day?" window. Add exercises from the saved library,
-     remove one from this session, and correct weight/reps per set. Purely a
-     history correction: saving here never re-runs growth or progression. -->
+<!-- Edit a completed workout — the one edit UI for every strength session,
+     regardless of whether it was started via "Start Growing" or logged
+     retroactively from the Calendar (both share the same sessionType, so
+     there's nothing to duplicate). Add/remove/swap exercises from the saved
+     library, add/remove individual sets, correct weight/reps, and edit
+     duration/notes/name. Renaming here only relabels this specific logged
+     record — it never touches the saved Workout Group template. Saving
+     recalculates plant growth/stage from scratch (same as add/delete) and
+     refreshes every view that reads from sessions/growth state. -->
 <div id="edit-session-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
     <div class="flex items-center justify-between">
@@ -1143,6 +1148,22 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <button id="esm-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
     </div>
     <p id="esm-subtitle" class="text-xs text-slate-400"></p>
+
+    <div id="esm-name-field" style="display:none">
+      <label for="esm-name" class="text-xs font-semibold text-slate-400 block mb-1">Workout name</label>
+      <input id="esm-name" type="text" placeholder="Workout name">
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label for="esm-duration" class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label>
+        <input id="esm-duration" type="number" inputmode="numeric" min="0">
+      </div>
+      <div>
+        <label for="esm-notes" class="text-xs font-semibold text-slate-400 block mb-1">Notes</label>
+        <input id="esm-notes" type="text" placeholder="Optional">
+      </div>
+    </div>
+
     <div id="esm-ex-list" class="space-y-3"></div>
     <button id="esm-add-ex-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
       <span class="ms text-base" aria-hidden="true">add</span>Add exercise
@@ -5010,9 +5031,12 @@ function dateRelation(date) {
 }
 
 function renderCalDaySessionCard(date, sessionId, s) {
-  // Only strength sessions (group/quick) have an editable exercise/set
-  // breakdown — Other Activity and Recovery Day sessions have no exercises.
-  const editable = s.sessionType === 'group' || s.sessionType === 'quick';
+  // Any strength session has an editable exercise/set breakdown — Other
+  // Activity and Recovery Day sessions don't. Checking for a real exercises
+  // array (not just sessionType) means this can never silently miss a
+  // session — "Start Growing" completions, Quick Workouts, and retroactively
+  // logged workouts from the Calendar all go through this same check.
+  const editable = s.sessionType === 'group' || s.sessionType === 'quick' || Array.isArray(s.exercises);
   return `
     <div class="card p-3 space-y-1" style="border:1px solid ${sessionColor(s)}">
       <div class="flex items-center justify-between gap-2">
@@ -5183,7 +5207,9 @@ function renderEsmExList() {
   list.innerHTML = esmDraft.exercises.map((ex, i) => `
     <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
       <div class="flex items-center justify-between gap-2">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+        <button class="esm-swap-ex text-left text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 min-w-0 flex-1" data-idx="${i}" aria-label="Change exercise from ${esc(ex.name)}">
+          <span class="truncate">${esc(ex.name)}</span><span class="ms text-sm text-slate-400 flex-shrink-0" aria-hidden="true">edit</span>
+        </button>
         <button class="esm-del-ex p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-idx="${i}" aria-label="Remove ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">delete</span></button>
       </div>
       <div class="space-y-1.5">
@@ -5194,18 +5220,45 @@ function renderEsmExList() {
             <span class="text-xs text-slate-400 flex-shrink-0">${esc(ex.unit||'kg')} ×</span>
             <input type="number" inputmode="numeric" class="esm-set-reps" style="width:3.5rem;text-align:center" data-idx="${i}" data-set="${j}" value="${s.reps||0}" aria-label="${esc(ex.name)} set ${j+1} reps">
             <span class="text-xs text-slate-400 flex-shrink-0">reps</span>
+            <button class="esm-del-set p-1 text-slate-300 hover:text-red-400 flex-shrink-0 ml-auto" data-idx="${i}" data-set="${j}" aria-label="Remove set ${j+1}" ${ex.sets.length<=1?'disabled':''}><span class="ms text-base" aria-hidden="true">close</span></button>
           </div>`).join('')}
       </div>
+      <button class="esm-add-set text-xs font-semibold text-brand-500 hover:underline" data-idx="${i}">+ Add set</button>
     </div>`).join('');
   list.querySelectorAll('.esm-del-ex').forEach(b => b.addEventListener('click', () => {
     esmDraft.exercises.splice(+b.dataset.idx, 1);
     renderEsmExList();
+  }));
+  // Swapping reuses the exact same library picker as "Add exercise" — no
+  // second picker UI, just a different slot to drop the result into.
+  list.querySelectorAll('.esm-swap-ex').forEach(b => b.addEventListener('click', () => {
+    const idx = +b.dataset.idx;
+    const excludeIds = esmDraft.exercises.map(e => e.exerciseId).filter((_, i2) => i2 !== idx);
+    document.getElementById('edit-session-modal').style.display = 'none';
+    openPickExModal(id => {
+      const entry = newSessionExerciseFromLibrary(id);
+      if (entry) esmDraft.exercises[idx] = entry;
+      document.getElementById('edit-session-modal').style.display = '';
+      renderEsmExList();
+    }, excludeIds);
   }));
   list.querySelectorAll('.esm-set-weight').forEach(inp => inp.addEventListener('change', () => {
     esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].weight = +inp.value || 0;
   }));
   list.querySelectorAll('.esm-set-reps').forEach(inp => inp.addEventListener('change', () => {
     esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].reps = +inp.value || 0;
+  }));
+  list.querySelectorAll('.esm-del-set').forEach(b => b.addEventListener('click', () => {
+    const idx = +b.dataset.idx, si = +b.dataset.set;
+    if (esmDraft.exercises[idx].sets.length <= 1) return; // always leave at least one set
+    esmDraft.exercises[idx].sets.splice(si, 1);
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-add-set').forEach(b => b.addEventListener('click', () => {
+    const sets = esmDraft.exercises[+b.dataset.idx].sets;
+    const last = sets[sets.length - 1] || { weight: 0, reps: 0 };
+    sets.push({ weight: last.weight || 0, reps: last.reps || 0, rir: null, completed: true, warmup: false, completedAt: Date.now() });
+    renderEsmExList();
   }));
 }
 
@@ -5218,6 +5271,17 @@ function openEditSessionModal(date, sessionId) {
   document.getElementById('esm-title').textContent = `Edit ${sessionLabel(s)}`;
   document.getElementById('esm-subtitle').textContent = fmtDate(date);
   document.getElementById('esm-error').style.display = 'none';
+
+  const nameField = document.getElementById('esm-name-field');
+  if (esmDraft.sessionType === 'group') {
+    nameField.style.display = '';
+    document.getElementById('esm-name').value = esmDraft.groupName || '';
+  } else {
+    nameField.style.display = 'none'; // Quick Workout has no name to rename
+  }
+  document.getElementById('esm-duration').value = esmDraft.duration || '';
+  document.getElementById('esm-notes').value = esmDraft.notes || '';
+
   renderEsmExList();
   document.getElementById('edit-session-modal').style.display = '';
 }
@@ -5239,16 +5303,26 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Saving…';
   document.getElementById('esm-error').style.display = 'none';
   try {
+    if (esmDraft.sessionType === 'group') {
+      const name = document.getElementById('esm-name').value.trim();
+      if (name) esmDraft.groupName = name; // relabels only this logged record, never the saved group template
+    }
+    esmDraft.duration = +document.getElementById('esm-duration').value || 0;
+    esmDraft.notes = document.getElementById('esm-notes').value.trim();
+
     await set(ref(db, `sessions/${uid()}/${esmDate}/${esmSessionId}`), esmDraft);
     (sessions[esmDate] ??= {})[esmSessionId] = esmDraft; // mirror before recalculating — see finish-save-btn
     // Editing sets/reps or adding/removing an exercise changes what this
     // session is worth, so recalculate from scratch same as add/delete —
-    // never adjust the stored total by a guessed difference.
-    await recalculateAndPersistPlantGrowth();
+    // never adjust the stored total by a guessed difference. Progression
+    // recommendations aren't cached anywhere either — they're always
+    // derived fresh from `sessions` at render time, so the renders below
+    // are all it takes to pick up any weight/rep change too.
+    const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
     document.getElementById('edit-session-modal').style.display = 'none';
-    renderDashboard(); renderHistory(); renderCalendar();
+    renderDashboard(); renderHistory(); renderCalendar(); renderProfile();
     if (calendarSelectedDate === esmDate) openCalendarDaySheet(esmDate);
-    showToast('Workout updated');
+    showToast(stageChangeMessage(previousGrowth, newGrowth) || 'Workout updated');
   } catch (e) {
     console.error('Failed to save workout edits:', e);
     const errEl = document.getElementById('esm-error');
