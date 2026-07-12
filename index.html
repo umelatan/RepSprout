@@ -3880,6 +3880,10 @@ document.getElementById('aw-footer').addEventListener('click', e => {
 });
 
 document.getElementById('aw-end-btn').addEventListener('click', openEndReview);
+document.getElementById('aw-queue-btn').addEventListener('click', () => {
+  renderQueue();
+  document.getElementById('queue-modal').style.display = '';
+});
 
 function openEndReview() {
   stopPlantWatering(); // aw-end-btn calls this directly, bypassing handleAwAction's switch
@@ -3924,14 +3928,15 @@ function renderQueue() {
     const isCurrent = idx === activeSession.currentExerciseIndex;
     const isDone = !isCurrent && exerciseIsDone(ex) && ex.entered;
     const icon = ex.skipped ? 'remove_circle' : (isDone ? 'check_circle' : (isCurrent ? 'play_circle' : 'radio_button_unchecked'));
-    const iconColor = (ex.skipped) ? 'text-slate-300 dark:text-slate-600' : (isDone || isCurrent) ? 'text-brand-500' : 'text-slate-300 dark:text-slate-600';
+    const iconColor = (ex.skipped || isDone) ? 'text-slate-300 dark:text-slate-600' : isCurrent ? 'text-brand-500' : 'text-slate-300 dark:text-slate-600';
+    const nameColor = (ex.skipped || isDone) ? 'text-slate-400 dark:text-slate-500' : isCurrent ? 'text-brand-600 dark:text-brand-400' : 'text-slate-700 dark:text-slate-200';
     const canReorder = !isCurrent && !ex.entered;
     const canRemove = !isCurrent && !ex.sets.some(s => s.completed);
     return `
-      <div class="flex items-center gap-2 p-2 rounded-xl ${isCurrent ? 'bg-brand-50 dark:bg-brand-950/30' : ''}">
+      <div class="flex items-center gap-2 p-2 rounded-xl ${isCurrent ? 'bg-brand-50 dark:bg-brand-950/30' : ''} ${isDone ? 'opacity-60' : ''}">
         <span class="ms ${iconColor} flex-shrink-0" aria-hidden="true">${icon}</span>
         <button class="queue-jump flex-1 text-left min-w-0 py-1" data-idx="${idx}">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}${isCurrent?' · Current':''}${ex.skipped?' · Skipped':''}</p>
+          <p class="text-sm font-semibold ${nameColor} truncate">${esc(ex.name)}${isCurrent?' · Current':''}${ex.skipped?' · Skipped':''}${isDone?' · Done':''}</p>
         </button>
         <div class="flex items-center gap-0.5 flex-shrink-0">
           ${canReorder ? `<button class="queue-move-up p-1 text-slate-400 hover:text-brand-500" data-idx="${idx}" aria-label="Move up" ${idx===0?'disabled':''}><span class="ms text-base" aria-hidden="true">arrow_upward</span></button>` : ''}
