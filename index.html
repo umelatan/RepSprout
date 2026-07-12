@@ -3662,13 +3662,18 @@ function openLogSetSheet() {
   document.getElementById('ls-note').value = ex.notes || '';
   document.getElementById('log-set-modal').style.display = '';
 }
+// The field starts empty with the recommended reps shown only as a
+// placeholder, so the very first +/- tap should step from THAT number, not
+// from 0 — otherwise "+" always lands on 1 regardless of what's recommended.
 document.getElementById('ls-reps-minus').addEventListener('click', () => {
   const inp = document.getElementById('ls-reps');
-  inp.value = Math.max(0, (+inp.value || 0) - 1);
+  const base = inp.value !== '' ? +inp.value : (+inp.placeholder || 0);
+  inp.value = Math.max(0, base - 1);
 });
 document.getElementById('ls-reps-plus').addEventListener('click', () => {
   const inp = document.getElementById('ls-reps');
-  inp.value = (+inp.value || 0) + 1;
+  const base = inp.value !== '' ? +inp.value : (+inp.placeholder || 0);
+  inp.value = base + 1;
 });
 document.getElementById('ls-save-btn').addEventListener('click', () => {
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
