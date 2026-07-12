@@ -100,6 +100,10 @@ body{font-family:'Inter',sans-serif}
    loop, so it shows up every 8-14s rather than every glow pulse. */
 @keyframes missionSparkleOnce{0%{transform:scale(.4) rotate(0deg);opacity:0}30%{opacity:1}65%{transform:scale(1.15) rotate(12deg);opacity:1}100%{transform:scale(.5) rotate(20deg);opacity:0}}
 .mission-sparkle-once{position:absolute;top:-2px;right:-2px;font-size:.7rem;animation:missionSparkleOnce 1.3s ease-out 1;pointer-events:none}
+/* Fixed brand green, not plant-themed — this badge is the universal
+   "+1 Growth" cue, distinct from the personalized plant portrait next to it
+   which already carries the selected plant's own theme color. */
+#ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
   .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once{animation:none!important;transition:none!important}
@@ -633,7 +637,10 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </div>
 
     <div class="rounded-2xl bg-brand-50 dark:bg-brand-950/25 p-3.5 flex items-center gap-3">
-      <div class="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-600 dark:text-brand-400">eco</span></div>
+      <div class="relative w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+        <span id="ls-growth-glow" class="stage-glow"></span>
+        <span class="ms text-3xl text-brand-600 dark:text-brand-400 relative">eco</span>
+      </div>
       <div class="flex-1 min-w-0">
         <p id="ls-growth-headline" class="text-sm font-bold text-brand-600 dark:text-brand-400">+1 Growth</p>
         <p id="ls-growth-detail" class="text-xs text-slate-500 dark:text-slate-400"></p>
