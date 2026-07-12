@@ -28,6 +28,13 @@ body{font-family:'Inter',sans-serif}
 @keyframes heroBloom{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.045)}}
 @keyframes leafDrift{0%,100%{transform:translate(0,0) rotate(-6deg);opacity:.5}50%{transform:translate(3px,-12px) rotate(8deg);opacity:.85}}
 @keyframes sparklePulse{0%,100%{transform:scale(.8) rotate(0deg);opacity:.4}50%{transform:scale(1.2) rotate(15deg);opacity:1}}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes completePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+/* Combined (not stacked classes) so both keyframes genuinely run at once —
+   two separate `animation:` rules on one element don't compose, the later
+   one in the stylesheet just wins and silently drops the other. */
+.p-sway-breathe{animation:sway 4s ease-in-out infinite,breathe 3.2s ease-in-out infinite;transform-origin:bottom center;display:inline-block}
+.ls-complete-pop{animation:completePop .5s ease-out}
 .p-sway{animation:sway 4s ease-in-out infinite;transform-origin:bottom center;display:inline-block}
 .p-droop{animation:droop 2.5s ease-in-out infinite;transform-origin:top center;display:inline-block}
 .p-bloom{animation:bloom 3s ease-in-out infinite;display:inline-block}
@@ -89,8 +96,13 @@ body{font-family:'Inter',sans-serif}
 .stage-pop{animation:stagePop .5s ease-out}
 .stage-glow{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;animation:stageGlowPulse 2s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop{animation:none!important;transition:none!important}
 }
+#log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#log-set-modal input[type=number]{-moz-appearance:textfield}
+#log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
+#ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
+#ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
 .dark .queue-row-dragging{background:#1e293b}
 input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
@@ -538,45 +550,106 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
 <!-- Guided workout: log a completed set -->
 <div id="log-set-modal" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-t-3xl md:rounded-2xl w-full max-w-sm p-5 space-y-4">
-    <div class="text-center space-y-0.5">
-      <p id="ls-exercise-name" class="font-display font-bold text-base text-slate-800 dark:text-white"></p>
-      <p id="ls-set-label" class="text-xs text-slate-400"></p>
-      <p id="ls-prev-hint" class="text-[11px] text-brand-500"></p>
+  <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm p-5 space-y-4 max-h-[92vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="ls-exercise-name">
+    <button id="ls-close-btn" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0" aria-label="Close without saving this set"><span class="ms text-lg" aria-hidden="true">close</span></button>
+
+    <div class="flex flex-col items-center text-center gap-1.5 pt-1">
+      <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-xl text-slate-400">fitness_center</span></div>
+      <p id="ls-exercise-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
+      <p id="ls-set-label" class="text-xs font-semibold text-slate-400"></p>
     </div>
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1 text-center">Weight</label>
-        <div class="flex items-center justify-center gap-1.5">
-          <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="text-center font-display font-extrabold text-xl" style="width:5.5rem">
-          <span id="ls-unit" class="text-sm text-slate-400 flex-shrink-0"></span>
+
+    <div class="text-center space-y-3">
+      <p class="text-sm font-bold text-brand-500">How many reps?</p>
+      <div class="flex items-center justify-center gap-4">
+        <button id="ls-reps-minus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Decrease reps"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
+        <input id="ls-reps" type="number" inputmode="numeric" class="ls-plain-input font-display font-extrabold text-5xl text-slate-800 dark:text-white" style="width:4.5rem" aria-label="Reps completed">
+        <button id="ls-reps-plus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Increase reps"><span class="ms text-2xl" aria-hidden="true">add</span></button>
+      </div>
+      <span id="ls-reps-announce" class="sr-only" role="status" aria-live="polite"></span>
+    </div>
+
+    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+      <div class="flex items-center gap-3">
+        <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
+        <p class="flex-1 min-w-0"><span id="ls-weight-display" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></span> <span id="ls-unit" class="text-sm text-slate-400"></span></p>
+        <button id="ls-change-weight-btn" class="text-xs font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" aria-expanded="false" aria-controls="ls-weight-editor">Change weight<span class="ms text-base" aria-hidden="true">chevron_right</span></button>
+      </div>
+      <div id="ls-weight-editor" style="display:none" class="flex items-center justify-center gap-3 pt-3.5 mt-3.5 border-t border-slate-200 dark:border-slate-700">
+        <button id="ls-weight-minus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+        <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white" style="width:5rem" aria-label="Weight">
+        <button id="ls-weight-plus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
+      </div>
+    </div>
+
+    <div id="ls-prev-workout-block">
+      <p class="text-xs font-semibold text-slate-400 mb-1.5 px-0.5">Last workout</p>
+      <div id="ls-prev-workout-row" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex items-center gap-3">
+        <p class="font-display font-bold text-slate-700 dark:text-slate-200"><span id="ls-prev-weight"></span> <span id="ls-prev-weight-unit" class="text-xs font-semibold text-slate-400"></span></p>
+        <p id="ls-prev-reps" class="flex-1 min-w-0 text-sm font-semibold truncate"></p>
+        <p id="ls-prev-date" class="text-xs text-slate-400 flex-shrink-0"></p>
+      </div>
+      <p id="ls-prev-empty" style="display:none" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 text-sm text-slate-400 text-center">First time for this exercise</p>
+    </div>
+
+    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
+      <button id="ls-advanced-toggle" class="w-full flex items-center gap-3 p-3.5 text-left" aria-expanded="false" aria-controls="ls-advanced-panel">
+        <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-purple-500 dark:text-purple-400">tune</span></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Advanced</p>
+          <p class="text-xs text-slate-400">RIR, warm-up, notes</p>
+        </div>
+        <span id="ls-advanced-chevron" class="ms text-slate-400 flex-shrink-0 transition-transform" aria-hidden="true">expand_more</span>
+      </button>
+      <div id="ls-advanced-panel" style="display:none" class="px-3.5 pb-3.5 space-y-3.5">
+        <div class="border-t border-slate-200 dark:border-slate-700 pt-3.5">
+          <label id="ls-rir-label" for="ls-rir" class="text-xs font-semibold text-slate-400 block mb-1">RIR — reps in reserve (optional)</label>
+          <input id="ls-rir" type="number" inputmode="numeric" placeholder="—">
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-slate-400 mb-1.5" id="ls-set-type-label">Set type</p>
+          <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/50" role="group" aria-labelledby="ls-set-type-label">
+            <button id="ls-mark-working" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="true">Working set</button>
+            <button id="ls-mark-warmup" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="false">Warm-up</button>
+          </div>
+          <input id="ls-warmup" type="checkbox" class="sr-only">
+        </div>
+        <div>
+          <label for="ls-note" class="text-xs font-semibold text-slate-400 block mb-1">Quick note (optional)</label>
+          <input id="ls-note" type="text" placeholder="Quick note (optional)">
+        </div>
+        <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-1">
+          <button id="ls-incomplete-btn" class="text-slate-400 hover:underline py-2">Mark incomplete</button>
+          <button id="ls-skip-btn" class="text-red-400 hover:underline py-2">Skip set</button>
         </div>
       </div>
-      <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1 text-center">Reps</label>
-        <div class="flex items-center justify-center gap-2">
-          <button id="ls-reps-minus" type="button" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease reps"><span class="ms" aria-hidden="true">remove</span></button>
-          <input id="ls-reps" type="number" inputmode="numeric" class="text-center font-display font-extrabold text-xl" style="width:3.5rem">
-          <button id="ls-reps-plus" type="button" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase reps"><span class="ms" aria-hidden="true">add</span></button>
+    </div>
+
+    <div class="rounded-2xl bg-brand-50 dark:bg-brand-950/25 p-3.5 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-600 dark:text-brand-400">eco</span></div>
+      <div class="flex-1 min-w-0">
+        <p id="ls-growth-headline" class="text-sm font-bold text-brand-600 dark:text-brand-400">+1 Growth</p>
+        <p id="ls-growth-detail" class="text-xs text-slate-500 dark:text-slate-400"></p>
+      </div>
+      <div id="ls-plant-icon" class="relative w-14 h-14 flex-shrink-0" aria-hidden="true">
+        <span id="ls-plant-glow" class="stage-glow"></span>
+        <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
+          <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
+          <circle id="ls-plant-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset .6s ease"></circle>
+        </svg>
+        <div id="ls-plant-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
+          <span id="ls-plant-emoji" class="leading-none" style="font-size:1.35rem"></span>
+          <span class="sparkle-dot" aria-hidden="true">✨</span>
         </div>
+        <div id="ls-plant-water-stage" class="absolute inset-0" aria-hidden="true"></div>
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <div class="flex-1">
-        <label class="text-xs font-semibold text-slate-400 block mb-1">RIR (optional)</label>
-        <input id="ls-rir" type="number" inputmode="numeric" placeholder="—">
-      </div>
-      <label class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 pt-4 flex-shrink-0 cursor-pointer">
-        <input id="ls-warmup" type="checkbox" class="w-4 h-4 accent-brand-500" style="width:auto">Warm-up
-      </label>
-    </div>
-    <input id="ls-note" type="text" placeholder="Quick note (optional)">
-    <div class="space-y-2">
-      <button id="ls-save-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Save Set &amp; Rest</button>
-      <div class="flex items-center justify-center gap-4 text-xs font-semibold">
-        <button id="ls-incomplete-btn" class="text-slate-400 hover:underline py-2">Mark incomplete</button>
-        <button id="ls-skip-btn" class="text-red-400 hover:underline py-2">Skip set</button>
-      </div>
+
+    <div id="ls-complete-banner" style="display:none" class="rounded-2xl bg-brand-500 text-white p-3.5 flex items-center justify-center gap-2 font-display font-bold text-base" role="status"><span class="ms text-xl" aria-hidden="true">check_circle</span>Set complete</div>
+
+    <div id="ls-complete-controls" class="space-y-2">
+      <button id="ls-save-btn" class="btn btn-green btn-pop w-full text-base" style="min-height:52px"><span class="ms text-xl" aria-hidden="true">check_circle</span>Complete Set</button>
+      <p class="text-center text-xs text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">timer</span>Rest timer will start automatically</p>
     </div>
   </div>
 </div>
@@ -1535,7 +1608,7 @@ function getLastLoggedSets(exerciseId) {
   for (const date of dates) {
     for (const s of Object.values(sessions[date] || {})) {
       const match = (s.exercises || []).find(e => e.exerciseId === exerciseId);
-      if (match) return { weight: match.weight, unit: match.unit, sets: match.sets || [] };
+      if (match) return { weight: match.weight, unit: match.unit, sets: match.sets || [], date };
     }
   }
   return null;
@@ -3686,6 +3759,125 @@ document.getElementById('cr-exercise-mode-btn').addEventListener('click', async 
 });
 
 // ── Set logging sheet ────────────────────────────────────────────────────────
+// ── Log-set sheet: growth panel (dynamic, current selected plant/stage) ────
+// Reads the exact same getPlantGrowthState() result as the Home hero, the
+// Mission-card ring, and the Garden page — see currentGrowthState() — so
+// this sheet can never show a different plant/stage than the rest of the
+// app. Purely a presentation layer: no growth points are computed or
+// persisted here (that stays in recalculatePlantGrowth(), untouched).
+function renderLsPlantPanel() {
+  const growth = currentGrowthState();
+  const plantKey = userProfile.plant || 'sprout';
+  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
+  const CIRCUMFERENCE = 2 * Math.PI * 28;
+
+  const emojiEl = document.getElementById('ls-plant-emoji');
+  emojiEl.textContent = growth.selectedAsset;
+  emojiEl.style.opacity = growth.selectedAssetOpacity;
+  emojiEl.style.transform = `scale(${growth.selectedAssetScale})`;
+
+  const ring = document.getElementById('ls-plant-ring');
+  ring.setAttribute('stroke', theme.primary);
+  ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
+  ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - growth.currentStageProgressPercent / 100));
+  document.getElementById('ls-plant-glow').style.background = `radial-gradient(circle, ${theme.glow}, transparent 70%)`;
+
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById('ls-plant-emoji-wrap').className = 'absolute inset-0 flex items-center justify-center' + (reducedMotion ? '' : ' p-sway-breathe');
+  document.getElementById('ls-plant-water-stage').innerHTML = reducedMotion
+    ? '<span class="water-static-drop" style="left:6px;top:2px;font-size:.6rem" aria-hidden="true">💧</span>'
+    : '';
+}
+// Idle ambience while the sheet just sits open — one or two droplets every
+// few seconds, deliberately far slower than the active-set "rain" loop
+// (startPlantWatering()), which is a much busier continuous effect for a
+// different screen. Reduced motion skips this entirely; renderLsPlantPanel()
+// already drew one static droplet glyph instead, above.
+let lsIdleWaterHandle = null;
+function startLsIdleWatering() {
+  stopLsIdleWatering();
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const tick = () => {
+    lsIdleWaterHandle = setTimeout(() => {
+      const stage = document.getElementById('ls-plant-water-stage');
+      if (!stage || document.getElementById('log-set-modal').style.display === 'none') return;
+      if (!document.hidden) spawnWaterDroplet(stage);
+      tick();
+    }, 3500 + Math.random() * 2000);
+  };
+  tick();
+}
+function stopLsIdleWatering() {
+  clearTimeout(lsIdleWaterHandle);
+  lsIdleWaterHandle = null;
+}
+function closeLogSetSheet() {
+  stopLsIdleWatering();
+  document.getElementById('log-set-modal').style.display = 'none';
+}
+// Warm-up sets earn no growth points in the real engine (workingSetsFor()
+// filters them out before anything is awarded) — so the copy here has to
+// say that in words, not just recolor the badge, otherwise a warm-up tap
+// would silently promise growth it never delivers.
+function setLsWarmup(isWarmup) {
+  document.getElementById('ls-warmup').checked = isWarmup;
+  document.getElementById('ls-mark-working').setAttribute('aria-pressed', String(!isWarmup));
+  document.getElementById('ls-mark-warmup').setAttribute('aria-pressed', String(isWarmup));
+  const headline = document.getElementById('ls-growth-headline');
+  const detail = document.getElementById('ls-growth-detail');
+  if (isWarmup) {
+    headline.textContent = 'Warm-up set';
+    headline.className = 'text-sm font-bold text-slate-500 dark:text-slate-400';
+    detail.textContent = "Warm-up sets don't count toward plant growth.";
+  } else {
+    headline.textContent = '+1 Growth';
+    headline.className = 'text-sm font-bold text-brand-600 dark:text-brand-400';
+    detail.textContent = 'This set waters ' + ((PLANTS[userProfile.plant] || {}).name || 'your plant') + '.';
+  }
+}
+document.getElementById('ls-mark-working').addEventListener('click', () => setLsWarmup(false));
+document.getElementById('ls-mark-warmup').addEventListener('click', () => setLsWarmup(true));
+
+document.getElementById('ls-close-btn').addEventListener('click', () => {
+  closeLogSetSheet();
+  handleAwAction('cancel-set');
+});
+document.getElementById('ls-change-weight-btn').addEventListener('click', () => {
+  const editor = document.getElementById('ls-weight-editor');
+  const btn = document.getElementById('ls-change-weight-btn');
+  const opening = editor.style.display === 'none';
+  editor.style.display = opening ? '' : 'none';
+  btn.setAttribute('aria-expanded', String(opening));
+  if (opening) document.getElementById('ls-weight').focus();
+});
+document.getElementById('ls-weight').addEventListener('input', () => {
+  document.getElementById('ls-weight-display').textContent = document.getElementById('ls-weight').value || '0';
+});
+document.getElementById('ls-weight-minus').addEventListener('click', () => {
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const step = ex.weightIncrement || (ex.unit === 'lb' ? 5 : 2.5);
+  const inp = document.getElementById('ls-weight');
+  inp.value = Math.max(0, (+inp.value || 0) - step);
+  inp.dispatchEvent(new Event('input'));
+});
+document.getElementById('ls-weight-plus').addEventListener('click', () => {
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const step = ex.weightIncrement || (ex.unit === 'lb' ? 5 : 2.5);
+  const inp = document.getElementById('ls-weight');
+  inp.value = (+inp.value || 0) + step;
+  inp.dispatchEvent(new Event('input'));
+});
+document.getElementById('ls-advanced-toggle').addEventListener('click', () => {
+  const panel = document.getElementById('ls-advanced-panel');
+  const toggle = document.getElementById('ls-advanced-toggle');
+  const chevron = document.getElementById('ls-advanced-chevron');
+  const opening = panel.style.display === 'none';
+  panel.style.display = opening ? '' : 'none';
+  toggle.setAttribute('aria-expanded', String(opening));
+  chevron.style.transform = opening ? 'rotate(180deg)' : '';
+  if (opening) document.getElementById('ls-rir').focus();
+});
+
 function openLogSetSheet() {
   stopPlantWatering();
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
@@ -3694,31 +3886,88 @@ function openLogSetSheet() {
   const setNum = completedWorkingCount(ex) + 1;
   document.getElementById('ls-exercise-name').textContent = ex.name;
   document.getElementById('ls-set-label').textContent = `Set ${setNum} of ${ex.targetReps.length}`;
-  const last = getLastLoggedSets(ex.exerciseId);
-  const prevReps = last?.sets?.[si]?.reps;
-  document.getElementById('ls-prev-hint').textContent = prevReps != null ? `Previous Set ${si+1}: ${prevReps} reps` : '';
-  document.getElementById('ls-weight').value = ex.sets[si].weight || ex.weight || '';
+
+  const weightVal = ex.sets[si].weight || ex.weight || 0;
+  document.getElementById('ls-weight').value = weightVal || '';
+  document.getElementById('ls-weight-display').textContent = weightVal || '0';
   document.getElementById('ls-unit').textContent = ex.unit;
+  document.getElementById('ls-weight-editor').style.display = 'none';
+  document.getElementById('ls-change-weight-btn').setAttribute('aria-expanded', 'false');
+
   document.getElementById('ls-reps').value = '';
   document.getElementById('ls-reps').placeholder = String(ex.targetReps[si] ?? ex.minReps);
+
+  const last = getLastLoggedSets(ex.exerciseId);
+  document.getElementById('ls-prev-workout-row').style.display = last ? '' : 'none';
+  document.getElementById('ls-prev-empty').style.display = last ? 'none' : '';
+  if (last) {
+    document.getElementById('ls-prev-weight').textContent = last.weight || 0;
+    document.getElementById('ls-prev-weight-unit').textContent = last.unit || ex.unit;
+    const theme = PLANT_THEME[userProfile.plant] || DEFAULT_THEME;
+    const repsEl = document.getElementById('ls-prev-reps');
+    repsEl.textContent = last.sets.map(s => s.reps || 0).join(' · ');
+    repsEl.style.color = theme.primary;
+    document.getElementById('ls-prev-date').textContent = last.date ? fmtDate(last.date) : '';
+  }
+
   document.getElementById('ls-rir').value = '';
-  document.getElementById('ls-warmup').checked = false;
+  document.getElementById('ls-advanced-panel').style.display = 'none';
+  document.getElementById('ls-advanced-toggle').setAttribute('aria-expanded', 'false');
+  document.getElementById('ls-advanced-chevron').style.transform = '';
   document.getElementById('ls-note').value = ex.notes || '';
+  setLsWarmup(false);
+
+  renderLsPlantPanel();
+  document.getElementById('ls-complete-banner').style.display = 'none';
+  document.getElementById('ls-complete-controls').style.display = '';
+  document.getElementById('ls-save-btn').disabled = false;
+
   document.getElementById('log-set-modal').style.display = '';
+  startLsIdleWatering();
 }
 // The field starts empty with the recommended reps shown only as a
 // placeholder, so the very first +/- tap should step from THAT number, not
 // from 0 — otherwise "+" always lands on 1 regardless of what's recommended.
+function announceReps(val) {
+  document.getElementById('ls-reps-announce').textContent = `${val} reps`;
+}
 document.getElementById('ls-reps-minus').addEventListener('click', () => {
   const inp = document.getElementById('ls-reps');
   const base = inp.value !== '' ? +inp.value : (+inp.placeholder || 0);
   inp.value = Math.max(0, base - 1);
+  announceReps(inp.value);
 });
 document.getElementById('ls-reps-plus').addEventListener('click', () => {
   const inp = document.getElementById('ls-reps');
   const base = inp.value !== '' ? +inp.value : (+inp.placeholder || 0);
   inp.value = base + 1;
+  announceReps(inp.value);
 });
+
+// Short "watering burst" + "Set complete" beat before the sheet actually
+// hands off to afterSetLogged()/startRest() — same save path as before,
+// just with a brief completion beat in front of it. The text confirmation
+// always shows (not just the animation) — reduced motion only removes the
+// sway/glow/sparkle flourish, never the "Set complete" message itself.
+function playLsCompletionAnimation(done) {
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.getElementById('ls-save-btn').disabled = true;
+  document.getElementById('ls-complete-controls').style.display = 'none';
+  document.getElementById('ls-complete-banner').style.display = '';
+
+  if (!reducedMotion) {
+    const wrap = document.getElementById('ls-plant-emoji-wrap');
+    wrap.classList.add('ls-complete-pop');
+    const stage = document.getElementById('ls-plant-water-stage');
+    let dropCount = 0;
+    const burst = setInterval(() => {
+      spawnWaterDroplet(stage);
+      if (++dropCount >= 3) clearInterval(burst);
+    }, 90);
+  }
+  setTimeout(done, reducedMotion ? 550 : 650);
+}
+
 document.getElementById('ls-save-btn').addEventListener('click', () => {
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
   const si = currentSetIndex(ex);
@@ -3729,11 +3978,13 @@ document.getElementById('ls-save-btn').addEventListener('click', () => {
   const rirVal = document.getElementById('ls-rir').value;
   const warmup = document.getElementById('ls-warmup').checked;
   const note = document.getElementById('ls-note').value.trim();
-  ex.sets[si] = { weight, reps, rir: rirVal === '' ? '' : +rirVal, completed: true, warmup, completedAt: Date.now() };
-  if (!warmup) ex.weight = weight; // "today's weight" tracks working weight, not a warm-up weight
-  if (note) ex.notes = note;
-  document.getElementById('log-set-modal').style.display = 'none';
-  afterSetLogged(ex, si, {});
+  playLsCompletionAnimation(() => {
+    ex.sets[si] = { weight, reps, rir: rirVal === '' ? '' : +rirVal, completed: true, warmup, completedAt: Date.now() };
+    if (!warmup) ex.weight = weight; // "today's weight" tracks working weight, not a warm-up weight
+    if (note) ex.notes = note;
+    closeLogSetSheet();
+    afterSetLogged(ex, si, {});
+  });
 });
 document.getElementById('ls-incomplete-btn').addEventListener('click', () => {
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
@@ -3742,7 +3993,7 @@ document.getElementById('ls-incomplete-btn').addEventListener('click', () => {
   const reps = +document.getElementById('ls-reps').value || 0;
   const weight = +document.getElementById('ls-weight').value || ex.sets[si].weight || 0;
   ex.sets[si] = { weight, reps, rir: '', completed: false, warmup: false, completedAt: null };
-  document.getElementById('log-set-modal').style.display = 'none';
+  closeLogSetSheet();
   activeSession.phase = 'exercise';
   renderGuidedWorkout();
   saveActiveSessionDraft();
@@ -3752,7 +4003,7 @@ document.getElementById('ls-skip-btn').addEventListener('click', () => {
   const si = currentSetIndex(ex);
   if (si === -1) return;
   ex.sets[si] = { weight: ex.sets[si].weight||0, reps: 0, rir: '', completed: true, warmup: false, completedAt: Date.now() };
-  document.getElementById('log-set-modal').style.display = 'none';
+  closeLogSetSheet();
   afterSetLogged(ex, si, { skippedSet: true });
 });
 
