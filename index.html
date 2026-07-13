@@ -118,9 +118,18 @@ body{font-family:'Inter',sans-serif}
 .ex-icon{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:.75rem;background:#f1f5f9;color:#64748b}
 .dark .ex-icon{background:#334155;color:#cbd5e1}
 .ex-icon svg{width:60%;height:60%}
+/* Lavender-accent variant used inside the Edit Workout modal specifically
+   (per its own visual reference) — everywhere else in the app keeps the
+   neutral .ex-icon so the "same icon, same look" rule still holds per view. */
+.ex-icon-accent{border-radius:9999px;background:#ede9fe;color:#8b5cf6}
+.dark .ex-icon-accent{background:rgba(139,92,246,.18);color:#c4b5fd}
 #edit-session-modal input[type=number]::-webkit-outer-spin-button,#edit-session-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #edit-session-modal input[type=number]{-moz-appearance:textfield}
 #edit-session-modal .esm-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
+#edit-session-modal .esm-rep-box{background:#f1f5f9;border-radius:.625rem;padding:.375rem 0}
+.dark #edit-session-modal .esm-rep-box{background:#0f172a}
+#edit-session-modal .esm-underline-input{background:transparent!important;border:none!important;padding:0!important;font-weight:600}
+#edit-session-modal .esm-underline-input::placeholder{font-weight:400}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
@@ -1189,38 +1198,52 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <div class="flex-1 overflow-y-auto p-5 space-y-4">
       <div class="flex items-center justify-between">
         <div>
-          <h3 id="esm-title" class="font-display font-bold text-lg text-slate-800 dark:text-white">Edit Workout</h3>
-          <p id="esm-subtitle" class="text-xs text-slate-400"></p>
+          <h3 id="esm-title" class="font-display font-bold text-xl text-slate-800 dark:text-white">Edit Workout</h3>
+          <p id="esm-subtitle" class="text-sm text-slate-400"></p>
         </div>
-        <button id="esm-close" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0" aria-label="Close"><span class="ms text-lg" aria-hidden="true">close</span></button>
-      </div>
-
-      <div class="grid grid-cols-3 gap-2">
-        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
-          <p id="esm-stat-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
-          <p class="text-[11px] text-slate-400">min</p>
-        </div>
-        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
-          <p id="esm-stat-exercises" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
-          <p id="esm-stat-exercises-label" class="text-[11px] text-slate-400">exercises</p>
-        </div>
-        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
-          <p id="esm-stat-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
-          <p id="esm-stat-sets-label" class="text-[11px] text-slate-400">sets</p>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button id="esm-details-toggle" class="p-1.5 text-slate-400" aria-label="Edit workout name and duration" aria-expanded="false"><span class="ms text-lg" aria-hidden="true">edit</span></button>
+          <button id="esm-close" class="p-1.5 text-slate-400" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
         </div>
       </div>
 
-      <div id="esm-name-field" style="display:none">
-        <label for="esm-name" class="text-xs font-semibold text-slate-400 block mb-1">Workout name</label>
-        <input id="esm-name" type="text" placeholder="Workout name">
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5">
+        <div class="grid grid-cols-3">
+          <div class="flex flex-col items-center gap-0.5">
+            <span class="ms text-xl text-brand-500" aria-hidden="true">schedule</span>
+            <p id="esm-stat-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
+            <p class="text-[11px] text-slate-400">min</p>
+          </div>
+          <div class="flex flex-col items-center gap-0.5">
+            <span class="ms text-xl text-brand-500" aria-hidden="true">fitness_center</span>
+            <p id="esm-stat-exercises" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
+            <p id="esm-stat-exercises-label" class="text-[11px] text-slate-400">exercises</p>
+          </div>
+          <div class="flex flex-col items-center gap-0.5">
+            <span class="ms text-xl text-brand-500" aria-hidden="true">layers</span>
+            <p id="esm-stat-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
+            <p id="esm-stat-sets-label" class="text-[11px] text-slate-400">sets</p>
+          </div>
+        </div>
       </div>
-      <div>
-        <label for="esm-duration" class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label>
-        <input id="esm-duration" type="number" inputmode="numeric" min="0">
+
+      <div id="esm-details-panel" style="display:none" class="space-y-3 -mt-1">
+        <div id="esm-name-field" style="display:none">
+          <label for="esm-name" class="text-xs font-semibold text-slate-400 block mb-1">Workout name</label>
+          <input id="esm-name" type="text" placeholder="Workout name">
+        </div>
+        <div>
+          <label for="esm-duration" class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label>
+          <input id="esm-duration" type="number" inputmode="numeric" min="0">
+        </div>
       </div>
-      <div>
-        <label for="esm-notes" class="text-xs font-semibold text-slate-400 block mb-1">Notes</label>
-        <input id="esm-notes" type="text" placeholder="Optional notes about your workout">
+
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex-1 min-w-0">
+          <label for="esm-notes" class="text-xs font-semibold text-slate-400 block mb-1">Notes</label>
+          <input id="esm-notes" type="text" placeholder="Optional notes about your workout" class="esm-underline-input w-full">
+        </div>
+        <span class="ms text-lg text-slate-400 flex-shrink-0 pointer-events-none" aria-hidden="true">edit</span>
       </div>
 
       <div id="esm-ex-list" class="space-y-2.5"></div>
@@ -1230,9 +1253,12 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <p id="esm-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
     </div>
 
-    <div class="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
-      <button id="esm-cancel-btn" type="button" class="flex-1 py-3 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800" style="min-height:48px">Cancel</button>
-      <button id="esm-save-btn" class="btn btn-green text-sm" style="min-height:48px;flex:2">Save changes</button>
+    <div class="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+      <div class="flex items-center gap-3">
+        <button id="esm-cancel-btn" type="button" class="flex-1 py-3 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800" style="min-height:48px">Cancel</button>
+        <button id="esm-save-btn" class="btn btn-green text-sm" style="min-height:48px;flex:2">Save changes</button>
+      </div>
+      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">lock</span>Changes are saved to your workout history</p>
     </div>
   </div>
 </div>
@@ -1582,12 +1608,12 @@ function resolveExerciseIconId({ exerciseId, name, muscleGroup, equipment } = {}
   });
   return suggestion.iconId;
 }
-function exerciseIconHtml(opts = {}, sizeClass = 'w-9 h-9') {
+function exerciseIconHtml(opts = {}, sizeClass = 'w-9 h-9', extraClass = '') {
   const iconId = resolveExerciseIconId(opts);
   const icon = EXERCISE_ICONS_BY_ID[iconId] || EXERCISE_ICONS_BY_ID[GENERIC_EXERCISE_ICON_ID];
   const svg = EXERCISE_ICON_SVGS[icon.assetKey] || EXERCISE_ICON_SVGS.generic_strength;
   const label = opts.name || icon.displayName || 'Exercise';
-  return `<span class="ex-icon ${sizeClass}" role="img" aria-label="${esc(label)} icon">${svg}</span>`;
+  return `<span class="ex-icon ${sizeClass} ${extraClass}" role="img" aria-label="${esc(label)} icon">${svg}</span>`;
 }
 
 // ── Plant system ───────────────────────────────────────────────────────────
@@ -5730,25 +5756,25 @@ function esmCollapsedCardHtml(ex, i) {
   const workingReps = workingSetsFor(ex).map(s => s.reps || 0).join(' · ');
   return `
     <button type="button" class="esm-ex-card w-full text-left rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex items-center gap-3" data-idx="${i}" aria-expanded="false">
-      ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-10 h-10')}
+      ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-10 h-10', 'ex-icon-accent')}
       <div class="flex-1 min-w-0">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400">${ex.weight||0} ${esc(ex.unit||'kg')}</p>
         <p class="text-xs text-slate-400">${workingReps || '—'}</p>
       </div>
-      <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">expand_more</span>
+      <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">chevron_right</span>
     </button>`;
 }
 function esmExpandedCardHtml(ex, i) {
   return `
     <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 space-y-3.5">
       <div class="flex items-center gap-3">
-        ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-10 h-10')}
+        ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-10 h-10', 'ex-icon-accent')}
         <button type="button" class="esm-ex-collapse flex-1 text-left min-w-0" data-idx="${i}" aria-expanded="true" aria-label="Collapse ${esc(ex.name)}">
           <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
         </button>
-        <button type="button" class="esm-del-ex p-2 text-slate-400 hover:text-red-400 flex-shrink-0" data-idx="${i}" aria-label="Delete ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">delete</span></button>
-        <button type="button" class="esm-ex-collapse p-1 text-slate-400 flex-shrink-0" data-idx="${i}" aria-label="Collapse ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">expand_less</span></button>
+        <button type="button" class="esm-ex-collapse p-1.5 text-slate-400 flex-shrink-0" data-idx="${i}" aria-label="Collapse ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">expand_less</span></button>
+        <button type="button" class="esm-del-ex p-1.5 text-red-400 flex-shrink-0" data-idx="${i}" aria-label="Delete ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">delete</span></button>
       </div>
 
       <div class="rounded-xl bg-white dark:bg-slate-900 p-3">
@@ -5761,29 +5787,37 @@ function esmExpandedCardHtml(ex, i) {
         <div class="flex items-center justify-center gap-3 pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
           <button type="button" class="esm-weight-minus w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" data-idx="${i}" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
           <input type="number" inputmode="decimal" step="0.5" class="esm-weight-input esm-plain-input font-display font-extrabold text-xl text-slate-800 dark:text-white" style="width:4.5rem" data-idx="${i}" value="${ex.weight||0}" aria-label="Weight">
-          <button type="button" class="esm-weight-plus w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" data-idx="${i}" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
+          <button type="button" class="esm-weight-plus w-9 h-9 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" data-idx="${i}" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
         </div>` : ''}
       </div>
 
-      <div class="space-y-2">
-        ${(ex.sets||[]).map((s, j) => `
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
-            <div class="flex-1 flex items-center justify-center gap-2">
-              <button type="button" class="esm-rep-minus w-9 h-9 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Decrease reps for set ${j+1}"><span class="ms text-lg" aria-hidden="true">remove</span></button>
-              <input type="number" inputmode="numeric" class="esm-rep-input esm-plain-input font-display font-bold text-lg text-slate-800 dark:text-white" style="width:3rem" data-idx="${i}" data-set="${j}" value="${s.reps||0}" aria-label="Reps for set ${j+1}">
-              <button type="button" class="esm-rep-plus w-9 h-9 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Increase reps for set ${j+1}"><span class="ms text-lg" aria-hidden="true">add</span></button>
-            </div>
-            <button type="button" class="esm-del-set p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Remove set ${j+1}" ${ex.sets.length<=1?'disabled':''}><span class="ms text-base" aria-hidden="true">close</span></button>
-          </div>`).join('')}
+      <div>
+        <p class="text-xs font-semibold text-slate-400 mb-1.5">Reps</p>
+        <div class="space-y-2">
+          ${(ex.sets||[]).map((s, j) => `
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
+              <div class="flex-1 flex items-center justify-center gap-2.5">
+                <button type="button" class="esm-rep-minus w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Decrease reps for set ${j+1}"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+                <div class="esm-rep-box flex-1 max-w-16">
+                  <input type="number" inputmode="numeric" class="esm-rep-input esm-plain-input font-display font-bold text-lg text-slate-800 dark:text-white w-full" data-idx="${i}" data-set="${j}" value="${s.reps||0}" aria-label="Reps for set ${j+1}">
+                </div>
+                <button type="button" class="esm-rep-plus w-9 h-9 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Increase reps for set ${j+1}"><span class="ms text-lg" aria-hidden="true">add</span></button>
+              </div>
+              <button type="button" class="esm-del-set p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Remove set ${j+1}" ${ex.sets.length<=1?'disabled':''}><span class="ms text-base" aria-hidden="true">close</span></button>
+            </div>`).join('')}
+        </div>
       </div>
       <button type="button" class="esm-add-set text-xs font-semibold text-brand-500 hover:underline" data-idx="${i}">+ Add set</button>
 
       <div class="rounded-xl bg-white dark:bg-slate-900 overflow-hidden">
-        <button type="button" class="esm-advanced-toggle w-full flex items-center gap-2 p-3 text-left" aria-expanded="${esmAdvancedOpen?'true':'false'}">
-          <span class="ms text-base text-purple-500 dark:text-purple-400" aria-hidden="true">tune</span>
-          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">Advanced</span>
-          <span class="ms text-slate-400" aria-hidden="true">${esmAdvancedOpen?'expand_less':'expand_more'}</span>
+        <button type="button" class="esm-advanced-toggle w-full flex items-center gap-3 p-3 text-left" aria-expanded="${esmAdvancedOpen?'true':'false'}">
+          <span class="ex-icon ex-icon-accent w-9 h-9" aria-hidden="true"><span class="ms text-base">tune</span></span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Advanced</p>
+            <p class="text-xs text-slate-400">RIR, warm-up, notes</p>
+          </div>
+          <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">${esmAdvancedOpen?'expand_less':'expand_more'}</span>
         </button>
         ${esmAdvancedOpen ? `
         <div class="px-3 pb-3 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -5932,6 +5966,8 @@ function openEditSessionModal(date, sessionId) {
   }
   document.getElementById('esm-duration').value = esmDraft.duration || '';
   document.getElementById('esm-notes').value = esmDraft.notes || '';
+  document.getElementById('esm-details-panel').style.display = 'none';
+  document.getElementById('esm-details-toggle').setAttribute('aria-expanded', 'false');
 
   renderEsmExList();
   document.getElementById('edit-session-modal').style.display = '';
@@ -5939,6 +5975,17 @@ function openEditSessionModal(date, sessionId) {
 function closeEditSessionModal() { document.getElementById('edit-session-modal').style.display = 'none'; }
 document.getElementById('esm-close').addEventListener('click', closeEditSessionModal);
 document.getElementById('esm-cancel-btn').addEventListener('click', closeEditSessionModal);
+// Duration/name stay tucked behind this pencil so the default view matches
+// the reference exactly (stat card + Notes, nothing else) — "Change weight"
+// elsewhere in this same modal uses the identical reveal-on-tap idiom.
+document.getElementById('esm-details-toggle').addEventListener('click', () => {
+  const panel = document.getElementById('esm-details-panel');
+  const btn = document.getElementById('esm-details-toggle');
+  const opening = panel.style.display === 'none';
+  panel.style.display = opening ? '' : 'none';
+  btn.setAttribute('aria-expanded', String(opening));
+  if (opening) (document.getElementById('esm-name-field').style.display !== 'none' ? document.getElementById('esm-name') : document.getElementById('esm-duration')).focus();
+});
 document.getElementById('esm-duration').addEventListener('input', () => {
   esmDraft.duration = +document.getElementById('esm-duration').value || 0;
   renderEsmSummary();
