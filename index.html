@@ -111,6 +111,16 @@ body{font-family:'Inter',sans-serif}
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
+/* Shared exercise-icon container — same rounded badge everywhere an
+   ExerciseIcon renders (library, groups, active workout, queue, complete-set,
+   history, calendar, edit-workout, progress). Line icons use currentColor so
+   they adapt to light/dark automatically without a second icon set. */
+.ex-icon{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:.75rem;background:#f1f5f9;color:#64748b}
+.dark .ex-icon{background:#334155;color:#cbd5e1}
+.ex-icon svg{width:60%;height:60%}
+#edit-session-modal input[type=number]::-webkit-outer-spin-button,#edit-session-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#edit-session-modal input[type=number]{-moz-appearance:textfield}
+#edit-session-modal .esm-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
@@ -565,7 +575,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <button id="ls-close-btn" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0" aria-label="Close without saving this set"><span class="ms text-lg" aria-hidden="true">close</span></button>
 
     <div class="flex flex-col items-center text-center gap-1.5 pt-1">
-      <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-xl text-slate-400">fitness_center</span></div>
+      <span id="ls-exercise-icon" class="w-11 h-11"></span>
       <p id="ls-exercise-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
       <p id="ls-set-label" class="text-xs font-semibold text-slate-400"></p>
     </div>
@@ -883,6 +893,18 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <button id="ex-modal-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
     </div>
     <div><label class="text-xs font-semibold text-slate-400 block mb-1">Name</label><input id="ex-name" type="text" placeholder="e.g. Lat Pulldown"></div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 block mb-1">Exercise icon</label>
+      <div class="flex items-center gap-3">
+        <span id="ex-icon-preview" class="ex-icon w-11 h-11"></span>
+        <div class="min-w-0">
+          <p id="ex-icon-name-label" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate" role="status"></p>
+          <button id="ex-icon-change-btn" type="button" class="text-xs font-semibold text-brand-500 hover:underline">Change icon</button>
+        </div>
+      </div>
+      <input type="hidden" id="ex-icon-id">
+      <input type="hidden" id="ex-icon-source">
+    </div>
     <div class="flex gap-3">
       <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Category</label><select id="ex-group"><option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option><option value="full">Full body</option><option value="cardio">Cardio</option><option value="mobility">Mobility</option><option value="other">Other</option></select></div>
       <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Equipment</label><select id="ex-equipment"><option value="">—</option><option value="Barbell">Barbell</option><option value="Dumbbell">Dumbbell</option><option value="Machine">Machine</option><option value="Cable">Cable</option><option value="Bodyweight">Bodyweight</option><option value="Other">Other</option></select></div>
@@ -931,6 +953,27 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
     <input type="hidden" id="ex-modal-id">
     <button id="ex-modal-save" class="btn btn-green w-full py-2.5">Save exercise</button>
+  </div>
+</div>
+
+<!-- Exercise icon picker — shared by "New/Edit exercise" (exercise-modal) and
+     the redesigned Edit Workout screen. Search, category/equipment filter
+     chips, recently used, and a grid; picking one always closes back to
+     whichever caller opened it via openIconPicker()'s callback. -->
+<div id="icon-picker-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto flex flex-col">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Choose an icon</h3>
+      <button id="icon-picker-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <input id="icon-picker-search" type="text" placeholder="Search icons" aria-label="Search icons">
+    <div id="icon-picker-filters" class="flex flex-wrap gap-1.5" role="group" aria-label="Filter icons"></div>
+    <div id="icon-picker-recent-wrap" style="display:none">
+      <p class="text-xs font-semibold text-slate-400 mb-1.5">Recently used</p>
+      <div id="icon-picker-recent" class="grid grid-cols-5 gap-2"></div>
+    </div>
+    <div id="icon-picker-grid" class="grid grid-cols-5 gap-2" role="listbox" aria-label="Exercise icons"></div>
+    <button id="icon-picker-use-suggested" type="button" class="text-xs font-semibold text-brand-500 hover:underline text-center py-1">Use suggested icon</button>
   </div>
 </div>
 
@@ -1135,41 +1178,62 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 <!-- Edit a completed workout — the one edit UI for every strength session,
      regardless of whether it was started via "Start Growing" or logged
      retroactively from the Calendar (both share the same sessionType, so
-     there's nothing to duplicate). Add/remove/swap exercises from the saved
-     library, add/remove individual sets, correct weight/reps, and edit
-     duration/notes/name. Renaming here only relabels this specific logged
-     record — it never touches the saved Workout Group template. Saving
-     recalculates plant growth/stage from scratch (same as add/delete) and
-     refreshes every view that reads from sessions/growth state. -->
+     there's nothing to duplicate). Review-first: exercises collapse to a
+     compact summary card and only one expands at a time. Renaming the
+     workout here only relabels this specific logged record — it never
+     touches the saved Workout Group template. Saving recalculates plant
+     growth/stage from scratch (same as add/delete) and refreshes every view
+     that reads from sessions/growth state. -->
 <div id="edit-session-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 id="esm-title" class="font-display font-bold text-slate-800 dark:text-white">Edit workout</h3>
-      <button id="esm-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
-    </div>
-    <p id="esm-subtitle" class="text-xs text-slate-400"></p>
+  <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm max-h-[92vh] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="esm-title">
+    <div class="flex-1 overflow-y-auto p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 id="esm-title" class="font-display font-bold text-lg text-slate-800 dark:text-white">Edit Workout</h3>
+          <p id="esm-subtitle" class="text-xs text-slate-400"></p>
+        </div>
+        <button id="esm-close" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0" aria-label="Close"><span class="ms text-lg" aria-hidden="true">close</span></button>
+      </div>
 
-    <div id="esm-name-field" style="display:none">
-      <label for="esm-name" class="text-xs font-semibold text-slate-400 block mb-1">Workout name</label>
-      <input id="esm-name" type="text" placeholder="Workout name">
-    </div>
-    <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-3 gap-2">
+        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
+          <p id="esm-stat-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
+          <p class="text-[11px] text-slate-400">min</p>
+        </div>
+        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
+          <p id="esm-stat-exercises" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
+          <p id="esm-stat-exercises-label" class="text-[11px] text-slate-400">exercises</p>
+        </div>
+        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 text-center">
+          <p id="esm-stat-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white"></p>
+          <p id="esm-stat-sets-label" class="text-[11px] text-slate-400">sets</p>
+        </div>
+      </div>
+
+      <div id="esm-name-field" style="display:none">
+        <label for="esm-name" class="text-xs font-semibold text-slate-400 block mb-1">Workout name</label>
+        <input id="esm-name" type="text" placeholder="Workout name">
+      </div>
       <div>
         <label for="esm-duration" class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label>
         <input id="esm-duration" type="number" inputmode="numeric" min="0">
       </div>
       <div>
         <label for="esm-notes" class="text-xs font-semibold text-slate-400 block mb-1">Notes</label>
-        <input id="esm-notes" type="text" placeholder="Optional">
+        <input id="esm-notes" type="text" placeholder="Optional notes about your workout">
       </div>
+
+      <div id="esm-ex-list" class="space-y-2.5"></div>
+      <button id="esm-add-ex-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+        <span class="ms text-base" aria-hidden="true">add</span>Add exercise
+      </button>
+      <p id="esm-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
     </div>
 
-    <div id="esm-ex-list" class="space-y-3"></div>
-    <button id="esm-add-ex-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
-      <span class="ms text-base" aria-hidden="true">add</span>Add exercise
-    </button>
-    <p id="esm-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
-    <button id="esm-save-btn" class="btn btn-green w-full py-3 text-sm" style="min-height:48px">Save changes</button>
+    <div class="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
+      <button id="esm-cancel-btn" type="button" class="flex-1 py-3 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800" style="min-height:48px">Cancel</button>
+      <button id="esm-save-btn" class="btn btn-green text-sm" style="min-height:48px;flex:2">Save changes</button>
+    </div>
   </div>
 </div>
 
@@ -1191,7 +1255,7 @@ const firebaseConfig = {
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getDatabase, ref, set, get, push, remove, onValue, off }
+import { getDatabase, ref, set, get, push, remove, update, onValue, off }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 if (firebaseConfig.apiKey === 'YOUR_API_KEY')
@@ -1268,6 +1332,263 @@ const pct      = (v,g) => g > 0 ? Math.min(100, Math.round(v/g*100)) : 0;
 
 function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
 function mondayOffset(y,m){ let d=new Date(y,m,1).getDay(); return d===0?6:d-1; }
+
+// ── Exercise icon catalogue ──────────────────────────────────────────────────
+// Extensible, registry-based catalogue of simple line-style exercise icons —
+// custom inline SVGs (no external/copyrighted artwork, no emoji), all sharing
+// one visual grammar (24x24, currentColor stroke, rounded caps/joins) so they
+// read as one cohesive set in both themes. Defined at the equipment/movement-
+// pattern level rather than one hand-drawn icon per unique exercise name
+// (infeasible to hand-author thousands of unique illustrations) —
+// suggestExerciseIcon() below picks the closest entry for any exercise name.
+// Add new icons by appending to EXERCISE_ICON_SVGS + EXERCISE_ICONS; nothing
+// else needs to change.
+function exSvgIcon(inner) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+}
+const EXERCISE_ICON_SVGS = {
+  dumbbell: exSvgIcon(`<rect x="2.3" y="9.3" width="3.2" height="5.4" rx="1"/><rect x="18.5" y="9.3" width="3.2" height="5.4" rx="1"/><line x1="7.7" y1="12" x2="16.3" y2="12"/><line x1="6" y1="10.3" x2="6" y2="13.7"/><line x1="18" y1="10.3" x2="18" y2="13.7"/>`),
+  dumbbell_hip_hinge: exSvgIcon(`<circle cx="12" cy="4.5" r="1.5"/><path d="M12 6v4"/><path d="M12 10 L7 14"/><path d="M12 10 L15 12"/><path d="M7 14 L5.5 20"/><path d="M12 10 L14 16 L13 20"/><rect x="3.5" y="19.5" width="3" height="2" rx="0.6"/><rect x="12.5" y="19.5" width="3" height="2" rx="0.6"/>`),
+  barbell: exSvgIcon(`<circle cx="4" cy="12" r="2.1"/><circle cx="20" cy="12" r="2.1"/><line x1="6.1" y1="12" x2="17.9" y2="12"/><line x1="4" y1="9.5" x2="4" y2="14.5"/><line x1="20" y1="9.5" x2="20" y2="14.5"/>`),
+  barbell_squat: exSvgIcon(`<circle cx="12" cy="4.5" r="1.5"/><path d="M12 6v3.5"/><line x1="7" y1="7.5" x2="17" y2="7.5"/><circle cx="6" cy="7.5" r="1"/><circle cx="18" cy="7.5" r="1"/><path d="M12 9.5 L9 14 L9.5 20"/><path d="M12 9.5 L15 14 L14.5 20"/>`),
+  barbell_deadlift: exSvgIcon(`<circle cx="9" cy="5" r="1.5"/><path d="M9 6.5 L11 11"/><path d="M11 11 L9 15"/><path d="M11 11 L15 12"/><path d="M9 15 L8.5 20"/><line x1="15" y1="18" x2="21" y2="18"/><circle cx="15" cy="18" r="1.6"/><circle cx="21" cy="18" r="1.6"/><path d="M12.5 12.5 L15 18"/>`),
+  bench_press: exSvgIcon(`<line x1="3" y1="17" x2="15" y2="17"/><line x1="4" y1="17" x2="4" y2="20"/><line x1="14" y1="17" x2="14" y2="20"/><circle cx="7" cy="14.5" r="1.4"/><path d="M7 16 L11 15.5"/><path d="M11 15.5 L11 12"/><line x1="8" y1="12" x2="14" y2="12"/><circle cx="8" cy="12" r="1"/><circle cx="14" cy="12" r="1"/><path d="M11 15.5 L14 17"/>`),
+  lat_pulldown: exSvgIcon(`<line x1="4" y1="2" x2="4" y2="8"/><line x1="6" y1="2" x2="10" y2="2"/><path d="M4 8 L12 10"/><circle cx="13" cy="10.5" r="1.4"/><path d="M13 12 L13 16"/><path d="M13 12 L10 15"/><path d="M13 12 L16 15"/><path d="M13 16 L11 20"/><path d="M13 16 L15 20"/>`),
+  cable_lateral_raise: exSvgIcon(`<line x1="4" y1="4" x2="4" y2="21"/><circle cx="10" cy="6" r="1.4"/><path d="M10 7.5 L10 13"/><path d="M10 8 L4 6"/><path d="M10 9.5 L15 8"/><path d="M10 13 L8 19"/><path d="M10 13 L12 19"/>`),
+  seated_row: exSvgIcon(`<line x1="20" y1="4" x2="20" y2="14"/><path d="M20 14 L9 15"/><circle cx="7" cy="13.5" r="1.4"/><path d="M7 15 L7 17.5"/><path d="M7 15.5 L9 15"/><path d="M7 17.5 L4.5 20"/><path d="M7 17.5 L9.5 20"/><rect x="3" y="17.5" width="3.2" height="2" rx="0.6"/>`),
+  leg_press: exSvgIcon(`<rect x="3" y="15" width="8" height="2.2" rx="0.6" transform="rotate(-10 7 16)"/><circle cx="14" cy="9" r="1.4"/><path d="M14 10.5 L13 15"/><path d="M13 15 L10 16"/><path d="M13 15 L16 18"/><path d="M16 18 L20 18"/>`),
+  chest_press_machine: exSvgIcon(`<rect x="16" y="6" width="2.2" height="10" rx="0.6"/><circle cx="9" cy="9" r="1.4"/><path d="M9 10.5 L9 15"/><path d="M9 11.5 L15 11"/><path d="M9 15 L7 20"/><path d="M9 15 L11 20"/>`),
+  machine_generic: exSvgIcon(`<path d="M5 20 L5 15 L9 13"/><rect x="3.5" y="20" width="4" height="1.6" rx="0.5"/><line x1="14" y1="4" x2="14" y2="16"/><rect x="12.5" y="9" width="3" height="4" rx="0.6"/><circle cx="9" cy="11" r="1.4"/><path d="M9 12.5 L9 16"/>`),
+  cable_stack: exSvgIcon(`<rect x="15" y="4" width="6" height="14" rx="1"/><line x1="17" y1="7" x2="19" y2="7"/><line x1="17" y1="10" x2="19" y2="10"/><line x1="17" y1="13" x2="19" y2="13"/><circle cx="18" cy="2.5" r="1.2"/><path d="M11 12 L15 8"/>`),
+  resistance_band: exSvgIcon(`<path d="M4 8c4 -5 9 5 5 9c-3 3 4 4 6 1"/><circle cx="4" cy="8" r="1.1"/><circle cx="15" cy="18" r="1.1"/>`),
+  bodyweight_pushup: exSvgIcon(`<circle cx="5" cy="9" r="1.4"/><path d="M5 10.5 L18 13"/><path d="M6.5 11 L5 15"/><path d="M17 12.5 L19 16"/><line x1="4" y1="17.5" x2="6" y2="15.5"/><line x1="17" y1="17.5" x2="19" y2="16"/>`),
+  bodyweight_pullup: exSvgIcon(`<line x1="3" y1="4" x2="21" y2="4"/><circle cx="12" cy="8" r="1.5"/><path d="M12 9.5 L12 15"/><path d="M12 10 L7 5"/><path d="M12 10 L17 5"/><path d="M12 15 L9.5 20"/><path d="M12 15 L14.5 20"/>`),
+  lunge_split_squat: exSvgIcon(`<circle cx="10" cy="5" r="1.5"/><path d="M10 6.5 L10 12"/><path d="M10 12 L6 15 L5 20"/><path d="M10 12 L15 14 L18 20"/><path d="M10 9 L14 8"/>`),
+  cardio_treadmill: exSvgIcon(`<rect x="3" y="15" width="14" height="2.4" rx="1"/><line x1="14" y1="15" x2="20" y2="6"/><circle cx="9" cy="9.5" r="1.4"/><path d="M9 11 L9 14.5"/><path d="M9 11.5 L12 12"/>`),
+  cardio_bike: exSvgIcon(`<circle cx="5.5" cy="17" r="2.6"/><circle cx="18" cy="17" r="2.6"/><path d="M5.5 17 L10 9 L14 9"/><path d="M10 9 L18 17"/><path d="M14 9 L15.5 6"/><path d="M13.5 6 L16.5 6"/><path d="M10 9 L8 6.5"/>`),
+  mobility_stretch: exSvgIcon(`<circle cx="7" cy="5" r="1.5"/><path d="M7 6.5 L7 13"/><path d="M7 13 L4 19"/><path d="M7 13 L13 12 L17 16"/><path d="M7 8 L12 5"/>`),
+  yoga_pose: exSvgIcon(`<circle cx="12" cy="4.5" r="1.5"/><path d="M12 6 L12 13"/><path d="M12 8 L7 6"/><path d="M12 8 L17 10"/><path d="M12 13 L12 19"/><path d="M12 14 L7 12"/>`),
+  core_plank: exSvgIcon(`<circle cx="5" cy="10" r="1.4"/><path d="M5 11.5 L18 13"/><path d="M6 11.7 L6 15.5"/><path d="M6 15.5 L4 16"/><path d="M17.5 12.6 L19 16"/>`),
+  shoulder_press: exSvgIcon(`<circle cx="12" cy="5" r="1.5"/><path d="M12 6.5 L12 14"/><path d="M12 8 L8 4"/><path d="M12 8 L16 4"/><circle cx="8" cy="4" r="1"/><circle cx="16" cy="4" r="1"/><path d="M12 14 L9.5 20"/><path d="M12 14 L14.5 20"/>`),
+  generic_strength: exSvgIcon(`<circle cx="9" cy="6" r="1.5"/><path d="M9 7.5 L9 12"/><path d="M9 9 L13 11c1 0.6 1 2 -0.3 2.3"/><path d="M9 12 L7 20"/><path d="M9 12 L11.5 20"/>`),
+};
+
+const GENERIC_EXERCISE_ICON_ID = 'generic-strength';
+
+// id and key are intentionally identical here — there's no separate
+// internal numeric/UUID id system in this app, so the stable slug IS the id.
+const EXERCISE_ICONS = [
+  { id:'dumbbell-generic', key:'dumbbell-generic', displayName:'Dumbbell Exercise', assetKey:'dumbbell', category:'strength',
+    equipment:['dumbbell'], movementPatterns:[], muscleGroups:[], aliases:['dumbbell'],
+    searchTerms:['dumbbell','db','free weight'], active:true, sortOrder:10, version:1 },
+  { id:'dumbbell-hip-hinge', key:'dumbbell-hip-hinge', displayName:'Dumbbell Hip Hinge', assetKey:'dumbbell_hip_hinge', category:'strength',
+    equipment:['dumbbell'], movementPatterns:['hip-hinge'], muscleGroups:['hamstrings','glutes','back'],
+    aliases:['dumbbell romanian deadlift','dumbbell rdl','db rdl','db romanian deadlift','dumbbell deadlift','db deadlift','dumbbell good morning','dumbbell stiff leg deadlift'],
+    searchTerms:['rdl','romanian deadlift','hip hinge','hamstring','deadlift'], active:true, sortOrder:20, version:1 },
+  { id:'barbell-generic', key:'barbell-generic', displayName:'Barbell Exercise', assetKey:'barbell', category:'strength',
+    equipment:['barbell'], movementPatterns:[], muscleGroups:[], aliases:['barbell'],
+    searchTerms:['barbell','bb','bar'], active:true, sortOrder:30, version:1 },
+  { id:'barbell-squat', key:'barbell-squat', displayName:'Barbell Squat', assetKey:'barbell_squat', category:'strength',
+    equipment:['barbell'], movementPatterns:['squat'], muscleGroups:['quads','glutes'],
+    aliases:['back squat','barbell squat','front squat','high bar squat','low bar squat'],
+    searchTerms:['squat'], active:true, sortOrder:40, version:1 },
+  { id:'barbell-deadlift', key:'barbell-deadlift', displayName:'Barbell Deadlift', assetKey:'barbell_deadlift', category:'strength',
+    equipment:['barbell'], movementPatterns:['hip-hinge'], muscleGroups:['hamstrings','glutes','back'],
+    aliases:['deadlift','conventional deadlift','sumo deadlift','romanian deadlift','rdl','barbell rdl','barbell romanian deadlift','stiff leg deadlift'],
+    searchTerms:['deadlift','rdl','hip hinge'], active:true, sortOrder:50, version:1 },
+  { id:'bench-press', key:'bench-press', displayName:'Bench Press', assetKey:'bench_press', category:'strength',
+    equipment:['barbell','dumbbell','machine'], movementPatterns:['horizontal-push'], muscleGroups:['chest','triceps','shoulders'],
+    aliases:['bench press','flat bench press','incline bench press','decline bench press','dumbbell bench press','db bench press','close grip bench press'],
+    searchTerms:['bench','chest press','press'], active:true, sortOrder:60, version:1 },
+  { id:'lat-pulldown-machine', key:'lat-pulldown-machine', displayName:'Lat Pulldown', assetKey:'lat_pulldown', category:'strength',
+    equipment:['machine','cable'], movementPatterns:['vertical-pull'], muscleGroups:['back','lats','biceps'],
+    aliases:['lat pulldown','pulldown','lat pull down','cable pulldown','wide grip pulldown','close grip pulldown'],
+    searchTerms:['pulldown','lat','vertical pull'], active:true, sortOrder:70, version:1 },
+  { id:'cable-lateral-raise', key:'cable-lateral-raise', displayName:'Cable Lateral Raise', assetKey:'cable_lateral_raise', category:'strength',
+    equipment:['cable'], movementPatterns:['abduction'], muscleGroups:['shoulders'],
+    aliases:['cable side raise','cable lateral raise','cable shoulder raise','side raise','lateral raise','dumbbell lateral raise','db lateral raise'],
+    searchTerms:['lateral raise','side raise','shoulder'], active:true, sortOrder:80, version:1 },
+  { id:'seated-row-machine', key:'seated-row-machine', displayName:'Seated Row', assetKey:'seated_row', category:'strength',
+    equipment:['machine','cable'], movementPatterns:['horizontal-pull'], muscleGroups:['back','biceps'],
+    aliases:['seated row','cable row','machine row','seated cable row','chest supported row'],
+    searchTerms:['row'], active:true, sortOrder:90, version:1 },
+  { id:'leg-press-machine', key:'leg-press-machine', displayName:'Leg Press', assetKey:'leg_press', category:'strength',
+    equipment:['machine'], movementPatterns:['squat'], muscleGroups:['quads','glutes'],
+    aliases:['leg press','hack squat','45 degree leg press'],
+    searchTerms:['leg press'], active:true, sortOrder:100, version:1 },
+  { id:'chest-press-machine', key:'chest-press-machine', displayName:'Chest Press Machine', assetKey:'chest_press_machine', category:'strength',
+    equipment:['machine'], movementPatterns:['horizontal-push'], muscleGroups:['chest','triceps'],
+    aliases:['chest press machine','seated chest press','machine chest press','pec press'],
+    searchTerms:['chest press machine'], active:true, sortOrder:110, version:1 },
+  { id:'machine-generic', key:'machine-generic', displayName:'Machine Exercise', assetKey:'machine_generic', category:'strength',
+    equipment:['machine'], movementPatterns:[], muscleGroups:[], aliases:['machine'],
+    searchTerms:['machine'], active:true, sortOrder:120, version:1 },
+  { id:'cable-generic', key:'cable-generic', displayName:'Cable Exercise', assetKey:'cable_stack', category:'strength',
+    equipment:['cable'], movementPatterns:[], muscleGroups:[], aliases:['cable'],
+    searchTerms:['cable'], active:true, sortOrder:130, version:1 },
+  { id:'resistance-band', key:'resistance-band', displayName:'Resistance Band Exercise', assetKey:'resistance_band', category:'strength',
+    equipment:['band'], movementPatterns:[], muscleGroups:[], aliases:['band','resistance band','banded'],
+    searchTerms:['band'], active:true, sortOrder:140, version:1 },
+  { id:'bodyweight-pushup', key:'bodyweight-pushup', displayName:'Push-Up', assetKey:'bodyweight_pushup', category:'strength',
+    equipment:['bodyweight'], movementPatterns:['horizontal-push'], muscleGroups:['chest','triceps','shoulders'],
+    aliases:['push up','push-up','pushup','diamond push up','wide push up'],
+    searchTerms:['push up','pushup'], active:true, sortOrder:150, version:1 },
+  { id:'bodyweight-pullup', key:'bodyweight-pullup', displayName:'Pull-Up', assetKey:'bodyweight_pullup', category:'strength',
+    equipment:['bodyweight'], movementPatterns:['vertical-pull'], muscleGroups:['back','biceps'],
+    aliases:['pull up','pull-up','pullup','chin up','chin-up','assisted pull up'],
+    searchTerms:['pull up','pullup','chin up'], active:true, sortOrder:160, version:1 },
+  { id:'lunge-split-squat', key:'lunge-split-squat', displayName:'Lunge / Split Squat', assetKey:'lunge_split_squat', category:'strength',
+    equipment:['dumbbell','barbell','bodyweight'], movementPatterns:['lunge','unilateral'], muscleGroups:['quads','glutes'],
+    aliases:['bulgarian split squat','split squat','lunge','walking lunge','reverse lunge','dumbbell lunge','step up','step-up'],
+    searchTerms:['lunge','split squat','bulgarian','step up'], active:true, sortOrder:170, version:1 },
+  { id:'cardio-treadmill', key:'cardio-treadmill', displayName:'Treadmill', assetKey:'cardio_treadmill', category:'cardio',
+    equipment:['cardio'], movementPatterns:['cardio'], muscleGroups:[],
+    aliases:['treadmill','running','jogging','walking'], searchTerms:['treadmill','run','walk','jog'], active:true, sortOrder:180, version:1 },
+  { id:'cardio-bike', key:'cardio-bike', displayName:'Stationary Bike', assetKey:'cardio_bike', category:'cardio',
+    equipment:['cardio'], movementPatterns:['cardio'], muscleGroups:[],
+    aliases:['bike','cycling','stationary bike','spin bike'], searchTerms:['bike','cycling','spin'], active:true, sortOrder:190, version:1 },
+  { id:'mobility-stretch', key:'mobility-stretch', displayName:'Stretch', assetKey:'mobility_stretch', category:'mobility',
+    equipment:['bodyweight'], movementPatterns:['stretch'], muscleGroups:[],
+    aliases:['stretch','stretching','hamstring stretch','hip flexor stretch','foam rolling'],
+    searchTerms:['stretch','mobility'], active:true, sortOrder:200, version:1 },
+  { id:'yoga-pose', key:'yoga-pose', displayName:'Yoga / Pilates', assetKey:'yoga_pose', category:'mobility',
+    equipment:['bodyweight'], movementPatterns:['stretch','balance'], muscleGroups:[],
+    aliases:['yoga','pilates','vinyasa','sun salutation','warrior pose','downward dog'],
+    searchTerms:['yoga','pilates'], active:true, sortOrder:210, version:1 },
+  { id:'core-plank', key:'core-plank', displayName:'Plank / Core', assetKey:'core_plank', category:'strength',
+    equipment:['bodyweight'], movementPatterns:['core'], muscleGroups:['core','abs'],
+    aliases:['plank','side plank','sit up','crunch','ab crunch','russian twist','hollow hold'],
+    searchTerms:['plank','core','abs','crunch'], active:true, sortOrder:220, version:1 },
+  { id:'shoulder-press', key:'shoulder-press', displayName:'Shoulder Press', assetKey:'shoulder_press', category:'strength',
+    equipment:['dumbbell','barbell','machine'], movementPatterns:['vertical-push'], muscleGroups:['shoulders','triceps'],
+    aliases:['shoulder press','overhead press','military press','arnold press','dumbbell shoulder press','seated shoulder press'],
+    searchTerms:['shoulder press','overhead press'], active:true, sortOrder:230, version:1 },
+  { id:'generic-strength', key:'generic-strength', displayName:'Exercise', assetKey:'generic_strength', category:'strength',
+    equipment:[], movementPatterns:[], muscleGroups:[], aliases:[], searchTerms:[],
+    active:true, sortOrder:9999, version:1 },
+];
+const EXERCISE_ICONS_BY_ID = Object.fromEntries(EXERCISE_ICONS.map(i => [i.id, i]));
+
+// Recognized shorthand expanded before matching, so "DB RDL" and "Dumbbell
+// Romanian Deadlift" normalize to the exact same string and hit the same
+// exact-alias match.
+function normalizeExerciseName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/\bdb\b/g, 'dumbbell')
+    .replace(/\bbb\b/g, 'barbell')
+    .replace(/\brdl\b/g, 'romanian deadlift')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+// Deterministic, pure — the same input always produces the same suggestion.
+// Priority: exact alias -> normalized-name substring -> equipment overlap ->
+// movement-pattern keyword -> muscle-group overlap -> loose keyword
+// similarity -> generic fallback. See EXERCISE_ICONS above for the data this
+// reads from; add an icon there and it's automatically eligible here.
+function suggestExerciseIcon({ exerciseName = '', equipment = [], category = '', muscleGroups = [] } = {}) {
+  const normalizedName = normalizeExerciseName(exerciseName);
+  const equipmentList = (Array.isArray(equipment) ? equipment : [equipment]).filter(Boolean).map(e => String(e).toLowerCase());
+  const muscleList = (Array.isArray(muscleGroups) ? muscleGroups : [muscleGroups]).filter(Boolean).map(m => String(m).toLowerCase());
+  const candidates = EXERCISE_ICONS.filter(i => i.active !== false && i.id !== GENERIC_EXERCISE_ICON_ID);
+
+  for (const icon of candidates) {
+    if ((icon.aliases||[]).some(a => normalizeExerciseName(a) === normalizedName && normalizedName)) {
+      return { iconId: icon.id, matchStage: 'exact-alias' };
+    }
+  }
+  if (normalizedName) {
+    let best = null, bestLen = 0;
+    for (const icon of candidates) {
+      for (const raw of (icon.aliases||[])) {
+        const a = normalizeExerciseName(raw);
+        if (!a) continue;
+        if (normalizedName.includes(a) || a.includes(normalizedName)) {
+          if (a.length > bestLen) { best = icon; bestLen = a.length; }
+        }
+      }
+    }
+    if (best) return { iconId: best.id, matchStage: 'normalized-name' };
+  }
+  if (equipmentList.length) {
+    let best = null, bestScore = 0;
+    for (const icon of candidates) {
+      const overlap = (icon.equipment||[]).filter(e => equipmentList.includes(e)).length;
+      if (overlap > bestScore) { bestScore = overlap; best = icon; }
+    }
+    if (best) return { iconId: best.id, matchStage: 'equipment' };
+  }
+  const patternKeywords = {
+    'hip-hinge': ['hinge','deadlift','romanian deadlift','good morning'],
+    'squat': ['squat'],
+    'lunge': ['lunge','split squat','step up'],
+    'vertical-pull': ['pulldown','pull up','pullup','chin up'],
+    'horizontal-pull': ['row'],
+    'vertical-push': ['overhead press','shoulder press','military press'],
+    'horizontal-push': ['bench press','push up','pushup','chest press'],
+    'core': ['plank','crunch','sit up'],
+    'stretch': ['stretch','mobility'],
+    'cardio': ['run','jog','bike','cycle','treadmill','cardio']
+  };
+  for (const [pattern, kws] of Object.entries(patternKeywords)) {
+    if (kws.some(k => normalizedName.includes(k))) {
+      const icon = candidates.find(i => (i.movementPatterns||[]).includes(pattern));
+      if (icon) return { iconId: icon.id, matchStage: 'movement-pattern' };
+    }
+  }
+  if (muscleList.length) {
+    let best = null, bestScore = 0;
+    for (const icon of candidates) {
+      const overlap = (icon.muscleGroups||[]).filter(m => muscleList.includes(m)).length;
+      if (overlap > bestScore) { bestScore = overlap; best = icon; }
+    }
+    if (best) return { iconId: best.id, matchStage: 'muscle-group' };
+  }
+  if (normalizedName) {
+    const nameWords = new Set(normalizedName.split(' ').filter(w => w.length > 2));
+    let best = null, bestScore = 0;
+    for (const icon of candidates) {
+      const terms = [...(icon.searchTerms||[]), ...(icon.aliases||[])].map(normalizeExerciseName);
+      let score = 0;
+      for (const term of terms) {
+        for (const word of term.split(' ')) {
+          if (word.length > 2 && nameWords.has(word)) score++;
+        }
+      }
+      if (score > bestScore) { bestScore = score; best = icon; }
+    }
+    if (best && bestScore > 0) return { iconId: best.id, matchStage: 'keyword-similarity' };
+  }
+  return { iconId: GENERIC_EXERCISE_ICON_ID, matchStage: 'fallback' };
+}
+
+// The one shared ExerciseIcon renderer — every call site in the app (library,
+// groups, active workout, queue, complete-set, history, calendar,
+// edit-workout, progress) goes through this, so the same exercise can never
+// show a different icon in two places. Prefers exercises[exerciseId].iconId
+// (the persisted, possibly manually-overridden choice); only falls back to a
+// fresh suggestion when there's no library record to read from (e.g. a
+// legacy session missing exerciseId).
+function resolveExerciseIconId({ exerciseId, name, muscleGroup, equipment } = {}) {
+  const libEx = exerciseId ? exercises[exerciseId] : null;
+  if (libEx?.iconId && EXERCISE_ICONS_BY_ID[libEx.iconId]) return libEx.iconId;
+  const suggestion = suggestExerciseIcon({
+    exerciseName: name || libEx?.name || '',
+    equipment: (libEx?.equipment || equipment) ? [libEx?.equipment || equipment] : [],
+    category: libEx?.muscleGroup || muscleGroup || '',
+    muscleGroups: []
+  });
+  return suggestion.iconId;
+}
+function exerciseIconHtml(opts = {}, sizeClass = 'w-9 h-9') {
+  const iconId = resolveExerciseIconId(opts);
+  const icon = EXERCISE_ICONS_BY_ID[iconId] || EXERCISE_ICONS_BY_ID[GENERIC_EXERCISE_ICON_ID];
+  const svg = EXERCISE_ICON_SVGS[icon.assetKey] || EXERCISE_ICON_SVGS.generic_strength;
+  const label = opts.name || icon.displayName || 'Exercise';
+  return `<span class="ex-icon ${sizeClass}" role="img" aria-label="${esc(label)} icon">${svg}</span>`;
+}
 
 // ── Plant system ───────────────────────────────────────────────────────────
 const PLANTS = {
@@ -1782,10 +2103,35 @@ function bootApp(prof) {
 
 function cleanupListeners() { dataRefs.forEach(r => off(r)); dataRefs = []; }
 
+// ── Existing exercises without an icon: safe, backward-compatible backfill ─
+// Never touches an exercise that already has an iconId (whether auto,
+// user_selected, or default) — only ones truly missing one get a fresh
+// suggestion. Self-terminating: writing iconId re-fires the exercises
+// onValue listener, and that second pass finds nothing left to migrate.
+async function migrateMissingExerciseIcons() {
+  const updates = {};
+  for (const [id, ex] of Object.entries(exercises)) {
+    if (ex.iconId) continue;
+    const suggestion = suggestExerciseIcon({
+      exerciseName: ex.name || '', category: ex.muscleGroup || '',
+      equipment: ex.equipment ? [ex.equipment.toLowerCase()] : []
+    });
+    updates[`exercises/${uid()}/${id}/iconId`] = suggestion.iconId;
+    updates[`exercises/${uid()}/${id}/iconSource`] = 'auto';
+  }
+  if (Object.keys(updates).length) {
+    try { await update(ref(db), updates); } catch (e) { console.error('Failed to backfill exercise icons:', e); }
+  }
+}
+
 function subscribeData() {
   cleanupListeners();
   const rExercises = ref(db, `exercises/${uid()}`);
-  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); }, e => console.error(e));
+  onValue(rExercises, snap => {
+    exercises = snap.val() || {};
+    renderExerciseLibrary(); renderGroupsList();
+    migrateMissingExerciseIcons();
+  }, e => console.error(e));
   dataRefs.push(rExercises);
 
   // Nested under users/{uid} (not a new top-level groups/{uid} path) so it
@@ -1950,7 +2296,7 @@ function findClosestProgression() {
     const maxReps = exDef.maxReps ?? 12;
     const remaining = targetReps.reduce((sum, r) => sum + Math.max(0, maxReps - r), 0);
     const entry = {
-      name: exDef.name, group: exDef.muscleGroup,
+      exerciseId: id, name: exDef.name, group: exDef.muscleGroup,
       weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
       weightIncrement: exDef.weightIncrement || 0,
       targetReps, lastSets: last.sets.map(st => st.reps || 0),
@@ -2255,8 +2601,11 @@ function renderClosestProgress() {
   }).join('');
   body.innerHTML = `
     <div class="flex items-center justify-between">
-      <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(best.name)}</p>
-      <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group}">${MG_LABEL[best.group]||best.group}</span>
+      <div class="flex items-center gap-2 min-w-0">
+        ${exerciseIconHtml({ exerciseId: best.exerciseId, name: best.name }, 'w-7 h-7')}
+        <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate">${esc(best.name)}</p>
+      </div>
+      <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
     </div>
     <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
     <div class="flex items-center gap-1.5 py-1">
@@ -2591,7 +2940,8 @@ function renderExerciseLibrary() {
     const usedIn = groupsUsingExercise(id);
     const usedLine = usedIn.length ? `<p class="text-[11px] text-brand-500 mt-0.5">Used in ${usedIn.map(g=>esc(g.name)).join(', ')}</p>` : '';
     return `
-      <div class="card p-3 flex items-center justify-between gap-3">
+      <div class="card p-3 flex items-center gap-3">
+        ${exerciseIconHtml({ exerciseId: id, name: ex.name }, 'w-10 h-10')}
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 flex-wrap">
             <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
@@ -2662,6 +3012,134 @@ document.getElementById('ex-rest-custom').addEventListener('input', () => {
   document.getElementById('ex-rest-value').value = v > 0 ? v : '';
 });
 
+// ── Exercise icon picker (search + category/equipment filters + recents) ───
+// Shared by "New/Edit exercise" and the redesigned Edit Workout screen —
+// openIconPicker() takes a callback so either caller can hook the result in
+// without a second picker UI existing anywhere.
+let iconPickerCallback = null;
+let iconPickerSuggestedId = null;
+let iconPickerFilter = null; // { type: 'category'|'equipment', value } | null
+const ICON_RECENTS_KEY = 'rs_recent_icons';
+function loadIconRecents() {
+  try { return JSON.parse(localStorage.getItem(ICON_RECENTS_KEY)) || []; } catch (e) { return []; }
+}
+function saveIconRecent(iconId) {
+  const recents = [iconId, ...loadIconRecents().filter(id => id !== iconId)].slice(0, 8);
+  try { localStorage.setItem(ICON_RECENTS_KEY, JSON.stringify(recents)); } catch (e) {}
+}
+function iconPickerCellHtml(icon, selected) {
+  const svg = EXERCISE_ICON_SVGS[icon.assetKey] || EXERCISE_ICON_SVGS.generic_strength;
+  return `<button type="button" class="icon-picker-cell ex-icon w-11 h-11 relative" data-id="${icon.id}" role="option" aria-label="${esc(icon.displayName)}" aria-selected="${selected?'true':'false'}" style="${selected?'box-shadow:0 0 0 2px #22c55e':''}">${svg}${selected?'<span class="ms text-[10px] absolute -top-1 -right-1 bg-brand-500 text-white rounded-full flex items-center justify-center" style="width:15px;height:15px" aria-hidden="true">check</span>':''}</button>`;
+}
+function iconPickerMatches(icon, query) {
+  if (iconPickerFilter) {
+    if (iconPickerFilter.type === 'category' && icon.category !== iconPickerFilter.value) return false;
+    if (iconPickerFilter.type === 'equipment' && !(icon.equipment||[]).includes(iconPickerFilter.value)) return false;
+  }
+  if (query) {
+    const haystack = [icon.displayName, ...(icon.aliases||[]), ...(icon.searchTerms||[])].join(' ').toLowerCase();
+    if (!haystack.includes(query)) return false;
+  }
+  return true;
+}
+function renderIconPickerGrid(selectedId) {
+  const query = document.getElementById('icon-picker-search').value.trim().toLowerCase();
+  const recents = loadIconRecents().filter(id => EXERCISE_ICONS_BY_ID[id]);
+  const showRecents = recents.length && !query && !iconPickerFilter;
+  document.getElementById('icon-picker-recent-wrap').style.display = showRecents ? '' : 'none';
+  if (showRecents) {
+    document.getElementById('icon-picker-recent').innerHTML = recents.map(id => iconPickerCellHtml(EXERCISE_ICONS_BY_ID[id], id === selectedId)).join('');
+  }
+  const list = EXERCISE_ICONS.filter(i => i.active !== false).sort((a,b)=>a.sortOrder-b.sortOrder).filter(i => iconPickerMatches(i, query));
+  const grid = document.getElementById('icon-picker-grid');
+  grid.innerHTML = list.length
+    ? list.map(icon => iconPickerCellHtml(icon, icon.id === selectedId)).join('')
+    : '<p class="col-span-5 text-xs text-slate-400 text-center py-4">No icons match.</p>';
+  document.querySelectorAll('.icon-picker-cell').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.id;
+    saveIconRecent(id);
+    const cb = iconPickerCallback;
+    closeIconPicker();
+    if (cb) cb(id, {});
+  }));
+}
+function renderIconPickerFilters(selectedId) {
+  const active = EXERCISE_ICONS.filter(i => i.active !== false);
+  const cats = [...new Set(active.map(i => i.category))];
+  const equips = [...new Set(active.flatMap(i => i.equipment || []))];
+  const chip = (type, value, label, isActive) =>
+    `<button type="button" class="icon-picker-filter-chip btn ${isActive?'btn-green':'btn-outline'} text-xs px-2.5 py-1" data-type="${type}" data-value="${esc(value)}">${esc(label)}</button>`;
+  const html = chip('', '', 'All', !iconPickerFilter)
+    + cats.map(c => chip('category', c, c.charAt(0).toUpperCase()+c.slice(1), iconPickerFilter?.type==='category' && iconPickerFilter.value===c)).join('')
+    + equips.map(e => chip('equipment', e, e.charAt(0).toUpperCase()+e.slice(1), iconPickerFilter?.type==='equipment' && iconPickerFilter.value===e)).join('');
+  document.getElementById('icon-picker-filters').innerHTML = html;
+  document.getElementById('icon-picker-filters').querySelectorAll('.icon-picker-filter-chip').forEach(b => b.addEventListener('click', () => {
+    iconPickerFilter = b.dataset.type ? { type: b.dataset.type, value: b.dataset.value } : null;
+    renderIconPickerFilters(selectedId);
+    renderIconPickerGrid(selectedId);
+  }));
+}
+// currentIconId: what's already selected (shown highlighted). suggestedId:
+// what the automatic matcher currently recommends (powers "Use suggested
+// icon"). onChoose(iconId, { resetToAuto? }) fires once, after the modal is
+// already closed.
+function openIconPicker(currentIconId, suggestedId, onChoose) {
+  iconPickerCallback = onChoose;
+  iconPickerSuggestedId = suggestedId;
+  iconPickerFilter = null;
+  document.getElementById('icon-picker-search').value = '';
+  renderIconPickerFilters(currentIconId);
+  renderIconPickerGrid(currentIconId);
+  document.getElementById('icon-picker-modal').style.display = '';
+  document.getElementById('icon-picker-search').focus();
+}
+function closeIconPicker() {
+  document.getElementById('icon-picker-modal').style.display = 'none';
+  iconPickerCallback = null;
+}
+document.getElementById('icon-picker-search').addEventListener('input', () => renderIconPickerGrid());
+document.getElementById('icon-picker-close').addEventListener('click', closeIconPicker);
+document.getElementById('icon-picker-use-suggested').addEventListener('click', () => {
+  const cb = iconPickerCallback, suggestedId = iconPickerSuggestedId;
+  closeIconPicker();
+  if (cb && suggestedId) cb(suggestedId, { resetToAuto: true });
+});
+
+function updateExIconPreview(iconId) {
+  const icon = EXERCISE_ICONS_BY_ID[iconId] || EXERCISE_ICONS_BY_ID[GENERIC_EXERCISE_ICON_ID];
+  document.getElementById('ex-icon-preview').innerHTML = EXERCISE_ICON_SVGS[icon.assetKey] || EXERCISE_ICON_SVGS.generic_strength;
+  document.getElementById('ex-icon-name-label').textContent = icon.displayName;
+  document.getElementById('ex-icon-id').value = icon.id;
+}
+function suggestExIconFromForm() {
+  return suggestExerciseIcon({
+    exerciseName: document.getElementById('ex-name').value,
+    equipment: document.getElementById('ex-equipment').value ? [document.getElementById('ex-equipment').value.toLowerCase()] : [],
+    category: document.getElementById('ex-group').value
+  });
+}
+// Only recalculates while iconSource is 'auto' — a manually chosen icon
+// survives a rename (see suggestExerciseIcon's caller contract in the task).
+function recomputeExIconIfAuto() {
+  if (document.getElementById('ex-icon-source').value === 'user_selected') return;
+  document.getElementById('ex-icon-source').value = 'auto';
+  updateExIconPreview(suggestExIconFromForm().iconId);
+}
+document.getElementById('ex-name').addEventListener('input', recomputeExIconIfAuto);
+document.getElementById('ex-group').addEventListener('change', recomputeExIconIfAuto);
+document.getElementById('ex-equipment').addEventListener('change', recomputeExIconIfAuto);
+document.getElementById('ex-icon-change-btn').addEventListener('click', () => {
+  const currentId = document.getElementById('ex-icon-id').value;
+  const suggestedId = suggestExIconFromForm().iconId;
+  document.getElementById('exercise-modal').style.display = 'none';
+  openIconPicker(currentId, suggestedId, (iconId, opts) => {
+    document.getElementById('exercise-modal').style.display = '';
+    document.getElementById('ex-icon-source').value = opts.resetToAuto ? 'auto' : 'user_selected';
+    updateExIconPreview(iconId);
+    document.getElementById('ex-icon-change-btn').focus();
+  });
+});
+
 function openExerciseModal(id = null) {
   const ex = id ? exercises[id] : null;
   document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'New exercise';
@@ -2679,6 +3157,11 @@ function openExerciseModal(id = null) {
   document.getElementById('ex-notes').value = ex?.notes || '';
   document.getElementById('ex-progression-enabled').checked = ex?.progressionEnabled !== false;
   document.getElementById('ex-modal-id').value = id || '';
+  document.getElementById('ex-icon-source').value = ex?.iconSource || 'auto';
+  updateExIconPreview(ex?.iconId || suggestExerciseIcon({
+    exerciseName: ex?.name || '', category: ex?.muscleGroup || '',
+    equipment: ex?.equipment ? [ex.equipment.toLowerCase()] : []
+  }).iconId);
   setExerciseModalMore(false);
   document.getElementById('exercise-modal').style.display = '';
 }
@@ -2708,7 +3191,9 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
     notes: document.getElementById('ex-notes').value.trim() || null,
     progressionEnabled: document.getElementById('ex-progression-enabled').checked,
     targetReps: resizeTargetReps(existing.targetReps, defaultSets, minReps, maxReps),
-    weightUpFlag: existing.weightUpFlag || false
+    weightUpFlag: existing.weightUpFlag || false,
+    iconId: document.getElementById('ex-icon-id').value || GENERIC_EXERCISE_ICON_ID,
+    iconSource: document.getElementById('ex-icon-source').value || 'auto'
   };
 
   const prevLabel = btn.textContent;
@@ -2901,6 +3386,7 @@ function renderGmExPicklist(q) {
   list.innerHTML = items.map(([id, ex]) => `
     <label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all cursor-pointer">
       <input type="checkbox" class="gm-ex-check w-4 h-4 accent-brand-500 flex-shrink-0" style="width:auto" data-id="${id}" ${selectedIds.has(id) ? 'checked' : ''}>
+      ${exerciseIconHtml({ exerciseId: id, name: ex.name }, 'w-8 h-8')}
       <div class="min-w-0">
         <p class="text-sm font-medium text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup}</p>
@@ -2932,7 +3418,10 @@ function renderGmConfigList() {
     return `
       <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-0 truncate">${esc(ex.name)}</p>
+          <div class="flex items-center gap-2 min-w-0">
+            ${exerciseIconHtml({ exerciseId: ge.exerciseId, name: ex.name }, 'w-8 h-8')}
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-0 truncate">${esc(ex.name)}</p>
+          </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <button class="gm-move-up p-1 text-slate-400 hover:text-brand-500 disabled:opacity-30" data-idx="${i}" ${i===0?'disabled':''}><span class="ms text-lg" aria-hidden="true">arrow_upward</span></button>
             <button class="gm-move-down p-1 text-slate-400 hover:text-brand-500 disabled:opacity-30" data-idx="${i}" ${i===groupModalDraft.exercises.length-1?'disabled':''}><span class="ms text-lg" aria-hidden="true">arrow_downward</span></button>
@@ -3314,6 +3803,7 @@ function renderExercisePhase(ex) {
     main.innerHTML = `
       <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Up Next</p>
+        ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-12 h-12')}
         <h2 class="font-display font-extrabold text-3xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
         <p class="text-xs text-slate-400">Exercise ${activeSession.currentExerciseIndex+1} of ${activeSession.exercises.length}</p>
         <div class="pt-2"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} working set${totalTarget!==1?'s':''} · ${ex.minReps}–${ex.maxReps} reps</p></div>
@@ -3430,7 +3920,10 @@ function renderActiveSetPhase(ex) {
         ${wateringMarkup}
         <span class="relative">🌱</span>
       </div>
-      <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
+      <div class="flex items-center gap-2">
+        ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-8 h-8')}
+        <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
+      </div>
       <p class="text-sm font-semibold text-brand-500" role="status">Set ${setNum} in progress</p>
     </div>`;
   if (!reducedMotion) startPlantWatering(); // reduced motion: static markup only, loop never starts
@@ -3451,6 +3944,7 @@ function renderExerciseCompletePhase(ex) {
   main.innerHTML = `
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-2.5">
       <p class="text-3xl" aria-hidden="true">🌿</p>
+      ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-11 h-11')}
       <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${esc(ex.name)} Complete</h2>
       <p class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">${working[0]?.weight||ex.weight||0} ${ex.unit}</p>
       <p class="text-sm text-slate-500 dark:text-slate-400">${working.map(s=>s.reps||0).join(' · ')}</p>
@@ -3956,6 +4450,12 @@ function openLogSetSheet() {
   const setNum = completedWorkingCount(ex) + 1;
   document.getElementById('ls-exercise-name').textContent = ex.name;
   document.getElementById('ls-set-label').textContent = `Set ${setNum} of ${ex.targetReps.length}`;
+  const lsIconEl = document.getElementById('ls-exercise-icon');
+  const lsIconDef = EXERCISE_ICONS_BY_ID[resolveExerciseIconId({ exerciseId: ex.exerciseId, name: ex.name })] || EXERCISE_ICONS_BY_ID[GENERIC_EXERCISE_ICON_ID];
+  lsIconEl.className = 'ex-icon w-11 h-11';
+  lsIconEl.innerHTML = EXERCISE_ICON_SVGS[lsIconDef.assetKey] || EXERCISE_ICON_SVGS.generic_strength;
+  lsIconEl.setAttribute('role', 'img');
+  lsIconEl.setAttribute('aria-label', `${ex.name} icon`);
 
   const weightVal = ex.sets[si].weight || ex.weight || 0;
   document.getElementById('ls-weight').value = weightVal || '';
@@ -4343,6 +4843,7 @@ function renderQueueRow(ex, idx) {
 
   return `
     <div class="queue-row ${canDrag?'queue-reorderable':''} flex items-center gap-1.5 p-3 rounded-xl min-h-[3.25rem] ${rowExtra}" data-idx="${idx}">
+      ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-8 h-8')}
       <span class="ms ${iconColor} flex-shrink-0" aria-hidden="true">${icon}</span>
       <button class="queue-jump flex-1 text-left min-w-0 py-0.5" data-idx="${idx}">
         <p class="text-sm ${nameColor} truncate">${esc(ex.name)}</p>
@@ -4780,10 +5281,14 @@ function sessionColor(s) {
   return s.groupColor || LEGACY_MG_COLOR[s.muscleGroup] || GROUP_COLORS[0];
 }
 
+// Shared by Workout History cards and Calendar day session cards — the one
+// place either surface reads exercise icons/labels from, so the two views
+// can never show a different icon for the same exercise.
 function exerciseHistoryLine(ex) {
-  if (ex.skipped) return `<p class="text-sm text-slate-400">• ${esc(ex.name)} — skipped</p>`;
+  const icon = exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-6 h-6');
+  if (ex.skipped) return `<div class="flex items-center gap-1.5">${icon}<p class="text-sm text-slate-400">${esc(ex.name)} — skipped</p></div>`;
   const reps = (ex.sets||[]).map(st => st.reps+'r').join('/');
-  return `<p class="text-sm text-slate-600 dark:text-slate-300">• ${esc(ex.name)} — ${ex.weight}${ex.unit} · ${reps}</p>`;
+  return `<div class="flex items-center gap-1.5">${icon}<p class="text-sm text-slate-600 dark:text-slate-300">${esc(ex.name)} — ${ex.weight}${ex.unit} · ${reps}</p></div>`;
 }
 
 function renderHistory() {
@@ -5201,52 +5706,180 @@ function newSessionExerciseFromLibrary(exerciseId) {
   };
 }
 
-function renderEsmExList() {
-  const list = document.getElementById('esm-ex-list');
-  if (!esmDraft.exercises.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No exercises yet — add one below.</p>'; return; }
-  list.innerHTML = esmDraft.exercises.map((ex, i) => `
-    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <button class="esm-swap-ex text-left text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 min-w-0 flex-1" data-idx="${i}" aria-label="Change exercise from ${esc(ex.name)}">
-          <span class="truncate">${esc(ex.name)}</span><span class="ms text-sm text-slate-400 flex-shrink-0" aria-hidden="true">edit</span>
-        </button>
-        <button class="esm-del-ex p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-idx="${i}" aria-label="Remove ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">delete</span></button>
+// Review-first: exercises render collapsed (icon/name/weight/reps summary +
+// chevron) and only esmExpandedIdx's exercise expands, closing the others.
+// esmWeightEditorOpen/esmAdvancedOpen are scoped to whichever exercise is
+// currently expanded and reset every time the expanded exercise changes.
+let esmExpandedIdx = null, esmWeightEditorOpen = false, esmAdvancedOpen = false;
+
+function esmComputeStats() {
+  const exs = esmDraft.exercises || [];
+  const workingSets = exs.reduce((sum, ex) => sum + workingSetsFor(ex).length, 0);
+  return { duration: esmDraft.duration || 0, exerciseCount: exs.length, workingSets };
+}
+function renderEsmSummary() {
+  const stats = esmComputeStats();
+  document.getElementById('esm-stat-duration').textContent = stats.duration;
+  document.getElementById('esm-stat-exercises').textContent = stats.exerciseCount;
+  document.getElementById('esm-stat-exercises-label').textContent = stats.exerciseCount === 1 ? 'exercise' : 'exercises';
+  document.getElementById('esm-stat-sets').textContent = stats.workingSets;
+  document.getElementById('esm-stat-sets-label').textContent = stats.workingSets === 1 ? 'set' : 'sets';
+}
+
+function esmCollapsedCardHtml(ex, i) {
+  const workingReps = workingSetsFor(ex).map(s => s.reps || 0).join(' · ');
+  return `
+    <button type="button" class="esm-ex-card w-full text-left rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex items-center gap-3" data-idx="${i}" aria-expanded="false">
+      ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-10 h-10')}
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400">${ex.weight||0} ${esc(ex.unit||'kg')}</p>
+        <p class="text-xs text-slate-400">${workingReps || '—'}</p>
       </div>
-      <div class="space-y-1.5">
+      <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">expand_more</span>
+    </button>`;
+}
+function esmExpandedCardHtml(ex, i) {
+  return `
+    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 space-y-3.5">
+      <div class="flex items-center gap-3">
+        ${exerciseIconHtml({ exerciseId: ex.exerciseId, name: ex.name }, 'w-10 h-10')}
+        <button type="button" class="esm-ex-collapse flex-1 text-left min-w-0" data-idx="${i}" aria-expanded="true" aria-label="Collapse ${esc(ex.name)}">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
+        </button>
+        <button type="button" class="esm-del-ex p-2 text-slate-400 hover:text-red-400 flex-shrink-0" data-idx="${i}" aria-label="Delete ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">delete</span></button>
+        <button type="button" class="esm-ex-collapse p-1 text-slate-400 flex-shrink-0" data-idx="${i}" aria-label="Collapse ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">expand_less</span></button>
+      </div>
+
+      <div class="rounded-xl bg-white dark:bg-slate-900 p-3">
+        <div class="flex items-center gap-3">
+          <span class="ms text-xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
+          <p class="flex-1 min-w-0"><span class="font-display font-bold text-lg text-slate-800 dark:text-white">${ex.weight||0}</span> <span class="text-xs text-slate-400">${esc(ex.unit||'kg')}</span></p>
+          <button type="button" class="esm-change-weight-btn text-xs font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" data-idx="${i}" aria-expanded="${esmWeightEditorOpen?'true':'false'}">Change weight<span class="ms text-base" aria-hidden="true">chevron_right</span></button>
+        </div>
+        ${esmWeightEditorOpen ? `
+        <div class="flex items-center justify-center gap-3 pt-3 mt-3 border-t border-slate-200 dark:border-slate-700">
+          <button type="button" class="esm-weight-minus w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" data-idx="${i}" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+          <input type="number" inputmode="decimal" step="0.5" class="esm-weight-input esm-plain-input font-display font-extrabold text-xl text-slate-800 dark:text-white" style="width:4.5rem" data-idx="${i}" value="${ex.weight||0}" aria-label="Weight">
+          <button type="button" class="esm-weight-plus w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" data-idx="${i}" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
+        </div>` : ''}
+      </div>
+
+      <div class="space-y-2">
         ${(ex.sets||[]).map((s, j) => `
           <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-400 w-10 flex-shrink-0">Set ${j+1}</span>
-            <input type="number" inputmode="decimal" class="esm-set-weight" style="width:4.5rem;text-align:center" data-idx="${i}" data-set="${j}" value="${s.weight||0}" aria-label="${esc(ex.name)} set ${j+1} weight">
-            <span class="text-xs text-slate-400 flex-shrink-0">${esc(ex.unit||'kg')} ×</span>
-            <input type="number" inputmode="numeric" class="esm-set-reps" style="width:3.5rem;text-align:center" data-idx="${i}" data-set="${j}" value="${s.reps||0}" aria-label="${esc(ex.name)} set ${j+1} reps">
-            <span class="text-xs text-slate-400 flex-shrink-0">reps</span>
-            <button class="esm-del-set p-1 text-slate-300 hover:text-red-400 flex-shrink-0 ml-auto" data-idx="${i}" data-set="${j}" aria-label="Remove set ${j+1}" ${ex.sets.length<=1?'disabled':''}><span class="ms text-base" aria-hidden="true">close</span></button>
+            <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
+            <div class="flex-1 flex items-center justify-center gap-2">
+              <button type="button" class="esm-rep-minus w-9 h-9 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Decrease reps for set ${j+1}"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+              <input type="number" inputmode="numeric" class="esm-rep-input esm-plain-input font-display font-bold text-lg text-slate-800 dark:text-white" style="width:3rem" data-idx="${i}" data-set="${j}" value="${s.reps||0}" aria-label="Reps for set ${j+1}">
+              <button type="button" class="esm-rep-plus w-9 h-9 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Increase reps for set ${j+1}"><span class="ms text-lg" aria-hidden="true">add</span></button>
+            </div>
+            <button type="button" class="esm-del-set p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" data-idx="${i}" data-set="${j}" aria-label="Remove set ${j+1}" ${ex.sets.length<=1?'disabled':''}><span class="ms text-base" aria-hidden="true">close</span></button>
           </div>`).join('')}
       </div>
-      <button class="esm-add-set text-xs font-semibold text-brand-500 hover:underline" data-idx="${i}">+ Add set</button>
-    </div>`).join('');
-  list.querySelectorAll('.esm-del-ex').forEach(b => b.addEventListener('click', () => {
-    esmDraft.exercises.splice(+b.dataset.idx, 1);
+      <button type="button" class="esm-add-set text-xs font-semibold text-brand-500 hover:underline" data-idx="${i}">+ Add set</button>
+
+      <div class="rounded-xl bg-white dark:bg-slate-900 overflow-hidden">
+        <button type="button" class="esm-advanced-toggle w-full flex items-center gap-2 p-3 text-left" aria-expanded="${esmAdvancedOpen?'true':'false'}">
+          <span class="ms text-base text-purple-500 dark:text-purple-400" aria-hidden="true">tune</span>
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">Advanced</span>
+          <span class="ms text-slate-400" aria-hidden="true">${esmAdvancedOpen?'expand_less':'expand_more'}</span>
+        </button>
+        ${esmAdvancedOpen ? `
+        <div class="px-3 pb-3 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-400 block mb-1">RIR — reps in reserve (optional)</label>
+            <input type="number" inputmode="numeric" class="esm-rir-input" data-idx="${i}" placeholder="—" value="${ex.sets?.[0]?.rir ?? ''}">
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-400 mb-1.5">Set type</p>
+            <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/50">
+              <button type="button" class="esm-mark-working py-2 rounded-lg text-sm font-bold ${!ex.sets?.[0]?.warmup ? 'bg-brand-500 text-white' : 'text-slate-500 dark:text-slate-400'}" data-idx="${i}">Working set</button>
+              <button type="button" class="esm-mark-warmup py-2 rounded-lg text-sm font-bold ${ex.sets?.[0]?.warmup ? 'bg-amber-500 text-white' : 'text-slate-500 dark:text-slate-400'}" data-idx="${i}">Warm-up</button>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-slate-400 block mb-1">Exercise notes</label>
+            <input type="text" class="esm-ex-notes" data-idx="${i}" placeholder="Optional" value="${esc(ex.notes||'')}">
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-400 mb-1.5">Completed</p>
+            <div class="flex flex-wrap gap-1.5">
+              ${(ex.sets||[]).map((s,j) => `<button type="button" class="esm-toggle-completed px-2.5 py-1.5 rounded-lg text-xs font-semibold ${s.completed !== false ? 'bg-brand-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}" data-idx="${i}" data-set="${j}" aria-pressed="${s.completed !== false}">Set ${j+1}${s.completed === false ? ' · incomplete' : ''}</button>`).join('')}
+            </div>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderEsmExList() {
+  const list = document.getElementById('esm-ex-list');
+  if (!esmDraft.exercises.length) {
+    list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No exercises yet — add one below.</p>';
+    renderEsmSummary();
+    return;
+  }
+  list.innerHTML = esmDraft.exercises.map((ex, i) => i === esmExpandedIdx ? esmExpandedCardHtml(ex, i) : esmCollapsedCardHtml(ex, i)).join('');
+  wireEsmExListEvents();
+  renderEsmSummary();
+}
+function esmStepWeight(idx, dir) {
+  const ex = esmDraft.exercises[idx];
+  const step = 2.5;
+  const w = Math.max(0, (ex.weight||0) + dir*step);
+  ex.weight = w;
+  ex.sets.forEach(s => { if (!s.warmup) s.weight = w; });
+  renderEsmExList();
+}
+function esmSetWarmup(idx, isWarmup) {
+  esmDraft.exercises[idx].sets.forEach(s => { s.warmup = isWarmup; });
+  renderEsmExList();
+}
+function wireEsmExListEvents() {
+  const list = document.getElementById('esm-ex-list');
+  // Only one exercise expands at a time — expanding a new one collapses
+  // whatever was previously open and resets its Advanced/weight-editor state.
+  list.querySelectorAll('.esm-ex-card').forEach(b => b.addEventListener('click', () => {
+    esmExpandedIdx = +b.dataset.idx; esmWeightEditorOpen = false; esmAdvancedOpen = false;
     renderEsmExList();
   }));
-  // Swapping reuses the exact same library picker as "Add exercise" — no
-  // second picker UI, just a different slot to drop the result into.
-  list.querySelectorAll('.esm-swap-ex').forEach(b => b.addEventListener('click', () => {
-    const idx = +b.dataset.idx;
-    const excludeIds = esmDraft.exercises.map(e => e.exerciseId).filter((_, i2) => i2 !== idx);
-    document.getElementById('edit-session-modal').style.display = 'none';
-    openPickExModal(id => {
-      const entry = newSessionExerciseFromLibrary(id);
-      if (entry) esmDraft.exercises[idx] = entry;
-      document.getElementById('edit-session-modal').style.display = '';
-      renderEsmExList();
-    }, excludeIds);
+  list.querySelectorAll('.esm-ex-collapse').forEach(b => b.addEventListener('click', () => {
+    esmExpandedIdx = null;
+    renderEsmExList();
   }));
-  list.querySelectorAll('.esm-set-weight').forEach(inp => inp.addEventListener('change', () => {
-    esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].weight = +inp.value || 0;
+  list.querySelectorAll('.esm-del-ex').forEach(b => b.addEventListener('click', () => {
+    if (!confirm(`Remove ${esmDraft.exercises[+b.dataset.idx].name} from this workout?`)) return;
+    esmDraft.exercises.splice(+b.dataset.idx, 1);
+    esmExpandedIdx = null;
+    renderEsmExList();
   }));
-  list.querySelectorAll('.esm-set-reps').forEach(inp => inp.addEventListener('change', () => {
+  list.querySelectorAll('.esm-change-weight-btn').forEach(b => b.addEventListener('click', () => {
+    esmWeightEditorOpen = !esmWeightEditorOpen;
+    renderEsmExList();
+    if (esmWeightEditorOpen) document.querySelector('.esm-weight-input')?.focus();
+  }));
+  list.querySelectorAll('.esm-weight-input').forEach(inp => inp.addEventListener('change', () => {
+    const idx = +inp.dataset.idx, w = +inp.value || 0;
+    esmDraft.exercises[idx].weight = w;
+    esmDraft.exercises[idx].sets.forEach(s => { if (!s.warmup) s.weight = w; });
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-weight-minus').forEach(b => b.addEventListener('click', () => esmStepWeight(+b.dataset.idx, -1)));
+  list.querySelectorAll('.esm-weight-plus').forEach(b => b.addEventListener('click', () => esmStepWeight(+b.dataset.idx, 1)));
+  list.querySelectorAll('.esm-rep-input').forEach(inp => inp.addEventListener('change', () => {
     esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].reps = +inp.value || 0;
+    renderEsmSummary();
+  }));
+  list.querySelectorAll('.esm-rep-minus').forEach(b => b.addEventListener('click', () => {
+    const s = esmDraft.exercises[+b.dataset.idx].sets[+b.dataset.set];
+    s.reps = Math.max(0, (s.reps||0) - 1);
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-rep-plus').forEach(b => b.addEventListener('click', () => {
+    const s = esmDraft.exercises[+b.dataset.idx].sets[+b.dataset.set];
+    s.reps = (s.reps||0) + 1;
+    renderEsmExList();
   }));
   list.querySelectorAll('.esm-del-set').forEach(b => b.addEventListener('click', () => {
     const idx = +b.dataset.idx, si = +b.dataset.set;
@@ -5256,8 +5889,26 @@ function renderEsmExList() {
   }));
   list.querySelectorAll('.esm-add-set').forEach(b => b.addEventListener('click', () => {
     const sets = esmDraft.exercises[+b.dataset.idx].sets;
-    const last = sets[sets.length - 1] || { weight: 0, reps: 0 };
-    sets.push({ weight: last.weight || 0, reps: last.reps || 0, rir: null, completed: true, warmup: false, completedAt: Date.now() });
+    const last = sets[sets.length - 1] || { weight: esmDraft.exercises[+b.dataset.idx].weight||0, reps: 0, rir: null };
+    sets.push({ weight: last.weight || 0, reps: last.reps || 0, rir: last.rir ?? null, completed: true, warmup: false, completedAt: Date.now() });
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-advanced-toggle').forEach(b => b.addEventListener('click', () => {
+    esmAdvancedOpen = !esmAdvancedOpen;
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-rir-input').forEach(inp => inp.addEventListener('change', () => {
+    const v = inp.value === '' ? null : +inp.value;
+    esmDraft.exercises[+inp.dataset.idx].sets.forEach(s => { s.rir = v; });
+  }));
+  list.querySelectorAll('.esm-mark-working').forEach(b => b.addEventListener('click', () => esmSetWarmup(+b.dataset.idx, false)));
+  list.querySelectorAll('.esm-mark-warmup').forEach(b => b.addEventListener('click', () => esmSetWarmup(+b.dataset.idx, true)));
+  list.querySelectorAll('.esm-ex-notes').forEach(inp => inp.addEventListener('change', () => {
+    esmDraft.exercises[+inp.dataset.idx].notes = inp.value.trim();
+  }));
+  list.querySelectorAll('.esm-toggle-completed').forEach(b => b.addEventListener('click', () => {
+    const s = esmDraft.exercises[+b.dataset.idx].sets[+b.dataset.set];
+    s.completed = s.completed === false ? true : false;
     renderEsmExList();
   }));
 }
@@ -5268,7 +5919,7 @@ function openEditSessionModal(date, sessionId) {
   esmDate = date; esmSessionId = sessionId;
   esmDraft = JSON.parse(JSON.stringify(s)); // deep clone so closing without saving discards edits cleanly
   if (!Array.isArray(esmDraft.exercises)) esmDraft.exercises = [];
-  document.getElementById('esm-title').textContent = `Edit ${sessionLabel(s)}`;
+  esmExpandedIdx = null; esmWeightEditorOpen = false; esmAdvancedOpen = false;
   document.getElementById('esm-subtitle').textContent = fmtDate(date);
   document.getElementById('esm-error').style.display = 'none';
 
@@ -5285,7 +5936,13 @@ function openEditSessionModal(date, sessionId) {
   renderEsmExList();
   document.getElementById('edit-session-modal').style.display = '';
 }
-document.getElementById('esm-close').addEventListener('click', () => document.getElementById('edit-session-modal').style.display = 'none');
+function closeEditSessionModal() { document.getElementById('edit-session-modal').style.display = 'none'; }
+document.getElementById('esm-close').addEventListener('click', closeEditSessionModal);
+document.getElementById('esm-cancel-btn').addEventListener('click', closeEditSessionModal);
+document.getElementById('esm-duration').addEventListener('input', () => {
+  esmDraft.duration = +document.getElementById('esm-duration').value || 0;
+  renderEsmSummary();
+});
 document.getElementById('esm-add-ex-btn').addEventListener('click', () => {
   const excludeIds = esmDraft.exercises.map(ex => ex.exerciseId);
   document.getElementById('edit-session-modal').style.display = 'none';
