@@ -118,6 +118,9 @@ body{font-family:'Inter',sans-serif}
 .dark #edit-session-modal .esm-rep-box{background:#0f172a}
 #edit-session-modal .esm-underline-input{background:transparent!important;border:none!important;padding:0!important;font-weight:600}
 #edit-session-modal .esm-underline-input::placeholder{font-weight:400}
+#exercise-modal input[type=number]::-webkit-outer-spin-button,#exercise-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#exercise-modal input[type=number]{-moz-appearance:textfield}
+#exercise-modal .ex-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
@@ -884,38 +887,55 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
 <!-- New / edit exercise -->
 <div id="exercise-modal" style="display:none" class="fixed inset-0 z-[68] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[88vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 id="ex-modal-title" class="font-display font-bold text-slate-800 dark:text-white">New exercise</h3>
-      <button id="ex-modal-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
-    </div>
-    <div><label class="text-xs font-semibold text-slate-400 block mb-1">Name</label><input id="ex-name" type="text" placeholder="e.g. Lat Pulldown"></div>
-    <div class="flex gap-3">
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Category</label><select id="ex-group"><option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option><option value="full">Full body</option><option value="cardio">Cardio</option><option value="mobility">Mobility</option><option value="other">Other</option></select></div>
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Equipment</label><select id="ex-equipment"><option value="">—</option><option value="Barbell">Barbell</option><option value="Dumbbell">Dumbbell</option><option value="Machine">Machine</option><option value="Cable">Cable</option><option value="Bodyweight">Bodyweight</option><option value="Other">Other</option></select></div>
-    </div>
-    <div class="flex gap-3">
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Starting weight</label><input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5"></div>
-      <div class="w-20"><label class="text-xs font-semibold text-slate-400 block mb-1">Unit</label><select id="ex-unit"><option value="kg">kg</option><option value="lbs">lbs</option></select></div>
-    </div>
-    <div class="flex gap-3">
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Sets</label><input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" placeholder="3"></div>
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Rep range</label>
-        <div class="flex items-center gap-1.5">
-          <input id="ex-min-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="8">
-          <span class="text-slate-400 text-xs flex-shrink-0">–</span>
-          <input id="ex-max-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="12">
+  <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm max-h-[92vh] flex flex-col">
+    <div class="flex-1 overflow-y-auto p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 id="ex-modal-title" class="font-display font-bold text-lg text-slate-800 dark:text-white">New exercise</h3>
+          <p id="ex-modal-subtitle" class="text-xs text-slate-400"></p>
+        </div>
+        <button id="ex-modal-close" class="p-1.5 text-slate-400 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+      </div>
+
+      <div>
+        <label for="ex-name" class="text-xs font-semibold text-slate-400 block mb-1">Exercise name</label>
+        <input id="ex-name" type="text" placeholder="e.g. Lat Pulldown">
+      </div>
+
+      <div>
+        <label for="ex-group" class="text-xs font-semibold text-slate-400 block mb-1">Targets (primary muscle group)</label>
+        <select id="ex-group"><option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option><option value="full">Full body</option><option value="cardio">Cardio</option><option value="mobility">Mobility</option><option value="other">Other</option></select>
+      </div>
+
+      <div>
+        <p class="text-xs font-semibold text-slate-400 mb-1.5">Equipment</p>
+        <div id="ex-equipment-chips" class="flex flex-wrap gap-1.5"></div>
+        <input type="hidden" id="ex-equipment-value">
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label for="ex-weight" class="text-xs font-semibold text-slate-400 block mb-1">Working weight</label>
+          <input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5">
+        </div>
+        <div class="w-20">
+          <label for="ex-unit" class="text-xs font-semibold text-slate-400 block mb-1">Unit</label>
+          <select id="ex-unit"><option value="kg">kg</option><option value="lbs">lbs</option></select>
         </div>
       </div>
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Increment</label><input id="ex-weight-increment" type="number" inputmode="decimal" min="0" step="0.5" placeholder="2.5"></div>
-    </div>
+      <p class="text-[11px] text-slate-400 -mt-3">Optional — your starting reference weight.</p>
 
-    <button id="ex-modal-more-toggle" type="button" class="text-xs font-semibold text-brand-500 hover:underline flex items-center gap-1 py-1">
-      <span class="ms text-sm" id="ex-modal-more-icon" aria-hidden="true">expand_more</span>More details
-    </button>
-    <div id="ex-modal-more" style="display:none" class="space-y-3">
       <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Rest duration</label>
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Sets</label>
+        <div class="flex items-center justify-center gap-3">
+          <button type="button" id="ex-sets-minus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+          <input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" class="ex-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white text-center" style="width:3.5rem" aria-label="Number of sets">
+          <button type="button" id="ex-sets-plus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-lg" aria-hidden="true">add</span></button>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Rest time</label>
         <div class="flex flex-wrap gap-1.5">
           <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="">No default</button>
           <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="60">60 sec</button>
@@ -928,16 +948,42 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <input type="hidden" id="ex-rest-value">
         <p class="text-[11px] text-slate-400 mt-1">Optional. RepSprout can use your global rest time instead.</p>
       </div>
-      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Machine / seat setup</label><input id="ex-machine-setup" type="text" placeholder="e.g. seat 4"></div>
-      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="ex-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
-      <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
-        <input id="ex-progression-enabled" type="checkbox" class="w-4 h-4 accent-brand-500" checked style="width:auto">
-        Double progression enabled
-      </label>
-    </div>
 
-    <input type="hidden" id="ex-modal-id">
-    <button id="ex-modal-save" class="btn btn-green w-full py-2.5">Save exercise</button>
+      <div>
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Training target</p>
+        <p class="text-[11px] text-slate-400 mb-2">Optional — a rep range powers progression suggestions. Leave both blank for simple set logging.</p>
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label for="ex-min-reps" class="text-xs font-semibold text-slate-400 block mb-1">Minimum reps</label>
+            <input id="ex-min-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 8">
+          </div>
+          <div class="flex-1">
+            <label for="ex-max-reps" class="text-xs font-semibold text-slate-400 block mb-1">Maximum reps</label>
+            <input id="ex-max-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 12">
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
+        <button id="ex-modal-more-toggle" type="button" class="w-full flex items-center gap-2 p-3 text-left" aria-expanded="false">
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">Advanced</span>
+          <span class="ms text-slate-400" id="ex-modal-more-icon" aria-hidden="true">expand_more</span>
+        </button>
+        <div id="ex-modal-more" style="display:none" class="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-3">
+          <div><label class="text-xs font-semibold text-slate-400 block mb-1">Machine / seat setup</label><input id="ex-machine-setup" type="text" placeholder="e.g. seat 4"></div>
+          <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="ex-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
+          <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+            <input id="ex-progression-enabled" type="checkbox" class="w-4 h-4 accent-brand-500" checked style="width:auto">
+            Enable double-progression suggestions
+          </label>
+        </div>
+      </div>
+
+      <input type="hidden" id="ex-modal-id">
+    </div>
+    <div class="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800">
+      <button id="ex-modal-save" class="btn btn-green w-full text-sm" style="min-height:48px">Create exercise</button>
+    </div>
   </div>
 </div>
 
@@ -2707,18 +2753,45 @@ document.getElementById('ex-rest-custom').addEventListener('input', () => {
   document.getElementById('ex-rest-value').value = v > 0 ? v : '';
 });
 
+// Equipment as selectable chips rather than a dropdown — single-select, and
+// tapping the already-selected chip clears it back to "unset" (equipment is
+// optional, same as the old select's blank "—" option).
+const EX_EQUIPMENT_OPTIONS = ['Dumbbell','Barbell','Machine','Cable','Bodyweight','Band','Cardio','Other'];
+function renderExEquipmentChips(selected) {
+  document.getElementById('ex-equipment-value').value = selected || '';
+  document.getElementById('ex-equipment-chips').innerHTML = EX_EQUIPMENT_OPTIONS.map(opt => `
+    <button type="button" class="ex-equip-chip btn ${opt===selected?'btn-green':'btn-outline'} text-xs px-3 py-2" data-value="${opt}">${opt}</button>
+  `).join('');
+  document.querySelectorAll('.ex-equip-chip').forEach(chip => chip.addEventListener('click', () => {
+    const current = document.getElementById('ex-equipment-value').value;
+    renderExEquipmentChips(current === chip.dataset.value ? '' : chip.dataset.value);
+  }));
+}
+
+document.getElementById('ex-sets-minus').addEventListener('click', () => {
+  const inp = document.getElementById('ex-sets');
+  inp.value = Math.max(1, (+inp.value || 1) - 1);
+});
+document.getElementById('ex-sets-plus').addEventListener('click', () => {
+  const inp = document.getElementById('ex-sets');
+  inp.value = (+inp.value || 1) + 1;
+});
+
 function openExerciseModal(id = null) {
   const ex = id ? exercises[id] : null;
   document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'New exercise';
+  document.getElementById('ex-modal-subtitle').textContent = id ? "Update this exercise's details." : 'Add a new exercise to your library.';
+  document.getElementById('ex-modal-save').textContent = id ? 'Save changes' : 'Create exercise';
   document.getElementById('ex-name').value    = ex?.name || '';
   document.getElementById('ex-group').value   = ex?.muscleGroup || 'upper';
-  document.getElementById('ex-equipment').value = ex?.equipment || '';
+  renderExEquipmentChips(ex?.equipment || '');
   document.getElementById('ex-weight').value  = ex?.currentWeight || '';
   document.getElementById('ex-unit').value    = ex?.unit || 'kg';
   document.getElementById('ex-sets').value    = ex?.defaultSets || (ex?.targetReps||[8,8,8]).length || 3;
-  document.getElementById('ex-min-reps').value = ex?.minReps ?? 8;
-  document.getElementById('ex-max-reps').value = ex?.maxReps ?? 12;
-  document.getElementById('ex-weight-increment').value = ex?.weightIncrement || '';
+  // Genuinely optional — a real value shows if one was set, otherwise the
+  // field starts empty (not defaulted to 8/12) so it reads as unset.
+  document.getElementById('ex-min-reps').value = ex?.minReps ?? '';
+  document.getElementById('ex-max-reps').value = ex?.maxReps ?? '';
   setExRestChip(ex?.restSeconds || null);
   document.getElementById('ex-machine-setup').value = ex?.machineSetup || '';
   document.getElementById('ex-notes').value = ex?.notes || '';
@@ -2736,24 +2809,37 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
   const id = document.getElementById('ex-modal-id').value;
   const wasFirstExercise = !id && !hasAnyExercise();
   const existing = id ? (exercises[id] || {}) : {};
-  const minReps = Math.max(1, +document.getElementById('ex-min-reps').value || 8);
-  const maxReps = Math.max(minReps, +document.getElementById('ex-max-reps').value || 12);
+  // Training target is genuinely optional now — a blank field stays null
+  // (not defaulted to 8/12) so "no rep range set" is a real, saveable state,
+  // not indistinguishable from "the user typed 8-12." Every existing reader
+  // of ex.minReps/ex.maxReps already falls back to 8/12 via `??` (progression
+  // math, session building, display strings), so a null value here doesn't
+  // break anything downstream — see buildSessionExercise() etc.
+  const minRepsRaw = document.getElementById('ex-min-reps').value;
+  const maxRepsRaw = document.getElementById('ex-max-reps').value;
+  const minReps = minRepsRaw === '' ? null : Math.max(1, +minRepsRaw);
+  const maxReps = maxRepsRaw === '' ? null : Math.max(minReps ?? 1, +maxRepsRaw);
   const defaultSets = Math.max(1, +document.getElementById('ex-sets').value || 3);
   const data = {
     ...existing,
     name,
     muscleGroup: document.getElementById('ex-group').value,
-    equipment: document.getElementById('ex-equipment').value || null,
+    equipment: document.getElementById('ex-equipment-value').value || null,
     currentWeight: +document.getElementById('ex-weight').value || 0,
     unit: document.getElementById('ex-unit').value,
     defaultSets, minReps, maxReps,
-    weightIncrement: +document.getElementById('ex-weight-increment').value || null,
     restSeconds: +document.getElementById('ex-rest-value').value || null,
     machineSetup: document.getElementById('ex-machine-setup').value.trim() || null,
     notes: document.getElementById('ex-notes').value.trim() || null,
     progressionEnabled: document.getElementById('ex-progression-enabled').checked,
-    targetReps: resizeTargetReps(existing.targetReps, defaultSets, minReps, maxReps),
+    // Every set still needs an actual rep target to build a session around,
+    // even when no training target was specified — 8/12 here matches the
+    // same fallback every other reader of minReps/maxReps already uses.
+    targetReps: resizeTargetReps(existing.targetReps, defaultSets, minReps ?? 8, maxReps ?? 12),
     weightUpFlag: existing.weightUpFlag || false
+    // weightIncrement is intentionally not written here — removed from this
+    // form (see task notes). Existing values are preserved via the
+    // ...existing spread above; new exercises simply never get one.
   };
 
   const prevLabel = btn.textContent;
@@ -2774,7 +2860,7 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
       // Created inline from the group builder's "pick exercises" step —
       // bring it straight into view and pre-select it instead of leaving
       // the user staring at a list that still looks empty.
-      groupModalDraft.exercises.push({ exerciseId: newId, defaultSets, minReps, maxReps, notes: '' });
+      groupModalDraft.exercises.push({ exerciseId: newId, defaultSets, minReps: minReps ?? 8, maxReps: maxReps ?? 12, notes: '' });
       renderGmExPicklist(document.getElementById('gm-ex-search').value);
       hide('gm-ex-error');
       showToast('Exercise created and added.');
