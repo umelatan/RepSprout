@@ -888,71 +888,81 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 <!-- New / edit exercise -->
 <div id="exercise-modal" style="display:none" class="fixed inset-0 z-[68] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm max-h-[92vh] flex flex-col">
-    <div class="flex-1 overflow-y-auto p-5 space-y-4">
-      <div class="flex items-center justify-between">
+    <div class="flex-1 overflow-y-auto p-5 space-y-6">
+      <div class="flex items-start justify-between">
         <div>
           <h3 id="ex-modal-title" class="font-display font-bold text-lg text-slate-800 dark:text-white">New exercise</h3>
-          <p id="ex-modal-subtitle" class="text-xs text-slate-400"></p>
+          <p id="ex-modal-subtitle" class="text-xs text-slate-400 mt-1"></p>
         </div>
         <button id="ex-modal-close" class="p-1.5 text-slate-400 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
       </div>
 
-      <div>
-        <label for="ex-name" class="text-xs font-semibold text-slate-400 block mb-1">Exercise name</label>
-        <input id="ex-name" type="text" placeholder="e.g. Lat Pulldown">
+      <div class="space-y-1.5">
+        <div>
+          <label for="ex-name" class="text-xs font-semibold text-slate-400 block mb-1">Exercise name</label>
+          <input id="ex-name" type="text" placeholder="e.g. Lat Pulldown">
+        </div>
+        <p class="text-[11px] text-slate-400 flex items-center gap-1"><span aria-hidden="true">🌱</span>This will be added to your Exercise Library.</p>
       </div>
 
-      <div>
-        <label for="ex-group" class="text-xs font-semibold text-slate-400 block mb-1">Targets (primary muscle group)</label>
-        <select id="ex-group"><option value="upper">Upper body</option><option value="lower">Lower body</option><option value="core">Core</option><option value="full">Full body</option><option value="cardio">Cardio</option><option value="mobility">Mobility</option><option value="other">Other</option></select>
+      <div class="space-y-1.5">
+        <p class="text-xs font-semibold text-slate-400">Targets</p>
+        <div id="ex-group-chips" class="flex flex-wrap gap-2"></div>
+        <input type="hidden" id="ex-group-value">
+        <p class="text-[11px] text-slate-400">Choose the main area this exercise targets.</p>
       </div>
 
-      <div>
-        <p class="text-xs font-semibold text-slate-400 mb-1.5">Equipment</p>
-        <div id="ex-equipment-chips" class="flex flex-wrap gap-1.5"></div>
+      <div class="space-y-1.5">
+        <p class="text-xs font-semibold text-slate-400">Equipment</p>
+        <div id="ex-equipment-chips" class="flex flex-wrap gap-2"></div>
         <input type="hidden" id="ex-equipment-value">
+        <p class="text-[11px] text-slate-400">Select the equipment used, if any.</p>
       </div>
 
-      <div class="flex gap-3">
-        <div class="flex-1">
-          <label for="ex-weight" class="text-xs font-semibold text-slate-400 block mb-1">Working weight</label>
-          <input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5">
+      <div class="space-y-4">
+        <div>
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label for="ex-weight" class="text-xs font-semibold text-slate-400 block mb-1">Working weight</label>
+              <input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5">
+            </div>
+            <div class="w-20">
+              <label for="ex-unit" class="text-xs font-semibold text-slate-400 block mb-1">Unit</label>
+              <select id="ex-unit"><option value="kg">kg</option><option value="lbs">lbs</option></select>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1.5">Optional. Your current reference weight.</p>
         </div>
-        <div class="w-20">
-          <label for="ex-unit" class="text-xs font-semibold text-slate-400 block mb-1">Unit</label>
-          <select id="ex-unit"><option value="kg">kg</option><option value="lbs">lbs</option></select>
+        <div>
+          <label class="text-xs font-semibold text-slate-400 block mb-2">Sets</label>
+          <div class="flex items-center justify-center gap-4">
+            <button type="button" id="ex-sets-minus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+            <input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" class="ex-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white text-center" style="width:3rem" aria-label="Number of sets">
+            <button type="button" id="ex-sets-plus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-lg" aria-hidden="true">add</span></button>
+          </div>
+          <p class="text-[11px] text-slate-400 text-center mt-1.5">Number of working sets.</p>
         </div>
       </div>
-      <p class="text-[11px] text-slate-400 -mt-3">Optional — your starting reference weight.</p>
 
-      <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Sets</label>
-        <div class="flex items-center justify-center gap-3">
-          <button type="button" id="ex-sets-minus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-lg" aria-hidden="true">remove</span></button>
-          <input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" class="ex-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white text-center" style="width:3.5rem" aria-label="Number of sets">
-          <button type="button" id="ex-sets-plus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-lg" aria-hidden="true">add</span></button>
-        </div>
-      </div>
-
-      <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Rest time</label>
-        <div class="flex flex-wrap gap-1.5">
-          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="">No default</button>
-          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="60">60 sec</button>
-          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="90">90 sec</button>
-          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="120">2 min</button>
-          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="180">3 min</button>
-          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-2.5 py-1.5" data-secs="custom">Custom</button>
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-slate-400 block">Rest time</label>
+        <p class="text-[11px] text-slate-400">Choose a default rest time for this exercise. Otherwise RepSprout will use your global rest setting.</p>
+        <div class="flex flex-wrap gap-2 pt-0.5">
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3.5 py-2" data-secs="">No Default</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3.5 py-2" data-secs="60">60 sec</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3.5 py-2" data-secs="90">90 sec</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3.5 py-2" data-secs="120">2 min</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3.5 py-2" data-secs="180">3 min</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3.5 py-2" data-secs="custom">Custom</button>
         </div>
         <input id="ex-rest-custom" type="number" inputmode="numeric" min="0" step="5" placeholder="Seconds" style="display:none" class="mt-1.5">
         <input type="hidden" id="ex-rest-value">
-        <p class="text-[11px] text-slate-400 mt-1">Optional. RepSprout can use your global rest time instead.</p>
       </div>
 
-      <div>
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Training target</p>
-        <p class="text-[11px] text-slate-400 mb-2">Optional — a rep range powers progression suggestions. Leave both blank for simple set logging.</p>
-        <div class="flex gap-3">
+      <div class="space-y-1.5">
+        <p class="text-xs font-semibold text-slate-400">Training target</p>
+        <p class="text-[11px] text-slate-400">Optional — a rep range powers progression suggestions. Leave both blank for simple set logging.</p>
+        <div class="flex gap-3 pt-0.5">
           <div class="flex-1">
             <label for="ex-min-reps" class="text-xs font-semibold text-slate-400 block mb-1">Minimum reps</label>
             <input id="ex-min-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 8">
@@ -964,12 +974,15 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         </div>
       </div>
 
-      <div class="rounded-xl bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
-        <button id="ex-modal-more-toggle" type="button" class="w-full flex items-center gap-2 p-3 text-left" aria-expanded="false">
-          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">Advanced</span>
-          <span class="ms text-slate-400" id="ex-modal-more-icon" aria-hidden="true">expand_more</span>
+      <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
+        <button id="ex-modal-more-toggle" type="button" class="w-full flex items-center gap-3 p-3.5 text-left" aria-expanded="false">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Advanced</p>
+            <p class="text-xs text-slate-400">Notes, default RIR, warm-up settings and more.</p>
+          </div>
+          <span class="ms text-slate-400 flex-shrink-0" id="ex-modal-more-icon" aria-hidden="true">expand_more</span>
         </button>
-        <div id="ex-modal-more" style="display:none" class="px-3 pb-3 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-3">
+        <div id="ex-modal-more" style="display:none" class="px-3.5 pb-3.5 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-3.5">
           <div><label class="text-xs font-semibold text-slate-400 block mb-1">Machine / seat setup</label><input id="ex-machine-setup" type="text" placeholder="e.g. seat 4"></div>
           <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="ex-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
           <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
@@ -982,7 +995,8 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <input type="hidden" id="ex-modal-id">
     </div>
     <div class="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800">
-      <button id="ex-modal-save" class="btn btn-green w-full text-sm" style="min-height:48px">Create exercise</button>
+      <p class="text-center text-[11px] text-slate-400 mb-2.5">🌱 Every exercise you create can help your plant grow.</p>
+      <button id="ex-modal-save" class="btn btn-green w-full text-sm" style="min-height:48px">Add Exercise</button>
     </div>
   </div>
 </div>
@@ -2760,11 +2774,35 @@ const EX_EQUIPMENT_OPTIONS = ['Dumbbell','Barbell','Machine','Cable','Bodyweight
 function renderExEquipmentChips(selected) {
   document.getElementById('ex-equipment-value').value = selected || '';
   document.getElementById('ex-equipment-chips').innerHTML = EX_EQUIPMENT_OPTIONS.map(opt => `
-    <button type="button" class="ex-equip-chip btn ${opt===selected?'btn-green':'btn-outline'} text-xs px-3 py-2" data-value="${opt}">${opt}</button>
+    <button type="button" class="ex-equip-chip btn ${opt===selected?'btn-green':'btn-outline'} text-xs px-3.5 py-2" data-value="${opt}">${opt}</button>
   `).join('');
   document.querySelectorAll('.ex-equip-chip').forEach(chip => chip.addEventListener('click', () => {
     const current = document.getElementById('ex-equipment-value').value;
     renderExEquipmentChips(current === chip.dataset.value ? '' : chip.dataset.value);
+  }));
+}
+
+// Targets (muscle group) as chips — unlike equipment this is required, so
+// exactly one chip is always active; tapping the active chip is a no-op
+// instead of clearing it. "other" isn't offered here even though it's still
+// a valid stored value (kept for backward compatibility, see below) — an
+// exercise already tagged "other" just shows no chip highlighted until the
+// user picks one of the six, without touching the stored value.
+const EX_TARGET_OPTIONS = [
+  { value: 'upper', label: 'Upper Body' },
+  { value: 'lower', label: 'Lower Body' },
+  { value: 'core', label: 'Core' },
+  { value: 'full', label: 'Full Body' },
+  { value: 'cardio', label: 'Cardio' },
+  { value: 'mobility', label: 'Mobility' }
+];
+function renderExTargetChips(selected) {
+  document.getElementById('ex-group-value').value = selected || '';
+  document.getElementById('ex-group-chips').innerHTML = EX_TARGET_OPTIONS.map(opt => `
+    <button type="button" class="ex-target-chip btn ${opt.value===selected?'btn-green':'btn-outline'} text-xs px-3.5 py-2" data-value="${opt.value}">${opt.label}</button>
+  `).join('');
+  document.querySelectorAll('.ex-target-chip').forEach(chip => chip.addEventListener('click', () => {
+    renderExTargetChips(chip.dataset.value);
   }));
 }
 
@@ -2781,9 +2819,9 @@ function openExerciseModal(id = null) {
   const ex = id ? exercises[id] : null;
   document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'New exercise';
   document.getElementById('ex-modal-subtitle').textContent = id ? "Update this exercise's details." : 'Add a new exercise to your library.';
-  document.getElementById('ex-modal-save').textContent = id ? 'Save changes' : 'Create exercise';
+  document.getElementById('ex-modal-save').textContent = id ? 'Save changes' : 'Add Exercise';
   document.getElementById('ex-name').value    = ex?.name || '';
-  document.getElementById('ex-group').value   = ex?.muscleGroup || 'upper';
+  renderExTargetChips(ex?.muscleGroup || 'upper');
   renderExEquipmentChips(ex?.equipment || '');
   document.getElementById('ex-weight').value  = ex?.currentWeight || '';
   document.getElementById('ex-unit').value    = ex?.unit || 'kg';
@@ -2823,7 +2861,7 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
   const data = {
     ...existing,
     name,
-    muscleGroup: document.getElementById('ex-group').value,
+    muscleGroup: document.getElementById('ex-group-value').value || 'upper',
     equipment: document.getElementById('ex-equipment-value').value || null,
     currentWeight: +document.getElementById('ex-weight').value || 0,
     unit: document.getElementById('ex-unit').value,
