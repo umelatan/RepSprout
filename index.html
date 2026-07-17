@@ -1475,8 +1475,9 @@ const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
 
 // Participation vs. strength-progress point values. Participation rewards
 // simply showing up; the larger strength-progress values only fire when
-// nextProgression() (the existing double-progression engine — never
-// re-derived here) reports a genuine milestone. Tune freely; nothing else
+// nextProgression() (the legacy exercise-level ratchet — still powers the
+// Exercise Library "Ready to increase" badge and Home's Closest Progress
+// widget, unchanged) reports a genuine milestone. Tune freely; nothing else
 // depends on these exact numbers.
 const GROWTH_AWARD = {
   completedWorkingSet: 0.4,
@@ -1484,7 +1485,16 @@ const GROWTH_AWARD = {
   completedWorkout: 2,
   improvedReps: 3,       // beat the previous comparable session's total reps
   readyToIncrease: 8,     // nextProgression() reports weightUp — maxed every target set
-  newWeightCompleted: 8   // this session's weight is higher than last time AND fully completed
+  newWeightCompleted: 8,  // this session's weight is higher than last time AND fully completed
+  // Double Progression's own, separately-labeled category (see
+  // calculateExerciseDoubleProgression()): every one of an exercise's
+  // planned working sets independently moved to a higher weight within the
+  // current plant-stage cycle. Sized to one full stage width
+  // (GROWTH_STAGE_THRESHOLDS are 20 apart) so completing a leaf cycle
+  // reliably carries the plant into its next stage on its own, without
+  // double-counting readyToIncrease/newWeightCompleted above (those still
+  // fire too, independently, from the legacy exercise-level ratchet).
+  allSetsProgressed: 20
 };
 
 // ── The single source of truth for plant growth state ───────────────────────
@@ -1577,11 +1587,27 @@ function recalculatePlantGrowth() {
   const lastSeenByExercise = {};    // exerciseId -> { weight, sets:[{reps}] }
   const readyToIncreaseByExercise = {}; // exerciseId -> boolean
 
+  // Double Progression's own award category, computed once per exercise (not
+  // per session) via calculateExerciseDoubleProgression()'s own independent
+  // history walk, then attributed back to whichever session each
+  // all_sets_progressed milestone actually happened in. Clearly separate
+  // from participation/repProgress/weightUnlock above — see GROWTH_AWARD.
+  // allSetsProgressed's comment for why this doesn't double-count the
+  // legacy exercise-level readyToIncrease/newWeightCompleted awards.
+  const allSetsProgressedBySession = {}; // sessionId -> bonus points
+  Object.keys(exercises).forEach(exerciseId => {
+    const events = calculateExerciseDoubleProgression(exerciseId).events;
+    events.filter(e => e.eventType === 'all_sets_progressed').forEach(e => {
+      allSetsProgressedBySession[e.workoutSessionId] = round1((allSetsProgressedBySession[e.workoutSessionId] || 0) + GROWTH_AWARD.allSetsProgressed);
+    });
+  });
+
   let total = 0;
   const perSession = [];
 
   for (const { date, id, session: s } of allSessions) {
     let participation = 0, repProgress = 0, weightUnlock = 0;
+    let allSetsProgressed = allSetsProgressedBySession[id] || 0;
 
     if (s.sessionType === 'recovery') {
       participation = RECOVERY_DAY_GROWTH;
@@ -1636,11 +1662,11 @@ function recalculatePlantGrowth() {
       if (anyWorkingSetCompleted) participation += GROWTH_AWARD.completedWorkout;
     }
 
-    participation = round1(participation); repProgress = round1(repProgress); weightUnlock = round1(weightUnlock);
-    const totalGrowthAwarded = round1(participation + repProgress + weightUnlock);
+    participation = round1(participation); repProgress = round1(repProgress); weightUnlock = round1(weightUnlock); allSetsProgressed = round1(allSetsProgressed);
+    const totalGrowthAwarded = round1(participation + repProgress + weightUnlock + allSetsProgressed);
     total = round1(total + totalGrowthAwarded);
     if (totalGrowthAwarded > 0) {
-      perSession.push({ date, id, participationGrowth: participation, repProgressGrowth: repProgress, weightUnlockGrowth: weightUnlock, totalGrowthAwarded });
+      perSession.push({ date, id, participationGrowth: participation, repProgressGrowth: repProgress, weightUnlockGrowth: weightUnlock, allSetsProgressedGrowth: allSetsProgressed, totalGrowthAwarded });
     }
   }
 
@@ -1660,6 +1686,7 @@ async function recalculateAndPersistPlantGrowth() {
   // a session that no longer exists can never leave a stale/orphaned event
   // behind, and recalculatePlantGrowth() never reads this back in.
   syncGrowthEvents(perSession).catch(e => console.error('Failed to sync growth event audit trail:', e));
+  syncDoubleProgressionEvents().catch(e => console.error('Failed to sync Double Progression event audit trail:', e));
   return { previousGrowth, newGrowth };
 }
 
@@ -1669,11 +1696,28 @@ async function syncGrowthEvents(perSession) {
     events[p.id] = {
       sourceType: 'session', sourceId: p.id, date: p.date,
       participationGrowth: p.participationGrowth, repProgressGrowth: p.repProgressGrowth,
-      weightUnlockGrowth: p.weightUnlockGrowth, totalGrowthAwarded: p.totalGrowthAwarded,
+      weightUnlockGrowth: p.weightUnlockGrowth, allSetsProgressedGrowth: p.allSetsProgressedGrowth || 0,
+      totalGrowthAwarded: p.totalGrowthAwarded,
       active: true, createdAt: Date.now()
     };
   }
   await set(ref(db, `users/${uid()}/growthEvents`), events);
+}
+
+// Double Progression's own structured-event audit trail, kept separate from
+// the session-level growthEvents above (different shape: per set-position,
+// not per session). Same "regenerate wholesale from current history, then
+// overwrite" pattern, keyed by calculateExerciseDoubleProgression()'s
+// deterministic event ids — so a duplicate save or an idle re-recalculation
+// can never award (or record) the same leaf/cycle milestone twice. Never
+// read back in by the growth calculation itself; DoubleProgressionStrategy
+// always re-derives fresh from `sessions`, exactly like growthPoints does.
+async function syncDoubleProgressionEvents() {
+  const events = {};
+  Object.keys(exercises).forEach(exerciseId => {
+    calculateExerciseDoubleProgression(exerciseId).events.forEach(e => { events[e.id] = e; });
+  });
+  await set(ref(db, `users/${uid()}/progressionEvents`), events);
 }
 
 // Neutral, non-judgmental copy either direction — growth moving down when
@@ -1714,31 +1758,320 @@ function nextProgression(targetReps, completedReps, minReps = 8, maxReps = 12) {
 
 function round1(n) { return Math.round(n * 10) / 10; }
 
-// Plain-language progression recommendation for one logged exercise.
-// completedSets: [{reps, completed}]. Consumes nextProgression() rather
-// than re-deriving the increase/hold decision independently.
-function buildProgressionRecommendation(ex) {
-  if (ex.skipped) return { type:'skipped', text:'No recommendation — exercise skipped.' };
-  const sets = ex.sets || [];
-  // Require every set completed, not just "at least one" — completedReps must
-  // line up positionally with targetReps or the recommendation would compare
-  // the wrong set against the wrong target.
-  if (!sets.length || !sets.every(s => s.completed)) return { type:'incomplete', text:'No recommendation due to incomplete sets.' };
+// ═══════════════════════════════════════════════════════════════════════════
+// ── Double Progression Strategy ─────────────────────────────────────────────
+// The first fully-supported progression *mode*, built behind a small
+// strategy interface (calculateSetResults / calculateExerciseResult /
+// generateGrowthEvents / generateRecommendations) so a future mode — fixed
+// reps, AMRAP, timed, distance, plain manual logging — can be added as a
+// sibling module later without this file, or the plant-growth system,
+// depending on Double Progression's internals.
+//
+// This does NOT replace nextProgression()/exercise.weightUpFlag above —
+// that exercise-level ratchet still powers the Exercise Library "Ready to
+// increase" badge and Home's Closest Progress widget, unchanged. This is a
+// new, independent, more precise layer that tracks each WORKING SET as its
+// own progression path (per the product requirement that one set can be
+// ready to add weight while its siblings are still building reps) and feeds
+// the plant's existing growthPoints pipeline through its own clearly
+// separate award category — see the allSetsProgressed bonus wired into
+// recalculatePlantGrowth() below.
+//
+// Nothing here is persisted as new per-set state. Like growthPoints itself,
+// every value below is *derived fresh* from sessions/{uid} — the same
+// history every other growth calculation already treats as canonical. That
+// is what makes edit/delete/duplicate-save recalculation automatic and
+// idempotent: replay the same history, get the same answer, every time.
+// ═══════════════════════════════════════════════════════════════════════════
 
-  const minReps = ex.minReps ?? 8, maxReps = ex.maxReps ?? 12;
-  const completedReps = sets.map(s => s.reps || 0);
-  if (completedReps.some(r => r < minReps)) {
-    return { type:'regress', text:'Your reps fell below the target range. Consider repeating or reducing the weight.' };
-  }
+const DP_STATUS = {
+  BUILDING_REPS: 'building_reps',
+  READY_TO_INCREASE: 'ready_to_increase',
+  INCREASED_WEIGHT: 'increased_weight',
+  BELOW_RANGE: 'below_range',
+  INCOMPLETE: 'incomplete',
+  SKIPPED: 'skipped'
+};
 
-  const targetReps = ex.targetReps || completedReps.map(() => minReps);
-  const { weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
-  if (weightUp) {
-    const nextWeight = ex.weightIncrement ? `Try ${round1((ex.weight||0) + ex.weightIncrement)} ${ex.unit} next session.` : 'Ready to increase next session.';
-    return { type:'ready', text:`Ready to grow. ${nextWeight}` };
-  }
-  return { type:'build', text:`Stay at ${ex.weight||0} ${ex.unit}. Reach ${maxReps} reps on all ${targetReps.length} sets before increasing.` };
+// Centralized RIR eligibility policy — the one place that decides whether a
+// set at/above its max-rep threshold is genuinely ready to add load, so the
+// rule can be retuned app-wide without touching set-status derivation.
+// Reps-in-reserve of exactly 0 (right at failure) holds the set for a
+// repeat; anything else recorded (including a generously-high RIR, which
+// just means "that was easy") is eligible. Missing/blank RIR never blocks
+// progression — it just marks the recommendation as reps-only.
+const DOUBLE_PROGRESSION_HOLD_AT_RIR = 0;
+function evaluateRirEligibility(rir) {
+  if (rir === null || rir === undefined || rir === '') return { eligible: true, basis: 'reps_only' };
+  const r = +rir;
+  if (isNaN(r)) return { eligible: true, basis: 'reps_only' };
+  if (r <= DOUBLE_PROGRESSION_HOLD_AT_RIR) return { eligible: false, basis: 'rir' };
+  return { eligible: true, basis: 'rir' };
 }
+
+// Centralized active rep-target resolution. Priority: an explicit in-session
+// override, then a workout-group exercise override, then the exercise's own
+// saved default, then "not configured." buildSessionExercise() already
+// merges the first two levels onto a session-exercise's own minReps/maxReps
+// at session-start time (and finish-save-btn snapshots them permanently once
+// a session is saved) — so for any session exercise, live or historical,
+// ex.minReps/ex.maxReps already IS the most specific active target. This
+// function documents and enforces that contract in one named place instead
+// of every call site re-deriving its own fallback. For a bare library
+// exercise (no session context), it resolves straight from the exercise's
+// own saved fields, which are genuinely nullable — "no target configured"
+// is a real, valid state this never silently invents a value for.
+function resolveActiveRepTarget(sessionEx, exerciseDef) {
+  const minReps = sessionEx?.minReps ?? exerciseDef?.minReps ?? null;
+  const maxReps = sessionEx?.maxReps ?? exerciseDef?.maxReps ?? null;
+  return { minReps, maxReps, configured: minReps != null && maxReps != null };
+}
+
+// One working set's status for a single logged session — independent of
+// every other set in the exercise, per the core "each set progresses on its
+// own" rule. Doesn't know about history/baselines; calculateExerciseDouble
+// Progression() below calls this once per session per position to build
+// each position's timeline.
+function evaluateSetStatus({ set, minReps, maxReps }) {
+  if (!set) return { status: DP_STATUS.INCOMPLETE };
+  if (set.warmup) return { status: DP_STATUS.SKIPPED, reason: 'warmup' };
+  if (!set.completed) return { status: DP_STATUS.INCOMPLETE };
+  const reps = set.reps || 0;
+  if (minReps != null && reps < minReps) return { status: DP_STATUS.BELOW_RANGE };
+  if (maxReps == null || reps < maxReps) return { status: DP_STATUS.BUILDING_REPS };
+  const rir = evaluateRirEligibility(set.rir);
+  if (!rir.eligible) return { status: DP_STATUS.BUILDING_REPS, rirBasis: rir.basis, heldByRir: true };
+  return { status: DP_STATUS.READY_TO_INCREASE, rirBasis: rir.basis };
+}
+
+// The one function that walks an exercise's full chronological session
+// history and derives everything Double Progression needs: each working
+// set's current status/weight/reps, its own baseline for the current
+// plant-stage cycle, how many leaves are mature, and the structured growth
+// events that history implies. Pure — reads sessions/exercises, no writes —
+// safe to call as often as needed (render time, recalculation, anywhere),
+// and naturally correct after any edit or deletion since it never reads
+// anything but the sessions that currently exist.
+//
+// Set position is stable across sessions by array index among *working*
+// (non-warmup) sets only — Set 1 always compares with Set 1, never with a
+// different session's Set 3 — and leaves/baselines track exactly
+// exercise.defaultSets positions (the user's configured working-set count),
+// so a stray extra set never changes the stage requirement, and a session
+// that fell short of the full count simply leaves the missing positions
+// untouched rather than resetting them.
+// Deterministic id (never Date.now()/Math.random()) — the same history
+// always produces the exact same event id, which is what makes persisting
+// these idempotent: recomputing and overwriting twice writes the identical
+// record twice, never a duplicate. See syncDoubleProgressionEvents().
+function makeDpEvent({ eventType, exerciseId, setPosition, sourceWorkoutSessionId, previousValue, newValue, createdAt, cycleIndex }) {
+  return {
+    id: `${exerciseId}_${setPosition ?? 'exercise'}_c${cycleIndex}_${eventType}`,
+    userId: uid(), exerciseId, setPosition, workoutSessionId: sourceWorkoutSessionId,
+    eventType, previousValue, newValue, createdAt, processed: true
+  };
+}
+// pendingSession (optional) previews an in-progress, not-yet-saved active-
+// workout exercise as if it were the newest entry in history — used by the
+// exercise-complete screen to show what THIS session's just-logged sets
+// would do to leaves/recommendations before the workout is actually saved.
+// Every other caller (recalculation, the growth pipeline, historical
+// display) omits it and gets the pure, saved-history-only answer.
+function calculateExerciseDoubleProgression(exerciseId, pendingSession = null) {
+  const exDef = exercises[exerciseId] || {};
+  const workingSetCount = Math.max(1, exDef.defaultSets || (exDef.targetReps || []).length || 3);
+  const { minReps, maxReps, configured } = resolveActiveRepTarget(null, exDef);
+
+  // Chronological, real (non-planned) sessions only — the exact same source
+  // recalculatePlantGrowth() already treats as canonical. Calendar plans and
+  // in-progress/incomplete drafts never live in `sessions`, so they can't
+  // leak into progression by construction.
+  const timeline = [];
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    Object.entries(daySessions || {}).forEach(([sessionId, s]) => {
+      if (!s || !Array.isArray(s.exercises)) return;
+      const ex = s.exercises.find(e => e.exerciseId === exerciseId);
+      if (ex) timeline.push({ date, sessionId, ex });
+    });
+  });
+  if (pendingSession) timeline.push({ date: pendingSession.date, sessionId: pendingSession.sessionId, ex: pendingSession.ex });
+  timeline.sort((a, b) => a.date === b.date
+    ? (a.ex.completedAt || 0) - (b.ex.completedAt || 0) || a.sessionId.localeCompare(b.sessionId)
+    : a.date.localeCompare(b.date));
+
+  const positions = Array.from({ length: workingSetCount }, (_, i) => ({
+    setPosition: i,
+    baselineWeight: null,
+    currentWeight: null, currentReps: null, currentRir: null,
+    status: DP_STATUS.INCOMPLETE, matured: false,
+    progressedAt: null, sourceWorkoutSessionId: null,
+    targetMinReps: minReps, targetMaxReps: maxReps
+  }));
+  const events = [];
+  let cycleIndex = 0;
+
+  for (const { date, sessionId, ex } of timeline) {
+    if (ex.skipped) continue; // whole exercise skipped this session — no position touched
+    // A historical session snapshots its OWN minReps/maxReps at save time —
+    // use that session's real target for evaluating what happened then, not
+    // today's (possibly since-changed) target. See "Missing or changed
+    // targets" in the task notes.
+    const target = resolveActiveRepTarget(ex, exDef);
+    const workingSets = (ex.sets || []).filter(s => !s.warmup);
+
+    for (let i = 0; i < workingSetCount; i++) {
+      const set = workingSets[i];
+      if (!set) continue; // this session didn't reach this many working sets — leave the position untouched
+      const pos = positions[i];
+      const weight = set.weight || 0;
+      if (pos.baselineWeight == null) pos.baselineWeight = weight; // first sighting of this position, ever
+
+      const isValidCompletedAttempt = set.completed && !set.warmup;
+
+      if (!pos.matured && isValidCompletedAttempt && weight > pos.baselineWeight) {
+        // The set was validly completed at a genuinely higher weight than
+        // this cycle's baseline — the leaf matures regardless of how many
+        // reps it landed at the new weight; the rep-based cycle simply
+        // restarts from here (see evaluateSetStatus() for status math).
+        pos.matured = true;
+        pos.status = DP_STATUS.INCREASED_WEIGHT;
+        events.push(makeDpEvent({ eventType: 'set_weight_increased', exerciseId, setPosition: i, sourceWorkoutSessionId: sessionId, previousValue: pos.baselineWeight, newValue: weight, createdAt: `${date}_${sessionId}`, cycleIndex }));
+      } else if (!pos.matured) {
+        const evalResult = evaluateSetStatus({ set, minReps: target.minReps, maxReps: target.maxReps });
+        if (evalResult.status === DP_STATUS.READY_TO_INCREASE && pos.status !== DP_STATUS.READY_TO_INCREASE) {
+          events.push(makeDpEvent({ eventType: 'set_ready_to_increase', exerciseId, setPosition: i, sourceWorkoutSessionId: sessionId, previousValue: pos.currentReps, newValue: set.reps || 0, createdAt: `${date}_${sessionId}`, cycleIndex }));
+        } else if (evalResult.status === DP_STATUS.BUILDING_REPS && weight === pos.currentWeight && pos.currentReps != null && (set.reps || 0) > pos.currentReps) {
+          events.push(makeDpEvent({ eventType: 'set_rep_improved', exerciseId, setPosition: i, sourceWorkoutSessionId: sessionId, previousValue: pos.currentReps, newValue: set.reps || 0, createdAt: `${date}_${sessionId}`, cycleIndex }));
+        }
+        pos.status = evalResult.status;
+      }
+
+      pos.currentWeight = weight;
+      pos.currentReps = set.reps || 0;
+      pos.currentRir = set.rir === '' ? null : (set.rir ?? null);
+      pos.targetMinReps = target.minReps; pos.targetMaxReps = target.maxReps;
+      pos.progressedAt = date; pos.sourceWorkoutSessionId = sessionId;
+    }
+
+    // Cycle complete: every configured working-set position has matured
+    // since this cycle's baseline. Record the milestone, then start the next
+    // cycle with each position's baseline reset to where it stands right
+    // now — preserving each set's own current weight, never assuming they
+    // share one weight.
+    if (positions.every(p => p.matured)) {
+      events.push(makeDpEvent({ eventType: 'all_sets_progressed', exerciseId, setPosition: null, sourceWorkoutSessionId: sessionId, previousValue: cycleIndex, newValue: cycleIndex + 1, createdAt: `${date}_${sessionId}`, cycleIndex }));
+      cycleIndex++;
+      positions.forEach(p => { p.baselineWeight = p.currentWeight; p.matured = false; p.status = DP_STATUS.BUILDING_REPS; });
+    }
+  }
+
+  const leavesMatured = positions.filter(p => p.matured).length;
+  return {
+    exerciseId, configured, minReps, maxReps, workingSetCount, cycleIndex,
+    positions, leavesMatured, cycleComplete: leavesMatured === workingSetCount && workingSetCount > 0,
+    events
+  };
+}
+
+// Plain-language, RIR-aware, per-set recommendation copy. One line per
+// working set — never one generic recommendation for the whole exercise —
+// so sets with different statuses (one ready, two still building) each get
+// their own accurate next step.
+function buildDoubleProgressionRecommendations(result) {
+  const exDef = exercises[result.exerciseId] || {};
+  const unit = exDef.unit || 'kg';
+  return result.positions.map(p => {
+    const setLabel = `Set ${p.setPosition + 1}`;
+    if (!result.configured) return { setPosition: p.setPosition, status: p.status, text: 'Add a maximum rep target to enable Double Progression.' };
+    if (p.currentWeight == null) return { setPosition: p.setPosition, status: p.status, text: `${setLabel}: not yet logged.` };
+    switch (p.status) {
+      case DP_STATUS.INCREASED_WEIGHT:
+        return { setPosition: p.setPosition, status: p.status, text: `${setLabel} moved up to ${p.currentWeight} ${unit} this cycle. Building reps again from here.` };
+      case DP_STATUS.READY_TO_INCREASE: {
+        const rirNote = p.currentRir != null ? ` with ${p.currentRir} RIR` : ' (based on reps only)';
+        const nextWeightText = exDef.weightIncrement
+          ? `Try ${round1(p.currentWeight + exDef.weightIncrement)} ${unit} next session.`
+          : `${setLabel} is ready for a heavier weight next session.`;
+        return { setPosition: p.setPosition, status: p.status, text: `${setLabel} reached ${p.currentReps} reps${rirNote}. ${nextWeightText}` };
+      }
+      case DP_STATUS.BELOW_RANGE:
+        return { setPosition: p.setPosition, status: p.status, text: `${setLabel}: reps fell below target. Consider repeating this weight or reducing it.` };
+      case DP_STATUS.SKIPPED:
+        return { setPosition: p.setPosition, status: p.status, text: `${setLabel}: skipped.` };
+      case DP_STATUS.INCOMPLETE:
+        return { setPosition: p.setPosition, status: p.status, text: `${setLabel}: incomplete.` };
+      case DP_STATUS.BUILDING_REPS:
+      default: {
+        if (p.currentRir != null && +p.currentRir >= 3) {
+          return { setPosition: p.setPosition, status: p.status, text: `${setLabel} had ${p.currentRir} RIR. You may be able to add another rep next time.` };
+        }
+        const remaining = p.targetMaxReps != null ? Math.max(0, p.targetMaxReps - (p.currentReps || 0)) : null;
+        return { setPosition: p.setPosition, status: p.status, text: remaining ? `${setLabel}: ${remaining} rep${remaining !== 1 ? 's' : ''} remaining to reach ${p.targetMaxReps}.` : `${setLabel}: stay at ${p.currentWeight} ${unit} and continue building reps.` };
+      }
+    }
+  });
+}
+
+// Accessible label for one leaf/set indicator — e.g. "Set 2: 8 of 10 reps at
+// 20 kilograms. Continue building reps." Never refers to a "lane"; always
+// "set," matching the rest of the app's vocabulary.
+const DP_STATUS_ARIA_SUFFIX = {
+  building_reps: 'Continue building reps.',
+  ready_to_increase: 'Ready for a heavier weight next session.',
+  increased_weight: 'Advanced to a new weight this cycle.',
+  below_range: 'Below target range.',
+  incomplete: 'Not completed.',
+  skipped: 'Skipped.'
+};
+function describeSetAriaLabel(p, unit) {
+  const unitWord = unit === 'lbs' ? 'pounds' : 'kilograms';
+  const setLabel = `Set ${p.setPosition + 1}`;
+  if (p.currentWeight == null) return `${setLabel}: not yet logged.`;
+  const repsPart = p.targetMaxReps != null ? `${p.currentReps || 0} of ${p.targetMaxReps} reps` : `${p.currentReps || 0} reps`;
+  return `${setLabel}: ${repsPart} at ${p.currentWeight} ${unitWord}. ${DP_STATUS_ARIA_SUFFIX[p.status] || ''}`;
+}
+
+// One leaf per working set — the existing "eco" glyph already used for
+// growth elsewhere in the app (Advanced badge, mission label), not a new
+// emoji: filled + brand green once that set has matured (moved to a higher
+// weight this stage cycle), outline + muted while it's still building reps.
+// This is the micro-progress overlay INSIDE the plant's existing macro
+// stage — it never renames or replaces GROWTH_STAGE_NAMES.
+function renderDoubleProgressionLeaves(positions, unit, sizeClass = 'text-2xl') {
+  return positions.map(p => {
+    const label = describeSetAriaLabel(p, unit);
+    return `<span class="ms ${sizeClass} ${p.matured ? 'text-brand-500' : 'text-slate-300 dark:text-slate-600'}" style="font-variation-settings:'FILL' ${p.matured ? 1 : 0}" role="img" aria-label="${esc(label)}">eco</span>`;
+  }).join('');
+}
+
+// The strategy interface itself — the exact shape a future mode
+// (GeneralFitnessStrategy, FixedRepsStrategy, TimedActivityStrategy,
+// DistanceStrategy, ManualStrategy) would implement, so the UI and the
+// growth pipeline can eventually depend on "a ProgressionStrategy" instead
+// of "DoubleProgressionStrategy specifically." Only Double Progression is
+// implemented now — this is not a dynamic plugin registry, just a
+// consistent shape, per the task's explicit "don't build the other modes
+// yet" instruction.
+const DoubleProgressionStrategy = {
+  id: 'double_progression',
+  // pendingSession is optional on every method — omit it for the pure,
+  // saved-history answer; pass { date, sessionId, ex } to preview an
+  // in-progress active-workout exercise before it's saved (see the
+  // exercise-complete screen).
+  calculateSetResults(exerciseId, pendingSession = null) {
+    return calculateExerciseDoubleProgression(exerciseId, pendingSession).positions;
+  },
+  calculateExerciseResult(exerciseId, pendingSession = null) {
+    const r = calculateExerciseDoubleProgression(exerciseId, pendingSession);
+    return { exerciseId: r.exerciseId, configured: r.configured, minReps: r.minReps, maxReps: r.maxReps, workingSetCount: r.workingSetCount, leavesMatured: r.leavesMatured, cycleComplete: r.cycleComplete, cycleIndex: r.cycleIndex };
+  },
+  generateGrowthEvents(exerciseId, pendingSession = null) {
+    return calculateExerciseDoubleProgression(exerciseId, pendingSession).events;
+  },
+  generateRecommendations(exerciseId, pendingSession = null) {
+    return buildDoubleProgressionRecommendations(calculateExerciseDoubleProgression(exerciseId, pendingSession));
+  }
+};
 
 // Most recent logged sets for an exercise, scanning session history newest
 // first. Shared by the active-workout "previous" preview and the Home
@@ -3430,9 +3763,12 @@ function workingSetsFor(ex) { return ex.sets.filter(s => !s.warmup); }
 function currentSetIndex(ex) { return ex.sets.findIndex(s => !s.completed); } // -1 = exercise done
 function completedWorkingCount(ex) { return workingSetsFor(ex).filter(s => s.completed).length; }
 function exerciseIsDone(ex) { return ex.skipped || currentSetIndex(ex) === -1; }
-// Feeds the *existing* progression engine unchanged — just trims sets/targetReps
-// down to working sets only, so a warm-up-heavy exercise never misaligns the
-// positional rep-vs-target comparison inside buildProgressionRecommendation().
+// Feeds the legacy exercise-level ratchet (computeWorkoutGrowth() /
+// nextProgression()) unchanged — just trims sets/targetReps down to working
+// sets only, so a warm-up-heavy exercise never misaligns the positional
+// rep-vs-target comparison. Double Progression's own engine
+// (calculateExerciseDoubleProgression()) does its own warm-up filtering
+// independently and doesn't call this.
 function progressionInputFor(ex) {
   const workingSets = workingSetsFor(ex);
   return { ...ex, sets: workingSets, targetReps: (ex.targetReps || []).slice(0, workingSets.length) };
@@ -3616,7 +3952,32 @@ function renderExerciseCompletePhase(ex) {
   const main = document.getElementById('aw-main');
   const footer = document.getElementById('aw-footer');
   const working = workingSetsFor(ex);
-  const rec = buildProgressionRecommendation(progressionInputFor(ex));
+
+  // Preview what THIS session's just-logged sets would do to Double
+  // Progression if saved right now — the workout isn't persisted yet at
+  // this point (see calculateExerciseDoubleProgression()'s pendingSession
+  // param), so this is the one place that needs the preview form.
+  const pending = { date: todayStr(), sessionId: 'pending', ex };
+  const dpResult = DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending);
+  const dpPositions = DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending);
+  const dpRecs = DoubleProgressionStrategy.generateRecommendations(ex.exerciseId, pending);
+
+  const progressBox = dpResult.configured ? `
+      <div class="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl w-full max-w-xs mt-1 text-left space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs font-semibold text-slate-400">Set Progress</p>
+          <p class="text-xs font-semibold text-brand-500">${dpResult.leavesMatured} of ${dpResult.workingSetCount} leaves</p>
+        </div>
+        <div class="flex items-center justify-center gap-1">${renderDoubleProgressionLeaves(dpPositions, ex.unit)}</div>
+        <div class="space-y-1 pt-1.5 border-t border-slate-200 dark:border-slate-700">
+          ${dpRecs.map(r => `<p class="text-xs text-slate-600 dark:text-slate-300">${esc(r.text)}</p>`).join('')}
+        </div>
+      </div>` : `
+      <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl max-w-xs mt-1">
+        <p class="text-xs font-semibold text-slate-400 mb-1">Recommendation</p>
+        <p class="text-sm text-slate-700 dark:text-slate-200">Add a maximum rep target to enable Double Progression.</p>
+      </div>`;
+
   main.innerHTML = `
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-2.5">
       <p class="text-3xl" aria-hidden="true">🌿</p>
@@ -3624,10 +3985,7 @@ function renderExerciseCompletePhase(ex) {
       <p class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">${working[0]?.weight||ex.weight||0} ${ex.unit}</p>
       <p class="text-sm text-slate-500 dark:text-slate-400">${working.map(s=>s.reps||0).join(' · ')}</p>
       <div class="pt-1"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${ex.targetReps.length} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
-      <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl max-w-xs mt-1">
-        <p class="text-xs font-semibold text-slate-400 mb-1">Recommendation</p>
-        <p class="text-sm text-slate-700 dark:text-slate-200">${rec.text}</p>
-      </div>
+      ${progressBox}
     </div>`;
   const isLast = activeSession.currentExerciseIndex >= activeSession.exercises.length - 1;
   footer.innerHTML = `
@@ -4736,12 +5094,23 @@ function openFinishSummary() {
 
   const recsBox = document.getElementById('finish-recommendations');
   const recCards = activeSession.exercises.map(ex => {
-    if (!ex.progressionEnabled) return '';
-    const rec = buildProgressionRecommendation(progressionInputFor(ex));
-    if (rec.type === 'incomplete' || rec.type === 'skipped') return '';
+    if (!ex.progressionEnabled || ex.skipped || !workingSetsFor(ex).some(s => s.completed)) return '';
+    const pending = { date: todayStr(), sessionId: 'pending', ex };
+    const result = DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending);
+    if (!result.configured) {
+      return `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Add a maximum rep target to enable Double Progression.</p>
+      </div>`;
+    }
+    const positions = DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending);
+    const readyCount = positions.filter(p => p.status === 'ready_to_increase' || p.status === 'increased_weight').length;
     return `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-      <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${rec.text}</p>
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
+        <div class="flex items-center gap-0.5 flex-shrink-0">${renderDoubleProgressionLeaves(positions, ex.unit, 'text-base')}</div>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${readyCount > 0 ? `${readyCount} of ${result.workingSetCount} set${result.workingSetCount!==1?'s':''} ready to increase` : `Building reps toward ${result.maxReps} reps`}</p>
     </div>`;
   }).filter(Boolean).join('');
   recsBox.innerHTML = recCards || '<p class="text-sm text-slate-400 text-center py-2">Complete all sets on an exercise to see a recommendation.</p>';
