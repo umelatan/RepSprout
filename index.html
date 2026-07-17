@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{body:['Inter','system-ui','sans-serif'],display:['Plus Jakarta Sans','sans-serif']},colors:{brand:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16'}}}}}
+tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{body:['Inter','system-ui','sans-serif'],display:['Plus Jakarta Sans','sans-serif']},colors:{brand:{50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d',950:'#052e16'},lavender:{50:'#f5f3ff',100:'#ede9fe',200:'#ddd6fe',300:'#c4b5fd',400:'#a78bfa',500:'#8b5cf6',600:'#7c3aed',700:'#6d28d9',800:'#5b21b6',900:'#4c1d95',950:'#2e1065'}}}}}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
@@ -901,6 +901,95 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <p class="text-xs text-slate-400">Choose the exercises you want to do today.</p>
       </div>
     </button>
+  </div>
+</div>
+
+<!-- Build Today's Workout — a two-step exercise picker + review, opened from
+     the "Build Today's Workout" card above. Purely a selection UI: both
+     steps end by handing an ordered exerciseId[] to the existing
+     startQuickWorkout() (see openBuildTodaysWorkout() / bw-start-btn below)
+     — there is no separate workout engine here. Lavender is used as this
+     flow's own accent (see the `lavender` Tailwind color, matching
+     PLANT_THEME.lavender) — a deliberate, fixed accent for this feature,
+     not tied to whichever companion plant species is currently active. -->
+<div id="build-workout-modal" style="display:none" class="fixed inset-0 z-[66] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-lg flex flex-col mx-auto" style="max-height:92vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+
+    <!-- Step 1: Exercise Picker -->
+    <div id="bw-step1" class="flex flex-col overflow-hidden flex-1 min-h-0">
+      <div class="px-5 pt-1 pb-3 flex-shrink-0">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="font-display font-bold text-xl text-slate-800 dark:text-white flex items-center gap-1.5"><span aria-hidden="true">✨</span>Today's Workout</p>
+            <p class="text-sm text-slate-400 mt-0.5">Choose the exercises you want to perform.</p>
+          </div>
+          <button id="bw-close" class="p-2 -mt-1 -mr-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+        </div>
+        <div class="relative mt-3">
+          <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" aria-hidden="true">search</span>
+          <input id="bw-search" type="text" placeholder="Search exercises..." class="pl-10">
+        </div>
+        <div class="mt-3">
+          <p class="text-xs font-semibold text-slate-400 mb-1.5">Quick picks</p>
+          <div id="bw-filter-chips" class="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by category"></div>
+        </div>
+        <div id="bw-recent-wrap" class="mt-3">
+          <p class="text-xs font-semibold text-slate-400 mb-1.5">Recent</p>
+          <div id="bw-recent-list" class="flex gap-2 overflow-x-auto pb-1"></div>
+        </div>
+      </div>
+      <div class="px-5 pb-2 flex-shrink-0"><p class="text-xs font-semibold text-slate-400">All exercises</p></div>
+      <div id="bw-list" class="flex-1 overflow-y-auto px-5 space-y-2 pb-3 min-h-0"></div>
+      <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 flex items-center gap-3">
+        <span class="ms text-2xl text-lavender-500 flex-shrink-0" aria-hidden="true">eco</span>
+        <div class="min-w-0 flex-1">
+          <p id="bw-count-label" class="text-sm font-semibold text-slate-700 dark:text-slate-200">0 exercises selected</p>
+          <p id="bw-preview-label" class="text-xs text-slate-400 truncate"></p>
+        </div>
+        <button id="bw-continue-btn" type="button" disabled class="btn text-sm flex-shrink-0 bg-lavender-500 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:opacity-90">Continue<span class="ms text-base" aria-hidden="true">chevron_right</span></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Review -->
+    <div id="bw-step2" style="display:none" class="flex flex-col overflow-hidden flex-1 min-h-0">
+      <div class="px-5 pt-1 pb-3 flex items-center gap-2 flex-shrink-0">
+        <button id="bw-back-btn" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Back to exercise picker"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+        <div class="min-w-0">
+          <p class="font-display font-bold text-lg text-slate-800 dark:text-white flex items-center gap-1.5"><span aria-hidden="true">✨</span>Today's Workout</p>
+          <p id="bw-review-subtitle" class="text-xs text-slate-400"></p>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-auto px-5 space-y-4 pb-4 min-h-0">
+        <div class="rounded-2xl p-4 flex gap-3 items-start bg-lavender-50 dark:bg-lavender-950/20">
+          <span class="text-3xl flex-shrink-0" aria-hidden="true">🌱</span>
+          <div class="min-w-0">
+            <p id="bw-motivation-title" class="text-sm font-bold text-lavender-600 dark:text-lavender-400"></p>
+            <p id="bw-motivation-body" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"></p>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Your selected exercises</p>
+          <p class="text-xs text-slate-400 mb-2">Tap and hold the handle to reorder.</p>
+          <div id="bw-review-list" class="space-y-2"></div>
+          <button id="bw-add-more-btn" type="button" class="w-full mt-2 flex flex-col items-center justify-center gap-1 py-4 rounded-2xl border-2 border-dashed border-lavender-300 dark:border-lavender-700 text-lavender-600 dark:text-lavender-400 hover:bg-lavender-50 dark:hover:bg-lavender-950/20 transition-all">
+            <span class="ms text-xl" aria-hidden="true">add_circle</span>
+            <span class="text-sm font-semibold">Add more exercises</span>
+            <span class="text-[11px] text-slate-400">Pick from the library</span>
+          </button>
+        </div>
+        <div class="rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 space-y-1.5">
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-sm text-brand-500" aria-hidden="true">eco</span>Quick tips</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-sm text-lavender-500" aria-hidden="true">check_circle</span>Warm up before your first exercise.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-sm text-lavender-500" aria-hidden="true">check_circle</span>Focus on form and controlled reps.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-sm text-lavender-500" aria-hidden="true">check_circle</span>Rest well and stay hydrated.</p>
+        </div>
+      </div>
+      <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 space-y-1.5">
+        <button id="bw-start-btn" type="button" class="btn w-full py-3.5 text-base bg-lavender-500 hover:bg-lavender-600 text-white" style="box-shadow:0 6px 14px -6px rgba(139,92,246,.45)">Start Workout</button>
+        <p class="text-center text-[11px] text-slate-400">You can edit the order before starting.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -4247,23 +4336,250 @@ document.getElementById('sw-close').addEventListener('click', closeStartWorkoutC
 document.getElementById('sw-group-btn').addEventListener('click', () => { closeStartWorkoutChoice(); openGroupPicker(); });
 document.getElementById('sw-build-btn').addEventListener('click', () => { closeStartWorkoutChoice(); openBuildTodaysWorkout(); });
 
+// ── Build Today's Workout: two-step picker + review ─────────────────────────
 // Builds a one-off session from freely-chosen exercises instead of a saved
-// group, without duplicating any workout logic: this is the exact same
-// openMultiExercisePicker() -> startQuickWorkout(ids) pair the Calendar's
-// "Quick Workout, today" entry point already uses, so a session started this
-// way is indistinguishable from any other Quick Workout (sessionType:
-// 'quick') to every downstream system — guided flow, Double Progression,
-// history, resume, and the "Save this as a Workout Group?" prompt that
-// already fires for any completed Quick Workout (see openSaveAsGroupPrompt(),
-// called unconditionally when sessionType === 'quick' in finish-save-btn's
-// handler — nothing new needed there).
+// group, without duplicating any workout logic: every path through this
+// modal ends by calling the exact same startQuickWorkout(ids) the Calendar's
+// own "Quick Workout, today" entry point already uses (see bw-start-btn
+// below), so a session started this way is a normal Quick Workout
+// (sessionType: 'quick') to every downstream system — guided flow, Double
+// Progression, history, resume, and the "Save this as a Workout Group?"
+// prompt that already fires for any completed Quick Workout (see
+// openSaveAsGroupPrompt(), called unconditionally when sessionType ===
+// 'quick' in finish-save-btn's handler — nothing new needed there). This
+// entire file only holds display state (selection, order, search, filter) —
+// none of it is read by the workout engine itself.
+let buildTodaySelectedIds = [];
+let buildTodayFilter = '';
+
 function openBuildTodaysWorkout() {
-  openMultiExercisePicker({
-    title: "Build Today's Workout", subtitle: 'Choose the exercises you want to do today.',
-    confirmLabel: 'Start Workout',
-    onConfirm: async ids => { startQuickWorkout(ids); }
+  buildTodaySelectedIds = [];
+  buildTodayFilter = '';
+  document.getElementById('bw-search').value = '';
+  renderBwFilterChips();
+  renderBwRecent();
+  renderBwList('');
+  updateBwBottomBar();
+  showBwStep(1);
+  document.getElementById('build-workout-modal').style.display = '';
+}
+function closeBuildWorkout() { document.getElementById('build-workout-modal').style.display = 'none'; }
+function showBwStep(n) {
+  document.getElementById('bw-step1').style.display = n === 1 ? 'flex' : 'none';
+  document.getElementById('bw-step2').style.display = n === 2 ? 'flex' : 'none';
+}
+
+// Uses the exercise's own real muscleGroup, not the mockup's Push/Pull split
+// — this app's exercise data has no push/pull classification, and inventing
+// one from the name/equipment would be a guess dressed up as a filter.
+const BW_FILTERS = [
+  { key: '', label: 'All' },
+  { key: 'upper', label: 'Upper Body' },
+  { key: 'lower', label: 'Lower Body' },
+  { key: 'core', label: 'Core' },
+  { key: 'full', label: 'Full Body' },
+  { key: 'cardio', label: 'Cardio' },
+  { key: 'mobility', label: 'Mobility' }
+];
+function renderBwFilterChips() {
+  const wrap = document.getElementById('bw-filter-chips');
+  wrap.innerHTML = BW_FILTERS.map(f => `
+    <button type="button" class="bw-filter-chip flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${f.key === buildTodayFilter ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-key="${f.key}" aria-pressed="${f.key === buildTodayFilter}">${f.label}</button>`).join('');
+  wrap.querySelectorAll('.bw-filter-chip').forEach(chip => chip.addEventListener('click', () => {
+    buildTodayFilter = chip.dataset.key;
+    renderBwFilterChips();
+    renderBwList(document.getElementById('bw-search').value);
+  }));
+}
+
+// Most recently used exercises, newest first, deduplicated — a quick way
+// back into exercises the user already knows without typing a search.
+function getRecentlyUsedExerciseIds(limit = 6) {
+  const seen = new Set(); const ids = [];
+  Object.keys(sessions).sort().reverse().forEach(date => {
+    Object.values(sessions[date] || {}).forEach(s => {
+      (s.exercises || []).forEach(ex => {
+        if (!ex.exerciseId || ex.skipped || seen.has(ex.exerciseId) || !exercises[ex.exerciseId] || exercises[ex.exerciseId].archived) return;
+        seen.add(ex.exerciseId); ids.push(ex.exerciseId);
+      });
+    });
+  });
+  return ids.slice(0, limit);
+}
+function renderBwRecent() {
+  const ids = getRecentlyUsedExerciseIds(6);
+  const wrap = document.getElementById('bw-recent-wrap');
+  if (!ids.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  document.getElementById('bw-recent-list').innerHTML = ids.map(id => {
+    const ex = exercises[id];
+    const selected = buildTodaySelectedIds.includes(id);
+    return `
+      <button type="button" class="bw-recent-pill flex-shrink-0 px-3.5 py-2 rounded-xl border text-left transition-all ${selected ? 'border-lavender-400 bg-lavender-50 dark:bg-lavender-950/20 text-lavender-600 dark:text-lavender-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}" data-id="${id}" aria-pressed="${selected}">
+        <p class="text-xs font-semibold">${esc(ex.name)}</p>
+        <p class="text-[10px] text-slate-400">${esc(ex.equipment || MG_LABEL[ex.muscleGroup] || '')}</p>
+      </button>`;
+  }).join('');
+  document.querySelectorAll('#bw-recent-list .bw-recent-pill').forEach(b => b.addEventListener('click', () => toggleBwSelection(b.dataset.id)));
+}
+
+function toggleBwSelection(id) {
+  const idx = buildTodaySelectedIds.indexOf(id);
+  if (idx === -1) buildTodaySelectedIds.push(id); else buildTodaySelectedIds.splice(idx, 1);
+  renderBwRecent();
+  renderBwList(document.getElementById('bw-search').value);
+  updateBwBottomBar();
+}
+
+function bwSelectionIcon(selected) {
+  return selected
+    ? `<span class="ms text-2xl text-lavender-500" style="font-variation-settings:'FILL' 1" aria-hidden="true">check_circle</span>`
+    : `<span class="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 block" aria-hidden="true"></span>`;
+}
+function bwLastPerformanceLine(exerciseId) {
+  const last = getLastLoggedSets(exerciseId);
+  const reps = last?.sets?.[0]?.reps;
+  if (!last || last.weight == null || !reps) return null;
+  return `Last: ${last.weight} ${last.unit || 'kg'} × ${reps}`;
+}
+
+function renderBwList(q) {
+  const list = document.getElementById('bw-list');
+  const query = (q || '').toLowerCase();
+  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived
+    && (!query || ex.name?.toLowerCase().includes(query))
+    && (!buildTodayFilter || ex.muscleGroup === buildTodayFilter));
+  if (!items.length) {
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${Object.keys(exercises).length ? 'No exercises match your search.' : 'No exercises yet — create one from Workout → Exercises first.'}</p>`;
+    return;
+  }
+  list.innerHTML = items.map(([id, ex]) => {
+    const selected = buildTodaySelectedIds.includes(id);
+    const meta = [MG_LABEL[ex.muscleGroup] || ex.muscleGroup, ex.equipment].filter(Boolean).join(' • ');
+    const last = bwLastPerformanceLine(id);
+    return `
+      <div class="bw-ex-card card w-full flex items-center justify-between gap-3 p-3.5 cursor-pointer transition-all ${selected ? 'border-lavender-400 dark:border-lavender-500 bg-lavender-50/70 dark:bg-lavender-950/20' : ''}" data-id="${id}" role="button" tabindex="0" aria-pressed="${selected}" aria-label="${esc(ex.name)}${selected ? ', selected' : ''}">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-slate-800 dark:text-white">${esc(ex.name)}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${meta}</p>
+          ${last ? `<p class="text-xs text-lavender-600 dark:text-lavender-400 font-medium mt-0.5">${esc(last)}</p>` : ''}
+        </div>
+        <span class="flex-shrink-0">${bwSelectionIcon(selected)}</span>
+      </div>`;
+  }).join('');
+  list.querySelectorAll('.bw-ex-card').forEach(card => {
+    card.addEventListener('click', () => toggleBwSelection(card.dataset.id));
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleBwSelection(card.dataset.id); } });
   });
 }
+
+function updateBwBottomBar() {
+  const n = buildTodaySelectedIds.length;
+  document.getElementById('bw-count-label').textContent = `${n} exercise${n!==1?'s':''} selected`;
+  document.getElementById('bw-preview-label').textContent = buildTodaySelectedIds.map(id => exercises[id]?.name).filter(Boolean).join(' • ');
+  document.getElementById('bw-continue-btn').disabled = n === 0;
+}
+
+document.getElementById('bw-search').addEventListener('input', e => renderBwList(e.target.value));
+document.getElementById('bw-close').addEventListener('click', closeBuildWorkout);
+document.getElementById('bw-continue-btn').addEventListener('click', () => {
+  if (!buildTodaySelectedIds.length) return;
+  renderBwReview();
+  showBwStep(2);
+});
+document.getElementById('bw-back-btn').addEventListener('click', () => showBwStep(1));
+document.getElementById('bw-add-more-btn').addEventListener('click', () => showBwStep(1));
+
+// A few fixed, warm messages rotated by day (same "pick by day index" trick
+// ENCOURAGEMENT already uses on the dashboard) — not randomized on every
+// open, so it doesn't feel jittery across a single session.
+const BW_MOTIVATIONS = [
+  { title: "You've got this!", body: "A focused workout, wherever you are. Let's make it count." },
+  { title: 'Ready when you are.', body: "Every exercise here is one you chose. Let's grow." },
+  { title: 'Small steps, real progress.', body: 'A few focused exercises is all it takes today.' }
+];
+function renderBwReview() {
+  const n = buildTodaySelectedIds.length;
+  document.getElementById('bw-review-subtitle').textContent = `${n} exercise${n!==1?'s':''}`;
+  const m = BW_MOTIVATIONS[Math.floor(Date.now() / 86400000) % BW_MOTIVATIONS.length];
+  document.getElementById('bw-motivation-title').textContent = m.title;
+  document.getElementById('bw-motivation-body').textContent = m.body;
+  renderBwReviewList();
+}
+
+function renderBwReviewList() {
+  const wrap = document.getElementById('bw-review-list');
+  wrap.innerHTML = buildTodaySelectedIds.map((id, i) => {
+    const ex = exercises[id];
+    if (!ex) return '';
+    const meta = [MG_LABEL[ex.muscleGroup] || ex.muscleGroup, ex.equipment].filter(Boolean).join(' • ');
+    const last = bwLastPerformanceLine(id);
+    return `
+      <div class="bw-review-card card flex items-center gap-3 p-3.5" data-id="${id}" data-idx="${i}">
+        <span class="w-8 h-8 rounded-full bg-lavender-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0" aria-hidden="true">${i+1}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-800 dark:text-white">${esc(ex.name)}</p>
+          <p class="text-xs text-slate-400">${meta}</p>
+          ${last ? `<p class="text-xs text-lavender-600 dark:text-lavender-400 font-medium mt-0.5">${esc(last)}</p>` : ''}
+        </div>
+        <button type="button" class="bw-drag-handle p-1.5 text-slate-300 dark:text-slate-600 flex-shrink-0" style="touch-action:none;cursor:grab" aria-label="Reorder ${esc(ex.name)}" data-idx="${i}"><span class="ms text-lg" aria-hidden="true">drag_indicator</span></button>
+        <button type="button" class="bw-remove-btn p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" aria-label="Remove ${esc(ex.name)}" data-idx="${i}"><span class="ms text-lg" aria-hidden="true">close</span></button>
+      </div>`;
+  }).join('');
+  wrap.querySelectorAll('.bw-remove-btn').forEach(b => b.addEventListener('click', () => {
+    buildTodaySelectedIds.splice(+b.dataset.idx, 1);
+    renderBwReview();
+  }));
+  wireBwDragHandles();
+}
+
+// Press-and-drag reordering via Pointer Events (not HTML5 drag-and-drop,
+// which has unreliable touch support on mobile Safari) — works the same way
+// for mouse and touch. Only reorders the in-memory buildTodaySelectedIds
+// array; nothing is persisted until "Start Workout" hands it to
+// startQuickWorkout().
+let bwDragState = null;
+function wireBwDragHandles() {
+  document.querySelectorAll('.bw-drag-handle').forEach(handle => {
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const card = handle.closest('.bw-review-card');
+      const cards = [...document.getElementById('bw-review-list').querySelectorAll('.bw-review-card')];
+      bwDragState = { startY: e.clientY, fromIdx: +card.dataset.idx, hoverIdx: +card.dataset.idx, card, cards };
+      card.style.position = 'relative'; card.style.zIndex = '10'; card.style.boxShadow = '0 8px 20px -6px rgba(0,0,0,.25)';
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener('pointermove', e => {
+      if (!bwDragState) return;
+      const dy = e.clientY - bwDragState.startY;
+      bwDragState.card.style.transform = `translateY(${dy}px)`;
+      let newIdx = bwDragState.fromIdx;
+      bwDragState.cards.forEach((c, i) => {
+        if (c === bwDragState.card) return;
+        const r = c.getBoundingClientRect();
+        if (e.clientY > r.top && e.clientY < r.bottom) newIdx = i;
+      });
+      bwDragState.hoverIdx = newIdx;
+    });
+    handle.addEventListener('pointerup', () => {
+      if (!bwDragState) return;
+      const { fromIdx, hoverIdx, card } = bwDragState;
+      card.style.transform = ''; card.style.position = ''; card.style.zIndex = ''; card.style.boxShadow = '';
+      bwDragState = null;
+      if (hoverIdx !== fromIdx) {
+        const [moved] = buildTodaySelectedIds.splice(fromIdx, 1);
+        buildTodaySelectedIds.splice(hoverIdx, 0, moved);
+        renderBwReviewList();
+      }
+    });
+  });
+}
+
+document.getElementById('bw-start-btn').addEventListener('click', () => {
+  if (!buildTodaySelectedIds.length) return;
+  closeBuildWorkout();
+  startQuickWorkout(buildTodaySelectedIds);
+});
 
 function closeGroupPicker() { document.getElementById('group-picker-modal').style.display = 'none'; }
 
