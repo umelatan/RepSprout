@@ -278,6 +278,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <div id="plant-emoji" class="relative text-[10rem] leading-none p-hero-float" aria-hidden="true">🌱</div>
 
         <div class="relative space-y-0.5 -mt-1">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Your Companion</p>
           <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white" id="plant-name-label"></p>
           <p id="plant-subtitle-label" class="text-xs text-slate-500 dark:text-slate-400"></p>
         </div>
@@ -290,9 +291,20 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <div id="dash-hero-body" class="relative space-y-2 pt-2">
           <span id="plant-level-label" class="inline-block text-[11px] font-bold rounded-full px-2.5 py-0.5"></span>
           <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
-          <div class="text-left max-w-xs mx-auto px-2 pt-1">
+
+          <!-- Shown only once this Companion has fully bloomed and the user
+               hasn't chosen a next one yet — replaces the in-progress Care
+               bar (there's no "next stage" to show a bloomed plant working
+               toward). See renderPlantHero() / openChooseCompanionModal(). -->
+          <div id="dash-hero-bloomed" style="display:none" class="max-w-xs mx-auto px-2 pt-1 space-y-2">
+            <p class="text-xs text-slate-500 dark:text-slate-400">It now lives in your Garden forever. A new chapter is ready to grow.</p>
+            <button id="dash-choose-companion-btn" type="button" class="btn btn-green text-sm px-4 py-2 w-full">Choose next companion</button>
+          </div>
+
+          <div id="dash-hero-progress" class="text-left max-w-xs mx-auto px-2 pt-1">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Companion Care</p>
             <p id="growth-pct-label" class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"></p>
-            <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Growth progress toward next leaf">
+            <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Companion Care progress toward next stage">
               <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
             </div>
             <p id="growth-next-label" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
@@ -412,11 +424,20 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <!-- GARDEN / PROFILE -->
     <section id="profile-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
       <div class="card p-6 text-center space-y-2">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active Companion</p>
         <div id="profile-plant-emoji" class="text-6xl p-bloom">🌱</div>
         <p id="profile-plant-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
         <p id="profile-plant-status" class="text-sm text-slate-400"></p>
         <p id="profile-plant-stage" class="text-xs font-semibold text-brand-500"></p>
+        <button id="profile-choose-companion-btn" type="button" style="display:none" class="btn btn-green text-sm px-4 py-2 mt-1">Choose next companion</button>
         <p class="text-xs text-slate-400 pt-2">🌐 Garden sharing with friends — <span class="text-brand-500 font-semibold">coming soon</span></p>
+      </div>
+
+      <!-- Permanent collection — every Companion that has ever fully bloomed.
+           Populated only by completeCompanionBloom(); see renderCollectedCompanions(). -->
+      <div id="profile-collected-wrap" style="display:none" class="card p-4 space-y-3">
+        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Bloomed Companions</h3>
+        <div id="profile-collected-list" class="grid grid-cols-2 gap-2"></div>
       </div>
 
       <div class="card p-4 space-y-3">
@@ -555,6 +576,20 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_4</span>Moving that set to a heavier weight matures its leaf.</li>
       <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_5</span>Once every set's leaf has matured, the plant evolves to its next stage and a new cycle begins.</li>
     </ul>
+  </div>
+</div>
+
+<!-- "Choose next companion" — shown once the active Companion has fully
+     bloomed. Not a random/gacha pick: the same five species onboarding
+     offers, always fully visible, no locking. See selectNextCompanion(). -->
+<div id="choose-companion-modal" style="display:none" class="fixed inset-0 z-[78] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Choose your next companion</h3>
+      <button id="choose-companion-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <p id="choose-companion-subtitle" class="text-xs text-slate-400"></p>
+    <div id="choose-companion-list" class="space-y-2"></div>
   </div>
 </div>
 
@@ -1055,7 +1090,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <div id="finish-recommendations" class="space-y-2"></div>
 
     <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center justify-between">
-      <span class="text-xs font-semibold text-brand-600 dark:text-brand-300">Plant reward</span>
+      <span class="text-xs font-semibold text-brand-600 dark:text-brand-300">Companion Care</span>
       <span id="finish-growth-reward" class="text-base font-extrabold text-brand-600 dark:text-brand-400"></span>
     </div>
 
@@ -1349,7 +1384,7 @@ const db   = getDatabase(app);
 const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {};
+let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, collectedCompanions = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'groups';
 let dataRefs = [];
@@ -1514,28 +1549,34 @@ const GROWTH_POINTS_FOR_BLOOM = 100;
 // a known asset gap in the implementation summary, not hidden.
 const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
 
-// Participation vs. strength-progress point values. Participation rewards
-// simply showing up; the larger strength-progress values only fire when
-// nextProgression() (the legacy exercise-level ratchet — still powers the
-// Exercise Library "Ready to increase" badge and Home's Closest Progress
-// widget, unchanged) reports a genuine milestone. Tune freely; nothing else
-// depends on these exact numbers.
+// ── Three connected but distinct plant systems ──────────────────────────────
+// 1. COMPANION PLANT (this section, GROWTH_AWARD/recalculatePlantGrowth/
+//    getPlantGrowthState below) — the Home hero. Represents overall care and
+//    consistency: Move (any completed movement activity), Recover
+//    (intentional rest), Show Up (participation). Never reads strength
+//    performance or Double Progression data.
+// 2. EXERCISE PLANTS (calculateExerciseDoubleProgression(), DoubleProgressionStrategy,
+//    the Exercise Progress Detail page) — one per Double-Progression-enabled
+//    exercise, entirely self-contained, grows only from that exercise's own
+//    working-set weight progression. Never reads growthPoints/Companion state.
+// 3. GARDEN COLLECTION (collectedCompanions/{uid}, ensureCompanionRecord(),
+//    completeCompanionBloom()) — permanent record of every Companion Plant
+//    that has fully bloomed. Populated only by #1 blooming, never by #2.
+// These three never derive from one shared generic "growth number," and nothing
+// here increments any of them independently of its own engine — see each
+// system's own recalculate function for its single source of truth.
+
+// Companion Care point values — Move/Recover/Show-Up participation only.
+// Deliberately contains nothing strength-performance-related: no rep
+// improvement, no "ready to increase," no weight-unlock, no Double
+// Progression leaf/cycle data. Those live entirely inside the Exercise Plant
+// system (the legacy exercise-level ratchet's weightUpFlag badge and
+// calculateExerciseDoubleProgression()), which never reads growthPoints and
+// is never read by it. Tune freely; nothing else depends on these exact numbers.
 const GROWTH_AWARD = {
   completedWorkingSet: 0.4,
   completedExercise: 0.6,
-  completedWorkout: 2,
-  improvedReps: 3,       // beat the previous comparable session's total reps
-  readyToIncrease: 8,     // nextProgression() reports weightUp — maxed every target set
-  newWeightCompleted: 8,  // this session's weight is higher than last time AND fully completed
-  // Double Progression's own, separately-labeled category (see
-  // calculateExerciseDoubleProgression()): every one of an exercise's
-  // planned working sets independently moved to a higher weight within the
-  // current plant-stage cycle. Sized to one full stage width
-  // (GROWTH_STAGE_THRESHOLDS are 20 apart) so completing a leaf cycle
-  // reliably carries the plant into its next stage on its own, without
-  // double-counting readyToIncrease/newWeightCompleted above (those still
-  // fire too, independently, from the legacy exercise-level ratchet).
-  allSetsProgressed: 20
+  completedWorkout: 2
 };
 
 // ── The single source of truth for plant growth state ───────────────────────
@@ -1606,11 +1647,27 @@ function currentGrowthState() {
 //
 // Canonical source of truth: `sessions/{uid}/{date}/{id}` — the exact same
 // records History, the Calendar day sheet, streaks, and Closest Progress
-// already treat as canonical. Nothing else (not growthEvents, not a cached
-// total) is ever consulted to compute the number itself.
+// already treat as canonical. Nothing else (not companionCareEvents, not a
+// cached total) is ever consulted to compute the number itself.
+//
+// Deliberately does NOT read Double Progression (calculateExerciseDoubleProgression())
+// or the legacy exercise-level ratchet (nextProgression()/weightUpFlag) —
+// those are strength-performance signals that belong entirely to the
+// Exercise Plant system. A completed session contributes Companion Care
+// purely for having happened (Move/Recover participation), regardless of
+// what weight, reps, or progression state any exercise inside it was at.
+//
+// Scoped to the ACTIVE companion's own journey: sessions dated before
+// userProfile.companion.startedAt (a previous companion's era) or after
+// today (nothing future-dated) never contribute. This is what makes
+// selectNextCompanion() a clean "start a new journey" rather than needing to
+// reset/delete anything — moving startedAt forward is the entire mechanism.
 function recalculatePlantGrowth() {
+  const companionStartedAt = userProfile.companion?.startedAt || '';
+  const today = todayStr();
   const allSessions = [];
   Object.entries(sessions).forEach(([date, daySessions]) => {
+    if (date > today || date < companionStartedAt) return;
     Object.entries(daySessions || {}).forEach(([id, s]) => { if (s) allSessions.push({ date, id, session: s }); });
   });
   // Chronological by the date the activity is attributed to (matching
@@ -1620,94 +1677,35 @@ function recalculatePlantGrowth() {
     ? (a.session.completedAt || 0) - (b.session.completedAt || 0)
     : a.date.localeCompare(b.date));
 
-  // Walking simulation of "what getLastLoggedSets()/exercises[id].weightUpFlag
-  // would have reported at this point in time, given only the sessions that
-  // still exist" — replacing the live global lookups computeWorkoutGrowth()
-  // uses at save-time, which only ever reflect the CURRENT moment, not a
-  // specific point in a replayed timeline.
-  const lastSeenByExercise = {};    // exerciseId -> { weight, sets:[{reps}] }
-  const readyToIncreaseByExercise = {}; // exerciseId -> boolean
-
-  // Double Progression's own award category, computed once per exercise (not
-  // per session) via calculateExerciseDoubleProgression()'s own independent
-  // history walk, then attributed back to whichever session each
-  // all_sets_progressed milestone actually happened in. Clearly separate
-  // from participation/repProgress/weightUnlock above — see GROWTH_AWARD.
-  // allSetsProgressed's comment for why this doesn't double-count the
-  // legacy exercise-level readyToIncrease/newWeightCompleted awards.
-  const allSetsProgressedBySession = {}; // sessionId -> bonus points
-  Object.keys(exercises).forEach(exerciseId => {
-    const events = calculateExerciseDoubleProgression(exerciseId).events;
-    events.filter(e => e.eventType === 'all_sets_progressed').forEach(e => {
-      allSetsProgressedBySession[e.workoutSessionId] = round1((allSetsProgressedBySession[e.workoutSessionId] || 0) + GROWTH_AWARD.allSetsProgressed);
-    });
-  });
-
   let total = 0;
   const perSession = [];
 
   for (const { date, id, session: s } of allSessions) {
-    let participation = 0, repProgress = 0, weightUnlock = 0;
-    let allSetsProgressed = allSetsProgressedBySession[id] || 0;
+    let careValue = 0, pillar = null;
 
     if (s.sessionType === 'recovery') {
-      participation = RECOVERY_DAY_GROWTH;
+      careValue = RECOVERY_DAY_GROWTH; pillar = 'recover';
     } else if (s.sessionType === 'other') {
-      participation = OTHER_ACTIVITY_GROWTH;
+      careValue = OTHER_ACTIVITY_GROWTH; pillar = 'move';
     } else {
-      // group or quick — a strength session with an exercise/set breakdown.
+      // group or quick — a strength session. Only whether working sets were
+      // completed matters here; weight/reps/progression are never consulted.
       let anyWorkingSetCompleted = false;
       for (const ex of (s.exercises || [])) {
         if (ex.skipped) continue;
-        const workingSets = workingSetsFor(ex);
-        const completedWorkingSets = workingSets.filter(st => st.completed).length;
+        const completedWorkingSets = workingSetsFor(ex).filter(st => st.completed).length;
         if (completedWorkingSets > 0) {
           anyWorkingSetCompleted = true;
-          participation += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise;
+          careValue += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise;
         }
-        if (!ex.exerciseId || ex.progressionEnabled === false) continue;
-        if (!workingSets.length || !workingSets.every(st => st.completed)) continue;
-
-        // Older saved sessions (before minReps/maxReps started being
-        // snapshotted per session) fall back to the exercise's CURRENT
-        // rep range — a documented, unavoidable limitation for that history,
-        // not a bug: the original range was never persisted alongside them.
-        const exDef = exercises[ex.exerciseId] || {};
-        const minReps = ex.minReps ?? exDef.minReps ?? 8;
-        const maxReps = ex.maxReps ?? exDef.maxReps ?? 12;
-        const completedReps = workingSets.map(st => st.reps || 0);
-        const targetReps = (ex.targetReps || []).slice(0, completedReps.length);
-
-        if (completedReps.some(r => r < minReps)) {
-          lastSeenByExercise[ex.exerciseId] = { weight: ex.weight, sets: workingSets };
-          continue; // below target range — no strength bonus, but still "the last time this was done"
-        }
-
-        const { weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
-        const wasReadyToIncrease = !!readyToIncreaseByExercise[ex.exerciseId];
-        const previous = lastSeenByExercise[ex.exerciseId];
-        const previousTotalReps = previous ? previous.sets.reduce((sum, st) => sum + (st.reps || 0), 0) : null;
-        const currentTotalReps = completedReps.reduce((sum, r) => sum + r, 0);
-
-        if (wasReadyToIncrease && previous && ex.weight > (previous.weight || 0)) {
-          weightUnlock += GROWTH_AWARD.newWeightCompleted;
-        } else if (weightUp) {
-          repProgress += GROWTH_AWARD.readyToIncrease;
-        } else if (previousTotalReps != null && currentTotalReps > previousTotalReps) {
-          repProgress += GROWTH_AWARD.improvedReps;
-        }
-
-        lastSeenByExercise[ex.exerciseId] = { weight: ex.weight, sets: workingSets };
-        readyToIncreaseByExercise[ex.exerciseId] = weightUp;
       }
-      if (anyWorkingSetCompleted) participation += GROWTH_AWARD.completedWorkout;
+      if (anyWorkingSetCompleted) { careValue += GROWTH_AWARD.completedWorkout; pillar = 'move'; }
     }
 
-    participation = round1(participation); repProgress = round1(repProgress); weightUnlock = round1(weightUnlock); allSetsProgressed = round1(allSetsProgressed);
-    const totalGrowthAwarded = round1(participation + repProgress + weightUnlock + allSetsProgressed);
-    total = round1(total + totalGrowthAwarded);
-    if (totalGrowthAwarded > 0) {
-      perSession.push({ date, id, participationGrowth: participation, repProgressGrowth: repProgress, weightUnlockGrowth: weightUnlock, allSetsProgressedGrowth: allSetsProgressed, totalGrowthAwarded });
+    careValue = round1(careValue);
+    total = round1(total + careValue);
+    if (careValue > 0) {
+      perSession.push({ date, id, careValue, pillar, eventType: pillar === 'recover' ? 'recovery_completed' : 'movement_completed' });
     }
   }
 
@@ -1717,6 +1715,11 @@ function recalculatePlantGrowth() {
 // The only function that writes users/{uid}/growthPoints. Called after
 // every mutation that can change growth (add, edit, delete, restore) instead
 // of adding/subtracting a delta — see recalculatePlantGrowth() above for why.
+// Also the single place bloom is detected: every growth-changing path in the
+// app funnels through here, so checking "did the active Companion just
+// reach full bloom" once, right here, is what guarantees
+// completeCompanionBloom() can never be missed by some call site that
+// forgot to check — see the Companion Growth Engine note at GROWTH_AWARD.
 async function recalculateAndPersistPlantGrowth() {
   const previousGrowth = currentGrowthState();
   const { totalGrowthPoints, perSession } = recalculatePlantGrowth();
@@ -1728,26 +1731,95 @@ async function recalculateAndPersistPlantGrowth() {
   // behind, and recalculatePlantGrowth() never reads this back in.
   syncGrowthEvents(perSession).catch(e => console.error('Failed to sync growth event audit trail:', e));
   syncDoubleProgressionEvents().catch(e => console.error('Failed to sync Double Progression event audit trail:', e));
+  if (newGrowth.isFinalStage && userProfile.companion && userProfile.companion.status !== 'bloomed') {
+    await completeCompanionBloom().catch(e => console.error('Failed to complete Companion bloom:', e));
+  }
   return { previousGrowth, newGrowth };
 }
 
+// ── Companion bloom → Garden collection ─────────────────────────────────────
+// Idempotent via companion.status: a duplicate save or recalculation can
+// never write a second collectedCompanions record for the same journey,
+// because the guard in recalculateAndPersistPlantGrowth() above only calls
+// this once status flips away from 'growing'. Never deletes or overwrites a
+// PRIOR collected companion — each bloom gets its own record, keyed by that
+// journey's own companion.id.
+async function completeCompanionBloom() {
+  const companion = userProfile.companion;
+  if (!companion || companion.status === 'bloomed') return;
+  const bloomedAt = todayStr();
+  const record = {
+    id: companion.id, speciesId: companion.speciesId,
+    startedAt: companion.startedAt, bloomedAt,
+    // A real count from this journey's own Companion Care history, not a
+    // guess — recalculatePlantGrowth() already scopes its replay to
+    // [companion.startedAt, today], which is exactly this companion's era.
+    activitiesCompletedDuringJourney: recalculatePlantGrowth().perSession.length
+  };
+  await addBloomedCompanionToGarden(record);
+  const bloomedCompanion = { ...companion, status: 'bloomed', bloomedAt };
+  userProfile.companion = bloomedCompanion; // optimistic; onValue confirms shortly after
+  await set(ref(db, `users/${uid()}/companion`), bloomedCompanion);
+}
+
+async function addBloomedCompanionToGarden(record) {
+  await set(ref(db, `users/${uid()}/collectedCompanions/${record.id}`), record);
+}
+
+function getCollectedCompanions() {
+  return Object.values(collectedCompanions).sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || ''));
+}
+
+function getActiveCompanion() {
+  return userProfile.companion || null;
+}
+
+// Starts a fresh Companion journey. A new id/startedAt/status is the entire
+// mechanism — recalculatePlantGrowth()'s startedAt-scoped replay naturally
+// stops counting older sessions toward this new companion without touching
+// any session data or the previous companion's now-permanent Garden record
+// (see completeCompanionBloom() above, which already ran before this is
+// ever reachable from the UI).
+async function selectNextCompanion(speciesId) {
+  if (!PLANTS[speciesId]) return;
+  const companion = {
+    id: push(ref(db, `users/${uid()}/companion`)).key,
+    speciesId, startedAt: todayStr(), status: 'growing', bloomedAt: null
+  };
+  userProfile.companion = companion;
+  userProfile.plant = speciesId;
+  userProfile.growthPoints = 0;
+  await set(ref(db, `users/${uid()}/companion`), companion);
+  await set(ref(db, `users/${uid()}/plant`), speciesId);
+  await set(ref(db, `users/${uid()}/growthPoints`), 0);
+  renderDashboard(); renderProfile();
+}
+
+// Companion Care audit trail — regenerated wholesale from the same replay
+// every time (never read back in by recalculatePlantGrowth() itself), so a
+// session that's since been edited or deleted can never leave a stale event
+// behind. Deterministic id (companionPlantId + eventType + sourceType +
+// sourceId) is what makes this idempotent: recalculating twice in a row
+// always produces byte-identical records, never a duplicate award.
 async function syncGrowthEvents(perSession) {
+  const companionId = userProfile.companion?.id || 'legacy';
   const events = {};
   for (const p of perSession) {
-    events[p.id] = {
-      sourceType: 'session', sourceId: p.id, date: p.date,
-      participationGrowth: p.participationGrowth, repProgressGrowth: p.repProgressGrowth,
-      weightUnlockGrowth: p.weightUnlockGrowth, allSetsProgressedGrowth: p.allSetsProgressedGrowth || 0,
-      totalGrowthAwarded: p.totalGrowthAwarded,
-      active: true, createdAt: Date.now()
+    const id = `${companionId}_${p.eventType}_session_${p.id}`;
+    events[id] = {
+      id, userId: uid(), companionPlantId: companionId,
+      eventType: p.eventType, sourceType: 'session', sourceId: p.id,
+      careValue: p.careValue, occurredAt: p.date, metadata: { pillar: p.pillar },
+      createdAt: Date.now()
     };
   }
-  await set(ref(db, `users/${uid()}/growthEvents`), events);
+  await set(ref(db, `users/${uid()}/companionCareEvents`), events);
 }
 
 // Double Progression's own structured-event audit trail, kept separate from
-// the session-level growthEvents above (different shape: per set-position,
-// not per session). Same "regenerate wholesale from current history, then
+// the Companion Care companionCareEvents above (different shape: per
+// set-position, not per session — and a different plant system entirely).
+// Same "regenerate wholesale from current history, then
 // overwrite" pattern, keyed by calculateExerciseDoubleProgression()'s
 // deterministic event ids — so a duplicate save or an idle re-recalculation
 // can never award (or record) the same leaf/cycle milestone twice. Never
@@ -2242,15 +2314,19 @@ function getLastLoggedSets(exerciseId) {
   return null;
 }
 
-// Pure — computes how much plant growth a completed (not-yet-saved) workout
-// is worth, plus the per-exercise progression updates the caller should
-// persist. Reuses nextProgression()'s own weightUp/reps result for every
-// strength-progress decision; never re-derives the increase/hold call
-// independently. Safe to call twice (finish-summary preview + the real
-// save) since it has no side effects of its own — see finish-save-btn.
+// Pure — computes this workout's Companion Care contribution (participation
+// only: completed working sets/exercises/workout — never rep improvement,
+// "ready to increase," or a weight unlock, which are strength-performance
+// signals that belong to the Exercise Plant system, not the Companion),
+// plus the per-exercise legacy-ratchet updates (targetReps/weightUpFlag/
+// currentWeight — still powers the Exercise Library "Ready to increase"
+// badge and Home's Closest Progress widget) the caller should persist.
+// Reuses nextProgression()'s own weightUp/reps result for that ratchet
+// update; never re-derives the increase/hold call independently. Safe to
+// call twice (finish-summary preview + the real save) since it has no side
+// effects of its own — see finish-save-btn.
 function computeWorkoutGrowth(sessionExercises) {
-  let participationGrowth = 0, repProgressGrowth = 0, weightUnlockGrowth = 0;
-  const growthDetail = [];
+  let participationGrowth = 0;
   const perExerciseUpdates = [];
   let anyWorkingSetCompleted = false;
 
@@ -2273,34 +2349,15 @@ function computeWorkoutGrowth(sessionExercises) {
     const minReps = ex.minReps ?? 8, maxReps = ex.maxReps ?? 12;
     const completedReps = input.sets.map(s => s.reps || 0);
     const targetReps = input.targetReps;
-    if (completedReps.some(r => r < minReps)) continue; // below target range — no strength bonus
+    if (completedReps.some(r => r < minReps)) continue; // below target range
 
     const { reps: nextReps, weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
     perExerciseUpdates.push({ exerciseId: ex.exerciseId, targetReps: nextReps, weightUp, weight: ex.weight });
-
-    const wasReadyToIncrease = !!exercises[ex.exerciseId]?.weightUpFlag;
-    const previous = getLastLoggedSets(ex.exerciseId);
-    const previousTotalReps = previous ? previous.sets.reduce((s,r) => s + (r.reps||0), 0) : null;
-    const currentTotalReps = completedReps.reduce((s,r) => s+r, 0);
-
-    if (wasReadyToIncrease && previous && ex.weight > (previous.weight || 0)) {
-      weightUnlockGrowth += GROWTH_AWARD.newWeightCompleted;
-      growthDetail.push({ exerciseId: ex.exerciseId, name: ex.name, category: 'newWeightCompleted', points: GROWTH_AWARD.newWeightCompleted });
-    } else if (weightUp) {
-      repProgressGrowth += GROWTH_AWARD.readyToIncrease;
-      growthDetail.push({ exerciseId: ex.exerciseId, name: ex.name, category: 'readyToIncrease', points: GROWTH_AWARD.readyToIncrease });
-    } else if (previousTotalReps != null && currentTotalReps > previousTotalReps) {
-      repProgressGrowth += GROWTH_AWARD.improvedReps;
-      growthDetail.push({ exerciseId: ex.exerciseId, name: ex.name, category: 'improvedReps', points: GROWTH_AWARD.improvedReps });
-    }
   }
   if (anyWorkingSetCompleted) participationGrowth += GROWTH_AWARD.completedWorkout;
 
   participationGrowth = round1(participationGrowth);
-  repProgressGrowth = round1(repProgressGrowth);
-  weightUnlockGrowth = round1(weightUnlockGrowth);
-  const totalGrowthAwarded = round1(participationGrowth + repProgressGrowth + weightUnlockGrowth);
-  return { participationGrowth, repProgressGrowth, weightUnlockGrowth, totalGrowthAwarded, growthDetail, perExerciseUpdates };
+  return { participationGrowth, totalGrowthAwarded: participationGrowth, perExerciseUpdates };
 }
 
 // ── OpenAI ────────────────────────────────────────────────────────────────
@@ -2413,6 +2470,13 @@ function subscribeData() {
   const rActivities = ref(db, `users/${uid()}/activities`);
   onValue(rActivities, snap => { customActivities = snap.val() || {}; }, e => console.error(e));
   dataRefs.push(rActivities);
+
+  // Garden collection — permanent record of every Companion Plant that has
+  // fully bloomed. Never written to by anything except completeCompanionBloom();
+  // see that function for the single write path.
+  const rCollected = ref(db, `users/${uid()}/collectedCompanions`);
+  onValue(rCollected, snap => { collectedCompanions = snap.val() || {}; renderProfile(); }, e => console.error(e));
+  dataRefs.push(rCollected);
 
   const rProfile = ref(db, `users/${uid()}`);
   onValue(rProfile, snap => {
@@ -2631,6 +2695,16 @@ function renderPlantHero(sessionDates, hasHistory) {
 
   const growth = currentGrowthState();
   levelBadge.textContent = growth.isFinalStage ? `${growth.stageName} 🌸` : `Stage ${growth.currentStage} · ${growth.stageName}`;
+
+  // Once bloomed, there's no "next stage" to show a Care bar working toward —
+  // swap the in-progress bar for the "choose next companion" invitation
+  // instead. The bloomed Companion stays the Home hero (name/emoji/status
+  // above are unaffected) until the user actually picks a new one.
+  const bloomed = userProfile.companion && userProfile.companion.status === 'bloomed';
+  document.getElementById('dash-hero-bloomed').style.display = bloomed ? '' : 'none';
+  document.getElementById('dash-hero-progress').style.display = bloomed ? 'none' : '';
+  if (bloomed) return;
+
   document.getElementById('growth-pct-label').textContent = growth.isFinalStage ? 'Fully bloomed' : `${growth.overallProgressPercent}% grown`;
   const bar = document.getElementById('growth-bar-fill');
   bar.style.width = `${growth.overallProgressPercent}%`;
@@ -2641,14 +2715,18 @@ function renderPlantHero(sessionDates, hasHistory) {
   if (growth.isFinalStage) {
     // Fully bloomed plants stay in their final form permanently (section 16)
     // — extra growth keeps counting toward the pre-existing "leaf" prestige
-    // track instead of a second, disconnected stage system.
+    // track instead of a second, disconnected stage system. (This branch is
+    // unreachable once completeCompanionBloom() has run, since bloomed is
+    // true by then and we've already returned above — it stays here as a
+    // one-render safety net for the instant between reaching 100% and that
+    // write confirming.)
     const inLevel = growth.bonusGrowthPoints % GROWTH_PER_LEVEL;
     const prestigeLevel = Math.floor(growth.bonusGrowthPoints / GROWTH_PER_LEVEL) + 1;
     document.getElementById('growth-next-label').textContent =
-      `Prestige leaf ${prestigeLevel} · ${round1(GROWTH_PER_LEVEL - inLevel)} more growth until the next one 🍃`;
+      `Prestige leaf ${prestigeLevel} · ${round1(GROWTH_PER_LEVEL - inLevel)} more care until the next one 🍃`;
   } else {
     document.getElementById('growth-next-label').textContent =
-      `${growth.remainingToNextStage}% more growth until ${growth.nextStageName}`;
+      `${growth.remainingToNextStage}% more care until ${growth.nextStageName}`;
   }
 }
 
@@ -2749,7 +2827,7 @@ function renderTodayMission() {
       <p class="text-base font-semibold text-slate-700 dark:text-slate-200">Log any workout today</p>
       <div class="flex items-center justify-between">
         <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
-        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>Grows your plant</span>
+        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>Nurtures your companion</span>
       </div>
       <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>
       <div class="flex items-center justify-center gap-4 pt-1 text-xs font-semibold flex-wrap">
@@ -2880,15 +2958,46 @@ function renderGardenPreview() {
       : `background-color:${theme.soft};opacity:.35`;
     const scale = isCurrent ? 'scale-110' : '';
     return `<div class="flex flex-col items-center gap-1.5 ${scale}">
-      <div class="relative w-14 h-14 flex items-end justify-center" role="img" aria-label="${esc(p.name)}${isCurrent ? '' : ', locked'}">
+      <div class="relative w-14 h-14 flex items-end justify-center" role="img" aria-label="${esc(p.name)}${isCurrent ? '' : ', available when you choose your next companion'}">
         <div class="pot-base w-9 h-5" style="${potStyle}"></div>
         <span class="absolute bottom-3 text-2xl ${isCurrent ? 'p-sway' : 'opacity-40 grayscale'}" aria-hidden="true">${isCurrent ? p.emoji : '🌱'}</span>
-        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5" aria-hidden="true">lock</span>' : ''}
+        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5" aria-hidden="true">eco</span>' : ''}
       </div>
       <span class="text-[10px] ${isCurrent ? 'font-semibold' : 'text-slate-400'}" ${isCurrent ? `style="color:${theme.primary}"` : ''} aria-hidden="true">${isCurrent ? p.name : '???'}</span>
     </div>`;
   }).join('');
 }
+
+// Not a random/gacha pick — always the same five defined species, always
+// fully visible, exactly like onboarding's own choice set. Selecting one
+// calls selectNextCompanion(), which is the only thing that ever writes a
+// new active Companion.
+function openChooseCompanionModal() {
+  const active = getActiveCompanion();
+  const bloomedName = active ? (PLANTS[active.speciesId] || {}).name : '';
+  document.getElementById('choose-companion-subtitle').textContent = bloomedName
+    ? `${bloomedName} has fully bloomed and now lives in your Garden forever.`
+    : 'Pick the companion that will grow with you next.';
+  document.getElementById('choose-companion-list').innerHTML = Object.entries(PLANTS).map(([key, p]) => {
+    const theme = PLANT_THEME[key] || DEFAULT_THEME;
+    return `
+      <button type="button" class="choose-companion-opt w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 text-left transition-all" data-species="${key}">
+        <span class="w-11 h-11 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style="background:${theme.soft}" aria-hidden="true">${p.emoji}</span>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(p.name)}</p>
+          <p class="text-xs text-slate-400">${esc(p.desc)}</p>
+        </div>
+      </button>`;
+  }).join('');
+  document.querySelectorAll('.choose-companion-opt').forEach(btn => btn.addEventListener('click', async () => {
+    hide('choose-companion-modal');
+    await selectNextCompanion(btn.dataset.species);
+    showToast('A new chapter is ready to grow.');
+  }));
+  show('choose-companion-modal');
+}
+document.getElementById('choose-companion-close').addEventListener('click', () => hide('choose-companion-modal'));
+document.getElementById('dash-choose-companion-btn').addEventListener('click', openChooseCompanionModal);
 
 function renderRecentWin() {
   const iconEl = document.getElementById('dash-win-icon');
@@ -2903,14 +3012,50 @@ function renderEncouragement() {
   document.getElementById('dash-encouragement').textContent = ENCOURAGEMENT[dayIndex % ENCOURAGEMENT.length];
 }
 
+// ── Companion lifecycle record (migration) ──────────────────────────────────
+// Before this feature shipped, "the plant" was just a bare species key
+// (userProfile.plant) with no journey metadata — no start date, no bloom
+// tracking, no way to tell one companion's era from the next. This
+// synthesizes the missing wrapper exactly once, from the user's existing
+// data: species comes from userProfile.plant (unchanged, still the
+// authoritative "what does the active companion look like" field — nothing
+// about it changes here), startedAt from the earliest session on record (so
+// existing accumulated Companion Care is preserved rather than reset — see
+// recalculatePlantGrowth()'s startedAt-scoped replay). Runs once per page
+// load, same pattern as ensureGrowthConsistency() below. After migration,
+// only selectNextCompanion()/completeCompanionBloom() ever write this.
+let companionRecordChecked = false;
+function ensureCompanionRecord() {
+  if (companionRecordChecked) return;
+  if (userProfile.companion && userProfile.companion.id) { companionRecordChecked = true; return; }
+  // Same "0 could mean not-loaded-yet" ambiguity as ensureGrowthConsistency() —
+  // wait for a real signal before locking in a migrated record.
+  if (!totalLoggedSessions() && userProfile.growthPoints == null) return;
+  companionRecordChecked = true;
+
+  const allDates = Object.keys(sessions).sort();
+  const companion = {
+    id: push(ref(db, `users/${uid()}/companion`)).key,
+    speciesId: userProfile.plant || 'sprout',
+    startedAt: allDates[0] || todayStr(),
+    status: 'growing',
+    bloomedAt: null
+  };
+  userProfile.companion = companion; // optimistic; onValue confirms shortly after
+  set(ref(db, `users/${uid()}/companion`), companion)
+    .catch(e => console.error('Failed to migrate Companion record:', e));
+}
+
 // Repairs two situations with the same fix: a user who has never had
 // growthPoints stored (old accounts from before this existed), and a user
 // whose stored growthPoints no longer matches what recalculatePlantGrowth()
 // derives from their current history (stale from the old add/subtract
-// behavior, or from any past bug). Both are "the stored value disagrees with
-// the canonical records" — recalculating and overwriting is the same repair
-// either way. Runs once per page load; does not touch personality-plant
-// selection or collectible-plant data, only growthPoints/growthEvents.
+// behavior, or from any past bug — including this Companion Care/Exercise
+// Plant separation, which changes what counts). Both are "the stored value
+// disagrees with the canonical records" — recalculating and overwriting is
+// the same repair either way. Runs once per page load; does not touch
+// personality-plant selection or collectible-plant data, only
+// growthPoints/companionCareEvents.
 let growthConsistencyChecked = false;
 function ensureGrowthConsistency() {
   if (growthConsistencyChecked) return;
@@ -2930,6 +3075,7 @@ function ensureGrowthConsistency() {
 }
 
 function renderDashboard() {
+  ensureCompanionRecord();
   ensureGrowthConsistency();
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
@@ -2964,9 +3110,15 @@ function renderProfile() {
   emojiEl.className = `text-6xl ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
   document.getElementById('profile-plant-name').textContent   = `${p.name} — ${hl1}`;
   document.getElementById('profile-plant-status').textContent = hl2;
-  document.getElementById('profile-plant-stage').textContent  = growth.isFinalStage
-    ? 'Fully bloomed 🌸'
-    : `Stage ${growth.currentStage} of ${growth.totalStages} · ${growth.stageName} — ${growth.remainingToNextStage}% to ${growth.nextStageName}`;
+  const bloomed = userProfile.companion && userProfile.companion.status === 'bloomed';
+  document.getElementById('profile-plant-stage').textContent = bloomed
+    ? `Fully bloomed 🌸 — ${fmtDate(userProfile.companion.bloomedAt)}`
+    : growth.isFinalStage
+      ? 'Fully bloomed 🌸'
+      : `Stage ${growth.currentStage} of ${growth.totalStages} · ${growth.stageName} — ${growth.remainingToNextStage}% to ${growth.nextStageName}`;
+  document.getElementById('profile-choose-companion-btn').style.display = bloomed ? '' : 'none';
+
+  renderCollectedCompanions();
 
   if (goals.calories) document.getElementById('goal-cal').value  = goals.calories;
   if (goals.protein)  document.getElementById('goal-pro').value  = goals.protein;
@@ -2979,6 +3131,28 @@ function renderProfile() {
 
   setSettingsRestMode(userProfile.restTimerMode || 'exercise_specific');
   setSettingsRestChip(userProfile.restSeconds || null);
+}
+document.getElementById('profile-choose-companion-btn').addEventListener('click', openChooseCompanionModal);
+
+// The permanent scrapbook — every Companion that has ever fully bloomed,
+// newest first. Reads collectedCompanions only (never derived from the
+// active companion's in-progress state), so a plant that hasn't bloomed yet
+// never shows up here as if it were already collected.
+function renderCollectedCompanions() {
+  const collected = getCollectedCompanions();
+  const wrap = document.getElementById('profile-collected-wrap');
+  wrap.style.display = collected.length ? '' : 'none';
+  if (!collected.length) return;
+  document.getElementById('profile-collected-list').innerHTML = collected.map(c => {
+    const p = PLANTS[c.speciesId] || { emoji: '🌱', name: 'Companion' };
+    const theme = PLANT_THEME[c.speciesId] || DEFAULT_THEME;
+    return `
+      <div class="flex flex-col items-center gap-1 p-3 rounded-xl" style="background:${theme.soft}" tabindex="0" role="group" aria-label="${esc(p.name)}, bloomed ${fmtDate(c.bloomedAt)}">
+        <span class="text-3xl" aria-hidden="true">${p.emoji}</span>
+        <p class="text-xs font-semibold text-slate-700 dark:text-slate-800">${esc(p.name)}</p>
+        <p class="text-[10px] text-slate-500 dark:text-slate-600">Bloomed ${fmtDate(c.bloomedAt)}</p>
+      </div>`;
+  }).join('');
 }
 
 // ── Rest Timer settings (profile view) ──────────────────────────────────────
@@ -6039,6 +6213,16 @@ async function logOtherActivitySession(date, activityId, { duration, calories, n
 }
 
 async function logRecoveryDaySession(date, { notes } = {}) {
+  // One meaningful care contribution per calendar day — repeatedly tapping
+  // "Mark Recovery Day" (double-tap, re-opening the flow, a second Calendar
+  // entry point) must never create a second recovery session for the same
+  // date, which would otherwise award Companion Care twice for one day of
+  // rest. Return the existing record as a no-op instead.
+  const existing = Object.entries(sessions[date] || {}).find(([, s]) => s?.sessionType === 'recovery');
+  if (existing) {
+    const growth = currentGrowthState();
+    return { sessionId: existing[0], previousGrowth: growth, newGrowth: growth, alreadyLogged: true };
+  }
   const sessionData = {
     sessionType: 'recovery', muscleGroup: 'recovery', startedAt: Date.now(), completedAt: Date.now(),
     durationSeconds: 0, duration: 0, caloriesBurned: null, notes: notes || null,
@@ -7049,8 +7233,10 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
     });
   }
   if (action === 'today-mark-recovery-complete' || action === 'today-mark-recovery') {
-    const { previousGrowth, newGrowth } = await logRecoveryDaySession(today);
-    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+    const plantName = (PLANTS[userProfile.plant] || {}).name || 'Your companion';
+    const { previousGrowth, newGrowth, alreadyLogged } = await logRecoveryDaySession(today);
+    if (alreadyLogged) showToast(`${plantName} already rested with you today.`);
+    else { showToast(`${plantName} is resting with you.`); celebrateStageChangeIfNeeded(previousGrowth, newGrowth); }
     renderDashboard();
   }
   if (action === 'today-change-workout') {
