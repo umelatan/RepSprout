@@ -2263,7 +2263,8 @@ function computeWorkoutGrowth(sessionExercises) {
     }
 
     if (!ex.exerciseId || !ex.progressionEnabled) continue;
-    if (!ex.sets.length || !ex.sets.every(s => s.completed)) continue;
+    const gateWorkingSets = workingSetsFor(ex);
+    if (!gateWorkingSets.length || !gateWorkingSets.every(s => s.completed)) continue;
     // progressionInputFor() trims warm-up sets — same helper the finish-summary
     // recommendation and the exercise-update loop below both already use, so
     // the working-set/target alignment can't drift between the three call sites.
@@ -4107,9 +4108,14 @@ function checkResumableSession() {
   const draft = loadActiveSessionDraft();
   if (!draft || !Array.isArray(draft.exercises)) return;
   const name = draft.sessionType === 'quick' ? 'Quick Workout' : (draft.groupName || 'Workout');
-  const done = draft.exercises.filter(ex => ex.skipped || ex.sets.every(s => s.completed)).length;
+  // Resume position is derived from completed WORKING sets, never total
+  // logged sets — a warm-up-heavy exercise must not read as further along
+  // (or already done) than it actually is.
+  const done = draft.exercises.filter(exerciseIsDone).length;
   const current = draft.exercises[draft.currentExerciseIndex || 0];
-  const setLabel = current ? `${esc(current.name)} · Set ${(current.sets||[]).filter(s=>s.completed && !s.warmup).length + 1} of ${(current.targetReps||[]).length}` : '';
+  const setLabel = current
+    ? `${esc(current.name)} · Set ${getNextWorkingSetNumber(getConfiguredWorkingSetCount(current), current.sets || [])} of ${getConfiguredWorkingSetCount(current)}`
+    : '';
   const mins = Math.max(0, Math.round((Date.now() - draft.startedAt) / 60000));
   document.getElementById('resume-name').textContent = name;
   document.getElementById('resume-meta').textContent = `${setLabel ? setLabel + ' · ' : ''}${done} of ${draft.exercises.length} exercises completed · ${mins} min elapsed`;
@@ -4217,11 +4223,64 @@ function updateAwElapsed() {
 
 // ── Guided workout: shared derivations ──────────────────────────────────────
 // Warm-up sets are logged (for the user's own record) but never count toward
-// the working-set target, progression, or workout totals.
-function workingSetsFor(ex) { return ex.sets.filter(s => !s.warmup); }
-function currentSetIndex(ex) { return ex.sets.findIndex(s => !s.completed); } // -1 = exercise done
-function completedWorkingCount(ex) { return workingSetsFor(ex).filter(s => s.completed).length; }
-function exerciseIsDone(ex) { return ex.skipped || currentSetIndex(ex) === -1; }
+// the working-set target, progression, or workout totals. Every completion/
+// numbering/remaining-count decision in the guided flow goes through these
+// centralized helpers — nothing else re-derives "is this a working set" or
+// "is the exercise done" independently, so the answer can't drift between
+// the rest timer, the log-set sheet, the queue drawer, and session resume.
+//
+// isWarmupSet()/isWorkingSet() are the one place that decides a set's type.
+// Every set in this app already carries an explicit `warmup` boolean
+// (buildSessionExercise() always writes warmup:false, and every save path
+// writes one explicitly) — there is no genuinely typeless legacy data, but
+// getSetType() exists as the single compatibility seam so a future data
+// shape (or a truly missing field) only needs to be handled in one place.
+function isWarmupSet(set) { return !!set?.warmup; }
+function isWorkingSet(set) { return !!set && !isWarmupSet(set); }
+function getSetType(set) { return isWarmupSet(set) ? 'warmup' : 'working'; }
+
+function workingSetsFor(ex) { return (ex.sets || []).filter(isWorkingSet); }
+// Raw next-pending-slot index into ex.sets — used only for "which array
+// position do I write the next logged entry into" (log-set save handlers).
+// Never used to decide exercise completion; see isExerciseWorkingSetsComplete().
+function currentSetIndex(ex) { return ex.sets.findIndex(s => !s.completed); } // -1 = nothing left pending
+
+function getCompletedWorkingSets(sessionExercise) { return workingSetsFor(sessionExercise).filter(s => s.completed); }
+function completedWorkingCount(ex) { return getCompletedWorkingSets(ex).length; }
+
+// The one place "how many working sets does this exercise need" is resolved.
+// ex.targetReps is the live, mutable per-session source of truth: it's built
+// by buildSessionExercise() from the resolution priority the task asks for
+// (workout-group exercise override → saved exercise default → a 3-set
+// fallback — see buildSessionExercise()'s `setCount`), and it only ever
+// grows via the explicit "Add another set" action. Warm-ups never touch it,
+// which is exactly what keeps them from being able to consume a working-set
+// position.
+function getConfiguredWorkingSetCount(ex) { return (ex.targetReps || []).length || 3; }
+
+function getRemainingWorkingSetCount(configuredWorkingSets, loggedSets) {
+  const completed = (loggedSets || []).filter(s => isWorkingSet(s) && s.completed).length;
+  return Math.max(0, configuredWorkingSets - completed);
+}
+function isExerciseWorkingSetsComplete(configuredWorkingSets, loggedSets) {
+  return getRemainingWorkingSetCount(configuredWorkingSets, loggedSets) === 0;
+}
+function getNextWorkingSetNumber(configuredWorkingSets, loggedSets) {
+  const completed = (loggedSets || []).filter(s => isWorkingSet(s) && s.completed).length;
+  return Math.min(completed + 1, configuredWorkingSets);
+}
+// 1-based position of `set` among working sets only — e.g. a warm-up at
+// index 0 doesn't shift Working Set 1 to "Set 2." Returns null for a
+// warm-up (or any set not present in allSets), since warm-ups have no
+// working-set position.
+function getWorkingSetNumber(set, allSets) {
+  const idx = (allSets || []).filter(isWorkingSet).indexOf(set);
+  return idx === -1 ? null : idx + 1;
+}
+
+function exerciseIsDone(ex) {
+  return ex.skipped || isExerciseWorkingSetsComplete(getConfiguredWorkingSetCount(ex), ex.sets || []);
+}
 // Feeds the legacy exercise-level ratchet (computeWorkoutGrowth() /
 // nextProgression()) unchanged — just trims sets/targetReps down to working
 // sets only, so a warm-up-heavy exercise never misaligns the positional
@@ -4295,8 +4354,9 @@ function renderExercisePhase(ex) {
     return;
   }
 
+  if (isExerciseWorkingSetsComplete(getConfiguredWorkingSetCount(ex), ex.sets)) { activeSession.phase = 'exercise-complete'; renderGuidedWorkout(); return; }
   const si = currentSetIndex(ex);
-  if (si === -1) { activeSession.phase = 'exercise-complete'; renderGuidedWorkout(); return; }
+  if (si === -1) { activeSession.phase = 'exercise-complete'; renderGuidedWorkout(); return; } // defensive: nothing left pending
   const setNum = completedWorkingCount(ex) + 1;
   const completedRows = ex.sets.slice(0, si).filter(s => s.completed).map(s => {
     const label = s.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(s)+1}`;
@@ -4955,7 +5015,10 @@ function openLogSetSheet() {
   // Pre-filled (not just a placeholder) so hitting the recommended number
   // needs zero taps — "Complete Set" works immediately. Still a plain
   // editable value: typing over it or using +/- both work exactly as before.
-  const recommendedReps = ex.targetReps[si] ?? ex.minReps;
+  // Indexed by WORKING-set position (setNum - 1), not the raw array index
+  // si — si can sit past a spliced-in warm-up, but ex.targetReps only ever
+  // has one entry per configured working set.
+  const recommendedReps = ex.targetReps[setNum - 1] ?? ex.minReps;
   document.getElementById('ls-reps').value = recommendedReps;
   document.getElementById('ls-reps').placeholder = String(recommendedReps);
 
@@ -5048,8 +5111,19 @@ document.getElementById('ls-save-btn').addEventListener('click', () => {
   const warmup = document.getElementById('ls-warmup').checked;
   const note = document.getElementById('ls-note').value.trim();
   playLsCompletionAnimation(() => {
-    ex.sets[si] = { weight, reps, rir: rirVal === '' ? '' : +rirVal, completed: true, warmup, completedAt: Date.now() };
-    if (!warmup) ex.weight = weight; // "today's weight" tracks working weight, not a warm-up weight
+    const entry = { weight, reps, rir: rirVal === '' ? '' : +rirVal, completed: true, warmup, completedAt: Date.now() };
+    if (warmup) {
+      // A warm-up is an EXTRA logged entry, never a replacement for the next
+      // pending working slot — splice it in before that slot so it stays
+      // pending and still counts toward the configured working-set target.
+      // (Root cause of the "warm-up eats a working set" bug: this used to
+      // overwrite ex.sets[si] in place regardless of type, which silently
+      // consumed one of the pre-allocated working positions.)
+      ex.sets.splice(si, 0, entry);
+    } else {
+      ex.sets[si] = entry;
+      ex.weight = weight; // "today's weight" tracks working weight, not a warm-up weight
+    }
     if (note) ex.notes = note;
     closeLogSetSheet();
     afterSetLogged(ex, si, {});
@@ -5080,7 +5154,7 @@ document.getElementById('ls-skip-btn').addEventListener('click', () => {
 // exercise-complete once the working-set target is met, otherwise starts rest.
 function afterSetLogged(ex, setIndex, opts) {
   saveActiveSessionDraft();
-  if (currentSetIndex(ex) === -1) {
+  if (isExerciseWorkingSetsComplete(getConfiguredWorkingSetCount(ex), ex.sets)) {
     activeSession.phase = 'exercise-complete';
     renderGuidedWorkout();
   } else if (opts.skippedSet) {
@@ -5742,7 +5816,10 @@ document.getElementById('sag-save-btn').addEventListener('click', async () => {
     // logged this session — those stay session-specific, never copied as a
     // permanent default.
     const groupExercises = saveAsGroupExercises.map(ex => ({
-      exerciseId: ex.exerciseId, defaultSets: ex.sets.length, minReps: ex.minReps, maxReps: ex.maxReps, notes: ''
+      // ex.sets.length can include warm-ups (or a manually-added extra
+      // working set); the configured working-set target is always
+      // ex.targetReps.length regardless of how many warm-ups were logged.
+      exerciseId: ex.exerciseId, defaultSets: getConfiguredWorkingSetCount(ex), minReps: ex.minReps, maxReps: ex.maxReps, notes: ''
     }));
     await set(push(ref(db, `users/${uid()}/groups`)), {
       name, description: null, color: GROUP_COLORS[0],
