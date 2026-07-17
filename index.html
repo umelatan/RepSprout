@@ -517,6 +517,44 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800" id="aw-footer"></div>
 </div>
 
+<!-- ══════════ EXERCISE PROGRESS DETAIL ══════════
+     A full-screen overlay, same shape as ACTIVE WORKOUT above, but at a
+     higher z-index (45 > 40) so it can be opened WHILE a grouped workout is
+     active without hiding active-workout-view underneath — closing it just
+     hides this overlay and reveals whatever was already showing (Exercises
+     tab, History, Home, or the active workout), so no explicit "return to"
+     routing state is needed. See openExerciseDetail()/closeExerciseDetail(). -->
+<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-slate-50 dark:bg-slate-950 flex flex-col">
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
+    <button id="exd-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+    <div class="text-center min-w-0 flex-1">
+      <h2 id="exd-name" class="font-display font-bold text-sm text-slate-800 dark:text-white truncate"></h2>
+      <p id="exd-meta" class="text-[11px] text-slate-400 truncate"></p>
+    </div>
+    <button id="exd-edit-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Edit exercise"><span class="ms text-xl" aria-hidden="true">edit</span></button>
+  </header>
+  <main class="flex-1 overflow-y-auto" id="exd-main"></main>
+  <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800" id="exd-footer" style="display:none"></div>
+</div>
+
+<!-- "How it works" — one static explanation shared by every exercise, opened
+     from the Exercise Progress Detail page's plant hero. -->
+<div id="dp-how-it-works-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">How Double Progression works</h3>
+      <button id="dp-how-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <ul class="space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
+      <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_one</span>Each working set progresses on its own — one set can be ready to increase while another is still building reps.</li>
+      <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_two</span>The maximum rep target comes from the rep range you set for this exercise, never a fixed number.</li>
+      <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_3</span>Reaching the maximum reps (at a comfortable RIR) makes a set ready for more weight.</li>
+      <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_4</span>Moving that set to a heavier weight matures its leaf.</li>
+      <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_5</span>Once every set's leaf has matured, the plant evolves to its next stage and a new cycle begins.</li>
+    </ul>
+  </div>
+</div>
+
 <!-- Mobile drawer -->
 <div id="mob-drawer" style="display:none" class="fixed inset-0 z-50 md:hidden">
   <div id="mob-drawer-bg" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
@@ -2073,6 +2111,98 @@ const DoubleProgressionStrategy = {
   }
 };
 
+// One representative emoji per plant stage, indexed the same way as
+// GROWTH_STAGE_NAMES — used only by the per-exercise Double Progression mini
+// plant on the Exercise Progress Detail page. This is a display-only lookup;
+// it never renames or reorders the stages themselves, and it has no
+// relationship to PLANTS/userProfile.plant (the Home companion, which stays
+// entirely separate per the task spec).
+const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷', '🌸'];
+
+// Short, user-facing labels for the raw DP_STATUS enum values — used
+// anywhere the status needs to read as a word/phrase instead of a
+// snake_case key (Exercise Progress Detail set rows, exercise cards).
+const DP_STATUS_LABEL = {
+  building_reps: 'Building',
+  ready_to_increase: 'Ready to increase',
+  increased_weight: 'Weight progressed',
+  below_range: 'Below target range',
+  incomplete: 'Incomplete',
+  skipped: 'Skipped'
+};
+
+// A compact "Next time: ..." cue for one set row on the Exercise Progress
+// Detail page — deliberately shorter than buildDoubleProgressionRecommendations()'s
+// full sentence (which stays the source for the longer recommendation copy).
+// Still pure and still centralizes the increment-vs-no-increment fallback
+// rule in one place, same as the rest of the DP UI-string helpers.
+function shortSetProgressionCue(p, exDef) {
+  const unit = exDef.unit || 'kg';
+  if (p.currentWeight == null) return null;
+  switch (p.status) {
+    case DP_STATUS.READY_TO_INCREASE:
+      return exDef.weightIncrement ? `Try ${round1(p.currentWeight + exDef.weightIncrement)} ${unit}` : 'Try a heavier weight';
+    case DP_STATUS.INCREASED_WEIGHT:
+      return `Continue at ${p.currentWeight} ${unit}`;
+    case DP_STATUS.BELOW_RANGE:
+      return `Consider repeating ${p.currentWeight} ${unit}`;
+    case DP_STATUS.SKIPPED:
+    case DP_STATUS.INCOMPLETE:
+      return null;
+    case DP_STATUS.BUILDING_REPS:
+    default:
+      return `Stay at ${p.currentWeight} ${unit}`;
+  }
+}
+
+// Pure, real-data-only rollup for the Exercise Progress Detail "Exercise
+// summary" section — every number here is derived directly from stored
+// session history, never estimated or invented, per the task's explicit
+// "do not calculate unreliable metrics merely for decoration" instruction.
+function computeExerciseSummary(exerciseId) {
+  let totalReps = 0, volume = 0, rirSum = 0, rirCount = 0, sessionCount = 0;
+  Object.values(sessions).forEach(day => {
+    Object.values(day || {}).forEach(s => {
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) return;
+      sessionCount++;
+      (ex.sets || []).forEach(set => {
+        if (!set.completed) return;
+        const reps = set.reps || 0;
+        totalReps += reps;
+        volume += (set.weight || 0) * reps;
+        if (set.rir !== '' && set.rir != null && !isNaN(+set.rir)) { rirSum += +set.rir; rirCount++; }
+      });
+    });
+  });
+  return {
+    sessionCount, totalReps, volume: round1(volume),
+    avgRir: rirCount ? round1(rirSum / rirCount) : null
+  };
+}
+
+// Last `limit` sessions that included this exercise, newest first — a
+// compact preview only (see the "View all" link, which opens the real
+// History tab instead of duplicating it here).
+function getExerciseRecentHistory(exerciseId, limit = 5) {
+  const rows = [];
+  Object.keys(sessions).sort().reverse().forEach(date => {
+    Object.values(sessions[date] || {}).forEach(s => {
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) return;
+      const working = (ex.sets || []).filter(st => !st.warmup);
+      if (!working.length) return;
+      rows.push({
+        date,
+        weights: working.map(st => st.weight || 0),
+        reps: working.map(st => st.reps || 0),
+        rirs: working.map(st => st.rir === '' ? null : (st.rir ?? null))
+      });
+    });
+  });
+  return rows.slice(0, limit);
+}
+
 // Most recent logged sets for an exercise, scanning session history newest
 // first. Shared by the active-workout "previous" preview and the Home
 // dashboard's Closest Progress card, so history is only ever scanned once.
@@ -2223,7 +2353,7 @@ function cleanupListeners() { dataRefs.forEach(r => off(r)); dataRefs = []; }
 function subscribeData() {
   cleanupListeners();
   const rExercises = ref(db, `exercises/${uid()}`);
-  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); }, e => console.error(e));
+  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); refreshExerciseDetailIfOpen(); }, e => console.error(e));
   dataRefs.push(rExercises);
 
   // Nested under users/{uid} (not a new top-level groups/{uid} path) so it
@@ -2236,7 +2366,11 @@ function subscribeData() {
   const rSessions = ref(db, `sessions/${uid()}`);
   onValue(rSessions, snap => {
     sessions = snap.val() || {};
-    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList();
+    // Session history drives the Double Progression preview on every
+    // exercise card and the open detail page — both must recompute here too,
+    // not just Dashboard/History/Calendar, or editing/deleting a past
+    // workout wouldn't recalculate leaves/stage until the next full reload.
+    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList(); renderExerciseLibrary(); refreshExerciseDetailIfOpen();
   }, e => console.error(e));
   dataRefs.push(rSessions);
 
@@ -2388,7 +2522,7 @@ function findClosestProgression() {
     const maxReps = exDef.maxReps ?? 12;
     const remaining = targetReps.reduce((sum, r) => sum + Math.max(0, maxReps - r), 0);
     const entry = {
-      name: exDef.name, group: exDef.muscleGroup,
+      exerciseId: id, name: exDef.name, group: exDef.muscleGroup,
       weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
       weightIncrement: exDef.weightIncrement || 0,
       targetReps, lastSets: last.sets.map(st => st.reps || 0),
@@ -2692,16 +2826,21 @@ function renderClosestProgress() {
     return node + branch;
   }).join('');
   body.innerHTML = `
-    <div class="flex items-center justify-between">
-      <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate min-w-0">${esc(best.name)}</p>
-      <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
-    </div>
-    <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
-    <div class="flex items-center gap-1.5 py-1">
-      ${nodes}
-      <span class="text-xl ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
-    </div>
-    <p class="text-xs font-semibold text-brand-500">${detail}</p>`;
+    <div id="dash-progress-card" class="space-y-2 cursor-pointer" role="button" tabindex="0" aria-label="View ${esc(best.name)} progress">
+      <div class="flex items-center justify-between">
+        <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate min-w-0">${esc(best.name)}</p>
+        <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
+      </div>
+      <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
+      <div class="flex items-center gap-1.5 py-1">
+        ${nodes}
+        <span class="text-xl ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
+      </div>
+      <p class="text-xs font-semibold text-brand-500">${detail}</p>
+    </div>`;
+  const card = document.getElementById('dash-progress-card');
+  card.addEventListener('click', () => openExerciseDetail(best.exerciseId));
+  card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openExerciseDetail(best.exerciseId); } });
 }
 
 function renderGardenPreview() {
@@ -3010,6 +3149,35 @@ function resizeTargetReps(current, length, minReps, maxReps) {
   return out;
 }
 
+// Each card's progression preview reuses the exact same
+// DoubleProgressionStrategy the Exercise Progress Detail page and the
+// exercise-complete screen read from — one derivation, three surfaces, so
+// the list can never show a leaf count out of sync with the detail page.
+function renderExerciseCardProgressPreview(id, ex) {
+  if (ex.progressionEnabled === false) {
+    return `<p class="text-xs text-slate-400 mt-1">Double-progression suggestions are off for this exercise.</p>`;
+  }
+  const dpResult = DoubleProgressionStrategy.calculateExerciseResult(id);
+  if (!dpResult.configured) {
+    return `<p class="text-xs text-slate-400 mt-1">Add a maximum rep target to enable Double Progression.</p>`;
+  }
+  const dpPositions = DoubleProgressionStrategy.calculateSetResults(id);
+  const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+  const stageName = GROWTH_STAGE_NAMES[stageIdx];
+  const weight = dpPositions[0]?.currentWeight ?? ex.currentWeight ?? 0;
+  const repLine = `${weight} ${ex.unit || 'kg'} · ${dpResult.minReps}–${dpResult.maxReps} reps`;
+  const progressLine = dpResult.cycleComplete
+    ? 'Ready to evolve'
+    : `${dpResult.leavesMatured} of ${dpResult.workingSetCount} sets progressed`;
+  return `
+    <p class="text-xs text-slate-400 mt-1">${repLine}</p>
+    <div class="flex items-center gap-2 mt-1">
+      <span class="text-xs font-semibold text-brand-500">${stageName}</span>
+      <span class="flex items-center gap-0.5">${renderDoubleProgressionLeaves(dpPositions, ex.unit, 'text-base')}</span>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-0.5">${progressLine}</p>`;
+}
+
 function renderExerciseLibrary() {
   const list = document.getElementById('exercise-library-list');
   const q = (document.getElementById('ex-search').value || '').toLowerCase();
@@ -3017,37 +3185,41 @@ function renderExerciseLibrary() {
   if (!items.length) {
     const msg = Object.keys(exercises).length
       ? 'No exercises match your search.'
-      : 'Create your first exercise to begin building a routine.';
+      : 'Your first leaf is one exercise away.';
     list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${msg}</p>`;
     return;
   }
   list.innerHTML = items.map(([id, ex]) => {
     const weightUpBadge = ex.weightUpFlag ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-600 px-2 py-0.5 rounded-full font-bold ml-2">⬆️ Ready to increase</span>' : '';
-    const meta1 = [ex.equipment, MG_LABEL[ex.muscleGroup]||ex.muscleGroup].filter(Boolean).join(' · ');
-    const sets = ex.defaultSets || (ex.targetReps||[8,8,8]).length;
-    const meta2 = `${sets} set${sets!==1?'s':''} · ${ex.minReps??8}–${ex.maxReps??12} reps`;
     const usedIn = groupsUsingExercise(id);
     const usedLine = usedIn.length ? `<p class="text-[11px] text-brand-500 mt-0.5">Used in ${usedIn.map(g=>esc(g.name)).join(', ')}</p>` : '';
     return `
-      <div class="card p-3 flex items-center justify-between gap-3">
+      <div class="ex-card card p-3 flex items-center justify-between gap-3 w-full text-left hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="View ${esc(ex.name)} progress">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 flex-wrap">
             <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
             ${weightUpBadge}
           </div>
-          <p class="text-xs text-slate-400 mt-0.5">${meta1}</p>
-          <p class="text-xs text-slate-400">${meta2}</p>
+          ${renderExerciseCardProgressPreview(id, ex)}
           ${usedLine}
         </div>
-        <div class="flex gap-1 flex-shrink-0">
-          <button class="edit-ex p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all" data-id="${id}"><span class="ms text-base" aria-hidden="true">edit</span></button>
-          <button class="del-ex p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all" data-id="${id}"><span class="ms text-base" aria-hidden="true">delete</span></button>
+        <div class="flex items-center gap-1 flex-shrink-0">
+          <button type="button" class="edit-ex p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all" data-id="${id}" aria-label="Edit ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">edit</span></button>
+          <button type="button" class="del-ex p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all" data-id="${id}" aria-label="Archive ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">delete</span></button>
+          <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
         </div>
       </div>`;
   }).join('');
 
-  list.querySelectorAll('.edit-ex').forEach(b => b.addEventListener('click', () => openExerciseModal(b.dataset.id)));
-  list.querySelectorAll('.del-ex').forEach(b => b.addEventListener('click', async () => {
+  list.querySelectorAll('.ex-card').forEach(card => {
+    card.addEventListener('click', () => openExerciseDetail(card.dataset.id));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openExerciseDetail(card.dataset.id); }
+    });
+  });
+  list.querySelectorAll('.edit-ex').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseModal(b.dataset.id); }));
+  list.querySelectorAll('.del-ex').forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation();
     const id = b.dataset.id;
     const usedIn = groupsUsingExercise(id);
     const warning = usedIn.length ? ` It will stay in: ${usedIn.map(g=>g.name).join(', ')}.` : '';
@@ -3058,6 +3230,225 @@ function renderExerciseLibrary() {
 
 document.getElementById('ex-search').addEventListener('input', renderExerciseLibrary);
 document.getElementById('new-exercise-btn').addEventListener('click', () => openExerciseModal());
+
+// ── Exercise Progress Detail ─────────────────────────────────────────────────
+// Reusable from four entry points (Exercises tab, an active grouped workout,
+// History, Home's Closest Progress) — see openExerciseDetail() call sites.
+// It never hides whatever view is already showing underneath (see the
+// exercise-detail-view comment above); closing it is always just hiding this
+// one overlay, which is what makes "return to the previous context" and
+// "don't lose active workout state" free instead of needing tracked routing
+// state.
+let exerciseDetailId = null;
+
+function closeExerciseDetail() {
+  exerciseDetailId = null;
+  hide('exercise-detail-view');
+  hide('dp-how-it-works-modal');
+}
+
+function openExerciseDetail(exerciseId) {
+  if (!exercises[exerciseId]) return;
+  exerciseDetailId = exerciseId;
+  renderExerciseDetail(exerciseId);
+  show('exercise-detail-view');
+}
+
+// Re-renders the detail page only if one is actually open — safe to call
+// unconditionally from realtime listeners after exercises/sessions change,
+// so edits and deletions recalculate leaves, stage, recent history, and the
+// summary live instead of only on next open. If the exercise itself was
+// deleted, renderExerciseDetail() already closes the overlay.
+function refreshExerciseDetailIfOpen() {
+  if (exerciseDetailId) renderExerciseDetail(exerciseDetailId);
+}
+
+function renderExerciseDetail(exerciseId) {
+  const ex = exercises[exerciseId];
+  if (!ex) { closeExerciseDetail(); return; }
+  const unit = ex.unit || 'kg';
+
+  document.getElementById('exd-name').textContent = ex.name;
+  const headerMeta = [ex.equipment, MG_LABEL[ex.muscleGroup] || ex.muscleGroup].filter(Boolean).join(' · ');
+  document.getElementById('exd-meta').textContent = headerMeta;
+
+  const disabled = ex.progressionEnabled === false;
+  const dpResult = disabled ? null : DoubleProgressionStrategy.calculateExerciseResult(exerciseId);
+  const dpPositions = disabled ? [] : DoubleProgressionStrategy.calculateSetResults(exerciseId);
+  const dpRecs = disabled ? [] : DoubleProgressionStrategy.generateRecommendations(exerciseId);
+  const configured = !disabled && dpResult.configured;
+
+  const repRangeText = (ex.minReps != null && ex.maxReps != null) ? `${ex.minReps}–${ex.maxReps} reps` : 'No rep range set';
+
+  // ── Plant hero — this exercise's own Double Progression journey, entirely
+  // separate from the Home companion plant (userProfile.plant / renderPlantHero()).
+  let heroHtml;
+  if (!configured) {
+    const neutralMsg = disabled
+      ? 'Double-progression suggestions are turned off for this exercise.'
+      : 'Add a maximum rep target to enable Double Progression.';
+    heroHtml = `
+      <div class="card p-4 text-center space-y-2">
+        <p class="text-4xl" aria-hidden="true">🌱</p>
+        <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
+      </div>`;
+  } else {
+    const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+    const stageName = GROWTH_STAGE_NAMES[stageIdx];
+    const isFinal = dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+    const pct = dpResult.workingSetCount ? Math.round((dpResult.leavesMatured / dpResult.workingSetCount) * 100) : 0;
+    const progressLine = dpResult.cycleComplete
+      ? 'Ready to evolve'
+      : `${dpResult.leavesMatured} of ${dpResult.workingSetCount} sets progressed`;
+    heroHtml = `
+      <div class="card p-4 space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-5xl flex-shrink-0" aria-hidden="true">${DP_STAGE_EMOJI[stageIdx]}</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs text-slate-400">Current stage</p>
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">${stageName}${isFinal ? ' 🌸' : ''}</p>
+              <span class="text-xs font-semibold text-slate-400">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>
+            </div>
+          </div>
+        </div>
+        <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Stage progress">
+          <div class="h-full bg-brand-500 transition-all duration-500" style="width:${pct}%"></div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="flex items-center gap-1">${renderDoubleProgressionLeaves(dpPositions, unit, 'text-xl')}</span>
+          <span class="text-xs font-semibold text-brand-500">${progressLine}</span>
+        </div>
+        <p class="text-xs text-slate-400">${isFinal ? 'Fully bloomed — sets keep progressing.' : 'All working sets must move to a higher weight to evolve to the next stage.'} <button id="exd-how-btn" class="text-brand-500 underline font-semibold">How it works</button></p>
+      </div>`;
+  }
+
+  // ── Set progress ────────────────────────────────────────────────────────
+  let setsHtml = '';
+  if (configured) {
+    setsHtml = `
+      <div class="space-y-2">
+        <p class="text-xs font-semibold text-slate-400 px-1">Set progress</p>
+        ${dpPositions.map((p, i) => {
+          const cue = shortSetProgressionCue(p, ex);
+          const rirText = p.currentRir != null ? `RIR ${p.currentRir}` : '—';
+          const repsText = p.currentWeight == null ? 'Not yet logged' : `${p.currentReps || 0} of ${p.targetMaxReps} reps`;
+          const statusColor = p.status === 'ready_to_increase' ? 'text-brand-500'
+            : p.status === 'increased_weight' ? 'text-brand-500'
+            : p.status === 'below_range' ? 'text-amber-500'
+            : 'text-slate-500 dark:text-slate-400';
+          return `
+            <div class="card p-3 space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">Set ${i + 1}</p>
+                <span class="text-xs font-bold ${statusColor}">${DP_STATUS_LABEL[p.status] || p.status}</span>
+              </div>
+              <p class="text-xs text-slate-400">${p.currentWeight == null ? '—' : `${p.currentWeight} ${unit}`} · ${repsText} · ${rirText}</p>
+              ${dpRecs[i] ? `<p class="text-xs text-slate-500 dark:text-slate-400">${esc(dpRecs[i].text)}</p>` : ''}
+              ${cue ? `<p class="text-xs font-semibold text-brand-500">Next time: ${esc(cue)}</p>` : ''}
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ── Recommendation card — one concise, top-level message ────────────────
+  let recHtml = '';
+  if (configured && dpPositions.some(p => p.currentWeight != null)) {
+    let headline;
+    if (dpResult.cycleComplete) headline = `All sets have progressed. Your ${esc(ex.name)} plant is ready to evolve.`;
+    else {
+      let idx = dpPositions.findIndex(p => p.status === 'ready_to_increase');
+      if (idx === -1) {
+        let bestRemaining = Infinity;
+        dpPositions.forEach((p, i) => {
+          if (p.currentWeight == null || p.status === 'skipped' || p.status === 'incomplete') return;
+          const remaining = (p.targetMaxReps || 0) - (p.currentReps || 0);
+          if (remaining < bestRemaining) { bestRemaining = remaining; idx = i; }
+        });
+      }
+      headline = (idx !== -1 && dpRecs[idx]) ? dpRecs[idx].text : 'Keep logging sets to see a recommendation here.';
+    }
+    recHtml = `
+      <div class="p-3.5 bg-brand-50 dark:bg-brand-950/30 rounded-xl flex gap-2.5 items-start">
+        <span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
+        <p class="text-sm text-slate-700 dark:text-slate-200">${esc(headline)}</p>
+      </div>`;
+  }
+
+  // ── Recent history (compact) ─────────────────────────────────────────────
+  const recent = getExerciseRecentHistory(exerciseId, 5);
+  const historyHtml = `
+    <div class="space-y-2">
+      <div class="flex items-center justify-between px-1">
+        <p class="text-xs font-semibold text-slate-400">Recent history</p>
+        <button id="exd-view-all-history" class="text-xs font-semibold text-brand-500 hover:underline">View all</button>
+      </div>
+      ${recent.length ? `
+        <div class="flex gap-2 overflow-x-auto pb-1">
+          ${recent.map(r => {
+            const uniformWeight = r.weights.every(w => w === r.weights[0]) ? `${r.weights[0]} ${unit}` : r.weights.map(w => `${w}${unit}`).join('/');
+            return `
+              <div class="card p-2.5 flex-shrink-0" style="min-width:88px">
+                <p class="text-[10px] font-bold text-slate-400">${fmtDate(r.date)}</p>
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">${uniformWeight}</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">${r.reps.join(' · ')}</p>
+              </div>`;
+          }).join('')}
+        </div>` : `<p class="text-xs text-slate-400 px-1">No logged sessions yet.</p>`}
+    </div>`;
+
+  // ── Exercise summary — only real, stored-data metrics ────────────────────
+  const summary = computeExerciseSummary(exerciseId);
+  const summaryHtml = summary.sessionCount ? `
+    <div class="card p-3.5">
+      <p class="text-xs font-semibold text-slate-400 mb-2">Exercise summary</p>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.volume}</p><p class="text-[10px] text-slate-400">Volume (${unit})</p></div>
+        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.totalReps}</p><p class="text-[10px] text-slate-400">Total reps</p></div>
+        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.avgRir ?? '—'}</p><p class="text-[10px] text-slate-400">Avg RIR</p></div>
+      </div>
+    </div>` : '';
+
+  // ── Secondary actions ─────────────────────────────────────────────────────
+  const actionsHtml = `
+    <div class="flex items-center justify-center gap-4 text-xs font-semibold flex-wrap pt-1 pb-2">
+      <button id="exd-view-history-btn" class="text-slate-400 hover:underline py-2">View full history</button>
+      <button id="exd-add-to-group-btn" class="text-slate-400 hover:underline py-2">Add to workout group</button>
+    </div>`;
+
+  document.getElementById('exd-main').innerHTML = `
+    <div class="p-4 max-w-2xl w-full mx-auto space-y-4">
+      <p class="text-xs font-semibold text-slate-400 text-center -mt-1">${repRangeText}</p>
+      ${heroHtml}
+      ${setsHtml}
+      ${recHtml}
+      ${historyHtml}
+      ${summaryHtml}
+      ${actionsHtml}
+    </div>`;
+
+  // Context-aware primary action: only offer to start this exercise as its
+  // own Quick Workout when nothing is already active — never a generic
+  // sticky "Start" button that would conflict with an active session.
+  const footer = document.getElementById('exd-footer');
+  if (!activeSession) {
+    footer.style.display = '';
+    footer.innerHTML = `<button id="exd-start-quick-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Quick Workout</button>`;
+    document.getElementById('exd-start-quick-btn').addEventListener('click', () => { closeExerciseDetail(); startQuickWorkout([exerciseId]); });
+  } else {
+    footer.style.display = 'none';
+  }
+
+  document.getElementById('exd-edit-btn').onclick = () => openExerciseModal(exerciseId);
+  const howBtn = document.getElementById('exd-how-btn');
+  if (howBtn) howBtn.addEventListener('click', () => show('dp-how-it-works-modal'));
+  document.getElementById('exd-view-all-history').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('history'); };
+  document.getElementById('exd-view-history-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('history'); };
+  document.getElementById('exd-add-to-group-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('groups'); showToast('Open a group\'s edit screen to add this exercise to it.'); };
+}
+
+document.getElementById('exd-back-btn').addEventListener('click', closeExerciseDetail);
+document.getElementById('dp-how-close').addEventListener('click', () => hide('dp-how-it-works-modal'));
 
 function setExerciseModalMore(open) {
   document.getElementById('ex-modal-more').style.display = open ? '' : 'none';
@@ -3819,7 +4210,7 @@ function renderExercisePhase(ex) {
     main.innerHTML = `
       <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Up Next</p>
-        <h2 class="font-display font-extrabold text-3xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
+        <button id="aw-ex-name-btn" type="button" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white hover:text-brand-500 transition-colors" aria-label="View ${esc(ex.name)} progress">${esc(ex.name)}</button>
         <p class="text-xs text-slate-400">Exercise ${activeSession.currentExerciseIndex+1} of ${activeSession.exercises.length}</p>
         <div class="pt-2"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} working set${totalTarget!==1?'s':''} · ${ex.minReps}–${ex.maxReps} reps</p></div>
         <div><p class="text-xs text-slate-400">Previous</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300">${esc(prevLine)}</p></div>
@@ -3832,6 +4223,7 @@ function renderExercisePhase(ex) {
         <button data-action="open-queue" class="text-slate-400 hover:underline py-2">Queue</button>
         <button data-action="open-end-review" class="text-slate-400 hover:underline py-2">Finish</button>
       </div>`;
+    document.getElementById('aw-ex-name-btn').addEventListener('click', () => openExerciseDetail(ex.exerciseId));
     return;
   }
 
@@ -3846,7 +4238,7 @@ function renderExercisePhase(ex) {
   main.innerHTML = `
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
       <p class="text-xs text-slate-400">Exercise ${activeSession.currentExerciseIndex+1} of ${activeSession.exercises.length}</p>
-      <h2 class="font-display font-extrabold text-3xl text-slate-800 dark:text-white">${esc(ex.name)}</h2>
+      <button id="aw-ex-name-btn" type="button" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white hover:text-brand-500 transition-colors" aria-label="View ${esc(ex.name)} progress">${esc(ex.name)}</button>
       <div class="grid grid-cols-2 gap-4 text-left max-w-xs w-full pt-1">
         <div><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
         <div><p class="text-xs text-slate-400">Previous</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevLine)}</p></div>
@@ -3864,6 +4256,7 @@ function renderExercisePhase(ex) {
       <button data-action="skip-exercise" class="text-slate-400 hover:underline py-2">Skip</button>
       <button data-action="open-queue" class="text-slate-400 hover:underline py-2">Queue</button>
     </div>`;
+  document.getElementById('aw-ex-name-btn').addEventListener('click', () => openExerciseDetail(ex.exerciseId));
 }
 
 // ── Continuous plant watering while a set is active ─────────────────────────
@@ -5321,7 +5714,13 @@ function sessionColor(s) {
 function exerciseHistoryLine(ex) {
   if (ex.skipped) return `<p class="text-sm text-slate-400">• ${esc(ex.name)} — skipped</p>`;
   const reps = (ex.sets||[]).map(st => st.reps+'r').join('/');
-  return `<p class="text-sm text-slate-600 dark:text-slate-300">• ${esc(ex.name)} — ${ex.weight}${ex.unit} · ${reps}</p>`;
+  const line = `• ${esc(ex.name)} — ${ex.weight}${ex.unit} · ${reps}`;
+  // Only linkable if this exercise still exists in the library — a deleted
+  // exercise still shows in old history, it just isn't tappable.
+  if (ex.exerciseId && exercises[ex.exerciseId]) {
+    return `<button type="button" class="hist-ex-line block w-full text-left text-sm text-slate-600 dark:text-slate-300 hover:text-brand-500 transition-colors" data-exercise-id="${ex.exerciseId}">${line}</button>`;
+  }
+  return `<p class="text-sm text-slate-600 dark:text-slate-300">${line}</p>`;
 }
 
 function renderHistory() {
@@ -5349,6 +5748,7 @@ function renderHistory() {
     if (!confirm('Delete this workout from your history?')) return;
     await remove(ref(db, `sessions/${uid()}/${b.dataset.date}/${b.dataset.id}`));
   }));
+  list.querySelectorAll('.hist-ex-line').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
 }
 
 // ── Calendar ────────────────────────────────────────────────────────────────
