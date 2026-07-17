@@ -525,13 +525,16 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
      tab, History, Home, or the active workout), so no explicit "return to"
      routing state is needed. See openExerciseDetail()/closeExerciseDetail(). -->
 <div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-slate-50 dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="exd-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
-    <div class="text-center min-w-0 flex-1">
-      <h2 id="exd-name" class="font-display font-bold text-sm text-slate-800 dark:text-white truncate"></h2>
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-1.5">
+        <h2 id="exd-name" class="font-display font-bold text-base text-slate-800 dark:text-white truncate"></h2>
+        <button id="exd-edit-btn" class="text-slate-400 hover:text-brand-500 flex-shrink-0 p-0.5" aria-label="Edit exercise"><span class="ms text-base" aria-hidden="true">edit</span></button>
+      </div>
       <p id="exd-meta" class="text-[11px] text-slate-400 truncate"></p>
     </div>
-    <button id="exd-edit-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Edit exercise"><span class="ms text-xl" aria-hidden="true">edit</span></button>
+    <span id="exd-rep-badge" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 flex-shrink-0 text-center"></span>
   </header>
   <main class="flex-1 overflow-y-auto" id="exd-main"></main>
   <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800" id="exd-footer" style="display:none"></div>
@@ -2069,16 +2072,29 @@ function describeSetAriaLabel(p, unit) {
   return `${setLabel}: ${repsPart} at ${p.currentWeight} ${unitWord}. ${DP_STATUS_ARIA_SUFFIX[p.status] || ''}`;
 }
 
+// Three explicit leaf states (growing / ready / matured), not just a
+// matured/not-matured binary — "growing" = still building reps at the
+// current weight, "ready" = hit the max rep target and is waiting on a
+// heavier weight next session, "matured" = actually completed a set at a
+// higher weight this stage cycle. Only "matured" counts toward stage
+// evolution; "ready" is a readiness hint, not progress by itself.
+function dpLeafVisualState(p) {
+  if (p.matured) return 'matured';
+  if (p.status === DP_STATUS.READY_TO_INCREASE) return 'ready';
+  return 'growing';
+}
+const DP_LEAF_STATE_LABEL = { matured: 'Matured', ready: 'Ready', growing: 'Growing' };
+
 // One leaf per working set — the existing "eco" glyph already used for
 // growth elsewhere in the app (Advanced badge, mission label), not a new
-// emoji: filled + brand green once that set has matured (moved to a higher
-// weight this stage cycle), outline + muted while it's still building reps.
-// This is the micro-progress overlay INSIDE the plant's existing macro
-// stage — it never renames or replaces GROWTH_STAGE_NAMES.
+// emoji. This is the micro-progress overlay INSIDE the plant's existing
+// macro stage — it never renames or replaces GROWTH_STAGE_NAMES.
 function renderDoubleProgressionLeaves(positions, unit, sizeClass = 'text-2xl') {
   return positions.map(p => {
     const label = describeSetAriaLabel(p, unit);
-    return `<span class="ms ${sizeClass} ${p.matured ? 'text-brand-500' : 'text-slate-300 dark:text-slate-600'}" style="font-variation-settings:'FILL' ${p.matured ? 1 : 0}" role="img" aria-label="${esc(label)}">eco</span>`;
+    const state = dpLeafVisualState(p);
+    const color = state === 'matured' ? 'text-brand-500' : state === 'ready' ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600';
+    return `<span class="ms ${sizeClass} ${color}" style="font-variation-settings:'FILL' ${state === 'growing' ? 0 : 1}" role="img" aria-label="${esc(label)}">eco</span>`;
   }).join('');
 }
 
@@ -2161,23 +2177,32 @@ function shortSetProgressionCue(p, exDef) {
 // "do not calculate unreliable metrics merely for decoration" instruction.
 function computeExerciseSummary(exerciseId) {
   let totalReps = 0, volume = 0, rirSum = 0, rirCount = 0, sessionCount = 0;
-  Object.values(sessions).forEach(day => {
-    Object.values(day || {}).forEach(s => {
+  const perSession = []; // chronological — only real, completed sets contribute
+  Object.keys(sessions).sort().forEach(date => {
+    Object.values(sessions[date] || {}).forEach(s => {
       const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
       if (!ex || ex.skipped) return;
       sessionCount++;
+      let sessionReps = 0, sessionVolume = 0;
       (ex.sets || []).forEach(set => {
         if (!set.completed) return;
         const reps = set.reps || 0;
-        totalReps += reps;
-        volume += (set.weight || 0) * reps;
+        totalReps += reps; sessionReps += reps;
+        volume += (set.weight || 0) * reps; sessionVolume += (set.weight || 0) * reps;
         if (set.rir !== '' && set.rir != null && !isNaN(+set.rir)) { rirSum += +set.rir; rirCount++; }
       });
+      perSession.push({ reps: sessionReps, volume: sessionVolume });
     });
   });
+  // Deltas compare the two most recent REAL sessions only — never a fabricated
+  // trend line. null (not 0) when there isn't a prior session to compare to.
+  const n = perSession.length;
+  const volumeDelta = n >= 2 ? round1(perSession[n-1].volume - perSession[n-2].volume) : null;
+  const repsDelta = n >= 2 ? perSession[n-1].reps - perSession[n-2].reps : null;
   return {
     sessionCount, totalReps, volume: round1(volume),
-    avgRir: rirCount ? round1(rirSum / rirCount) : null
+    avgRir: rirCount ? round1(rirSum / rirCount) : null,
+    volumeDelta, repsDelta
   };
 }
 
@@ -3271,6 +3296,8 @@ function renderExerciseDetail(exerciseId) {
   document.getElementById('exd-name').textContent = ex.name;
   const headerMeta = [ex.equipment, MG_LABEL[ex.muscleGroup] || ex.muscleGroup].filter(Boolean).join(' · ');
   document.getElementById('exd-meta').textContent = headerMeta;
+  const repRangeText = (ex.minReps != null && ex.maxReps != null) ? `${ex.minReps}–${ex.maxReps} reps` : 'No rep range';
+  document.getElementById('exd-rep-badge').textContent = repRangeText;
 
   const disabled = ex.progressionEnabled === false;
   const dpResult = disabled ? null : DoubleProgressionStrategy.calculateExerciseResult(exerciseId);
@@ -3278,11 +3305,12 @@ function renderExerciseDetail(exerciseId) {
   const dpRecs = disabled ? [] : DoubleProgressionStrategy.generateRecommendations(exerciseId);
   const configured = !disabled && dpResult.configured;
 
-  const repRangeText = (ex.minReps != null && ex.maxReps != null) ? `${ex.minReps}–${ex.maxReps} reps` : 'No rep range set';
-
   // ── Plant hero — this exercise's own Double Progression journey, entirely
   // separate from the Home companion plant (userProfile.plant / renderPlantHero()).
-  let heroHtml;
+  // Reuses the same hero-surface/hero-glow visual language as the Home hero,
+  // just at card scale, so it reads as "a plant" without touching PLANTS or
+  // userProfile.plant.
+  let heroHtml, leavesHtml = '';
   if (!configured) {
     const neutralMsg = disabled
       ? 'Double-progression suggestions are turned off for this exercise.'
@@ -3297,57 +3325,92 @@ function renderExerciseDetail(exerciseId) {
     const stageName = GROWTH_STAGE_NAMES[stageIdx];
     const isFinal = dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
     const pct = dpResult.workingSetCount ? Math.round((dpResult.leavesMatured / dpResult.workingSetCount) * 100) : 0;
-    const progressLine = dpResult.cycleComplete
-      ? 'Ready to evolve'
-      : `${dpResult.leavesMatured} of ${dpResult.workingSetCount} sets progressed`;
     heroHtml = `
       <div class="card p-4 space-y-3">
-        <div class="flex items-center gap-3">
-          <span class="text-5xl flex-shrink-0" aria-hidden="true">${DP_STAGE_EMOJI[stageIdx]}</span>
+        <div class="flex items-center gap-4">
+          <div class="hero-surface relative rounded-2xl w-20 h-20 flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <div class="hero-glow"></div>
+            <span class="relative text-5xl" aria-hidden="true">${DP_STAGE_EMOJI[stageIdx]}</span>
+          </div>
           <div class="min-w-0 flex-1">
             <p class="text-xs text-slate-400">Current stage</p>
             <div class="flex items-center gap-2 flex-wrap">
-              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">${stageName}${isFinal ? ' 🌸' : ''}</p>
-              <span class="text-xs font-semibold text-slate-400">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>
+              <p class="font-display font-bold text-xl text-slate-800 dark:text-white">${stageName}${isFinal ? ' 🌸' : ''}</p>
+              <span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>
             </div>
           </div>
         </div>
-        <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Stage progress">
-          <div class="h-full bg-brand-500 transition-all duration-500" style="width:${pct}%"></div>
+        <div class="flex items-center gap-2">
+          <div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Stage progress">
+            <div class="h-full bg-brand-500 transition-all duration-500" style="width:${pct}%"></div>
+          </div>
+          <span class="text-sm font-bold text-brand-500 flex-shrink-0">${pct}%</span>
         </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="flex items-center gap-1">${renderDoubleProgressionLeaves(dpPositions, unit, 'text-xl')}</span>
-          <span class="text-xs font-semibold text-brand-500">${progressLine}</span>
+        <p class="text-xs text-slate-400">${isFinal ? 'Fully bloomed — sets keep progressing.' : `All ${dpResult.workingSetCount} set${dpResult.workingSetCount!==1?'s':''} must progress to evolve to the next stage!`}</p>
+      </div>`;
+
+    // Standalone "Set progress (current stage)" leaf row — the three-state
+    // (growing/ready/matured) visual explicitly called for by the task, kept
+    // separate from the plant hero so both can be scanned independently.
+    leavesHtml = `
+      <div class="card p-4">
+        <p class="text-xs font-semibold text-slate-400 mb-3">Set progress (current stage)</p>
+        <div class="grid gap-2" style="grid-template-columns:repeat(${dpPositions.length},minmax(0,1fr))">
+          ${dpPositions.map((p, i) => {
+            const state = dpLeafVisualState(p);
+            const color = state === 'matured' ? 'text-brand-500 bg-brand-50 dark:bg-brand-950/40' : state === 'ready' ? 'text-amber-500 bg-amber-50 dark:bg-amber-950/30' : 'text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-800';
+            const labelColor = state === 'matured' ? 'text-brand-500' : state === 'ready' ? 'text-amber-500' : 'text-slate-400';
+            return `
+              <div class="flex flex-col items-center gap-1 text-center">
+                <span class="ms text-2xl rounded-full p-2 ${color}" style="font-variation-settings:'FILL' ${state === 'growing' ? 0 : 1}" role="img" aria-label="${esc(describeSetAriaLabel(p, unit))}">eco</span>
+                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Set ${i + 1}</p>
+                <p class="text-[11px] font-semibold ${labelColor}">${DP_LEAF_STATE_LABEL[state]}</p>
+              </div>`;
+          }).join('')}
         </div>
-        <p class="text-xs text-slate-400">${isFinal ? 'Fully bloomed — sets keep progressing.' : 'All working sets must move to a higher weight to evolve to the next stage.'} <button id="exd-how-btn" class="text-brand-500 underline font-semibold">How it works</button></p>
       </div>`;
   }
 
-  // ── Set progress ────────────────────────────────────────────────────────
+  // ── Set progress table — compact grid, column headers once at the top ────
   let setsHtml = '';
   if (configured) {
+    const rows = dpPositions.map((p, i) => {
+      const cue = shortSetProgressionCue(p, ex);
+      const rirText = p.currentRir != null ? p.currentRir : '—';
+      const statusBg = p.status === 'ready_to_increase' ? 'bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400'
+        : p.status === 'increased_weight' ? 'bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400'
+        : p.status === 'below_range' ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
+        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
+      const ringColor = p.status === 'ready_to_increase' || p.status === 'increased_weight' ? 'border-brand-500 text-brand-500' : 'border-slate-300 dark:border-slate-600 text-slate-400';
+      const secondary = p.status === 'building_reps' && p.targetMaxReps != null && p.currentWeight != null
+        ? `<p class="text-[10px] text-slate-400">${Math.max(0, p.targetMaxReps - (p.currentReps || 0))} to go</p>` : '';
+      return `
+        <div class="grid items-center gap-1.5 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0" style="grid-template-columns:26px 42px 42px 22px 1fr 1fr">
+          <span class="w-6 h-6 rounded-full border-2 ${ringColor} flex items-center justify-center text-[11px] font-bold flex-shrink-0">${i + 1}</span>
+          <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${p.currentWeight == null ? '—' : `${p.currentWeight}${unit}`}</span>
+          <span>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 block">${p.currentWeight == null ? '—' : (p.currentReps || 0)}</span>
+            ${p.targetMaxReps != null && p.currentWeight != null ? `<span class="text-[10px] text-slate-400 block">of ${p.targetMaxReps}</span>` : ''}
+          </span>
+          <span class="text-xs text-slate-400">${rirText}</span>
+          <span>
+            <span class="inline-block px-1.5 py-0.5 rounded-md text-[10px] font-bold ${statusBg}">${DP_STATUS_LABEL[p.status] || p.status}</span>
+            ${secondary}
+          </span>
+          <span class="text-[11px] font-semibold ${p.status === 'ready_to_increase' ? 'text-brand-500' : 'text-slate-500 dark:text-slate-400'}">${cue ? esc(cue) + (p.status === 'ready_to_increase' ? ' ↑' : '') : '—'}</span>
+        </div>`;
+    }).join('');
     setsHtml = `
-      <div class="space-y-2">
-        <p class="text-xs font-semibold text-slate-400 px-1">Set progress</p>
-        ${dpPositions.map((p, i) => {
-          const cue = shortSetProgressionCue(p, ex);
-          const rirText = p.currentRir != null ? `RIR ${p.currentRir}` : '—';
-          const repsText = p.currentWeight == null ? 'Not yet logged' : `${p.currentReps || 0} of ${p.targetMaxReps} reps`;
-          const statusColor = p.status === 'ready_to_increase' ? 'text-brand-500'
-            : p.status === 'increased_weight' ? 'text-brand-500'
-            : p.status === 'below_range' ? 'text-amber-500'
-            : 'text-slate-500 dark:text-slate-400';
-          return `
-            <div class="card p-3 space-y-1.5">
-              <div class="flex items-center justify-between gap-2">
-                <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">Set ${i + 1}</p>
-                <span class="text-xs font-bold ${statusColor}">${DP_STATUS_LABEL[p.status] || p.status}</span>
-              </div>
-              <p class="text-xs text-slate-400">${p.currentWeight == null ? '—' : `${p.currentWeight} ${unit}`} · ${repsText} · ${rirText}</p>
-              ${dpRecs[i] ? `<p class="text-xs text-slate-500 dark:text-slate-400">${esc(dpRecs[i].text)}</p>` : ''}
-              ${cue ? `<p class="text-xs font-semibold text-brand-500">Next time: ${esc(cue)}</p>` : ''}
-            </div>`;
-        }).join('')}
+      <div class="card p-3.5">
+        <div class="grid gap-1.5 pb-2 border-b border-slate-100 dark:border-slate-800" style="grid-template-columns:26px 42px 42px 22px 1fr 1fr">
+          <span class="text-[10px] font-bold text-slate-400">Sets</span>
+          <span class="text-[10px] font-bold text-slate-400">Weight</span>
+          <span class="text-[10px] font-bold text-slate-400">Reps</span>
+          <span class="text-[10px] font-bold text-slate-400">RIR</span>
+          <span class="text-[10px] font-bold text-slate-400">Status</span>
+          <span class="text-[10px] font-bold text-slate-400">Next time</span>
+        </div>
+        ${rows}
       </div>`;
   }
 
@@ -3369,13 +3432,30 @@ function renderExerciseDetail(exerciseId) {
       headline = (idx !== -1 && dpRecs[idx]) ? dpRecs[idx].text : 'Keep logging sets to see a recommendation here.';
     }
     recHtml = `
-      <div class="p-3.5 bg-brand-50 dark:bg-brand-950/30 rounded-xl flex gap-2.5 items-start">
-        <span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
-        <p class="text-sm text-slate-700 dark:text-slate-200">${esc(headline)}</p>
+      <div class="card p-3.5 space-y-1.5">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><span class="ms text-amber-400" aria-hidden="true">tips_and_updates</span>Recommendation</p>
+          <button id="exd-how-btn" class="btn btn-outline text-[11px] px-2.5 py-1.5 flex-shrink-0">How it works</button>
+        </div>
+        <p class="text-sm text-slate-600 dark:text-slate-300">${esc(headline)}</p>
       </div>`;
   }
 
-  // ── Recent history (compact) ─────────────────────────────────────────────
+  // ── Exercise summary — only real, stored-data metrics ────────────────────
+  const summary = computeExerciseSummary(exerciseId);
+  const rirNote = summary.avgRir == null ? '' : summary.avgRir <= 0.5 ? 'Pushing hard' : summary.avgRir <= 2.5 ? 'Great control' : 'Room to push';
+  const deltaLine = (v, isKg) => v == null ? '' : v === 0 ? '' : `<p class="text-[10px] font-semibold ${v > 0 ? 'text-brand-500' : 'text-amber-500'} mt-0.5">${v > 0 ? '+' : ''}${v}${isKg ? ` ${unit}` : ' reps'} ${v > 0 ? '↑' : '↓'}</p>`;
+  const summaryHtml = summary.sessionCount ? `
+    <div class="card p-3.5">
+      <p class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5"><span class="ms text-sm" aria-hidden="true">auto_awesome</span>Exercise summary</p>
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.volume}</p><p class="text-[10px] text-slate-400">Volume (${unit})</p>${deltaLine(summary.volumeDelta, true)}</div>
+        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.totalReps}</p><p class="text-[10px] text-slate-400">Total reps</p>${deltaLine(summary.repsDelta, false)}</div>
+        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.avgRir ?? '—'}</p><p class="text-[10px] text-slate-400">Avg RIR</p>${rirNote ? `<p class="text-[10px] font-semibold text-brand-500 mt-0.5">${rirNote}</p>` : ''}</div>
+      </div>
+    </div>` : '';
+
+  // ── Recent history (compact) — most recent entry highlighted ─────────────
   const recent = getExerciseRecentHistory(exerciseId, 5);
   const historyHtml = `
     <div class="space-y-2">
@@ -3385,10 +3465,10 @@ function renderExerciseDetail(exerciseId) {
       </div>
       ${recent.length ? `
         <div class="flex gap-2 overflow-x-auto pb-1">
-          ${recent.map(r => {
+          ${recent.map((r, i) => {
             const uniformWeight = r.weights.every(w => w === r.weights[0]) ? `${r.weights[0]} ${unit}` : r.weights.map(w => `${w}${unit}`).join('/');
             return `
-              <div class="card p-2.5 flex-shrink-0" style="min-width:88px">
+              <div class="card p-2.5 flex-shrink-0 ${i === 0 ? 'border-brand-400 dark:border-brand-600' : ''}" style="min-width:88px">
                 <p class="text-[10px] font-bold text-slate-400">${fmtDate(r.date)}</p>
                 <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">${uniformWeight}</p>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400">${r.reps.join(' · ')}</p>
@@ -3396,18 +3476,6 @@ function renderExerciseDetail(exerciseId) {
           }).join('')}
         </div>` : `<p class="text-xs text-slate-400 px-1">No logged sessions yet.</p>`}
     </div>`;
-
-  // ── Exercise summary — only real, stored-data metrics ────────────────────
-  const summary = computeExerciseSummary(exerciseId);
-  const summaryHtml = summary.sessionCount ? `
-    <div class="card p-3.5">
-      <p class="text-xs font-semibold text-slate-400 mb-2">Exercise summary</p>
-      <div class="grid grid-cols-3 gap-2 text-center">
-        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.volume}</p><p class="text-[10px] text-slate-400">Volume (${unit})</p></div>
-        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.totalReps}</p><p class="text-[10px] text-slate-400">Total reps</p></div>
-        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.avgRir ?? '—'}</p><p class="text-[10px] text-slate-400">Avg RIR</p></div>
-      </div>
-    </div>` : '';
 
   // ── Secondary actions ─────────────────────────────────────────────────────
   const actionsHtml = `
@@ -3418,12 +3486,12 @@ function renderExerciseDetail(exerciseId) {
 
   document.getElementById('exd-main').innerHTML = `
     <div class="p-4 max-w-2xl w-full mx-auto space-y-4">
-      <p class="text-xs font-semibold text-slate-400 text-center -mt-1">${repRangeText}</p>
       ${heroHtml}
+      ${leavesHtml}
       ${setsHtml}
       ${recHtml}
-      ${historyHtml}
       ${summaryHtml}
+      ${historyHtml}
       ${actionsHtml}
     </div>`;
 
