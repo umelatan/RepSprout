@@ -3977,7 +3977,17 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
     document.getElementById('exercise-modal').style.display = 'none';
 
     const groupModalOpen = document.getElementById('group-modal').style.display !== 'none';
-    if (groupModalOpen && groupModalStep === 2 && !id && newId) {
+    const buildWorkoutOpen = document.getElementById('build-workout-modal').style.display !== 'none';
+    if (buildWorkoutOpen && !id && newId) {
+      // Created inline from the Build Today's Workout picker (its own
+      // "Create exercise" card) — select it immediately and refresh whatever
+      // step is showing, instead of leaving the user to find and tap it
+      // themselves right after typing its name.
+      buildTodaySelectedIds.push(newId);
+      renderBwFilterChips(); renderBwRecent(); renderBwList(document.getElementById('bw-search').value); updateBwBottomBar();
+      if (document.getElementById('bw-step2').style.display !== 'none') renderBwReview();
+      showToast('Exercise created and added.');
+    } else if (groupModalOpen && groupModalStep === 2 && !id && newId) {
       // Created inline from the group builder's "pick exercises" step —
       // bring it straight into view and pre-select it instead of leaving
       // the user staring at a list that still looks empty.
@@ -4443,6 +4453,21 @@ function bwLastPerformanceLine(exerciseId) {
   return `Last: ${last.weight} ${last.unit || 'kg'} × ${reps}`;
 }
 
+// Dashed "create" card at the end of the list — same role as the Exercises
+// tab's own "+ Add exercise" button, styled with this flow's lavender accent
+// so a missing exercise never forces the user out of the picker to go add
+// it. See openExerciseModal()'s ex-modal-save handler for the "came from
+// Build Today's Workout" branch that auto-selects the new exercise on save.
+function bwCreateExerciseCardHtml() {
+  return `
+    <button id="bw-create-exercise-btn" type="button" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-lavender-300 dark:border-lavender-700 text-lavender-600 dark:text-lavender-400 hover:bg-lavender-50 dark:hover:bg-lavender-950/20 transition-all text-sm font-semibold">
+      <span class="ms text-lg" aria-hidden="true">add_circle</span>Create exercise
+    </button>`;
+}
+function wireBwCreateExerciseBtn() {
+  document.getElementById('bw-create-exercise-btn')?.addEventListener('click', () => openExerciseModal());
+}
+
 function renderBwList(q) {
   const list = document.getElementById('bw-list');
   const query = (q || '').toLowerCase();
@@ -4450,7 +4475,9 @@ function renderBwList(q) {
     && (!query || ex.name?.toLowerCase().includes(query))
     && (!buildTodayFilter || ex.muscleGroup === buildTodayFilter));
   if (!items.length) {
-    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${Object.keys(exercises).length ? 'No exercises match your search.' : 'No exercises yet — create one from Workout → Exercises first.'}</p>`;
+    const msg = Object.keys(exercises).length ? 'No exercises match your search.' : "You don't have any exercises yet.";
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${msg}</p>` + bwCreateExerciseCardHtml();
+    wireBwCreateExerciseBtn();
     return;
   }
   list.innerHTML = items.map(([id, ex]) => {
@@ -4466,11 +4493,12 @@ function renderBwList(q) {
         </div>
         <span class="flex-shrink-0">${bwSelectionIcon(selected)}</span>
       </div>`;
-  }).join('');
+  }).join('') + bwCreateExerciseCardHtml();
   list.querySelectorAll('.bw-ex-card').forEach(card => {
     card.addEventListener('click', () => toggleBwSelection(card.dataset.id));
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleBwSelection(card.dataset.id); } });
   });
+  wireBwCreateExerciseBtn();
 }
 
 function updateBwBottomBar() {
