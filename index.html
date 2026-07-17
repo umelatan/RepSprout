@@ -4343,8 +4343,14 @@ function openStartWorkoutChoice() {
 }
 function closeStartWorkoutChoice() { document.getElementById('start-workout-modal').style.display = 'none'; }
 document.getElementById('sw-close').addEventListener('click', closeStartWorkoutChoice);
-document.getElementById('sw-group-btn').addEventListener('click', () => { closeStartWorkoutChoice(); openGroupPicker(); });
-document.getElementById('sw-build-btn').addEventListener('click', () => { closeStartWorkoutChoice(); openBuildTodaysWorkout(); });
+// Deliberately does NOT close start-workout-modal — it stays open underneath
+// (both group-picker-modal and build-workout-modal sit at a higher z-index),
+// so each sub-page's own X/close only has to hide itself to correctly land
+// back on this choice screen, instead of skipping straight to Home. Each
+// sub-page's own terminal ("start workout") action is responsible for
+// closing this modal too — see closeGroupPicker() and bw-start-btn.
+document.getElementById('sw-group-btn').addEventListener('click', () => { openGroupPicker(); });
+document.getElementById('sw-build-btn').addEventListener('click', () => { openBuildTodaysWorkout(); });
 
 // ── Build Today's Workout: two-step picker + review ─────────────────────────
 // Builds a one-off session from freely-chosen exercises instead of a saved
@@ -4606,10 +4612,21 @@ function wireBwDragHandles() {
 document.getElementById('bw-start-btn').addEventListener('click', () => {
   if (!buildTodaySelectedIds.length) return;
   closeBuildWorkout();
+  closeStartWorkoutChoice(); // this modal is left open underneath by design — see sw-build-btn
   startQuickWorkout(buildTodaySelectedIds);
 });
 
-function closeGroupPicker() { document.getElementById('group-picker-modal').style.display = 'none'; }
+// Terminal exit from the group picker — a workout is starting, or the user
+// is being routed to a completely different screen (create exercise/group),
+// so the "Start a workout" choice underneath is closed along with it too
+// (openGroupPicker() is only ever reached from there — see sw-group-btn).
+// The picker's own X (group-picker-close, below) deliberately does NOT call
+// this: it only hides group-picker-modal, revealing start-workout-modal
+// again, so backing out one level doesn't skip past it to Home.
+function closeGroupPicker() {
+  document.getElementById('group-picker-modal').style.display = 'none';
+  closeStartWorkoutChoice();
+}
 
 function openGroupPicker() {
   const list = document.getElementById('group-picker-list');
@@ -4631,7 +4648,7 @@ function openGroupPicker() {
       <p class="text-sm text-slate-400 text-center py-2">No workout groups yet. You can create a group or start a Quick Workout.</p>
       <button id="gp-start-quick-primary" class="btn btn-green btn-pop w-full py-3">Start Quick Workout</button>
       <button id="gp-create-first" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Create workout group</button>`;
-    document.getElementById('gp-start-quick-primary').addEventListener('click', startQuickWorkout);
+    document.getElementById('gp-start-quick-primary').addEventListener('click', () => { closeGroupPicker(); startQuickWorkout(); });
     document.getElementById('gp-create-first').addEventListener('click', () => {
       closeGroupPicker();
       goView('workout'); switchWorkoutTab('groups');
@@ -4661,7 +4678,7 @@ function openGroupPicker() {
       closeGroupPicker();
       startWorkoutSession(b.dataset.id);
     }));
-    document.getElementById('gp-start-quick').addEventListener('click', startQuickWorkout);
+    document.getElementById('gp-start-quick').addEventListener('click', () => { closeGroupPicker(); startQuickWorkout(); });
   }
   document.getElementById('group-picker-modal').style.display = '';
 }
@@ -7277,8 +7294,17 @@ function openCalendarAddPicker(date) {
   document.getElementById('calendar-day-sheet').style.display = 'none';
   document.getElementById('calendar-add-modal').style.display = '';
 
+  // None of the three buttons below hide calendar-add-modal before opening
+  // their sub-picker — it stays open underneath (each sub-picker sits at a
+  // higher z-index), so that sub-picker's own X only has to hide itself to
+  // correctly land back on "Add to this day" instead of skipping past it.
+  // Every terminal completion path already ends in finishActivityAdded() ->
+  // closeCalendarActivityWindows(), which closes calendar-add-modal (and
+  // everything else in this flow) as one blanket cleanup — see that function
+  // — except the one path that starts a live workout immediately (today's
+  // Quick Workout, below), which closes it explicitly since it never
+  // reaches finishActivityAdded().
   document.getElementById('cap-group-btn').onclick = () => {
-    document.getElementById('calendar-add-modal').style.display = 'none';
     openCalendarGroupPicker(relation === 'past' ? 'Which workout group did you do?' : 'Choose a workout group', groupId => {
       if (relation === 'past') {
         const g = groups[groupId];
@@ -7303,7 +7329,6 @@ function openCalendarAddPicker(date) {
   };
 
   document.getElementById('cap-quick-btn').onclick = () => {
-    document.getElementById('calendar-add-modal').style.display = 'none';
     // All three date relations link to the same saved exercise library
     // through one picker — see openMultiExercisePicker().
     if (relation === 'today') {
@@ -7312,7 +7337,13 @@ function openCalendarAddPicker(date) {
         confirmLabel: 'Start Quick Workout',
         // Starting a live workout isn't "adding an activity" yet (nothing is
         // logged until it's finished), so no "Activity added?" step here.
-        onConfirm: async ids => { document.getElementById('calendar-day-sheet').style.display = 'none'; startQuickWorkout(ids); }
+        // This path never reaches finishActivityAdded(), so it's the one
+        // place here that has to close calendar-add-modal itself.
+        onConfirm: async ids => {
+          document.getElementById('calendar-day-sheet').style.display = 'none';
+          document.getElementById('calendar-add-modal').style.display = 'none';
+          startQuickWorkout(ids);
+        }
       });
     } else if (relation === 'past') {
       openMultiExercisePicker({
@@ -7341,7 +7372,6 @@ function openCalendarAddPicker(date) {
   };
 
   document.getElementById('cap-activity-btn').onclick = () => {
-    document.getElementById('calendar-add-modal').style.display = 'none';
     openActivityLibrary(activityId => {
       const act = getActivity(activityId);
       openActivityDetailModal({
