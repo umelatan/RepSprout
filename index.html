@@ -414,20 +414,82 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
     <!-- WORKOUT -->
     <section id="workout-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4 pb-8">
-      <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="groups">Groups</button>
-        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="exercises">Exercises</button>
-        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="targets">Targets</button>
-        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="history">History</button>
+
+      <!-- Hub — the landing page for this tab (see switchWorkoutTab('hub') /
+           renderWorkoutHub()). Groups/Exercises/Targets/History are now
+           reached by tapping a card, each with its own back-to-hub button,
+           rather than a tab bar. -->
+      <div id="wt-hub" style="display:none" class="space-y-4">
+        <div class="flex items-start gap-2.5 px-0.5">
+          <span class="text-2xl leading-none flex-shrink-0" aria-hidden="true">🌱</span>
+          <div class="min-w-0">
+            <h2 class="font-display font-extrabold text-xl text-slate-800 dark:text-white">Your workout hub</h2>
+            <p class="text-sm text-slate-400 mt-0.5">Manage your routines, exercises, targets and progress in one place.</p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="groups" aria-label="Workout Groups — create and manage your workout routines">
+            <span class="w-12 h-12 rounded-2xl bg-pink-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">folder</span></span>
+            <div class="min-w-0 flex-1">
+              <p class="font-display font-bold text-base text-slate-800 dark:text-white">Workout Groups</p>
+              <p class="text-xs text-slate-400 mt-0.5">Create and manage your workout routines.</p>
+              <p id="wt-hub-groups-meta" class="text-xs font-semibold text-pink-500 mt-1"></p>
+            </div>
+            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+          </button>
+
+          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="exercises" aria-label="Exercises — browse, add and organise your exercise library">
+            <span class="w-12 h-12 rounded-2xl bg-blue-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">fitness_center</span></span>
+            <div class="min-w-0 flex-1">
+              <p class="font-display font-bold text-base text-slate-800 dark:text-white">Exercises</p>
+              <p class="text-xs text-slate-400 mt-0.5">Browse, add and organise your exercise library.</p>
+              <p id="wt-hub-exercises-meta" class="text-xs font-semibold text-blue-500 mt-1"></p>
+            </div>
+            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+          </button>
+
+          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="targets" aria-label="Targets — track your daily and weekly fitness goals">
+            <span class="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">track_changes</span></span>
+            <div class="min-w-0 flex-1">
+              <p class="font-display font-bold text-base text-slate-800 dark:text-white">Targets</p>
+              <p class="text-xs text-slate-400 mt-0.5">Track your daily and weekly fitness goals.</p>
+              <p id="wt-hub-targets-meta" class="text-xs font-semibold text-brand-500 mt-1"></p>
+            </div>
+            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+          </button>
+
+          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="history" aria-label="History — review your past workouts and progress">
+            <span class="w-12 h-12 rounded-2xl bg-purple-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">history</span></span>
+            <div class="min-w-0 flex-1">
+              <p class="font-display font-bold text-base text-slate-800 dark:text-white">History</p>
+              <p class="text-xs text-slate-400 mt-0.5">Review your past workouts and progress.</p>
+              <p id="wt-hub-history-meta" class="text-xs font-semibold text-purple-500 mt-1"></p>
+            </div>
+            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+
+        <!-- Optional — reads the active plant fresh (see renderWorkoutHub()),
+             never a hardcoded species; hidden entirely until the name is known. -->
+        <div id="wt-hub-plant-card" style="display:none" class="card p-4 flex items-center gap-3.5">
+          <span class="text-2xl flex-shrink-0" aria-hidden="true">🌱</span>
+          <div class="min-w-0 flex-1">
+            <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Keep showing up.</p>
+            <p class="text-xs text-slate-400 mt-0.5">Consistency nurtures <span id="wt-hub-plant-name"></span>.</p>
+          </div>
+        </div>
       </div>
 
       <!-- Groups -->
       <div id="wt-groups" style="display:none" class="space-y-3">
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span>Workout hub</button>
         <div id="groups-list" class="space-y-3"></div>
       </div>
 
       <!-- Exercises -->
       <div id="wt-exercises" style="display:none" class="space-y-3">
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span>Workout hub</button>
         <input id="ex-search" type="text" placeholder="Search exercises">
         <div id="exercise-library-list" class="space-y-2"></div>
         <button id="new-exercise-btn" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
@@ -440,6 +502,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            calculateTargetGrowth()'s note on why Targets can never touch
            Double Progression or Exercise Plant state). -->
       <div id="wt-targets" style="display:none" class="space-y-4">
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span>Workout hub</button>
         <div class="flex items-center justify-between gap-2">
           <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg" role="group" aria-label="Filter targets">
             <button class="tgt-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="active">Active</button>
@@ -451,7 +514,8 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       </div>
 
       <!-- History -->
-      <div id="wt-history" style="display:none">
+      <div id="wt-history" style="display:none" class="space-y-3">
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span>Workout hub</button>
         <div id="session-history-list" class="space-y-3"></div>
       </div>
     </section>
@@ -1761,7 +1825,7 @@ const gp   = new GoogleAuthProvider();
 // ── State ──────────────────────────────────────────────────────────────────
 let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, collectedCompanions = {}, targets = {}, targetLogs = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
-let activeWorkoutTab = 'groups';
+let activeWorkoutTab = 'hub';
 let dataRefs = [];
 
 // Active (in-progress) workout — lives only in memory until Finish+Save,
@@ -3135,8 +3199,7 @@ function goView(v) {
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
-  if (v === 'workout' && !activeWorkoutTab) switchWorkoutTab('groups');
-  if (v === 'workout' && activeWorkoutTab) switchWorkoutTab(activeWorkoutTab);
+  if (v === 'workout') switchWorkoutTab('hub');
 }
 
 document.querySelectorAll('.rs-nav,.rs-bnav').forEach(el =>
@@ -3875,25 +3938,51 @@ document.getElementById('toggle-key-vis').addEventListener('click', () => {
   inp.type = inp.type === 'password' ? 'text' : 'password';
 });
 
-// ── Workout tabs ────────────────────────────────────────────────────────────
+// ── Workout hub / sub-pages ──────────────────────────────────────────────────
 function switchWorkoutTab(tab) {
   activeWorkoutTab = tab;
-  document.querySelectorAll('.wt-tab').forEach(b => {
-    const on = b.dataset.tab === tab;
-    b.style.background = on ? 'white' : 'transparent';
-    b.style.color      = on ? '#22c55e' : '';
-    if (document.documentElement.classList.contains('dark')) b.style.background = on ? '#1e293b' : 'transparent';
-  });
-  ['groups','exercises','targets','history'].forEach(t => {
+  ['hub','groups','exercises','targets','history'].forEach(t => {
     document.getElementById('wt-'+t).style.display = t === tab ? '' : 'none';
   });
+  if (tab === 'hub')       renderWorkoutHub();
   if (tab === 'groups')    renderGroupsList();
   if (tab === 'history')   renderHistory();
   if (tab === 'exercises') renderExerciseLibrary();
   if (tab === 'targets')   renderTargetsTab();
 }
 
-document.querySelectorAll('.wt-tab').forEach(b => b.addEventListener('click', () => switchWorkoutTab(b.dataset.tab)));
+// Live metadata for each hub card — reads groups/exercises/targets/sessions
+// straight from existing state, the same fields their own tabs already read,
+// so there is no separate count to keep in sync.
+function renderWorkoutHub() {
+  const groupCount = Object.values(groups).filter(g => !g.archived).length;
+  document.getElementById('wt-hub-groups-meta').textContent =
+    groupCount === 0 ? 'No groups yet' : `${groupCount} group${groupCount === 1 ? '' : 's'}`;
+
+  const exerciseCount = Object.values(exercises).filter(ex => !ex.archived).length;
+  document.getElementById('wt-hub-exercises-meta').textContent =
+    exerciseCount === 0 ? 'No exercises yet' : `${exerciseCount} exercise${exerciseCount === 1 ? '' : 's'}`;
+
+  const activeTargetCount = Object.values(targets).filter(t => t.status === 'active').length;
+  document.getElementById('wt-hub-targets-meta').textContent =
+    activeTargetCount === 0 ? 'No active targets' : `${activeTargetCount} active target${activeTargetCount === 1 ? '' : 's'}`;
+
+  const workoutCount = totalLoggedSessions();
+  document.getElementById('wt-hub-history-meta').textContent =
+    workoutCount === 0 ? 'No workouts yet' : `${workoutCount} workout${workoutCount === 1 ? '' : 's'}`;
+
+  const plantName = (PLANTS[userProfile.plant] || {}).name;
+  const plantCard = document.getElementById('wt-hub-plant-card');
+  if (plantName) {
+    document.getElementById('wt-hub-plant-name').textContent = plantName;
+    plantCard.style.display = '';
+  } else {
+    plantCard.style.display = 'none';
+  }
+}
+
+document.querySelectorAll('.wt-hub-card').forEach(b => b.addEventListener('click', () => switchWorkoutTab(b.dataset.tab)));
+document.querySelectorAll('.wt-back-btn').forEach(b => b.addEventListener('click', () => switchWorkoutTab('hub')));
 
 // ── Targets tab ──────────────────────────────────────────────────────────────
 let targetsStatusFilter = 'active';
