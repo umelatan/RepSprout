@@ -1082,7 +1082,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
           <div id="ct-activity-chips" class="flex flex-wrap gap-1.5" role="group" aria-label="Popular activities"></div>
           <div class="relative mt-3">
             <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
-            <input id="ct-activity-search" type="text" placeholder="Search exercises or activities..." class="pl-9 text-sm" aria-label="Search exercises or activities">
+            <input id="ct-activity-search" type="text" placeholder="Search or type your own activity..." class="pl-9 text-sm" aria-label="Search exercises or activities, or type your own">
           </div>
           <div id="ct-activity-results" class="mt-2 space-y-0.5" style="display:none"></div>
         </div>
@@ -4082,18 +4082,22 @@ document.getElementById('ct-activity-change').addEventListener('click', () => {
   ctRenderPreview();
 });
 document.getElementById('ct-activity-search').addEventListener('input', e => {
-  const q = e.target.value.trim().toLowerCase();
+  const raw = e.target.value.trim();
+  const q = raw.toLowerCase();
   const results = document.getElementById('ct-activity-results');
   if (!q) { results.style.display = 'none'; return; }
   const exerciseMatches = Object.entries(exercises).filter(([, ex]) => !ex.archived && ex.name?.toLowerCase().includes(q)).slice(0, 6);
   const usedNames = new Set(exerciseMatches.map(([, ex]) => ex.name));
   const presetMatches = TARGET_ACTIVITY_PRESETS.filter(n => n.toLowerCase().includes(q) && !usedNames.has(n));
   const items = [...exerciseMatches.map(([id, ex]) => ({ name: ex.name, exerciseId: id })), ...presetMatches.map(n => ({ name: n, exerciseId: null }))];
+  // Not in the library or curated list? Offer to use exactly what was typed
+  // as a one-off custom activity, rather than dead-ending on "No matches."
+  const hasExactMatch = items.some(it => it.name.toLowerCase() === q);
   results.style.display = '';
-  results.innerHTML = items.length
-    ? items.map(it => `<button type="button" class="ct-activity-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-200" data-name="${esc(it.name)}" data-exercise-id="${it.exerciseId || ''}">${esc(it.name)}</button>`).join('')
-    : `<p class="text-xs text-slate-400 px-3 py-2">No matches.</p>`;
+  results.innerHTML = items.map(it => `<button type="button" class="ct-activity-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-200" data-name="${esc(it.name)}" data-exercise-id="${it.exerciseId || ''}">${esc(it.name)}</button>`).join('')
+    + (hasExactMatch ? '' : `<button type="button" id="ct-activity-custom-btn" class="w-full text-left px-3 py-2 rounded-lg hover:bg-lavender-50 dark:hover:bg-lavender-950/20 text-sm font-semibold text-lavender-600 dark:text-lavender-400 flex items-center gap-1.5"><span class="ms text-base" aria-hidden="true">add</span>Use "${esc(raw)}"</button>`);
   results.querySelectorAll('.ct-activity-result').forEach(b => b.addEventListener('click', () => ctSelectActivity({ name: b.dataset.name, exerciseId: b.dataset.exerciseId || null })));
+  document.getElementById('ct-activity-custom-btn')?.addEventListener('click', () => ctSelectActivity({ name: raw, exerciseId: null }));
 });
 
 // One short, concrete example per type — helps a first-time user understand
