@@ -470,14 +470,14 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
           </button>
         </div>
 
-        <!-- Optional — reads the active plant fresh (see renderWorkoutHub()),
-             never a hardcoded species; hidden entirely until the name is known. -->
-        <div id="wt-hub-plant-card" style="display:none" class="card p-4 flex items-center gap-3.5">
-          <span class="text-2xl flex-shrink-0" aria-hidden="true">🌱</span>
-          <div class="min-w-0 flex-1">
-            <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Keep showing up.</p>
-            <p class="text-xs text-slate-400 mt-0.5">Consistency nurtures <span id="wt-hub-plant-name"></span>.</p>
-          </div>
+        <!-- Optional footer — reads the active plant fresh (see
+             renderWorkoutHub()), never a hardcoded species; hidden entirely
+             until the name is known. Plain text, no card/border/shadow, so
+             it never reads as a fifth tappable card. -->
+        <div id="wt-hub-plant-card" style="display:none" class="text-center pt-8 md:pt-10">
+          <span class="text-2xl leading-none" aria-hidden="true">🌱</span>
+          <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 mt-1.5">Keep showing up.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Consistency nurtures <span id="wt-hub-plant-name"></span>.</p>
         </div>
       </div>
 
