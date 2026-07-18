@@ -1169,7 +1169,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         </div>
       </div>
 
-      <p class="text-xs text-slate-400 text-center flex items-center justify-center gap-1.5"><span class="ms text-sm text-brand-500" aria-hidden="true">eco</span>Completing this target helps your companion flourish.</p>
+      <p id="ct-plant-helper" style="display:none" class="text-xs text-slate-400 text-center flex items-center justify-center gap-1.5"><span class="ms text-sm text-brand-500" aria-hidden="true">eco</span><span id="ct-plant-name"></span></p>
 
       <p id="ct-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
     </div>
@@ -4173,6 +4173,19 @@ function ctUpdateCreateButtonState() {
   document.getElementById('ct-create-hint').style.display = ready ? 'none' : '';
 }
 
+// Reads the user's active plant fresh (never hardcoded) so this line always
+// names whichever plant is currently active — same "Helps X flourish" /
+// "Nurtures your plant" wording and fallback already used for the Today's
+// Mission reward line (see renderTodayMission()). Hidden until the name is
+// actually known, so it never flashes blank while userProfile is loading.
+function ctUpdatePlantHelperText() {
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
+  const helper = document.getElementById('ct-plant-helper');
+  if (!userProfile.plant) { helper.style.display = 'none'; return; }
+  document.getElementById('ct-plant-name').textContent = plantName !== 'plant' ? `Helps ${plantName} flourish` : 'Nurtures your plant';
+  helper.style.display = '';
+}
+
 // Reads live from every field that can change it and renders as a single
 // commitment sentence-like card, not a settings echo.
 function ctRenderPreview() {
@@ -4214,6 +4227,7 @@ function openCreateTargetModal() {
   ctRenderFrequency();
   ctUpdateCreateButtonState();
   ctRenderPreview();
+  ctUpdatePlantHelperText();
   show('create-target-modal');
 }
 document.getElementById('ct-close').addEventListener('click', () => hide('create-target-modal'));
