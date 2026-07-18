@@ -343,6 +343,26 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
           </div>
         </div>
 
+        <!-- Targets — entirely optional. Exactly one of these two shows at a
+             time (never both, never neither's absence noticeable) — see
+             renderHomeTargetSection(). A user who never creates a target
+             sees, at most, the lightweight dismissible invitation below;
+             once dismissed it never reappears (userProfile.targetsInviteDismissed). -->
+        <div id="dash-target-invite" style="display:none" class="rounded-2xl border-2 border-dashed border-lavender-300 dark:border-lavender-700 p-4 relative">
+          <button id="dash-target-invite-dismiss" type="button" class="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-slate-500 dark:hover:text-slate-400" aria-label="Dismiss this invitation"><span class="ms text-base" aria-hidden="true">close</span></button>
+          <p class="text-sm font-bold text-slate-700 dark:text-slate-200 pr-6">Track a personal goal</p>
+          <p class="text-xs text-slate-400 mt-0.5 pr-6">Create a target for daily or weekly habits.</p>
+          <button id="dash-target-invite-create" type="button" class="mt-3 btn text-sm px-4 py-2 border-2 border-lavender-400 text-lavender-600 dark:text-lavender-400 bg-transparent">Create Target</button>
+        </div>
+
+        <div id="dash-target-preview" style="display:none" class="space-y-2">
+          <div class="flex items-center justify-between px-1">
+            <p class="text-xs font-bold text-slate-400">Today's Target</p>
+            <button id="dash-target-view-all" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline">View all</button>
+          </div>
+          <div id="dash-target-preview-body"></div>
+        </div>
+
         <!-- Ambient stats — quiet, secondary -->
         <div id="dash-stats-row" class="flex items-center justify-center gap-8">
           <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p></div>
@@ -383,6 +403,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
         <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="groups">Groups</button>
         <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="exercises">Exercises</button>
+        <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="targets">Targets <span class="text-[8px] font-bold text-lavender-500 align-super">NEW</span></button>
         <button class="wt-tab flex-1 text-xs font-semibold py-2 rounded-lg transition-all text-slate-500" data-tab="history">History</button>
       </div>
 
@@ -398,6 +419,21 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <button id="new-exercise-btn" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
           <span class="ms text-base" aria-hidden="true">add</span>Add exercise
         </button>
+      </div>
+
+      <!-- Targets — entirely optional habit tracking, kept visually and
+           architecturally separate from Groups/Exercises (see
+           calculateTargetGrowth()'s note on why Targets can never touch
+           Double Progression or Exercise Plant state). -->
+      <div id="wt-targets" style="display:none" class="space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg" role="group" aria-label="Filter targets">
+            <button class="tgt-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="active">Active</button>
+            <button class="tgt-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="archived">Archived</button>
+          </div>
+          <button id="tgt-create-btn-top" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline flex items-center gap-1 flex-shrink-0"><span class="ms text-base" aria-hidden="true">add_circle</span>Create Target</button>
+        </div>
+        <div id="wt-targets-body" class="space-y-4"></div>
       </div>
 
       <!-- History -->
@@ -901,6 +937,16 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <p class="text-xs text-slate-400">Choose the exercises you want to do today.</p>
       </div>
     </button>
+    <!-- A third, equal option — not visually emphasized over the two
+         workout choices above (same border/padding/icon-size treatment,
+         just a "NEW" pill like the Targets tab gets). -->
+    <button id="sw-target-btn" type="button" class="w-full flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-lavender-400 dark:hover:border-lavender-600 text-left transition-all">
+      <span class="text-2xl flex-shrink-0" aria-hidden="true">🎯</span>
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">Create Target <span class="text-[9px] font-bold text-lavender-500 border border-lavender-300 dark:border-lavender-700 rounded px-1 py-0.5">NEW</span></p>
+        <p class="text-xs text-slate-400">Track a personal daily or weekly goal.</p>
+      </div>
+    </button>
   </div>
 </div>
 
@@ -990,6 +1036,154 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <p class="text-center text-[11px] text-slate-400">You can edit the order before starting.</p>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Create Target — a one-screen setup form (no wizard steps) matching the
+     Build Today's Workout sheet's own visual language and lavender accent.
+     Ends by calling createTarget() (see openCreateTargetModal()); everything
+     here is display state only, never touching exercises/sessions data. -->
+<div id="create-target-modal" style="display:none" class="fixed inset-0 z-[67] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-lg flex flex-col mx-auto" style="max-height:92vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex items-start justify-between gap-3 flex-shrink-0">
+      <div class="flex items-start gap-3 min-w-0">
+        <span class="w-10 h-10 rounded-full bg-lavender-100 dark:bg-lavender-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lavender-500 text-xl">track_changes</span></span>
+        <div class="min-w-0">
+          <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Create Target</p>
+          <p class="text-xs text-slate-400">Build a habit. Grow every day.</p>
+        </div>
+      </div>
+      <button id="ct-close" class="p-2 -mt-1 -mr-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 pb-4 space-y-5 min-h-0">
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">1. Choose activity</p>
+        <div class="relative">
+          <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" aria-hidden="true">search</span>
+          <input id="ct-activity-search" type="text" placeholder="Search exercises or activities..." class="pl-10" aria-label="Search exercises or activities">
+        </div>
+        <div id="ct-activity-results" class="mt-2 space-y-0.5" style="display:none"></div>
+        <p class="text-[11px] font-semibold text-slate-400 mt-3 mb-1.5">Popular</p>
+        <div id="ct-activity-chips" class="flex flex-wrap gap-1.5" role="group" aria-label="Popular activities"></div>
+        <p id="ct-activity-selected" class="text-xs text-lavender-600 dark:text-lavender-400 font-semibold mt-2" style="display:none"></p>
+      </div>
+
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">2. Target type</p>
+        <div id="ct-type-grid" class="grid grid-cols-4 gap-2" role="group" aria-label="Target type"></div>
+      </div>
+
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">3. Target amount</p>
+        <div class="flex items-center gap-2">
+          <button id="ct-amount-minus" type="button" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease target amount"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+          <input id="ct-amount" type="number" inputmode="decimal" min="0" step="1" value="30" class="text-center font-display font-bold text-lg" aria-label="Target amount">
+          <button id="ct-amount-plus" type="button" class="w-10 h-10 rounded-full border-2 border-lavender-400 text-lavender-500 flex items-center justify-center flex-shrink-0" aria-label="Increase target amount"><span class="ms text-lg" aria-hidden="true">add</span></button>
+          <span id="ct-amount-unit" class="text-sm font-semibold text-slate-500 dark:text-slate-400 flex-shrink-0" style="min-width:3.5rem">reps</span>
+        </div>
+        <div id="ct-unit-toggle" class="flex gap-1.5 mt-2" style="display:none" role="group" aria-label="Unit"></div>
+      </div>
+
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">4. Frequency</p>
+        <div class="grid grid-cols-2 gap-2" role="group" aria-label="Frequency">
+          <button id="ct-freq-daily" type="button" class="ct-freq-btn btn py-2.5 text-sm bg-lavender-500 text-white" data-freq="daily" aria-pressed="true">Daily</button>
+          <button id="ct-freq-weekly" type="button" class="ct-freq-btn btn py-2.5 text-sm bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400" data-freq="weekly" aria-pressed="false">Weekly</button>
+        </div>
+      </div>
+
+      <button id="ct-advanced-toggle" type="button" class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" aria-expanded="false">
+        <span class="ms text-base" id="ct-advanced-icon" aria-hidden="true">expand_more</span>5. Optional settings
+      </button>
+      <div id="ct-advanced-panel" style="display:none" class="space-y-3 -mt-2">
+        <div>
+          <label for="ct-name" class="text-xs font-semibold text-slate-400 block mb-1">Target name (optional)</label>
+          <input id="ct-name" type="text" placeholder="e.g. Morning push-ups">
+        </div>
+        <div>
+          <label for="ct-start-date" class="text-xs font-semibold text-slate-400 block mb-1">Start date</label>
+          <input id="ct-start-date" type="date">
+        </div>
+      </div>
+      <p id="ct-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
+    </div>
+    <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3">
+      <button id="ct-create-btn" type="button" class="btn w-full py-3.5 text-base bg-lavender-500 hover:bg-lavender-600 text-white" style="box-shadow:0 6px 14px -6px rgba(139,92,246,.45)">Create Target</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Target Progress — a small sheet for adding one entry to a target's
+     current period. Reps/duration/distance get manual entry + quick-add
+     chips; sessions targets log a flat +1 with no amount to type. Every log
+     is its own record (see logTargetProgress()), never merged into a
+     running total. -->
+<div id="log-target-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 id="lt-title" class="font-display font-bold text-base text-slate-800 dark:text-white"></h3>
+      <button id="lt-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <p id="lt-prompt" class="text-sm text-slate-500 dark:text-slate-400"></p>
+    <div id="lt-manual-wrap">
+      <div class="flex items-center gap-2 justify-center">
+        <button id="lt-amount-minus" type="button" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease amount"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+        <input id="lt-amount" type="number" inputmode="decimal" min="0" class="text-center font-display font-bold text-2xl" style="width:6rem" aria-label="Amount">
+        <span id="lt-amount-unit" class="text-sm font-semibold text-slate-400 flex-shrink-0"></span>
+        <button id="lt-amount-plus" type="button" class="w-10 h-10 rounded-full border-2 border-lavender-400 text-lavender-500 flex items-center justify-center flex-shrink-0" aria-label="Increase amount"><span class="ms text-lg" aria-hidden="true">add</span></button>
+      </div>
+      <div id="lt-quick-add" class="flex items-center justify-center gap-1.5 mt-3"></div>
+    </div>
+    <p id="lt-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
+    <button id="lt-save-btn" class="btn w-full py-3 text-base bg-lavender-500 hover:bg-lavender-600 text-white"></button>
+  </div>
+</div>
+
+<!-- Target management — Edit / Pause or Resume / Archive or Restore / Delete,
+     for the one target it was opened for (see openTargetActionsSheet()). -->
+<div id="target-actions-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="ta-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="ta-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="ta-edit-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit target</button>
+    <button id="ta-pause-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">pause_circle</span></button>
+    <button id="ta-archive-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">archive</span></button>
+    <button id="ta-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete target</button>
+  </div>
+</div>
+
+<!-- Edit Target — reuses the exact same amount/frequency controls as Create
+     Target's steps 2-4, just pre-filled and without the activity picker
+     (changing what a target is "for" is a delete+recreate, not an edit). -->
+<div id="edit-target-modal" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 id="et-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="et-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <div>
+      <label for="et-name" class="text-xs font-semibold text-slate-400 block mb-1">Target name</label>
+      <input id="et-name" type="text">
+    </div>
+    <div>
+      <label for="et-amount" class="text-xs font-semibold text-slate-400 block mb-1">Target amount</label>
+      <div class="flex items-center gap-2">
+        <input id="et-amount" type="number" inputmode="decimal" min="0" class="flex-1">
+        <span id="et-amount-unit" class="text-sm font-semibold text-slate-400 flex-shrink-0"></span>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs font-semibold text-slate-400 mb-1.5">Frequency</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="et-freq-daily" type="button" class="et-freq-btn btn py-2.5 text-sm" data-freq="daily">Daily</button>
+        <button id="et-freq-weekly" type="button" class="et-freq-btn btn py-2.5 text-sm" data-freq="weekly">Weekly</button>
+      </div>
+    </div>
+    <p id="et-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
+    <button id="et-save-btn" class="btn w-full py-3 text-sm bg-lavender-500 hover:bg-lavender-600 text-white">Save changes</button>
   </div>
 </div>
 
@@ -1499,7 +1693,7 @@ const db   = getDatabase(app);
 const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, collectedCompanions = {};
+let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, collectedCompanions = {}, targets = {}, targetLogs = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'groups';
 let dataRefs = [];
@@ -1691,7 +1885,12 @@ const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
 const GROWTH_AWARD = {
   completedWorkingSet: 0.4,
   completedExercise: 0.6,
-  completedWorkout: 2
+  completedWorkout: 2,
+  // A completed Target period (see calculateTargetGrowth()) — sized like a
+  // completed workout, since finishing a personal daily/weekly habit is a
+  // comparable "you showed up for yourself today" signal, not a bigger or
+  // smaller one.
+  targetCompleted: 2
 };
 
 // ── The single source of truth for plant growth state ───────────────────────
@@ -1837,14 +2036,19 @@ function recalculatePlantGrowth() {
 // forgot to check — see the Companion Plant Growth Engine note at GROWTH_AWARD.
 async function recalculateAndPersistPlantGrowth() {
   const previousGrowth = currentGrowthState();
-  const { totalGrowthPoints, perSession } = recalculatePlantGrowth();
+  const { totalGrowthPoints: sessionPoints, perSession } = recalculatePlantGrowth();
+  // Targets are a sibling contributor to the SAME growthPoints number, not a
+  // second growth system — see calculateTargetGrowth()'s own note.
+  const { totalGrowthPoints: targetPoints, perTargetPeriod } = calculateTargetGrowth();
+  const totalGrowthPoints = round1(sessionPoints + targetPoints);
   userProfile.growthPoints = totalGrowthPoints; // optimistic; onValue confirms shortly after
   const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: totalGrowthPoints });
   await set(ref(db, `users/${uid()}/growthPoints`), totalGrowthPoints);
   // Audit trail only — regenerated fresh from the same replay every time, so
-  // a session that no longer exists can never leave a stale/orphaned event
-  // behind, and recalculatePlantGrowth() never reads this back in.
-  syncGrowthEvents(perSession).catch(e => console.error('Failed to sync growth event audit trail:', e));
+  // a session (or target period) that no longer qualifies can never leave a
+  // stale/orphaned event behind, and recalculatePlantGrowth()/
+  // calculateTargetGrowth() never read this back in.
+  syncGrowthEvents(perSession, perTargetPeriod).catch(e => console.error('Failed to sync growth event audit trail:', e));
   syncDoubleProgressionEvents().catch(e => console.error('Failed to sync Double Progression event audit trail:', e));
   if (newGrowth.isFinalStage && userProfile.companion && userProfile.companion.status !== 'bloomed') {
     await completeCompanionBloom().catch(e => console.error('Failed to complete Companion bloom:', e));
@@ -1869,7 +2073,7 @@ async function completeCompanionBloom() {
     // A real count from this journey's own Plant Progress history, not a
     // guess — recalculatePlantGrowth() already scopes its replay to
     // [companion.startedAt, today], which is exactly this companion's era.
-    activitiesCompletedDuringJourney: recalculatePlantGrowth().perSession.length
+    activitiesCompletedDuringJourney: recalculatePlantGrowth().perSession.length + calculateTargetGrowth().perTargetPeriod.length
   };
   await addBloomedCompanionToGarden(record);
   const bloomedCompanion = { ...companion, status: 'bloomed', bloomedAt };
@@ -1917,7 +2121,7 @@ async function selectNextCompanion(speciesId) {
 // (companionPlantId + eventType + sourceType + sourceId) is what makes this
 // idempotent: recalculating twice in a row always produces byte-identical
 // records, never a duplicate award.
-async function syncGrowthEvents(perSession) {
+async function syncGrowthEvents(perSession, perTargetPeriod = []) {
   const companionId = userProfile.companion?.id || 'legacy';
   const events = {};
   for (const p of perSession) {
@@ -1926,6 +2130,16 @@ async function syncGrowthEvents(perSession) {
       id, userId: uid(), companionPlantId: companionId,
       eventType: p.eventType, sourceType: 'session', sourceId: p.id,
       progressValue: p.progressValue, occurredAt: p.date, metadata: { pillar: p.pillar },
+      createdAt: Date.now()
+    };
+  }
+  // Suggested unique key from the task spec: targetId + periodStart + eventType.
+  for (const p of perTargetPeriod) {
+    const id = `${companionId}_${p.eventType}_${p.targetId}_${p.periodStart}`;
+    events[id] = {
+      id, userId: uid(), companionPlantId: companionId,
+      eventType: p.eventType, sourceType: 'target_period', sourceId: `${p.targetId}_${p.periodStart}`,
+      progressValue: p.progressValue, occurredAt: p.date, metadata: { targetId: p.targetId, periodStart: p.periodStart },
       createdAt: Date.now()
     };
   }
@@ -1947,6 +2161,192 @@ async function syncDoubleProgressionEvents() {
     calculateExerciseDoubleProgression(exerciseId).events.forEach(e => { events[e.id] = e; });
   });
   await set(ref(db, `users/${uid()}/progressionEvents`), events);
+}
+
+// ── Targets: an entirely optional habit-tracking layer ──────────────────────
+// A Target is deliberately NOT a foreign key into the exercises library —
+// exercises carry Double Progression semantics (min/max reps, working sets,
+// stage baselines) that a personal habit target has no business touching.
+// Target.exerciseId is informational only (which library exercise this
+// happens to be based on, for display); a Target's own amount/unit/type are
+// entirely its own fields. This is what makes "Targets never affect Exercise
+// Plants or Double Progression" true by construction rather than by a check
+// someone has to remember to add.
+const TARGET_TYPES = ['reps', 'duration', 'distance', 'sessions'];
+const TARGET_TYPE_LABEL = { reps: 'Reps', duration: 'Duration', distance: 'Distance', sessions: 'Sessions' };
+const TARGET_TYPE_ICON = { reps: 'fitness_center', duration: 'schedule', distance: 'distance', sessions: 'event_repeat' };
+const TARGET_TYPE_DEFAULT_UNIT = { reps: 'reps', duration: 'sec', distance: 'km', sessions: 'sessions' };
+const TARGET_TYPE_UNIT_OPTIONS = { duration: ['sec', 'min'], distance: ['km', 'mi'] };
+// A curated general-activity list for targets with no natural home in the
+// strength-exercise library (Plank, Dead Hang, Stretching, Walking, ...) —
+// shown alongside the user's own exercises in the Create Target activity
+// picker. Purely a label; selecting one never touches `exercises`.
+const TARGET_ACTIVITY_PRESETS = ['Push-ups', 'Squats', 'Plank', 'Pull-ups', 'Dead Hang', 'Stretching', 'Walking'];
+
+function targetLogDateStr(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function addDaysToDateStr(dateStr, days) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+// Monday-start week containing dateStr — the same convention the Calendar
+// month grid already uses (see mondayOffset()), applied here so "This week"
+// means the same thing everywhere in the app.
+function isoWeekStartFor(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = d.getDay();
+  d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// The [periodStart, periodEnd] a target is currently in, as of `today`
+// (local date string, defaults to todayStr()). Daily -> just today; weekly
+// -> the Monday-start week containing today. Pure — no persistence, no
+// stored "current period" pointer, so there is nothing to keep in sync when
+// a day/week rolls over; the next call just naturally answers differently.
+function getCurrentTargetPeriod(target, today) {
+  today = today || todayStr();
+  if (target.frequency === 'weekly') {
+    const start = isoWeekStartFor(today);
+    return { periodStart: start, periodEnd: addDaysToDateStr(start, 6) };
+  }
+  return { periodStart: today, periodEnd: today };
+}
+
+function getTargetLogsFor(targetId) {
+  return Object.entries(targetLogs)
+    .filter(([, l]) => l && l.targetId === targetId)
+    .map(([id, l]) => ({ id, ...l }));
+}
+
+// Pure — everything the UI (and the growth engine below) needs about a
+// target's progress in one specific period, derived fresh from its logs
+// every time. Never a stored counter: editing or deleting a log changes
+// what this returns on the very next call, with nothing else to reconcile.
+function calculateTargetPeriodProgress(target, logs, periodStart, periodEnd) {
+  const periodLogs = logs.filter(l => {
+    const d = targetLogDateStr(l.occurredAt);
+    return d >= periodStart && d <= periodEnd;
+  });
+  const totalLogged = round1(periodLogs.reduce((sum, l) => sum + (+l.amount || 0), 0));
+  const targetAmount = target.targetAmount || 0;
+  const remaining = Math.max(0, round1(targetAmount - totalLogged));
+  const percentage = targetAmount > 0 ? Math.min(100, Math.round((totalLogged / targetAmount) * 100)) : 0;
+  const isCompleted = targetAmount > 0 && totalLogged >= targetAmount;
+  return { periodStart, periodEnd, totalLogged, targetAmount, remaining, percentage, isCompleted, logs: periodLogs };
+}
+// Convenience wrapper for "the period target is in right now."
+function currentTargetProgress(target, logs, today) {
+  const { periodStart, periodEnd } = getCurrentTargetPeriod(target, today);
+  return calculateTargetPeriodProgress(target, logs, periodStart, periodEnd);
+}
+
+// ── Targets' contribution to Plant Progress — sibling to
+// recalculatePlantGrowth(), NOT a second growth system: both feed the exact
+// same growthPoints number, through the exact same
+// recalculateAndPersistPlantGrowth()/syncGrowthEvents() pipeline. Walks
+// every period from each target's startDate to today and awards once per
+// COMPLETED period (daily: once per calendar day; weekly: once per calendar
+// week) — never for partial progress. Idempotent by construction: nothing
+// here is a stored counter, so recalculating twice (or after editing/
+// deleting a log) always reflects exactly what the remaining logs support,
+// with no separate "already awarded" flag to keep in sync.
+function calculateTargetGrowth() {
+  const companionStartedAt = userProfile.companion?.startedAt || '';
+  const today = todayStr();
+  let total = 0;
+  const perTargetPeriod = [];
+
+  Object.entries(targets).forEach(([targetId, target]) => {
+    if (!target || !target.startDate) return;
+    const logs = getTargetLogsFor(targetId);
+    if (!logs.length) return;
+    const step = target.frequency === 'weekly' ? 7 : 1;
+    let cursor = target.frequency === 'weekly' ? isoWeekStartFor(target.startDate) : target.startDate;
+    let guard = 0; // sane upper bound (~5.5 years of daily periods) — never an infinite loop
+    while (cursor <= today && guard < 2000) {
+      const { periodStart, periodEnd } = getCurrentTargetPeriod(target, cursor);
+      guard++;
+      if (periodStart < companionStartedAt) { cursor = addDaysToDateStr(cursor, step); continue; }
+      const progress = calculateTargetPeriodProgress(target, logs, periodStart, periodEnd);
+      if (progress.isCompleted) {
+        total = round1(total + GROWTH_AWARD.targetCompleted);
+        perTargetPeriod.push({
+          targetId, periodStart, date: periodStart,
+          progressValue: GROWTH_AWARD.targetCompleted, eventType: 'target_completion'
+        });
+      }
+      cursor = addDaysToDateStr(cursor, step);
+    }
+  });
+
+  return { totalGrowthPoints: total, perTargetPeriod };
+}
+
+async function createTarget({ exerciseId, name, targetType, targetAmount, unit, frequency, startDate }) {
+  const targetId = push(ref(db, `users/${uid()}/targets`)).key;
+  const target = {
+    id: targetId, exerciseId: exerciseId || null, name,
+    targetType, targetAmount, unit, frequency,
+    startDate: startDate || todayStr(),
+    status: 'active', createdAt: Date.now(), updatedAt: Date.now()
+  };
+  await set(ref(db, `users/${uid()}/targets/${targetId}`), target);
+  targets[targetId] = target; // optimistic mirror; onValue confirms shortly after
+  return targetId;
+}
+
+async function updateTarget(targetId, patch) {
+  const updated = { ...targets[targetId], ...patch, updatedAt: Date.now() };
+  await set(ref(db, `users/${uid()}/targets/${targetId}`), updated);
+  targets[targetId] = updated;
+}
+
+// Every logged entry is its own record (never merged into a running total),
+// per the task's explicit "store each entry individually so the daily or
+// weekly total can be recalculated" — see calculateTargetPeriodProgress().
+// Logging is the only Target action that can change Plant Progress, so it's
+// the only one that calls recalculateAndPersistPlantGrowth().
+async function logTargetProgress(targetId, amount) {
+  const logId = push(ref(db, `users/${uid()}/targetLogs`)).key;
+  const log = { id: logId, targetId, amount, occurredAt: Date.now(), createdAt: Date.now(), updatedAt: Date.now() };
+  await set(ref(db, `users/${uid()}/targetLogs/${logId}`), log);
+  targetLogs[logId] = log; // optimistic mirror
+  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
+  return { logId, previousGrowth, newGrowth };
+}
+
+// Deleting a log recalculates completion (and Plant Progress) from whatever
+// remains — the same "always fully re-derived, never a ledger to patch"
+// policy recalculatePlantGrowth() already uses for edited/deleted workout
+// sessions. If a log that had pushed a period over its target is removed,
+// that period's earlier reward is simply absent from the next recalculation
+// — never a punitive clawback message, just a correction.
+async function deleteTargetLog(logId) {
+  await remove(ref(db, `users/${uid()}/targetLogs/${logId}`));
+  delete targetLogs[logId];
+  return await recalculateAndPersistPlantGrowth();
+}
+
+async function setTargetStatus(targetId, status) {
+  await updateTarget(targetId, { status });
+}
+
+// Deleting a target removes its logs too (nothing else can display or
+// attribute them once the target itself is gone) — recalculates Plant
+// Progress afterward, same policy as above: past rewards tied only to the
+// deleted target's periods are no longer supported by any remaining record,
+// so they no longer count, exactly like deleting a workout session.
+async function deleteTarget(targetId) {
+  const logs = getTargetLogsFor(targetId);
+  await remove(ref(db, `users/${uid()}/targets/${targetId}`));
+  await Promise.all(logs.map(l => remove(ref(db, `users/${uid()}/targetLogs/${l.id}`))));
+  delete targets[targetId];
+  logs.forEach(l => delete targetLogs[l.id]);
+  return await recalculateAndPersistPlantGrowth();
 }
 
 // Neutral, non-judgmental copy either direction — growth moving down when
@@ -2594,6 +2994,19 @@ function subscribeData() {
   onValue(rCollected, snap => { collectedCompanions = snap.val() || {}; renderProfile(); }, e => console.error(e));
   dataRefs.push(rCollected);
 
+  // Targets — an entirely optional habit-tracking layer, kept in its own
+  // top-level collections (never inside exercises/sessions) so it can never
+  // influence Double Progression or Exercise Plant state by construction —
+  // see calculateTargetGrowth()'s own note on this. Both listeners re-render
+  // Home (the compact preview/invitation) and the Targets tab.
+  const rTargets = ref(db, `users/${uid()}/targets`);
+  onValue(rTargets, snap => { targets = snap.val() || {}; renderTargetsTab(); renderDashboard(); }, e => console.error(e));
+  dataRefs.push(rTargets);
+
+  const rTargetLogs = ref(db, `users/${uid()}/targetLogs`);
+  onValue(rTargetLogs, snap => { targetLogs = snap.val() || {}; renderTargetsTab(); renderDashboard(); }, e => console.error(e));
+  dataRefs.push(rTargetLogs);
+
   const rProfile = ref(db, `users/${uid()}`);
   onValue(rProfile, snap => {
     userProfile = snap.val() || {};
@@ -3176,14 +3589,17 @@ let growthConsistencyChecked = false;
 function ensureGrowthConsistency() {
   if (growthConsistencyChecked) return;
   const totalSessions = totalLoggedSessions();
-  // 0 is ambiguous — a genuinely brand-new user, or sessions/{uid} just
-  // hasn't loaded yet (profile and sessions arrive via independent,
-  // unordered onValue listeners). If growthPoints is already unset, treat 0
-  // sessions as "nothing to repair yet" and recheck on the next render
+  const totalTargetLogs = Object.keys(targetLogs).length;
+  // 0 is ambiguous — a genuinely brand-new user, or sessions/targetLogs just
+  // haven't loaded yet (profile and both arrive via independent, unordered
+  // onValue listeners). If growthPoints is already unset, treat "nothing
+  // loaded yet" as "nothing to repair yet" and recheck on the next render
   // rather than locking in growthPoints = 0 prematurely.
-  if (!totalSessions && userProfile.growthPoints == null) return;
+  if (!totalSessions && !totalTargetLogs && userProfile.growthPoints == null) return;
   growthConsistencyChecked = true;
-  const { totalGrowthPoints } = recalculatePlantGrowth();
+  const { totalGrowthPoints: sessionPoints } = recalculatePlantGrowth();
+  const { totalGrowthPoints: targetPoints } = calculateTargetGrowth();
+  const totalGrowthPoints = round1(sessionPoints + targetPoints);
   if (Math.abs((userProfile.growthPoints ?? -1) - totalGrowthPoints) < 0.05) return; // already consistent
   userProfile.growthPoints = totalGrowthPoints;
   set(ref(db, `users/${uid()}/growthPoints`), totalGrowthPoints)
@@ -3198,11 +3614,55 @@ function renderDashboard() {
   renderPlantHero(sessionDates, hasHistory);
   renderDashStats(sessionDates, hasHistory);
   renderTodayMission();
+  renderHomeTargetSection();
   renderClosestProgress();
   renderGardenPreview();
   renderRecentWin();
   renderEncouragement();
 }
+
+// Exactly one of "no targets yet" (a lightweight, dismissible invitation) or
+// "at least one active target" (a single compact preview card, reusing the
+// exact same targetCardHtml()/wireTargetCardActions() the Targets tab
+// itself uses — one card definition, two surfaces) is ever visible. Neither
+// shows a permanent Home section for a user who has never created a target
+// — see the invariant list in the task spec.
+function pickHomeTargetPreview() {
+  const today = todayStr();
+  const active = Object.entries(targets).filter(([, t]) => t && t.status === 'active');
+  if (!active.length) return null;
+  const withProgress = active.map(([id, t]) => ({ id, target: t, progress: currentTargetProgress(t, getTargetLogsFor(id), today) }));
+  return withProgress.find(x => x.target.frequency === 'daily' && !x.progress.isCompleted)
+    || withProgress.find(x => x.target.frequency === 'weekly' && !x.progress.isCompleted)
+    || withProgress[0];
+}
+function renderHomeTargetSection() {
+  const invite = document.getElementById('dash-target-invite');
+  const preview = document.getElementById('dash-target-preview');
+  const picked = pickHomeTargetPreview();
+  if (!picked) {
+    preview.style.display = 'none';
+    invite.style.display = userProfile.targetsInviteDismissed ? 'none' : '';
+    return;
+  }
+  invite.style.display = 'none';
+  preview.style.display = '';
+  document.getElementById('dash-target-preview-body').innerHTML = targetCardHtml(picked.id, picked.target, picked.progress);
+  wireTargetCardActions();
+}
+document.getElementById('dash-target-invite-dismiss').addEventListener('click', async () => {
+  userProfile.targetsInviteDismissed = true;
+  document.getElementById('dash-target-invite').style.display = 'none';
+  await set(ref(db, `users/${uid()}/targetsInviteDismissed`), true).catch(e => console.error('Failed to save invitation dismissal:', e));
+});
+document.getElementById('dash-target-invite-create').addEventListener('click', () => openCreateTargetModal());
+document.getElementById('dash-target-view-all').addEventListener('click', () => { goView('workout'); switchWorkoutTab('targets'); });
+// Tapping the card itself (not its own Log/manage buttons) also opens
+// Targets — delegated on the stable wrapper so it survives every re-render.
+document.getElementById('dash-target-preview-body').addEventListener('click', e => {
+  if (e.target.closest('.tgt-log-btn, .tgt-more-btn')) return;
+  goView('workout'); switchWorkoutTab('targets');
+});
 
 // ── Profile render ──────────────────────────────────────────────────────────
 function renderProfile() {
@@ -3358,15 +3818,465 @@ function switchWorkoutTab(tab) {
     b.style.color      = on ? '#22c55e' : '';
     if (document.documentElement.classList.contains('dark')) b.style.background = on ? '#1e293b' : 'transparent';
   });
-  ['groups','exercises','history'].forEach(t => {
+  ['groups','exercises','targets','history'].forEach(t => {
     document.getElementById('wt-'+t).style.display = t === tab ? '' : 'none';
   });
   if (tab === 'groups')    renderGroupsList();
   if (tab === 'history')   renderHistory();
   if (tab === 'exercises') renderExerciseLibrary();
+  if (tab === 'targets')   renderTargetsTab();
 }
 
 document.querySelectorAll('.wt-tab').forEach(b => b.addEventListener('click', () => switchWorkoutTab(b.dataset.tab)));
+
+// ── Targets tab ──────────────────────────────────────────────────────────────
+let targetsStatusFilter = 'active';
+
+function targetUnitLabel(target) {
+  if (target.targetType === 'sessions') return target.targetAmount === 1 ? 'session' : 'sessions';
+  return target.unit || TARGET_TYPE_DEFAULT_UNIT[target.targetType];
+}
+function targetLogButtonLabel(target) {
+  return target.targetType === 'sessions' ? 'Log session'
+    : target.targetType === 'duration' ? 'Log time'
+    : target.targetType === 'distance' ? 'Log distance'
+    : 'Log reps';
+}
+
+function targetCardHtml(id, target, progress) {
+  const unit = targetUnitLabel(target);
+  const freqLabel = target.frequency === 'daily' ? 'Daily' : 'Weekly';
+  const remainingLabel = progress.remaining > 0 ? `${progress.remaining} ${unit} remaining` : '';
+  const ariaLabel = `${target.name} progress: ${progress.totalLogged} of ${progress.targetAmount} ${unit}`;
+  return `
+    <div class="card p-4 space-y-2.5" data-target-id="${id}">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <p class="text-sm font-bold text-slate-800 dark:text-white">${esc(target.name)}</p>
+          <p class="text-xs text-slate-400">${freqLabel} · ${target.targetAmount} ${esc(unit)}</p>
+        </div>
+        <button type="button" class="tgt-more-btn p-1 text-slate-300 hover:text-slate-500 flex-shrink-0" data-id="${id}" aria-label="Manage ${esc(target.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+      </div>
+      <div>
+        <p class="text-xs font-bold text-lavender-600 dark:text-lavender-400 mb-1">${progress.totalLogged} / ${progress.targetAmount} ${esc(unit)}</p>
+        <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${progress.percentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${esc(ariaLabel)}">
+          <div class="h-full bg-lavender-500 rounded-full transition-all duration-500" style="width:${progress.percentage}%"></div>
+        </div>
+        ${remainingLabel ? `<p class="text-[11px] text-slate-400 mt-1">${esc(remainingLabel)}</p>` : ''}
+      </div>
+      <button type="button" class="tgt-log-btn btn text-sm bg-lavender-500 hover:bg-lavender-600 text-white w-full py-2" data-id="${id}" aria-label="${esc(targetLogButtonLabel(target))} for ${esc(target.name)}">+ ${targetLogButtonLabel(target)}</button>
+    </div>`;
+}
+
+// Completion is shown with the icon fill + text label together ("Completed"),
+// never color alone — see the accessibility notes in the task spec.
+function targetCompletedCardHtml(id, target) {
+  const unit = targetUnitLabel(target);
+  const freqLabel = target.frequency === 'daily' ? 'Daily' : 'Weekly';
+  return `
+    <div class="card p-4 flex items-center justify-between gap-3" data-target-id="${id}">
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-slate-800 dark:text-white">${esc(target.name)}</p>
+        <p class="text-xs text-slate-400">${freqLabel} · ${target.targetAmount} ${esc(unit)}</p>
+      </div>
+      <span class="flex items-center gap-1 text-brand-500 text-xs font-bold flex-shrink-0"><span class="ms text-lg" style="font-variation-settings:'FILL' 1" aria-hidden="true">check_circle</span>Completed</span>
+    </div>`;
+}
+
+function targetArchivedCardHtml(id, target) {
+  const unit = targetUnitLabel(target);
+  const freqLabel = target.frequency === 'daily' ? 'Daily' : 'Weekly';
+  return `
+    <div class="card p-4 flex items-center justify-between gap-3 opacity-70" data-target-id="${id}">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">${esc(target.name)}</p>
+        <p class="text-xs text-slate-400">${freqLabel} · ${target.targetAmount} ${esc(unit)} · Archived</p>
+      </div>
+      <button type="button" class="tgt-more-btn p-1 text-slate-300 hover:text-slate-500 flex-shrink-0" data-id="${id}" aria-label="Manage ${esc(target.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+    </div>`;
+}
+
+function targetsEmptyStateHtml() {
+  return `
+    <div class="text-center py-10 space-y-3">
+      <span class="ms text-4xl text-slate-300 dark:text-slate-600" aria-hidden="true">track_changes</span>
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No targets yet</p>
+      <p class="text-xs text-slate-400 max-w-xs mx-auto">Create a personal target for reps, duration, distance, or sessions.</p>
+      <button id="tgt-empty-create-btn" type="button" class="btn bg-lavender-500 hover:bg-lavender-600 text-white text-sm px-5 py-2.5">Create Target</button>
+    </div>`;
+}
+
+function wireTargetCardActions() {
+  document.querySelectorAll('.tgt-log-btn').forEach(b => b.addEventListener('click', () => openLogTargetModal(b.dataset.id)));
+  document.querySelectorAll('.tgt-more-btn').forEach(b => b.addEventListener('click', () => openTargetActionsSheet(b.dataset.id)));
+  document.getElementById('tgt-empty-create-btn')?.addEventListener('click', () => openCreateTargetModal());
+}
+
+// The one render function for the whole tab — Today / This week / Completed
+// today (Active filter) or a flat Archived list. Progress is recomputed
+// fresh from calculateTargetPeriodProgress() every render, never cached, so
+// a log added/edited/deleted anywhere else in the app shows up correctly
+// the moment this re-renders (see the targets/targetLogs onValue listeners).
+function renderTargetsTab() {
+  document.querySelectorAll('.tgt-status-tab').forEach(b => {
+    const on = b.dataset.status === targetsStatusFilter;
+    b.style.background = on ? (document.documentElement.classList.contains('dark') ? '#1e293b' : 'white') : 'transparent';
+    b.style.color = on ? '#8b5cf6' : '';
+  });
+  const body = document.getElementById('wt-targets-body');
+  const today = todayStr();
+
+  if (targetsStatusFilter === 'archived') {
+    const archived = Object.entries(targets).filter(([, t]) => t && t.status === 'archived');
+    body.innerHTML = archived.length
+      ? `<div class="space-y-2">${archived.map(([id, t]) => targetArchivedCardHtml(id, t)).join('')}</div>`
+      : `<p class="text-sm text-slate-400 text-center py-8">No archived targets.</p>`;
+    wireTargetCardActions();
+    return;
+  }
+
+  const active = Object.entries(targets).filter(([, t]) => t && (t.status === 'active' || t.status === 'paused'));
+  if (!active.length) {
+    body.innerHTML = targetsEmptyStateHtml();
+    wireTargetCardActions();
+    return;
+  }
+
+  const withProgress = active.map(([id, t]) => ({ id, target: t, progress: currentTargetProgress(t, getTargetLogsFor(id), today) }));
+  const dailyPending = withProgress.filter(x => x.target.frequency === 'daily' && x.target.status === 'active' && !x.progress.isCompleted);
+  const weeklyPending = withProgress.filter(x => x.target.frequency === 'weekly' && x.target.status === 'active' && !x.progress.isCompleted);
+  const paused = withProgress.filter(x => x.target.status === 'paused');
+  const completed = withProgress.filter(x => x.progress.isCompleted && x.target.status === 'active');
+
+  let html = '';
+  if (dailyPending.length) html += `<div class="space-y-2"><p class="text-xs font-semibold text-slate-400">Today</p>${dailyPending.map(x => targetCardHtml(x.id, x.target, x.progress)).join('')}</div>`;
+  if (weeklyPending.length) html += `<div class="space-y-2"><p class="text-xs font-semibold text-slate-400">This week</p>${weeklyPending.map(x => targetCardHtml(x.id, x.target, x.progress)).join('')}</div>`;
+  if (completed.length) html += `<div class="space-y-2"><p class="text-xs font-semibold text-slate-400">Completed today</p>${completed.map(x => targetCompletedCardHtml(x.id, x.target)).join('')}</div>`;
+  if (paused.length) html += `<div class="space-y-2"><p class="text-xs font-semibold text-slate-400">Paused</p>${paused.map(x => targetArchivedCardHtml(x.id, x.target).replace('· Archived', '· Paused')).join('')}</div>`;
+  body.innerHTML = html || targetsEmptyStateHtml();
+  wireTargetCardActions();
+}
+
+document.querySelectorAll('.tgt-status-tab').forEach(b => b.addEventListener('click', () => { targetsStatusFilter = b.dataset.status; renderTargetsTab(); }));
+document.getElementById('tgt-create-btn-top').addEventListener('click', () => openCreateTargetModal());
+
+// ── Create Target ────────────────────────────────────────────────────────────
+let ctSelectedActivity = null; // { name, exerciseId }
+let ctTargetType = 'reps';
+let ctUnit = 'reps';
+let ctFrequency = 'daily';
+
+function ctRenderActivityChips() {
+  const wrap = document.getElementById('ct-activity-chips');
+  wrap.innerHTML = TARGET_ACTIVITY_PRESETS.map(name => {
+    const selected = ctSelectedActivity && ctSelectedActivity.name === name && !ctSelectedActivity.exerciseId;
+    return `<button type="button" class="ct-activity-chip px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${selected ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-name="${esc(name)}" aria-pressed="${!!selected}">${esc(name)}</button>`;
+  }).join('');
+  wrap.querySelectorAll('.ct-activity-chip').forEach(chip => chip.addEventListener('click', () => ctSelectActivity({ name: chip.dataset.name, exerciseId: null })));
+}
+function ctSelectActivity(activity) {
+  ctSelectedActivity = activity;
+  document.getElementById('ct-activity-search').value = '';
+  document.getElementById('ct-activity-results').style.display = 'none';
+  const selEl = document.getElementById('ct-activity-selected');
+  selEl.textContent = `Selected: ${activity.name}`;
+  selEl.style.display = '';
+  ctRenderActivityChips();
+}
+document.getElementById('ct-activity-search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  const results = document.getElementById('ct-activity-results');
+  if (!q) { results.style.display = 'none'; return; }
+  const exerciseMatches = Object.entries(exercises).filter(([, ex]) => !ex.archived && ex.name?.toLowerCase().includes(q)).slice(0, 6);
+  const usedNames = new Set(exerciseMatches.map(([, ex]) => ex.name));
+  const presetMatches = TARGET_ACTIVITY_PRESETS.filter(n => n.toLowerCase().includes(q) && !usedNames.has(n));
+  const items = [...exerciseMatches.map(([id, ex]) => ({ name: ex.name, exerciseId: id })), ...presetMatches.map(n => ({ name: n, exerciseId: null }))];
+  results.style.display = '';
+  results.innerHTML = items.length
+    ? items.map(it => `<button type="button" class="ct-activity-result w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-700 dark:text-slate-200" data-name="${esc(it.name)}" data-exercise-id="${it.exerciseId || ''}">${esc(it.name)}</button>`).join('')
+    : `<p class="text-xs text-slate-400 px-3 py-2">No matches.</p>`;
+  results.querySelectorAll('.ct-activity-result').forEach(b => b.addEventListener('click', () => ctSelectActivity({ name: b.dataset.name, exerciseId: b.dataset.exerciseId || null })));
+});
+
+function ctRenderTypeGrid() {
+  document.getElementById('ct-type-grid').innerHTML = TARGET_TYPES.map(t => {
+    const selected = t === ctTargetType;
+    return `<button type="button" class="ct-type-btn flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${selected ? 'border-lavender-400 bg-lavender-50 dark:bg-lavender-950/20 text-lavender-600 dark:text-lavender-400' : 'border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'}" data-type="${t}" aria-pressed="${selected}">
+      <span class="ms text-lg" aria-hidden="true">${TARGET_TYPE_ICON[t]}</span>
+      <span class="text-[11px] font-semibold">${TARGET_TYPE_LABEL[t]}</span>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.ct-type-btn').forEach(b => b.addEventListener('click', () => {
+    ctTargetType = b.dataset.type;
+    ctUnit = TARGET_TYPE_DEFAULT_UNIT[ctTargetType];
+    ctRenderTypeGrid();
+    ctUpdateAmountUnitUI();
+  }));
+}
+
+function ctUpdateAmountUnitUI() {
+  const amt = +document.getElementById('ct-amount').value || 0;
+  document.getElementById('ct-amount-unit').textContent = ctTargetType === 'sessions' ? (amt === 1 ? 'session' : 'sessions') : ctUnit;
+  const toggle = document.getElementById('ct-unit-toggle');
+  const opts = TARGET_TYPE_UNIT_OPTIONS[ctTargetType];
+  if (!opts) { toggle.style.display = 'none'; return; }
+  toggle.style.display = '';
+  toggle.innerHTML = opts.map(u => `<button type="button" class="ct-unit-chip px-3 py-1 rounded-full text-xs font-semibold ${u === ctUnit ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-unit="${u}" aria-pressed="${u === ctUnit}">${u}</button>`).join('');
+  toggle.querySelectorAll('.ct-unit-chip').forEach(b => b.addEventListener('click', () => { ctUnit = b.dataset.unit; ctUpdateAmountUnitUI(); }));
+}
+document.getElementById('ct-amount').addEventListener('input', ctUpdateAmountUnitUI);
+document.getElementById('ct-amount-minus').addEventListener('click', () => {
+  const inp = document.getElementById('ct-amount');
+  inp.value = Math.max(0, (+inp.value || 0) - 1);
+  ctUpdateAmountUnitUI();
+});
+document.getElementById('ct-amount-plus').addEventListener('click', () => {
+  const inp = document.getElementById('ct-amount');
+  inp.value = (+inp.value || 0) + 1;
+  ctUpdateAmountUnitUI();
+});
+
+function ctRenderFrequency() {
+  document.querySelectorAll('.ct-freq-btn').forEach(b => {
+    const on = b.dataset.freq === ctFrequency;
+    b.classList.toggle('bg-lavender-500', on); b.classList.toggle('text-white', on);
+    b.classList.toggle('bg-slate-100', !on); b.classList.toggle('dark:bg-slate-800', !on);
+    b.classList.toggle('text-slate-500', !on); b.classList.toggle('dark:text-slate-400', !on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+document.querySelectorAll('.ct-freq-btn').forEach(b => b.addEventListener('click', () => { ctFrequency = b.dataset.freq; ctRenderFrequency(); }));
+
+document.getElementById('ct-advanced-toggle').addEventListener('click', () => {
+  const open = document.getElementById('ct-advanced-panel').style.display === 'none';
+  document.getElementById('ct-advanced-panel').style.display = open ? '' : 'none';
+  document.getElementById('ct-advanced-icon').textContent = open ? 'expand_less' : 'expand_more';
+  document.getElementById('ct-advanced-toggle').setAttribute('aria-expanded', String(open));
+});
+
+function openCreateTargetModal() {
+  ctSelectedActivity = null; ctTargetType = 'reps'; ctUnit = 'reps'; ctFrequency = 'daily';
+  document.getElementById('ct-activity-search').value = '';
+  document.getElementById('ct-activity-results').style.display = 'none';
+  document.getElementById('ct-activity-selected').style.display = 'none';
+  document.getElementById('ct-amount').value = 30;
+  document.getElementById('ct-name').value = '';
+  document.getElementById('ct-start-date').value = todayStr();
+  document.getElementById('ct-advanced-panel').style.display = 'none';
+  document.getElementById('ct-advanced-icon').textContent = 'expand_more';
+  document.getElementById('ct-advanced-toggle').setAttribute('aria-expanded', 'false');
+  hide('ct-error');
+  ctRenderActivityChips();
+  ctRenderTypeGrid();
+  ctUpdateAmountUnitUI();
+  ctRenderFrequency();
+  show('create-target-modal');
+}
+document.getElementById('ct-close').addEventListener('click', () => hide('create-target-modal'));
+document.getElementById('ct-create-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('ct-create-btn');
+  if (btn.disabled) return;
+  const errEl = document.getElementById('ct-error');
+  hide('ct-error');
+  const amount = +document.getElementById('ct-amount').value || 0;
+  if (!ctSelectedActivity) { errEl.textContent = 'Choose an activity first.'; show('ct-error'); return; }
+  if (amount <= 0) { errEl.textContent = 'Enter a target amount greater than zero.'; show('ct-error'); return; }
+  const name = document.getElementById('ct-name').value.trim() || ctSelectedActivity.name;
+  const startDate = document.getElementById('ct-start-date').value || todayStr();
+  const prevLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    await createTarget({
+      exerciseId: ctSelectedActivity.exerciseId, name,
+      targetType: ctTargetType, targetAmount: amount,
+      unit: ctTargetType === 'sessions' ? 'sessions' : ctUnit,
+      frequency: ctFrequency, startDate
+    });
+    hide('create-target-modal');
+    closeStartWorkoutChoice(); // harmless no-op if this wasn't opened from there — see sw-target-btn
+    showToast('Target created.');
+  } catch (e) {
+    console.error('Failed to create target:', e);
+    errEl.textContent = 'Could not create this target. Please try again.';
+    show('ct-error');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
+
+// ── Log Target Progress ──────────────────────────────────────────────────────
+let ltTargetId = null;
+const LT_QUICK_ADD = { reps: [5, 10, 15, 20], duration: [30, 60, 120, 300], distance: [0.5, 1, 2, 5] };
+
+function openLogTargetModal(targetId) {
+  const target = targets[targetId];
+  if (!target) return;
+  ltTargetId = targetId;
+  hide('lt-error');
+  const unit = targetUnitLabel(target);
+  document.getElementById('lt-title').textContent = target.targetType === 'sessions' ? 'Add session' : `Add ${TARGET_TYPE_LABEL[target.targetType].toLowerCase()}`;
+
+  if (target.targetType === 'sessions') {
+    // No amount to type — logging a session is a single flat +1, matching
+    // the Targets tab's own "+ Log session" button (no quick-add numbers).
+    document.getElementById('lt-prompt').textContent = `Log one ${esc(target.name)} session?`;
+    document.getElementById('lt-manual-wrap').style.display = 'none';
+    document.getElementById('lt-save-btn').textContent = 'Log session';
+  } else {
+    document.getElementById('lt-prompt').textContent = target.targetType === 'reps' ? `How many ${target.name.toLowerCase()} did you do?`
+      : target.targetType === 'duration' ? `How long did you spend on ${target.name}?`
+      : `How far did you go?`;
+    document.getElementById('lt-manual-wrap').style.display = '';
+    document.getElementById('lt-amount').value = '';
+    document.getElementById('lt-amount-unit').textContent = unit;
+    const quickAmounts = LT_QUICK_ADD[target.targetType] || [];
+    document.getElementById('lt-quick-add').innerHTML = quickAmounts.map(a => `<button type="button" class="lt-quick-btn px-3 py-1.5 rounded-full bg-lavender-50 dark:bg-lavender-950/30 text-lavender-600 dark:text-lavender-400 text-xs font-bold" data-amount="${a}">+${a}</button>`).join('');
+    document.querySelectorAll('.lt-quick-btn').forEach(b => b.addEventListener('click', () => {
+      const inp = document.getElementById('lt-amount');
+      inp.value = round1((+inp.value || 0) + (+b.dataset.amount));
+    }));
+    document.getElementById('lt-save-btn').textContent = 'Add entry';
+  }
+  show('log-target-modal');
+}
+document.getElementById('lt-close').addEventListener('click', () => hide('log-target-modal'));
+document.getElementById('lt-amount-minus').addEventListener('click', () => {
+  const inp = document.getElementById('lt-amount');
+  inp.value = Math.max(0, round1((+inp.value || 0) - 1));
+});
+document.getElementById('lt-amount-plus').addEventListener('click', () => {
+  const inp = document.getElementById('lt-amount');
+  inp.value = round1((+inp.value || 0) + 1);
+});
+document.getElementById('lt-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('lt-save-btn');
+  if (btn.disabled || !ltTargetId) return;
+  const target = targets[ltTargetId];
+  if (!target) return;
+  const errEl = document.getElementById('lt-error');
+  hide('lt-error');
+  const amount = target.targetType === 'sessions' ? 1 : (+document.getElementById('lt-amount').value || 0);
+  if (amount <= 0) { errEl.textContent = 'Enter an amount greater than zero.'; show('lt-error'); return; }
+  const prevLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const wasCompletedBefore = currentTargetProgress(target, getTargetLogsFor(ltTargetId)).isCompleted;
+    const { newGrowth, previousGrowth } = await logTargetProgress(ltTargetId, amount);
+    hide('log-target-modal');
+    const nowCompleted = currentTargetProgress(targets[ltTargetId] || target, getTargetLogsFor(ltTargetId)).isCompleted;
+    if (nowCompleted && !wasCompletedBefore) {
+      showToast(`Target completed! Amazing work — you completed ${esc(target.name)}. 🌿`);
+    } else {
+      showToast('Logged.');
+    }
+    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+  } catch (e) {
+    console.error('Failed to log target progress:', e);
+    errEl.textContent = 'Could not save this log. Please try again.';
+    show('lt-error');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
+
+// ── Target management (edit / pause / archive / delete) ─────────────────────
+let taTargetId = null;
+function openTargetActionsSheet(targetId) {
+  const target = targets[targetId];
+  if (!target) return;
+  taTargetId = targetId;
+  document.getElementById('ta-title').textContent = target.name;
+  const pauseBtn = document.getElementById('ta-pause-btn');
+  pauseBtn.innerHTML = target.status === 'paused'
+    ? `<span class="ms text-lg text-slate-400" aria-hidden="true">play_circle</span>Resume target`
+    : `<span class="ms text-lg text-slate-400" aria-hidden="true">pause_circle</span>Pause target`;
+  const archiveBtn = document.getElementById('ta-archive-btn');
+  archiveBtn.innerHTML = target.status === 'archived'
+    ? `<span class="ms text-lg text-slate-400" aria-hidden="true">unarchive</span>Restore target`
+    : `<span class="ms text-lg text-slate-400" aria-hidden="true">archive</span>Archive target`;
+  pauseBtn.style.display = target.status === 'archived' ? 'none' : '';
+  show('target-actions-modal');
+}
+document.getElementById('ta-close').addEventListener('click', () => hide('target-actions-modal'));
+document.getElementById('ta-edit-btn').addEventListener('click', () => { hide('target-actions-modal'); openEditTargetModal(taTargetId); });
+document.getElementById('ta-pause-btn').addEventListener('click', async () => {
+  const target = targets[taTargetId];
+  if (!target) return;
+  hide('target-actions-modal');
+  await setTargetStatus(taTargetId, target.status === 'paused' ? 'active' : 'paused');
+});
+document.getElementById('ta-archive-btn').addEventListener('click', async () => {
+  const target = targets[taTargetId];
+  if (!target) return;
+  hide('target-actions-modal');
+  await setTargetStatus(taTargetId, target.status === 'archived' ? 'active' : 'archived');
+  showToast(target.status === 'archived' ? 'Target restored.' : 'Target archived.');
+});
+document.getElementById('ta-delete-btn').addEventListener('click', async () => {
+  const target = targets[taTargetId];
+  if (!target) return;
+  if (!confirm(`Delete "${target.name}"? This removes its logged history too and cannot be undone.`)) return;
+  hide('target-actions-modal');
+  await deleteTarget(taTargetId);
+  showToast('Target deleted.');
+});
+
+function openEditTargetModal(targetId) {
+  const target = targets[targetId];
+  if (!target) return;
+  taTargetId = targetId;
+  document.getElementById('et-title').textContent = `Edit ${target.name}`;
+  document.getElementById('et-name').value = target.name;
+  document.getElementById('et-amount').value = target.targetAmount;
+  document.getElementById('et-amount-unit').textContent = targetUnitLabel(target);
+  document.querySelectorAll('.et-freq-btn').forEach(b => {
+    const on = b.dataset.freq === target.frequency;
+    b.classList.toggle('bg-lavender-500', on); b.classList.toggle('text-white', on);
+    b.classList.toggle('bg-slate-100', !on); b.classList.toggle('dark:bg-slate-800', !on);
+    b.classList.toggle('text-slate-500', !on); b.classList.toggle('dark:text-slate-400', !on);
+  });
+  hide('et-error');
+  show('edit-target-modal');
+}
+document.getElementById('et-close').addEventListener('click', () => hide('edit-target-modal'));
+document.querySelectorAll('.et-freq-btn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.et-freq-btn').forEach(x => {
+    const on = x === b;
+    x.classList.toggle('bg-lavender-500', on); x.classList.toggle('text-white', on);
+    x.classList.toggle('bg-slate-100', !on); x.classList.toggle('dark:bg-slate-800', !on);
+    x.classList.toggle('text-slate-500', !on); x.classList.toggle('dark:text-slate-400', !on);
+  });
+}));
+document.getElementById('et-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('et-save-btn');
+  if (btn.disabled || !taTargetId) return;
+  const errEl = document.getElementById('et-error');
+  hide('et-error');
+  const name = document.getElementById('et-name').value.trim();
+  const amount = +document.getElementById('et-amount').value || 0;
+  const freqBtn = document.querySelector('.et-freq-btn.bg-lavender-500');
+  if (!name) { errEl.textContent = 'Enter a target name.'; show('et-error'); return; }
+  if (amount <= 0) { errEl.textContent = 'Enter a target amount greater than zero.'; show('et-error'); return; }
+  const prevLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    // Note: this changes the CURRENT authoritative target amount/frequency —
+    // there is no historical per-period snapshot (unlike a workout session's
+    // own minReps/maxReps), so editing can retroactively change whether a
+    // past period reads as completed. Documented v1 simplification, not a
+    // bug — see calculateTargetPeriodProgress().
+    await updateTarget(taTargetId, { name, targetAmount: amount, frequency: freqBtn ? freqBtn.dataset.freq : targets[taTargetId].frequency });
+    hide('edit-target-modal');
+    await recalculateAndPersistPlantGrowth();
+    showToast('Target updated.');
+  } catch (e) {
+    console.error('Failed to update target:', e);
+    errEl.textContent = 'Could not save changes. Please try again.';
+    show('et-error');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
 
 // ── Reusable exercise picker ─────────────────────────────────────────────────
 // Used by the group builder (adding exercises to a group) and by the active
@@ -4351,6 +5261,7 @@ document.getElementById('sw-close').addEventListener('click', closeStartWorkoutC
 // closing this modal too — see closeGroupPicker() and bw-start-btn.
 document.getElementById('sw-group-btn').addEventListener('click', () => { openGroupPicker(); });
 document.getElementById('sw-build-btn').addEventListener('click', () => { openBuildTodaysWorkout(); });
+document.getElementById('sw-target-btn').addEventListener('click', () => { openCreateTargetModal(); });
 
 // ── Build Today's Workout: two-step picker + review ─────────────────────────
 // Builds a one-off session from freely-chosen exercises instead of a saved
