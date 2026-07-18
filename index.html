@@ -121,6 +121,11 @@ body{font-family:'Inter',sans-serif}
 #exercise-modal input[type=number]::-webkit-outer-spin-button,#exercise-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #exercise-modal input[type=number]{-moz-appearance:textfield}
 #exercise-modal .ex-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
+#create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
+#log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
+#edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#create-target-modal input[type=number],#log-target-modal input[type=number],#edit-target-modal input[type=number]{-moz-appearance:textfield}
+#create-target-modal .ct-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
@@ -1056,60 +1061,113 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       </div>
       <button id="ct-close" class="p-2 -mt-1 -mr-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <div class="flex-1 overflow-y-auto px-5 pb-4 space-y-5 min-h-0">
+    <div class="flex-1 overflow-y-auto px-5 pb-4 space-y-7 min-h-0">
+      <!-- Activity — before selection: Popular chips first (most users pick
+           from here), search available but de-emphasized underneath. Once
+           selected, this whole area is replaced by a single hero card (see
+           ctRenderActivitySection()) so the chosen activity reads as "this
+           is the target I'm creating," not one option among many. -->
       <div>
-        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">1. Choose activity</p>
-        <div class="relative">
-          <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" aria-hidden="true">search</span>
-          <input id="ct-activity-search" type="text" placeholder="Search exercises or activities..." class="pl-10" aria-label="Search exercises or activities">
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2.5">Activity</p>
+        <div id="ct-activity-picker">
+          <p class="text-[11px] font-semibold text-slate-400 mb-1.5">Popular activities</p>
+          <div id="ct-activity-chips" class="flex flex-wrap gap-1.5" role="group" aria-label="Popular activities"></div>
+          <div class="relative mt-3">
+            <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
+            <input id="ct-activity-search" type="text" placeholder="Search exercises or activities..." class="pl-9 text-sm" aria-label="Search exercises or activities">
+          </div>
+          <div id="ct-activity-results" class="mt-2 space-y-0.5" style="display:none"></div>
         </div>
-        <div id="ct-activity-results" class="mt-2 space-y-0.5" style="display:none"></div>
-        <p class="text-[11px] font-semibold text-slate-400 mt-3 mb-1.5">Popular</p>
-        <div id="ct-activity-chips" class="flex flex-wrap gap-1.5" role="group" aria-label="Popular activities"></div>
-        <p id="ct-activity-selected" class="text-xs text-lavender-600 dark:text-lavender-400 font-semibold mt-2" style="display:none"></p>
+        <div id="ct-activity-hero" class="card p-4 flex items-center gap-3" style="display:none">
+          <span class="w-11 h-11 rounded-full bg-lavender-100 dark:bg-lavender-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lavender-500 text-xl">bolt</span></span>
+          <div class="min-w-0 flex-1">
+            <p id="ct-activity-hero-name" class="font-display font-bold text-base text-slate-800 dark:text-white"></p>
+            <p id="ct-activity-hero-desc" class="text-xs text-slate-400"></p>
+          </div>
+          <button id="ct-activity-change" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline flex-shrink-0">Change</button>
+        </div>
       </div>
 
+      <!-- Target — the most important input on the page: large number,
+           generous spacing, the same circular +/- controls used throughout
+           the app (e.g. the exercise-weight stepper), never a native
+           number-input spinner (see the #create-target-modal CSS rule). -->
       <div>
-        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">2. Target type</p>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">Target</p>
+        <div class="flex items-center justify-center gap-4">
+          <button id="ct-amount-minus" type="button" class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease target amount"><span class="ms text-xl" aria-hidden="true">remove</span></button>
+          <div class="text-center">
+            <input id="ct-amount" type="number" inputmode="decimal" min="0" step="1" value="30" class="ct-plain-input text-center font-display font-extrabold text-slate-800 dark:text-white" style="font-size:2.75rem;width:6rem" aria-label="Target amount">
+            <p id="ct-amount-unit" class="text-sm font-semibold text-slate-400 -mt-1">reps</p>
+          </div>
+          <button id="ct-amount-plus" type="button" class="w-12 h-12 rounded-full border-2 border-lavender-400 text-lavender-500 flex items-center justify-center flex-shrink-0" aria-label="Increase target amount"><span class="ms text-xl" aria-hidden="true">add</span></button>
+        </div>
+        <div id="ct-unit-toggle" class="flex gap-1.5 mt-3 justify-center" style="display:none" role="group" aria-label="Unit"></div>
+      </div>
+
+      <!-- Frequency — same segmented control as before, now with a one-line
+           explanation under each option so the choice is unambiguous. -->
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2.5">Frequency</p>
+        <div class="grid grid-cols-2 gap-2" role="group" aria-label="Frequency">
+          <button id="ct-freq-daily" type="button" class="ct-freq-btn rounded-xl border-2 py-2.5 text-left px-3.5 bg-lavender-500 text-white border-lavender-500" data-freq="daily" aria-pressed="true">
+            <span class="block text-sm font-bold">Daily</span>
+            <span class="ct-freq-caption block text-[11px] opacity-80">Resets every day</span>
+          </button>
+          <button id="ct-freq-weekly" type="button" class="ct-freq-btn rounded-xl border-2 py-2.5 text-left px-3.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800" data-freq="weekly" aria-pressed="false">
+            <span class="block text-sm font-bold">Weekly</span>
+            <span class="ct-freq-caption block text-[11px] opacity-80">Resets every week</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Target type — moved below Frequency on purpose (see the task's
+           visual-hierarchy note): amount + frequency are the commitment
+           itself, type is just a categorization of it. -->
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2.5">Target Type</p>
         <div id="ct-type-grid" class="grid grid-cols-4 gap-2" role="group" aria-label="Target type"></div>
       </div>
 
-      <div>
-        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">3. Target amount</p>
-        <div class="flex items-center gap-2">
-          <button id="ct-amount-minus" type="button" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease target amount"><span class="ms text-lg" aria-hidden="true">remove</span></button>
-          <input id="ct-amount" type="number" inputmode="decimal" min="0" step="1" value="30" class="text-center font-display font-bold text-lg" aria-label="Target amount">
-          <button id="ct-amount-plus" type="button" class="w-10 h-10 rounded-full border-2 border-lavender-400 text-lavender-500 flex items-center justify-center flex-shrink-0" aria-label="Increase target amount"><span class="ms text-lg" aria-hidden="true">add</span></button>
-          <span id="ct-amount-unit" class="text-sm font-semibold text-slate-500 dark:text-slate-400 flex-shrink-0" style="min-width:3.5rem">reps</span>
-        </div>
-        <div id="ct-unit-toggle" class="flex gap-1.5 mt-2" style="display:none" role="group" aria-label="Unit"></div>
-      </div>
-
-      <div>
-        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">4. Frequency</p>
-        <div class="grid grid-cols-2 gap-2" role="group" aria-label="Frequency">
-          <button id="ct-freq-daily" type="button" class="ct-freq-btn btn py-2.5 text-sm bg-lavender-500 text-white" data-freq="daily" aria-pressed="true">Daily</button>
-          <button id="ct-freq-weekly" type="button" class="ct-freq-btn btn py-2.5 text-sm bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400" data-freq="weekly" aria-pressed="false">Weekly</button>
-        </div>
-      </div>
-
       <button id="ct-advanced-toggle" type="button" class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" aria-expanded="false">
-        <span class="ms text-base" id="ct-advanced-icon" aria-hidden="true">expand_more</span>5. Optional settings
+        <span class="ms text-base" id="ct-advanced-icon" aria-hidden="true">expand_more</span>Optional
       </button>
-      <div id="ct-advanced-panel" style="display:none" class="space-y-3 -mt-2">
+      <div id="ct-advanced-panel" style="display:none" class="space-y-3 -mt-3">
         <div>
-          <label for="ct-name" class="text-xs font-semibold text-slate-400 block mb-1">Target name (optional)</label>
+          <label for="ct-name" class="text-xs font-semibold text-slate-400 block mb-1">Target name</label>
           <input id="ct-name" type="text" placeholder="e.g. Morning push-ups">
         </div>
         <div>
           <label for="ct-start-date" class="text-xs font-semibold text-slate-400 block mb-1">Start date</label>
           <input id="ct-start-date" type="date">
         </div>
+        <div>
+          <label for="ct-reminder" class="text-xs font-semibold text-slate-400 block mb-1">Reminder</label>
+          <select id="ct-reminder" disabled>
+            <option>Coming soon</option>
+          </select>
+        </div>
       </div>
+
+      <!-- Live preview — reads as a commitment, not a settings summary; see
+           ctRenderPreview(), called after every field that can change it. -->
+      <div>
+        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2.5">Your Target</p>
+        <div class="card p-4 bg-lavender-50/60 dark:bg-lavender-950/15 border-lavender-200 dark:border-lavender-900 space-y-0.5">
+          <p id="ct-preview-name" class="font-display font-bold text-base text-slate-800 dark:text-white">—</p>
+          <p id="ct-preview-amount" class="text-sm font-semibold text-lavender-600 dark:text-lavender-400"></p>
+          <p id="ct-preview-freq" class="text-xs text-slate-400"></p>
+          <p id="ct-preview-start" class="text-xs text-slate-400"></p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-400 text-center flex items-center justify-center gap-1.5"><span class="ms text-sm text-brand-500" aria-hidden="true">eco</span>Completing this target helps your companion flourish.</p>
+
       <p id="ct-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
     </div>
-    <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3">
-      <button id="ct-create-btn" type="button" class="btn w-full py-3.5 text-base bg-lavender-500 hover:bg-lavender-600 text-white" style="box-shadow:0 6px 14px -6px rgba(139,92,246,.45)">Create Target</button>
+    <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 space-y-1.5">
+      <button id="ct-create-btn" type="button" disabled class="btn w-full py-3.5 text-base bg-lavender-500 hover:enabled:bg-lavender-600 text-white disabled:opacity-40 disabled:cursor-not-allowed" style="box-shadow:0 6px 14px -6px rgba(139,92,246,.45)">Start Tracking</button>
+      <p id="ct-create-hint" class="text-center text-[11px] text-slate-400">Choose an activity to continue.</p>
     </div>
   </div>
 </div>
@@ -3961,28 +4019,60 @@ document.querySelectorAll('.tgt-status-tab').forEach(b => b.addEventListener('cl
 document.getElementById('tgt-create-btn-top').addEventListener('click', () => openCreateTargetModal());
 
 // ── Create Target ────────────────────────────────────────────────────────────
+// Pure UI/UX polish over the same state and the same createTarget() call —
+// nothing below changes what gets validated or persisted, only how it's
+// presented. See the task's own "functionality is already correct" note.
 let ctSelectedActivity = null; // { name, exerciseId }
 let ctTargetType = 'reps';
 let ctUnit = 'reps';
 let ctFrequency = 'daily';
 
+// Short, human descriptions for the curated preset activities — shown on
+// the selected-activity hero card once one of these is chosen. An exercise
+// picked from the library instead uses its own equipment/muscle group
+// (see ctActivityDescription()), never these.
+const TARGET_ACTIVITY_PRESET_DESC = {
+  'Push-ups': 'Bodyweight exercise', 'Squats': 'Bodyweight exercise', 'Plank': 'Core hold',
+  'Pull-ups': 'Bodyweight exercise', 'Dead Hang': 'Grip & shoulder hold',
+  'Stretching': 'Mobility & recovery', 'Walking': 'Cardio activity'
+};
+function ctActivityDescription(activity) {
+  if (activity.exerciseId) {
+    const ex = exercises[activity.exerciseId];
+    const parts = [MG_LABEL[ex?.muscleGroup] || ex?.muscleGroup, ex?.equipment].filter(Boolean);
+    if (parts.length) return parts.join(' · ');
+  }
+  return TARGET_ACTIVITY_PRESET_DESC[activity.name] || 'Personal activity';
+}
+
 function ctRenderActivityChips() {
   const wrap = document.getElementById('ct-activity-chips');
-  wrap.innerHTML = TARGET_ACTIVITY_PRESETS.map(name => {
-    const selected = ctSelectedActivity && ctSelectedActivity.name === name && !ctSelectedActivity.exerciseId;
-    return `<button type="button" class="ct-activity-chip px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${selected ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-name="${esc(name)}" aria-pressed="${!!selected}">${esc(name)}</button>`;
-  }).join('');
+  wrap.innerHTML = TARGET_ACTIVITY_PRESETS.map(name =>
+    `<button type="button" class="ct-activity-chip px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400" data-name="${esc(name)}">${esc(name)}</button>`
+  ).join('');
   wrap.querySelectorAll('.ct-activity-chip').forEach(chip => chip.addEventListener('click', () => ctSelectActivity({ name: chip.dataset.name, exerciseId: null })));
 }
+// Selecting an activity makes it the hero of the page — the picker (chips +
+// search) is replaced by a single prominent card, not just a small caption
+// buried among the chips. "Change" reopens the picker.
 function ctSelectActivity(activity) {
   ctSelectedActivity = activity;
   document.getElementById('ct-activity-search').value = '';
   document.getElementById('ct-activity-results').style.display = 'none';
-  const selEl = document.getElementById('ct-activity-selected');
-  selEl.textContent = `Selected: ${activity.name}`;
-  selEl.style.display = '';
-  ctRenderActivityChips();
+  document.getElementById('ct-activity-picker').style.display = 'none';
+  document.getElementById('ct-activity-hero-name').textContent = activity.name;
+  document.getElementById('ct-activity-hero-desc').textContent = ctActivityDescription(activity);
+  document.getElementById('ct-activity-hero').style.display = '';
+  ctUpdateCreateButtonState();
+  ctRenderPreview();
 }
+document.getElementById('ct-activity-change').addEventListener('click', () => {
+  ctSelectedActivity = null;
+  document.getElementById('ct-activity-hero').style.display = 'none';
+  document.getElementById('ct-activity-picker').style.display = '';
+  ctUpdateCreateButtonState();
+  ctRenderPreview();
+});
 document.getElementById('ct-activity-search').addEventListener('input', e => {
   const q = e.target.value.trim().toLowerCase();
   const results = document.getElementById('ct-activity-results');
@@ -3998,12 +4088,16 @@ document.getElementById('ct-activity-search').addEventListener('input', e => {
   results.querySelectorAll('.ct-activity-result').forEach(b => b.addEventListener('click', () => ctSelectActivity({ name: b.dataset.name, exerciseId: b.dataset.exerciseId || null })));
 });
 
+// One short, concrete example per type — helps a first-time user understand
+// what each option means without having to guess.
+const TARGET_TYPE_EXAMPLE = { reps: '30 push-ups', duration: '2 min plank', distance: '5 km walk', sessions: '3 yoga sessions' };
 function ctRenderTypeGrid() {
   document.getElementById('ct-type-grid').innerHTML = TARGET_TYPES.map(t => {
     const selected = t === ctTargetType;
     return `<button type="button" class="ct-type-btn flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${selected ? 'border-lavender-400 bg-lavender-50 dark:bg-lavender-950/20 text-lavender-600 dark:text-lavender-400' : 'border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400'}" data-type="${t}" aria-pressed="${selected}">
       <span class="ms text-lg" aria-hidden="true">${TARGET_TYPE_ICON[t]}</span>
       <span class="text-[11px] font-semibold">${TARGET_TYPE_LABEL[t]}</span>
+      <span class="text-[9px] text-slate-400 leading-tight text-center">${TARGET_TYPE_EXAMPLE[t]}</span>
     </button>`;
   }).join('');
   document.querySelectorAll('.ct-type-btn').forEach(b => b.addEventListener('click', () => {
@@ -4019,10 +4113,13 @@ function ctUpdateAmountUnitUI() {
   document.getElementById('ct-amount-unit').textContent = ctTargetType === 'sessions' ? (amt === 1 ? 'session' : 'sessions') : ctUnit;
   const toggle = document.getElementById('ct-unit-toggle');
   const opts = TARGET_TYPE_UNIT_OPTIONS[ctTargetType];
-  if (!opts) { toggle.style.display = 'none'; return; }
-  toggle.style.display = '';
-  toggle.innerHTML = opts.map(u => `<button type="button" class="ct-unit-chip px-3 py-1 rounded-full text-xs font-semibold ${u === ctUnit ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-unit="${u}" aria-pressed="${u === ctUnit}">${u}</button>`).join('');
-  toggle.querySelectorAll('.ct-unit-chip').forEach(b => b.addEventListener('click', () => { ctUnit = b.dataset.unit; ctUpdateAmountUnitUI(); }));
+  if (!opts) { toggle.style.display = 'none'; }
+  else {
+    toggle.style.display = '';
+    toggle.innerHTML = opts.map(u => `<button type="button" class="ct-unit-chip px-3 py-1 rounded-full text-xs font-semibold ${u === ctUnit ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-unit="${u}" aria-pressed="${u === ctUnit}">${u}</button>`).join('');
+    toggle.querySelectorAll('.ct-unit-chip').forEach(b => b.addEventListener('click', () => { ctUnit = b.dataset.unit; ctUpdateAmountUnitUI(); }));
+  }
+  ctRenderPreview();
 }
 document.getElementById('ct-amount').addEventListener('input', ctUpdateAmountUnitUI);
 document.getElementById('ct-amount-minus').addEventListener('click', () => {
@@ -4039,11 +4136,13 @@ document.getElementById('ct-amount-plus').addEventListener('click', () => {
 function ctRenderFrequency() {
   document.querySelectorAll('.ct-freq-btn').forEach(b => {
     const on = b.dataset.freq === ctFrequency;
-    b.classList.toggle('bg-lavender-500', on); b.classList.toggle('text-white', on);
+    b.classList.toggle('bg-lavender-500', on); b.classList.toggle('border-lavender-500', on); b.classList.toggle('text-white', on);
     b.classList.toggle('bg-slate-100', !on); b.classList.toggle('dark:bg-slate-800', !on);
+    b.classList.toggle('border-slate-100', !on); b.classList.toggle('dark:border-slate-800', !on);
     b.classList.toggle('text-slate-500', !on); b.classList.toggle('dark:text-slate-400', !on);
     b.setAttribute('aria-pressed', String(on));
   });
+  ctRenderPreview();
 }
 document.querySelectorAll('.ct-freq-btn').forEach(b => b.addEventListener('click', () => { ctFrequency = b.dataset.freq; ctRenderFrequency(); }));
 
@@ -4053,12 +4152,47 @@ document.getElementById('ct-advanced-toggle').addEventListener('click', () => {
   document.getElementById('ct-advanced-icon').textContent = open ? 'expand_less' : 'expand_more';
   document.getElementById('ct-advanced-toggle').setAttribute('aria-expanded', String(open));
 });
+document.getElementById('ct-name').addEventListener('input', ctRenderPreview);
+document.getElementById('ct-start-date').addEventListener('input', ctRenderPreview);
+
+// The button is physically disabled (not just validated on click) until an
+// activity is chosen — the click handler's own checks stay in place as a
+// defensive second layer, but the visual state now matches reality instead
+// of only failing after a tap.
+function ctUpdateCreateButtonState() {
+  const ready = !!ctSelectedActivity;
+  document.getElementById('ct-create-btn').disabled = !ready;
+  document.getElementById('ct-create-hint').style.display = ready ? 'none' : '';
+}
+
+// Reads live from every field that can change it and renders as a single
+// commitment sentence-like card, not a settings echo.
+function ctRenderPreview() {
+  const nameEl = document.getElementById('ct-preview-name');
+  const amountEl = document.getElementById('ct-preview-amount');
+  const freqEl = document.getElementById('ct-preview-freq');
+  const startEl = document.getElementById('ct-preview-start');
+  if (!ctSelectedActivity) {
+    nameEl.textContent = 'Choose an activity to see your target';
+    amountEl.textContent = ''; freqEl.textContent = ''; startEl.textContent = '';
+    return;
+  }
+  const amount = +document.getElementById('ct-amount').value || 0;
+  const unit = ctTargetType === 'sessions' ? (amount === 1 ? 'session' : 'sessions') : ctUnit;
+  const customName = document.getElementById('ct-name').value.trim();
+  nameEl.textContent = customName || ctSelectedActivity.name;
+  amountEl.textContent = `${amount} ${unit}`;
+  freqEl.textContent = ctFrequency === 'daily' ? 'Every day' : 'Every week';
+  const startVal = document.getElementById('ct-start-date').value;
+  startEl.textContent = !startVal || startVal === todayStr() ? 'Starts today' : `Starts ${fmtDate(startVal)}`;
+}
 
 function openCreateTargetModal() {
   ctSelectedActivity = null; ctTargetType = 'reps'; ctUnit = 'reps'; ctFrequency = 'daily';
   document.getElementById('ct-activity-search').value = '';
   document.getElementById('ct-activity-results').style.display = 'none';
-  document.getElementById('ct-activity-selected').style.display = 'none';
+  document.getElementById('ct-activity-picker').style.display = '';
+  document.getElementById('ct-activity-hero').style.display = 'none';
   document.getElementById('ct-amount').value = 30;
   document.getElementById('ct-name').value = '';
   document.getElementById('ct-start-date').value = todayStr();
@@ -4070,6 +4204,8 @@ function openCreateTargetModal() {
   ctRenderTypeGrid();
   ctUpdateAmountUnitUI();
   ctRenderFrequency();
+  ctUpdateCreateButtonState();
+  ctRenderPreview();
   show('create-target-modal');
 }
 document.getElementById('ct-close').addEventListener('click', () => hide('create-target-modal'));
