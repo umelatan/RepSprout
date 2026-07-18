@@ -4681,22 +4681,36 @@ const EXG_ACCENT = {
 };
 // Section order doubles as render order on the "All" filter.
 const EXG_SECTIONS = [
-  { key: 'ready',   title: 'Ready to progress', desc: 'These exercises can grow new leaves.',        icon: 'eco',           accent: 'brand'  },
-  { key: 'growing', title: 'Growing',           desc: 'Keep going! One more progression to grow.',   icon: 'eco',           accent: 'blue'   },
-  { key: 'bloomed', title: 'Bloomed',           desc: 'Fully matured! Keep maintaining.',             icon: 'local_florist', accent: 'purple' }
+  { key: 'ready',   title: 'Ready to progress', desc: 'These exercises can grow new leaves.',              icon: 'eco',           accent: 'brand'  },
+  { key: 'growing', title: 'Growing',           desc: 'Keep going! One more progression to grow.',         icon: 'eco',           accent: 'blue'   },
+  { key: 'sprout',  title: 'Sprouts',           desc: 'Your exercise plants are ready to begin growing.',  icon: 'spa',           accent: 'brand'  },
+  { key: 'bloomed', title: 'Bloomed',           desc: 'Fully matured! Keep maintaining.',                   icon: 'local_florist', accent: 'purple' }
 ];
 const EXG_STATUS_FILTERS = [{ key: 'all', label: 'All' }, ...EXG_SECTIONS.map(s => ({ key: s.key, label: s.title }))];
 const EXG_SECTION_LIMIT = 3;
 
-// Classifies one exercise using the real Double Progression engine.
-// `bucket` is the coarse macro-stage grouping the summary card counts
-// (Sprout/Growing/Bloomed, straight from GROWTH_STAGE_NAMES/cycleIndex —
-// the same stage the Exercise Progress Detail hero shows). `section` is the
-// actionable grouping the page sections use, where a ready leaf pulls an
-// exercise into "Ready to progress" ahead of "Growing" regardless of its
-// macro stage; a fully-bloomed exercise (isFinal) is always "Bloomed."
-// Disabled (progressionEnabled === false) exercises skip the DP engine
-// entirely, same as the Exercise Progress Detail page's neutral treatment.
+// Resolves an EXG_SECTIONS accent color by section key — the one place both
+// exgSectionHtml() and renderExgCard() go through, so a card's accent can
+// never drift out of sync with its section header's accent.
+function exgAccentFor(sectionKey) {
+  const section = EXG_SECTIONS.find(s => s.key === sectionKey);
+  return EXG_ACCENT[section?.accent] || EXG_ACCENT.blue;
+}
+
+// Classifies one exercise using the real Double Progression engine — every
+// exercise falls into EXACTLY ONE of the four page sections, in priority
+// order: Bloomed (isFinal) > Ready to progress (a non-matured leaf hit
+// READY_TO_INCREASE) > Growing (has progressed at least one working set
+// this cycle) > Sprout (exists, has planned working sets, has not yet
+// progressed any of them, and meets none of the above — never excluded for
+// having 0 progress). `bucket` is the separate coarse macro-stage grouping
+// the summary card counts (Sprout/Growing/Bloomed, straight from
+// GROWTH_STAGE_NAMES/cycleIndex — the same stage the Exercise Progress
+// Detail hero shows); it intentionally does not have to match `section`,
+// since a "Ready" exercise can still be macro-stage Sprout. Disabled
+// (progressionEnabled === false) exercises skip the DP engine entirely,
+// same as the Exercise Progress Detail page's neutral treatment, and land
+// in Sprout since they have never progressed anything.
 function classifyExerciseForGarden(id, ex) {
   const disabled = ex.progressionEnabled === false;
   const dpResult = disabled ? null : calculateExerciseDoubleProgression(id);
@@ -4708,7 +4722,7 @@ function classifyExerciseForGarden(id, ex) {
   const isFinal = cycleIndex >= GROWTH_TOTAL_STAGES - 1;
   const hasReadyLeaf = dpPositions.some(p => !p.matured && p.status === DP_STATUS.READY_TO_INCREASE);
   const bucket = stageIdx === 0 ? 'sprout' : isFinal ? 'bloomed' : 'growing';
-  const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : 'growing';
+  const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : leavesMatured > 0 ? 'growing' : 'sprout';
   return { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, bucket, section };
 }
 
@@ -4808,13 +4822,13 @@ function renderExgGroupFilterOptions() {
 }
 
 function exgSectionHtml(section, items, { expanded }) {
-  const accent = EXG_ACCENT[section.accent];
+  const accent = exgAccentFor(section.key);
   if (!items.length) {
     if (!expanded) return '';
     return `
       <div class="space-y-1.5">
         <p class="text-sm font-bold ${accent.text} flex items-center gap-1.5"><span class="ms text-base" aria-hidden="true">${section.icon}</span>${section.title}</p>
-        <p class="text-xs text-slate-400 text-center py-6">No exercises in this category yet.</p>
+        <p class="text-xs text-slate-400 text-center py-6">No exercises match this filter yet.</p>
       </div>`;
   }
   const shown = expanded ? items : items.slice(0, EXG_SECTION_LIMIT);
@@ -4843,7 +4857,10 @@ function exgSectionHtml(section, items, { expanded }) {
 // overflow menu (see openExerciseActionsSheet()).
 function renderExgCard(entry) {
   const { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, section } = entry;
-  const accent = EXG_ACCENT[section];
+  // NB: EXG_ACCENT is keyed by color name (brand/blue/purple), not by
+  // section key — always resolve through exgAccentFor(), never index
+  // EXG_ACCENT directly with a section string here.
+  const accent = exgAccentFor(section);
   const unit = ex.unit || 'kg';
   const weight = dpPositions[0]?.currentWeight ?? ex.currentWeight ?? null;
   const weightText = weight != null ? `${weight} ${unit}` : '—';
