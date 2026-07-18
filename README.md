@@ -168,7 +168,7 @@ RepSprout is intentionally simple to run and deploy:
 
 - **Frontend** — a single `index.html`: vanilla JavaScript (ES modules), no framework or build step, styled with Tailwind CSS via CDN
 - **Backend** — Firebase Authentication (Google sign-in) and Firebase Realtime Database
-- **Hosting** — static hosting (GitHub Pages); see `SETUP.md` for the Firebase project setup steps
+- **Hosting** — static hosting (GitHub Pages); security rules for the Firebase project are in `database.rules.json`
 
 No React, no Next.js, no Supabase, no server — everything lives in one file plus your Firebase project.
 
