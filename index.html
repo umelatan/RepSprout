@@ -4675,9 +4675,9 @@ let exgStatusFilter = 'all'; // 'all' | 'ready' | 'growing' | 'bloomed'
 let exgGroupFilter = '';     // '' (all body areas) or an MG_LABEL key
 
 const EXG_ACCENT = {
-  brand:  { chipBg: 'bg-brand-500 text-white border-brand-500',   text: 'text-brand-500',  soft: 'bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400' },
-  blue:   { chipBg: 'bg-blue-500 text-white border-blue-500',     text: 'text-blue-500',   soft: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' },
-  purple: { chipBg: 'bg-purple-500 text-white border-purple-500', text: 'text-purple-500', soft: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400' }
+  brand:  { chipBg: 'bg-brand-500 text-white border-brand-500',   text: 'text-brand-500',  soft: 'bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400', glow: 'rgba(34,197,94,.22)'  },
+  blue:   { chipBg: 'bg-blue-500 text-white border-blue-500',     text: 'text-blue-500',   soft: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400',   glow: 'rgba(59,130,246,.22)' },
+  purple: { chipBg: 'bg-purple-500 text-white border-purple-500', text: 'text-purple-500', soft: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400', glow: 'rgba(168,85,247,.22)' }
 };
 // Section order doubles as render order on the "All" filter.
 const EXG_SECTIONS = [
@@ -4848,13 +4848,35 @@ function exgSectionHtml(section, items, { expanded }) {
     </div>`;
 }
 
-// One card — Exercise Plant hero (same DP_STAGE_EMOJI/GROWTH_STAGE_NAMES the
-// Exercise Progress Detail page uses), leaves via the existing
-// renderDoubleProgressionLeaves() (matured/ready/growing colors untouched,
-// warm-up sets structurally excluded since positions only ever come from
-// working-set data), weight/rep range, sets-progressed count, last-used, and
-// a body-area/group tag. Edit stays a direct action; Delete moves behind the
-// overflow menu (see openExerciseActionsSheet()).
+// The Exercise Plant visual itself — DP_STAGE_EMOJI is the ONLY plant asset
+// this codebase has (Home's companion hero and the Exercise Progress Detail
+// page are both emoji-based too; there is no separate illustrated PNG/SVG
+// asset system to plug into). What made the old Garden card badge feel like
+// a "generic icon in a tile" was the hero-surface/hero-glow wrapper's
+// visible rounded gradient background — fine at full hero scale on Home,
+// but reads as a coloured square at card scale. Here the emoji renders
+// directly on the card's own transparent background: no wrapper fill, no
+// border, just a soft stage-tinted glow behind it and a drop-shadow on the
+// glyph itself, at roughly the 64–76px size the task asked for. A null
+// stageIdx (disabled exercise) falls back to the Sprout glyph itself
+// (DP_STAGE_EMOJI[0]) — the existing neutral asset, never an emoji-library
+// icon or a black/coloured square.
+function exgPlantVisual(stageIdx, accent) {
+  const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : DP_STAGE_EMOJI[stageIdx];
+  return `
+    <div class="relative flex-shrink-0 flex items-center justify-center" style="width:4.25rem;height:4.25rem" aria-hidden="true">
+      <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${accent.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(7px)"></div>
+      <span class="relative leading-none" style="font-size:3.75rem;filter:drop-shadow(0 8px 6px rgba(15,23,42,.16))">${emoji}</span>
+    </div>`;
+}
+
+// One card — Exercise Plant visual (see exgPlantVisual() above), stage name
+// and leaves via the existing renderDoubleProgressionLeaves()
+// (matured/ready/growing colors untouched, warm-up sets structurally
+// excluded since positions only ever come from working-set data),
+// weight/rep range, sets-progressed count, last-used, and a body-area/group
+// tag. Edit stays a direct action; Delete moves behind the overflow menu
+// (see openExerciseActionsSheet()).
 function renderExgCard(entry) {
   const { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, section } = entry;
   // NB: EXG_ACCENT is keyed by color name (brand/blue/purple), not by
@@ -4880,10 +4902,7 @@ function renderExgCard(entry) {
 
   return `
     <div class="exg-card card p-3.5 flex items-start gap-3 w-full text-left hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="View ${esc(ex.name)} progress">
-      <div class="hero-surface relative rounded-2xl w-14 h-14 flex-shrink-0 flex items-center justify-center overflow-hidden" aria-hidden="true">
-        <div class="hero-glow"></div>
-        <span class="relative text-2xl">${disabled ? '🌱' : DP_STAGE_EMOJI[stageIdx]}</span>
-      </div>
+      ${exgPlantVisual(disabled ? null : stageIdx, accent)}
       <div class="min-w-0 flex-1">
         <p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400 mt-0.5">${weightText} · ${repRangeText}</p>
