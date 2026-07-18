@@ -5049,9 +5049,13 @@ function renderExerciseDetail(exerciseId) {
 
   // ── Plant hero — this exercise's own Double Progression journey, entirely
   // separate from the Home companion plant (userProfile.plant / renderPlantHero()).
-  // Reuses the same hero-surface/hero-glow visual language as the Home hero,
-  // just at card scale, so it reads as "a plant" without touching PLANTS or
+  // Uses the exact same transparent-background plant visual as the Exercise
+  // Garden cards (exgPlantVisual()) — no square/tile background here either,
+  // just the DP_STAGE_EMOJI glyph with a faint stage-tinted glow — so the two
+  // surfaces read as the same plant system without touching PLANTS or
   // userProfile.plant.
+  const exdGardenEntry = classifyExerciseForGarden(exerciseId, ex);
+  const exdAccent = exgAccentFor(exdGardenEntry.section);
   let heroHtml, leavesHtml = '';
   if (!configured) {
     const neutralMsg = disabled
@@ -5070,10 +5074,7 @@ function renderExerciseDetail(exerciseId) {
     heroHtml = `
       <div class="card p-4 space-y-3">
         <div class="flex items-center gap-4">
-          <div class="hero-surface relative rounded-2xl w-20 h-20 flex-shrink-0 flex items-center justify-center overflow-hidden">
-            <div class="hero-glow"></div>
-            <span class="relative text-5xl" aria-hidden="true">${DP_STAGE_EMOJI[stageIdx]}</span>
-          </div>
+          ${exgPlantVisual(stageIdx, exdAccent)}
           <div class="min-w-0 flex-1">
             <p class="text-xs text-slate-400">Current stage</p>
             <div class="flex items-center gap-2 flex-wrap">
