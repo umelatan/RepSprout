@@ -487,14 +487,39 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <div id="groups-list" class="space-y-3"></div>
       </div>
 
-      <!-- Exercises -->
-      <div id="wt-exercises" style="display:none" class="space-y-3">
+      <!-- Exercises — "Exercise Garden". Same underlying data/progression
+           engine as before (DoubleProgressionStrategy/calculateExercise
+           DoubleProgression()); this is a presentation-only reorganization
+           into a summary + filters + status sections. See
+           renderExerciseLibrary() — entry point name kept unchanged so
+           every existing caller keeps working untouched. -->
+      <div id="wt-exercises" style="display:none" class="space-y-4">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span>Workout hub</button>
-        <input id="ex-search" type="text" placeholder="Search exercises">
-        <div id="exercise-library-list" class="space-y-2"></div>
-        <button id="new-exercise-btn" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
-          <span class="ms text-base" aria-hidden="true">add</span>Add exercise
-        </button>
+
+        <h2 class="font-display font-extrabold text-lg text-slate-800 dark:text-white -mb-1">Exercise Garden</h2>
+
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1 min-w-0">
+            <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
+            <input id="ex-search" type="text" placeholder="Search exercises..." class="pl-9" aria-label="Search exercises">
+          </div>
+          <button id="new-exercise-btn" type="button" class="btn btn-green px-3.5 py-2.5 text-sm flex-shrink-0 flex items-center gap-1 whitespace-nowrap"><span class="ms text-base" aria-hidden="true">add</span>Add exercise</button>
+          <button id="exg-filter-toggle" type="button" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More filters" aria-expanded="false" aria-controls="exg-group-filter-wrap"><span class="ms text-lg" aria-hidden="true">tune</span></button>
+        </div>
+
+        <!-- Summary — every number here is derived live from calculateExerciseDoubleProgression() over all non-archived exercises (see renderExerciseLibrary()), never hardcoded. -->
+        <div id="exg-summary" class="card p-4"></div>
+
+        <div id="exg-group-filter-wrap" style="display:none">
+          <label for="exg-group-filter" class="text-xs font-semibold text-slate-400 block mb-1">Body area</label>
+          <select id="exg-group-filter" aria-label="Filter by body area"><option value="">All body areas</option></select>
+        </div>
+
+        <!-- Status filter — single active filter, combined with the body-area
+             select above and the search box (see renderExerciseLibrary()). -->
+        <div id="exg-status-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by progression status" style="scrollbar-width:none"></div>
+
+        <div id="exercise-library-list" class="space-y-5"></div>
       </div>
 
       <!-- Targets — entirely optional habit tracking, kept visually and
@@ -1282,6 +1307,22 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <button id="ta-pause-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">pause_circle</span></button>
     <button id="ta-archive-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">archive</span></button>
     <button id="ta-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete target</button>
+  </div>
+</div>
+
+<!-- Exercise Garden card overflow — "View details" (same destination as
+     tapping the card) plus the one existing destructive action (archive,
+     labeled "Delete exercise" here since that's the user-facing verb the
+     task asked for). See openExerciseActionsSheet() in the Exercise library
+     section; still calls the same confirm() + archive write as before. -->
+<div id="exg-actions-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="exg-actions-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="exg-actions-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="exg-actions-view-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">visibility</span>View details</button>
+    <button id="exg-actions-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete exercise</button>
   </div>
 </div>
 
@@ -4624,87 +4665,302 @@ function resizeTargetReps(current, length, minReps, maxReps) {
   return out;
 }
 
-// Each card's progression preview reuses the exact same
-// DoubleProgressionStrategy the Exercise Progress Detail page and the
-// exercise-complete screen read from — one derivation, three surfaces, so
-// the list can never show a leaf count out of sync with the detail page.
-function renderExerciseCardProgressPreview(id, ex) {
-  if (ex.progressionEnabled === false) {
-    return `<p class="text-xs text-slate-400 mt-1">Double-progression suggestions are off for this exercise.</p>`;
-  }
-  const dpResult = DoubleProgressionStrategy.calculateExerciseResult(id);
-  if (!dpResult.configured) {
-    return `<p class="text-xs text-slate-400 mt-1">Add a maximum rep target to enable Double Progression.</p>`;
-  }
-  const dpPositions = DoubleProgressionStrategy.calculateSetResults(id);
-  const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
-  const stageName = GROWTH_STAGE_NAMES[stageIdx];
-  const weight = dpPositions[0]?.currentWeight ?? ex.currentWeight ?? 0;
-  const repLine = `${weight} ${ex.unit || 'kg'} · ${dpResult.minReps}–${dpResult.maxReps} reps`;
-  const progressLine = dpResult.cycleComplete
-    ? 'Ready to evolve'
-    : `${dpResult.leavesMatured} of ${dpResult.workingSetCount} sets progressed`;
-  return `
-    <p class="text-xs text-slate-400 mt-1">${repLine}</p>
-    <div class="flex items-center gap-2 mt-1">
-      <span class="text-xs font-semibold text-brand-500">${stageName}</span>
-      <span class="flex items-center gap-0.5">${renderDoubleProgressionLeaves(dpPositions, ex.unit, 'text-base')}</span>
-    </div>
-    <p class="text-[11px] text-slate-400 mt-0.5">${progressLine}</p>`;
+// ── Exercise Garden ──────────────────────────────────────────────────────────
+// Presentation layer only — every number/state below comes straight from
+// DoubleProgressionStrategy/calculateExerciseDoubleProgression(), the exact
+// same engine the Exercise Progress Detail page reads, so the Garden can
+// never show a stage/leaf/readiness value out of sync with that page. No new
+// progression rule, threshold, or stage system is introduced here.
+let exgStatusFilter = 'all'; // 'all' | 'ready' | 'growing' | 'bloomed'
+let exgGroupFilter = '';     // '' (all body areas) or an MG_LABEL key
+
+const EXG_ACCENT = {
+  brand:  { chipBg: 'bg-brand-500 text-white border-brand-500',   text: 'text-brand-500',  soft: 'bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400' },
+  blue:   { chipBg: 'bg-blue-500 text-white border-blue-500',     text: 'text-blue-500',   soft: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400' },
+  purple: { chipBg: 'bg-purple-500 text-white border-purple-500', text: 'text-purple-500', soft: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400' }
+};
+// Section order doubles as render order on the "All" filter.
+const EXG_SECTIONS = [
+  { key: 'ready',   title: 'Ready to progress', desc: 'These exercises can grow new leaves.',        icon: 'eco',           accent: 'brand'  },
+  { key: 'growing', title: 'Growing',           desc: 'Keep going! One more progression to grow.',   icon: 'eco',           accent: 'blue'   },
+  { key: 'bloomed', title: 'Bloomed',           desc: 'Fully matured! Keep maintaining.',             icon: 'local_florist', accent: 'purple' }
+];
+const EXG_STATUS_FILTERS = [{ key: 'all', label: 'All' }, ...EXG_SECTIONS.map(s => ({ key: s.key, label: s.title }))];
+const EXG_SECTION_LIMIT = 3;
+
+// Classifies one exercise using the real Double Progression engine.
+// `bucket` is the coarse macro-stage grouping the summary card counts
+// (Sprout/Growing/Bloomed, straight from GROWTH_STAGE_NAMES/cycleIndex —
+// the same stage the Exercise Progress Detail hero shows). `section` is the
+// actionable grouping the page sections use, where a ready leaf pulls an
+// exercise into "Ready to progress" ahead of "Growing" regardless of its
+// macro stage; a fully-bloomed exercise (isFinal) is always "Bloomed."
+// Disabled (progressionEnabled === false) exercises skip the DP engine
+// entirely, same as the Exercise Progress Detail page's neutral treatment.
+function classifyExerciseForGarden(id, ex) {
+  const disabled = ex.progressionEnabled === false;
+  const dpResult = disabled ? null : calculateExerciseDoubleProgression(id);
+  const dpPositions = dpResult ? dpResult.positions : [];
+  const workingSetCount = dpResult ? dpResult.workingSetCount : Math.max(1, ex.defaultSets || (ex.targetReps || []).length || 3);
+  const leavesMatured = dpResult ? dpResult.leavesMatured : 0;
+  const cycleIndex = dpResult ? dpResult.cycleIndex : 0;
+  const stageIdx = Math.min(cycleIndex, GROWTH_TOTAL_STAGES - 1);
+  const isFinal = cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+  const hasReadyLeaf = dpPositions.some(p => !p.matured && p.status === DP_STATUS.READY_TO_INCREASE);
+  const bucket = stageIdx === 0 ? 'sprout' : isFinal ? 'bloomed' : 'growing';
+  const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : 'growing';
+  return { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, bucket, section };
 }
 
-function renderExerciseLibrary() {
-  const list = document.getElementById('exercise-library-list');
-  const q = (document.getElementById('ex-search').value || '').toLowerCase();
-  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived && (!q || ex.name?.toLowerCase().includes(q)));
-  if (!items.length) {
-    const msg = Object.keys(exercises).length
-      ? 'No exercises match your search.'
-      : 'Your first leaf is one exercise away.';
-    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${msg}</p>`;
-    return;
-  }
-  list.innerHTML = items.map(([id, ex]) => {
-    const weightUpBadge = ex.weightUpFlag ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/50 text-amber-600 px-2 py-0.5 rounded-full font-bold ml-2">⬆️ Ready to increase</span>' : '';
-    const usedIn = groupsUsingExercise(id);
-    const usedLine = usedIn.length ? `<p class="text-[11px] text-brand-500 mt-0.5">Used in ${usedIn.map(g=>esc(g.name)).join(', ')}</p>` : '';
-    return `
-      <div class="ex-card card p-3 flex items-center justify-between gap-3 w-full text-left hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="View ${esc(ex.name)} progress">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <p class="font-semibold text-sm text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-            ${weightUpBadge}
-          </div>
-          ${renderExerciseCardProgressPreview(id, ex)}
-          ${usedLine}
-        </div>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <button type="button" class="edit-ex p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all" data-id="${id}" aria-label="Edit ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">edit</span></button>
-          <button type="button" class="del-ex p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all" data-id="${id}" aria-label="Archive ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">delete</span></button>
-          <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
-        </div>
-      </div>`;
-  }).join('');
+// "Last used {today|yesterday|N days ago|N week(s) ago}" / "Not used yet" —
+// reuses getLastLoggedSets()'s real session date; a separate small formatter
+// from the shared relativeDays() (used by Workout Groups) so this page's
+// week-rollup wording doesn't change that unrelated surface.
+function exgLastUsedLabel(exerciseId) {
+  const last = getLastLoggedSets(exerciseId);
+  if (!last) return 'Not used yet';
+  const diff = Math.round((new Date(todayStr() + 'T12:00:00') - new Date(last.date + 'T12:00:00')) / 86400000);
+  if (diff <= 0) return 'Last used today';
+  if (diff === 1) return 'Last used yesterday';
+  if (diff < 7) return `Last used ${diff} days ago`;
+  const weeks = Math.round(diff / 7);
+  return `Last used ${weeks} week${weeks === 1 ? '' : 's'} ago`;
+}
 
-  list.querySelectorAll('.ex-card').forEach(card => {
+// Muscle group first (the exercise's own category), otherwise which saved
+// group(s) it belongs to — never both, to keep the card to one small tag.
+function exerciseTagLabel(id, ex) {
+  const mgLabel = MG_LABEL[ex.muscleGroup];
+  if (mgLabel) return mgLabel;
+  const usedIn = groupsUsingExercise(id);
+  if (usedIn.length === 1) return usedIn[0].name;
+  if (usedIn.length > 1) return `Used in ${usedIn.length} groups`;
+  return null;
+}
+
+function exgEmptyStateHtml() {
+  return `
+    <div class="text-center py-10 space-y-3">
+      <p class="text-4xl" aria-hidden="true">🌱</p>
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Your exercise garden is ready to grow.</p>
+      <p class="text-xs text-slate-400 max-w-xs mx-auto">Add your first exercise to plant your first sprout.</p>
+      <button id="exg-empty-add-btn" type="button" class="btn btn-green btn-pop py-3 px-6"><span class="ms text-base" aria-hidden="true">add</span>Add exercise</button>
+    </div>`;
+}
+
+// Summary numbers always reflect EVERY non-archived exercise, independent of
+// the search box / filters below it — it's an overview of the whole garden,
+// not of the current filtered view. Handles the zero-exercises/zero-sets
+// cases explicitly so nothing ever renders NaN.
+function renderExgSummary(entries) {
+  const total = entries.length;
+  const sprouts = entries.filter(e => e.bucket === 'sprout').length;
+  const growing = entries.filter(e => e.bucket === 'growing').length;
+  const bloomed = entries.filter(e => e.bucket === 'bloomed').length;
+  const totalSets = entries.reduce((sum, e) => sum + e.workingSetCount, 0);
+  const progressedSets = entries.reduce((sum, e) => sum + e.leavesMatured, 0);
+  const overallPct = totalSets > 0 ? Math.round((progressedSets / totalSets) * 100) : 0;
+
+  document.getElementById('exg-summary').innerHTML = `
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div class="min-w-0">
+        <p class="font-display font-bold text-base text-slate-800 dark:text-white flex items-center gap-1.5">Your exercise garden<span aria-hidden="true">🌿</span></p>
+        <p class="text-xs text-slate-400 mt-0.5">${total} exercise${total === 1 ? '' : 's'}</p>
+        <div class="flex items-center gap-4 mt-2.5">
+          <div><span class="text-lg font-display font-extrabold text-brand-500">${sprouts}</span><span class="text-xs text-slate-400 block">Sprout${sprouts === 1 ? '' : 's'}</span></div>
+          <div><span class="text-lg font-display font-extrabold text-blue-500">${growing}</span><span class="text-xs text-slate-400 block">Growing</span></div>
+          <div><span class="text-lg font-display font-extrabold text-purple-500">${bloomed}</span><span class="text-xs text-slate-400 block">Bloomed</span></div>
+        </div>
+      </div>
+      <div class="text-right flex-shrink-0">
+        <p class="text-xs text-slate-400">Overall growth</p>
+        <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${overallPct}%</p>
+      </div>
+    </div>
+    ${totalSets > 0 ? `
+    <div class="mt-3">
+      <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${overallPct}" aria-valuemin="0" aria-valuemax="100" aria-label="Overall exercise growth">
+        <div class="h-full bg-brand-500 transition-all duration-500" style="width:${overallPct}%"></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-1.5">${progressedSets} / ${totalSets} sets progressed</p>
+    </div>` : ''}`;
+}
+
+function renderExgStatusFilters() {
+  const wrap = document.getElementById('exg-status-filters');
+  wrap.innerHTML = EXG_STATUS_FILTERS.map(f => {
+    const on = f.key === exgStatusFilter;
+    const section = EXG_SECTIONS.find(s => s.key === f.key);
+    const activeClasses = on
+      ? (section ? EXG_ACCENT[section.accent].chipBg : 'bg-slate-700 text-white border-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200')
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800';
+    return `<button type="button" class="exg-status-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${activeClasses}" data-status="${f.key}" aria-pressed="${on}">${esc(f.label)}</button>`;
+  }).join('');
+  wrap.querySelectorAll('.exg-status-chip').forEach(b => b.addEventListener('click', () => { exgStatusFilter = b.dataset.status; renderExerciseLibrary(); }));
+}
+
+function renderExgGroupFilterOptions() {
+  const sel = document.getElementById('exg-group-filter');
+  if (sel.dataset.built) { sel.value = exgGroupFilter; return; }
+  sel.innerHTML = '<option value="">All body areas</option>' + Object.entries(MG_LABEL).map(([k, label]) => `<option value="${k}">${esc(label)}</option>`).join('');
+  sel.dataset.built = '1';
+  sel.value = exgGroupFilter;
+}
+
+function exgSectionHtml(section, items, { expanded }) {
+  const accent = EXG_ACCENT[section.accent];
+  if (!items.length) {
+    if (!expanded) return '';
+    return `
+      <div class="space-y-1.5">
+        <p class="text-sm font-bold ${accent.text} flex items-center gap-1.5"><span class="ms text-base" aria-hidden="true">${section.icon}</span>${section.title}</p>
+        <p class="text-xs text-slate-400 text-center py-6">No exercises in this category yet.</p>
+      </div>`;
+  }
+  const shown = expanded ? items : items.slice(0, EXG_SECTION_LIMIT);
+  const viewAllBtn = (!expanded && items.length > EXG_SECTION_LIMIT)
+    ? `<button type="button" class="exg-view-all-btn text-xs font-semibold ${accent.text} hover:underline flex items-center gap-0.5 flex-shrink-0" data-status="${section.key}">View all<span class="ms text-sm" aria-hidden="true">chevron_right</span></button>`
+    : '';
+  return `
+    <div class="space-y-2.5">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <p class="text-sm font-bold ${accent.text} flex items-center gap-1.5"><span class="ms text-base" aria-hidden="true">${section.icon}</span>${esc(section.title)} <span class="text-slate-400 font-semibold">(${items.length})</span></p>
+          <p class="text-[11px] text-slate-400">${esc(section.desc)}</p>
+        </div>
+        ${viewAllBtn}
+      </div>
+      <div class="space-y-2">${shown.map(renderExgCard).join('')}</div>
+    </div>`;
+}
+
+// One card — Exercise Plant hero (same DP_STAGE_EMOJI/GROWTH_STAGE_NAMES the
+// Exercise Progress Detail page uses), leaves via the existing
+// renderDoubleProgressionLeaves() (matured/ready/growing colors untouched,
+// warm-up sets structurally excluded since positions only ever come from
+// working-set data), weight/rep range, sets-progressed count, last-used, and
+// a body-area/group tag. Edit stays a direct action; Delete moves behind the
+// overflow menu (see openExerciseActionsSheet()).
+function renderExgCard(entry) {
+  const { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, section } = entry;
+  const accent = EXG_ACCENT[section];
+  const unit = ex.unit || 'kg';
+  const weight = dpPositions[0]?.currentWeight ?? ex.currentWeight ?? null;
+  const weightText = weight != null ? `${weight} ${unit}` : '—';
+  const repRangeText = (ex.minReps != null && ex.maxReps != null) ? `${ex.minReps}–${ex.maxReps} reps` : 'No rep range';
+  const tag = exerciseTagLabel(id, ex);
+  const lastUsed = exgLastUsedLabel(id);
+  const readyPill = !disabled && hasReadyLeaf ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full ${EXG_ACCENT.brand.soft} flex-shrink-0">Ready!</span>` : '';
+
+  const stageBlock = disabled
+    ? `<p class="text-[11px] text-slate-400 mt-1">Double-progression suggestions are off for this exercise.</p>`
+    : `<div class="flex items-center gap-1.5 flex-wrap mt-1">
+        <span class="text-xs font-bold ${accent.text}">${esc(GROWTH_STAGE_NAMES[stageIdx])}${isFinal ? ' 🌸' : ''}</span>
+        <span class="flex items-center gap-0.5">${renderDoubleProgressionLeaves(dpPositions, unit, 'text-lg')}</span>
+        ${readyPill}
+      </div>
+      <p class="text-[11px] text-slate-400 mt-0.5">${leavesMatured} / ${workingSetCount} sets</p>`;
+
+  return `
+    <div class="exg-card card p-3.5 flex items-start gap-3 w-full text-left hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="View ${esc(ex.name)} progress">
+      <div class="hero-surface relative rounded-2xl w-14 h-14 flex-shrink-0 flex items-center justify-center overflow-hidden" aria-hidden="true">
+        <div class="hero-glow"></div>
+        <span class="relative text-2xl">${disabled ? '🌱' : DP_STAGE_EMOJI[stageIdx]}</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400 mt-0.5">${weightText} · ${repRangeText}</p>
+        ${stageBlock}
+        <div class="flex items-center gap-2 flex-wrap mt-1.5">
+          <p class="text-[11px] text-slate-400">${lastUsed}</p>
+          ${tag ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md"><span class="ms text-xs" aria-hidden="true">category</span>${esc(tag)}</span>` : ''}
+        </div>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <button type="button" class="exg-edit-btn p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all" data-id="${id}" aria-label="Edit ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">edit</span></button>
+        <button type="button" class="exg-more-btn p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" data-id="${id}" aria-label="More actions for ${esc(ex.name)}"><span class="ms text-base" aria-hidden="true">more_horiz</span></button>
+      </div>
+    </div>`;
+}
+
+function wireExgCardActions() {
+  const list = document.getElementById('exercise-library-list');
+  list.querySelectorAll('.exg-card').forEach(card => {
     card.addEventListener('click', () => openExerciseDetail(card.dataset.id));
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openExerciseDetail(card.dataset.id); }
     });
   });
-  list.querySelectorAll('.edit-ex').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseModal(b.dataset.id); }));
-  list.querySelectorAll('.del-ex').forEach(b => b.addEventListener('click', async e => {
-    e.stopPropagation();
-    const id = b.dataset.id;
-    const usedIn = groupsUsingExercise(id);
-    const warning = usedIn.length ? ` It will stay in: ${usedIn.map(g=>g.name).join(', ')}.` : '';
-    if (!confirm(`Archive "${exercises[id].name}"? It will be hidden from your library and new groups, but past workouts and any groups using it are unaffected.${warning}`)) return;
-    await set(ref(db, `exercises/${uid()}/${id}/archived`), true);
-  }));
+  list.querySelectorAll('.exg-edit-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseModal(b.dataset.id); }));
+  list.querySelectorAll('.exg-more-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseActionsSheet(b.dataset.id); }));
+  list.querySelectorAll('.exg-view-all-btn').forEach(b => b.addEventListener('click', () => { exgStatusFilter = b.dataset.status; renderExerciseLibrary(); }));
+  document.getElementById('exg-empty-add-btn')?.addEventListener('click', () => openExerciseModal());
+}
+
+// The one render function for the Exercise Garden — entry point name kept
+// unchanged so every existing caller (onValue listeners, switchWorkoutTab,
+// session-save flows) keeps working without modification.
+function renderExerciseLibrary() {
+  const q = (document.getElementById('ex-search').value || '').trim().toLowerCase();
+  const allEntries = Object.entries(exercises).filter(([, ex]) => !ex.archived).map(([id, ex]) => classifyExerciseForGarden(id, ex));
+  const list = document.getElementById('exercise-library-list');
+
+  if (!allEntries.length) {
+    document.getElementById('exg-summary').style.display = 'none';
+    document.getElementById('exg-status-filters').style.display = 'none';
+    list.innerHTML = exgEmptyStateHtml();
+    wireExgCardActions();
+    return;
+  }
+
+  document.getElementById('exg-summary').style.display = '';
+  document.getElementById('exg-status-filters').style.display = '';
+  renderExgSummary(allEntries);
+  renderExgGroupFilterOptions();
+  renderExgStatusFilters();
+
+  let filtered = allEntries.filter(e => !q || e.ex.name?.toLowerCase().includes(q));
+  if (exgGroupFilter) filtered = filtered.filter(e => e.ex.muscleGroup === exgGroupFilter);
+
+  if (exgStatusFilter !== 'all') {
+    const section = EXG_SECTIONS.find(s => s.key === exgStatusFilter);
+    list.innerHTML = exgSectionHtml(section, filtered.filter(e => e.section === section.key), { expanded: true });
+  } else {
+    const html = EXG_SECTIONS.map(section => exgSectionHtml(section, filtered.filter(e => e.section === section.key), { expanded: false })).join('');
+    list.innerHTML = html || `<p class="text-sm text-slate-400 text-center py-8">No exercises match your search.</p>`;
+  }
+  wireExgCardActions();
 }
 
 document.getElementById('ex-search').addEventListener('input', renderExerciseLibrary);
 document.getElementById('new-exercise-btn').addEventListener('click', () => openExerciseModal());
+document.getElementById('exg-filter-toggle').addEventListener('click', () => {
+  const wrap = document.getElementById('exg-group-filter-wrap');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? '' : 'none';
+  document.getElementById('exg-filter-toggle').setAttribute('aria-expanded', String(open));
+});
+document.getElementById('exg-group-filter').addEventListener('change', e => { exgGroupFilter = e.target.value; renderExerciseLibrary(); });
+
+// ── Exercise Garden card overflow (View details / Delete) ──────────────────
+let exgActionsExerciseId = null;
+function openExerciseActionsSheet(exerciseId) {
+  if (!exercises[exerciseId]) return;
+  exgActionsExerciseId = exerciseId;
+  document.getElementById('exg-actions-title').textContent = exercises[exerciseId].name;
+  show('exg-actions-modal');
+}
+document.getElementById('exg-actions-close').addEventListener('click', () => hide('exg-actions-modal'));
+document.getElementById('exg-actions-view-btn').addEventListener('click', () => { hide('exg-actions-modal'); openExerciseDetail(exgActionsExerciseId); });
+document.getElementById('exg-actions-delete-btn').addEventListener('click', async () => {
+  const id = exgActionsExerciseId;
+  if (!id || !exercises[id]) return;
+  const usedIn = groupsUsingExercise(id);
+  const warning = usedIn.length ? ` It will stay in: ${usedIn.map(g=>g.name).join(', ')}.` : '';
+  if (!confirm(`Delete "${exercises[id].name}"? It will be hidden from your library and new groups, but past workouts and any groups using it are unaffected.${warning}`)) return;
+  hide('exg-actions-modal');
+  await set(ref(db, `exercises/${uid()}/${id}/archived`), true);
+});
 
 // ── Exercise Progress Detail ─────────────────────────────────────────────────
 // Reusable from four entry points (Exercises tab, an active grouped workout,
