@@ -3283,14 +3283,14 @@ function groupsUsingExercise(exerciseId) {
     .map(([id, g]) => ({ id, name: g.name }));
 }
 
+// sessions is keyed sessions[date][sessionId] — the DATE is the outer key,
+// never the inner session id. (Earlier this iterated Object.values(sessions)
+// then Object.keys(dayMap), which collects session ids, not dates — every
+// consumer of "dates" was actually getting session-id strings, which is why
+// the Home "last session" stat showed "Invalid Date" and the streak counter
+// never matched anything.)
 function allSessionDates() {
-  const dates = [];
-  Object.values(sessions).forEach(dayMap => {
-    if (typeof dayMap === 'object') Object.keys(dayMap).forEach(date => {
-      if (!dates.includes(date)) dates.push(date);
-    });
-  });
-  return dates;
+  return Object.keys(sessions).filter(date => sessions[date] && Object.keys(sessions[date]).length > 0);
 }
 
 function totalLoggedSessions() {
