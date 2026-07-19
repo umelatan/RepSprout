@@ -42,6 +42,7 @@ body{font-family:'Inter',sans-serif}
 .p-hero-float{animation:heroFloat 5s ease-in-out infinite;display:inline-block}
 .p-hero-bloom{animation:heroBloom 4s ease-in-out infinite;display:inline-block}
 .p-hero-still{display:inline-block}
+.p-breathe{animation:breathe 4.4s ease-in-out infinite;display:inline-block}
 .leaf-particle{position:absolute;animation:leafDrift 6s ease-in-out infinite;pointer-events:none;user-select:none}
 .sparkle-dot{position:absolute;top:-3px;right:-6px;font-size:.65rem;animation:sparklePulse 2.2s ease-in-out infinite}
 .nav-active{color:#22c55e!important;background:rgba(34,197,94,.1)!important}
@@ -50,6 +51,17 @@ body{font-family:'Inter',sans-serif}
 .ms{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300;font-size:inherit;line-height:1;vertical-align:middle;user-select:none}
 .card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
+/* Workout hub cards — the same soft surface as .card, just a little larger/
+   rounder and with a gentle press response instead of a hover chevron, so
+   the whole card itself reads as the tap target ("beautiful object", not a
+   navigation row). Press is a plain interaction-driven transition, not an
+   infinite loop, so it's left out of the prefers-reduced-motion list below. */
+.wt-hub-card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:1.15rem 1.25rem;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease}
+.dark .wt-hub-card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
+.wt-hub-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.wt-hub-icon{width:3.75rem;height:3.75rem;flex-shrink:0}
+.wt-hub-icon svg{width:100%;height:100%;filter:drop-shadow(0 3px 5px rgba(15,23,42,.14))}
+.dark .wt-hub-icon svg{filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
@@ -106,7 +118,7 @@ body{font-family:'Inter',sans-serif}
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once{animation:none!important;transition:none!important}
 }
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
@@ -419,54 +431,102 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            renderWorkoutHub()). Groups/Exercises/Targets/History are now
            reached by tapping a card, each with its own back-to-hub button,
            rather than a tab bar. -->
-      <div id="wt-hub" style="display:none" class="space-y-4">
-        <div class="flex items-start gap-2.5 px-0.5">
-          <span class="text-2xl leading-none flex-shrink-0" aria-hidden="true">🌱</span>
-          <div class="min-w-0">
-            <h2 class="font-display font-extrabold text-xl text-slate-800 dark:text-white">Your workout hub</h2>
-            <p class="text-sm text-slate-400 mt-0.5">Manage your routines, exercises, targets and progress in one place.</p>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="groups" aria-label="Workout Groups — create and manage your workout routines">
-            <span class="w-12 h-12 rounded-2xl bg-pink-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">folder</span></span>
+      <!-- No hero/heading here on purpose — the app bar's "Workout" title
+           already names this page, and each card below is self-explanatory.
+           First card sits directly under the app bar with the section's own
+           top padding for breathing room (see #workout-view). -->
+      <div id="wt-hub" style="display:none">
+        <div class="space-y-4">
+          <button type="button" class="wt-hub-card w-full text-left flex items-center gap-4" data-tab="groups" aria-label="Workout Groups — create and manage your workout routines">
+            <span class="wt-hub-icon p-breathe" aria-hidden="true">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="wtgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d9c4"/><stop offset="1" stop-color="#e0b490"/></linearGradient>
+                  <linearGradient id="wtgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8ecd9"/><stop offset="1" stop-color="#eddcbd"/></linearGradient>
+                  <linearGradient id="wtgC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ecb92"/><stop offset="1" stop-color="#7bad70"/></linearGradient>
+                </defs>
+                <rect x="12" y="30" width="38" height="23" rx="4" transform="rotate(-9 12 30)" fill="url(#wtgA)"/>
+                <rect x="13" y="23" width="38" height="23" rx="4" transform="rotate(-3 13 23)" fill="url(#wtgB)"/>
+                <rect x="13" y="17" width="38" height="23" rx="4" fill="url(#wtgC)"/>
+                <rect x="16.5" y="17" width="3" height="23" rx="1.5" fill="#5f9a5c" opacity=".55"/>
+                <path d="M39 22c2.5 3 2.5 8 0 11" stroke="#f3f9f1" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+              </svg>
+            </span>
             <div class="min-w-0 flex-1">
-              <p class="font-display font-bold text-base text-slate-800 dark:text-white">Workout Groups</p>
-              <p class="text-xs text-slate-400 mt-0.5">Create and manage your workout routines.</p>
-              <p id="wt-hub-groups-meta" class="text-xs font-semibold text-pink-500 mt-1"></p>
+              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Workout Groups</p>
+              <p id="wt-hub-groups-meta" class="text-xs font-semibold text-pink-500 mt-0.5"></p>
+              <p class="text-xs text-slate-400 mt-1">Create and manage your workout routines.</p>
             </div>
-            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
           </button>
 
-          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="exercises" aria-label="Exercises — browse, add and organise your exercise library">
-            <span class="w-12 h-12 rounded-2xl bg-blue-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">fitness_center</span></span>
+          <button type="button" class="wt-hub-card w-full text-left flex items-center gap-4" data-tab="exercises" aria-label="Exercises — browse, add and organise your exercise library">
+            <span class="wt-hub-icon p-sway relative" aria-hidden="true">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="wteA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d99a72"/><stop offset="1" stop-color="#b97748"/></linearGradient>
+                  <linearGradient id="wteB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fcf82"/><stop offset="1" stop-color="#5f9a5c"/></linearGradient>
+                  <linearGradient id="wteC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6db463"/><stop offset="1" stop-color="#457a41"/></linearGradient>
+                </defs>
+                <path d="M19 39h26l-3.2 16.4a4 4 0 01-3.9 3.2H26.1a4 4 0 01-3.9-3.2L19 39z" fill="url(#wteA)"/>
+                <path d="M19 39h26l-1 5H20l-1-5z" fill="#8a5a34" opacity=".5"/>
+                <path d="M32 41c0-10.5-8.5-10.5-8.5-19 6.5 0 8.5 6.5 8.5 11" fill="url(#wteB)"/>
+                <path d="M32 41c0-14.5 10.5-14.5 10.5-25-7.3 0-10.5 8.3-10.5 14.6" fill="url(#wteC)"/>
+                <path d="M32 41v-7" stroke="#3f6f3b" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="sparkle-dot" aria-hidden="true">✨</span>
+            </span>
             <div class="min-w-0 flex-1">
-              <p class="font-display font-bold text-base text-slate-800 dark:text-white">Exercises</p>
-              <p class="text-xs text-slate-400 mt-0.5">Browse, add and organise your exercise library.</p>
-              <p id="wt-hub-exercises-meta" class="text-xs font-semibold text-blue-500 mt-1"></p>
+              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Exercises</p>
+              <p id="wt-hub-exercises-meta" class="text-xs font-semibold text-blue-500 mt-0.5"></p>
+              <p class="text-xs text-slate-400 mt-1">Browse, add and organise your exercise library.</p>
             </div>
-            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
           </button>
 
-          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="targets" aria-label="Targets — track your daily and weekly fitness goals">
-            <span class="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">track_changes</span></span>
+          <button type="button" class="wt-hub-card w-full text-left flex items-center gap-4" data-tab="targets" aria-label="Targets — track your daily and weekly fitness goals">
+            <span class="wt-hub-icon p-breathe" aria-hidden="true">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <radialGradient id="wttA" cx="35%" cy="35%" r="75%"><stop offset="0" stop-color="#ecd0a2"/><stop offset="1" stop-color="#cf9f65"/></radialGradient>
+                  <radialGradient id="wttB" cx="35%" cy="35%" r="75%"><stop offset="0" stop-color="#d3a469"/><stop offset="1" stop-color="#b17f42"/></radialGradient>
+                  <linearGradient id="wttC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fcf82"/><stop offset="1" stop-color="#5f9a5c"/></linearGradient>
+                </defs>
+                <circle cx="32" cy="25" r="17" fill="url(#wttA)"/>
+                <circle cx="32" cy="25" r="11.5" fill="url(#wttB)"/>
+                <circle cx="32" cy="25" r="6" fill="#8a5a34"/>
+                <circle cx="32" cy="25" r="2.2" fill="#5f3c22"/>
+                <rect x="27" y="43" width="10" height="7" rx="2" fill="#a8734f"/>
+                <path d="M29 43c0-5.5-4.5-5.5-4.5-10 4 0 4.5 3.7 4.5 6.4" fill="url(#wttC)"/>
+                <path d="M32 43c0-7.3 5.5-7.3 5.5-13-4.7 0-5.5 4.6-5.5 8.4" fill="#5f9a5c"/>
+              </svg>
+            </span>
             <div class="min-w-0 flex-1">
-              <p class="font-display font-bold text-base text-slate-800 dark:text-white">Targets</p>
-              <p class="text-xs text-slate-400 mt-0.5">Track your daily and weekly fitness goals.</p>
-              <p id="wt-hub-targets-meta" class="text-xs font-semibold text-brand-500 mt-1"></p>
+              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Targets</p>
+              <p id="wt-hub-targets-meta" class="text-xs font-semibold text-brand-500 mt-0.5"></p>
+              <p class="text-xs text-slate-400 mt-1">Track your daily and weekly fitness goals.</p>
             </div>
-            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
           </button>
 
-          <button type="button" class="wt-hub-card w-full text-left card p-4 flex items-center gap-3.5" data-tab="history" aria-label="History — review your past workouts and progress">
-            <span class="w-12 h-12 rounded-2xl bg-purple-500 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-white text-2xl">history</span></span>
+          <button type="button" class="wt-hub-card w-full text-left flex items-center gap-4" data-tab="history" aria-label="History — review your past workouts and progress">
+            <span class="wt-hub-icon p-breathe" aria-hidden="true">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="wthA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3c2e8"/><stop offset="1" stop-color="#b7a0d6"/></linearGradient>
+                  <linearGradient id="wthB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fcf82"/><stop offset="1" stop-color="#5f9a5c"/></linearGradient>
+                </defs>
+                <rect x="14" y="11" width="36" height="42" rx="5" fill="url(#wthA)"/>
+                <rect x="14" y="11" width="6.5" height="42" rx="3" fill="#9a83bd"/>
+                <rect x="25" y="21" width="19" height="2.4" rx="1.2" fill="#f7f2fb" opacity=".85"/>
+                <rect x="25" y="28" width="19" height="2.4" rx="1.2" fill="#f7f2fb" opacity=".85"/>
+                <rect x="25" y="35" width="13" height="2.4" rx="1.2" fill="#f7f2fb" opacity=".85"/>
+                <path d="M39 45.5c3-1.3 6.4 0 8.3 3-3.3 1.2-6.6.1-8.3-3z" fill="url(#wthB)"/>
+                <path d="M37.5 46.6c1-3.1 4.1-4.3 7.2-3.3-1.1 3.1-4.2 4.2-7.2 3.3z" fill="#5f9a5c"/>
+              </svg>
+            </span>
             <div class="min-w-0 flex-1">
-              <p class="font-display font-bold text-base text-slate-800 dark:text-white">History</p>
-              <p class="text-xs text-slate-400 mt-0.5">Review your past workouts and progress.</p>
-              <p id="wt-hub-history-meta" class="text-xs font-semibold text-purple-500 mt-1"></p>
+              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">History</p>
+              <p id="wt-hub-history-meta" class="text-xs font-semibold text-purple-500 mt-0.5"></p>
+              <p class="text-xs text-slate-400 mt-1">Review your past workouts and progress.</p>
             </div>
-            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
           </button>
         </div>
 
@@ -4035,7 +4095,14 @@ function renderWorkoutHub() {
   }
 }
 
-document.querySelectorAll('.wt-hub-card').forEach(b => b.addEventListener('click', () => switchWorkoutTab(b.dataset.tab)));
+// A short delay after the click lets the card's own press/release transition
+// (see .wt-hub-card:active in the stylesheet) actually finish on screen
+// before the view swaps out from under it, instead of cutting it off mid-
+// spring. Skipped for prefers-reduced-motion, where there's nothing to wait for.
+document.querySelectorAll('.wt-hub-card').forEach(b => b.addEventListener('click', () => {
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => switchWorkoutTab(b.dataset.tab), reducedMotion ? 0 : 160);
+}));
 document.querySelectorAll('.wt-back-btn').forEach(b => b.addEventListener('click', () => switchWorkoutTab('hub')));
 
 // ── Targets tab ──────────────────────────────────────────────────────────────
