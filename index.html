@@ -3441,8 +3441,21 @@ function renderDashStats(sessionDates, hasHistory) {
   }
   document.getElementById('streak-val').textContent = streak;
   document.getElementById('total-sessions-val').textContent = sessionDates.length;
-  const lastDate = [...sessionDates].sort().reverse()[0];
-  document.getElementById('last-session-val').textContent = lastDate ? fmtDate(lastDate) : '—';
+  // "Last session" means an actual workout or exercise activity — a
+  // Recovery Day is real rest, not something to report as your last
+  // session, so it's excluded here even though it still counts toward the
+  // streak/total-sessions stats above.
+  const lastWorkoutDate = lastWorkoutSessionDate();
+  document.getElementById('last-session-val').textContent = lastWorkoutDate ? fmtDate(lastWorkoutDate) : '—';
+}
+
+// Most recent date with at least one non-Recovery-Day session (group,
+// quick, or other activity) — a Recovery Day on a later date must never
+// make an older real workout look "current."
+function lastWorkoutSessionDate() {
+  const dates = Object.keys(sessions).filter(date =>
+    Object.values(sessions[date] || {}).some(s => s && s.sessionType !== 'recovery'));
+  return dates.length ? dates.sort().reverse()[0] : null;
 }
 
 // Tracks the stage shown on the previous call so the mission-card icon only
