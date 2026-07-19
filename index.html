@@ -5063,7 +5063,7 @@ function renderExerciseDetail(exerciseId) {
       : 'Add a maximum rep target to enable Double Progression.';
     heroHtml = `
       <div class="card p-4 text-center space-y-2">
-        <p class="text-4xl" aria-hidden="true">🌱</p>
+        <div class="flex justify-center">${exgPlantVisual(null, exdAccent)}</div>
         <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
       </div>`;
   } else {
