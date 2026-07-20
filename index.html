@@ -1053,10 +1053,11 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
-<!-- Guided workout: queue row actions (Move later / Skip / Remove) -->
+<!-- Guided workout: queue row actions (Start now / Move later / Skip / Remove) -->
 <div id="queue-row-actions-modal" style="display:none" class="fixed inset-0 z-[59] flex items-end justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-4 space-y-1">
     <p id="qra-title" class="text-xs font-semibold text-slate-400 px-3 pb-1 truncate"></p>
+    <button id="qra-start-now" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 text-sm font-semibold text-brand-600 dark:text-brand-400 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">bolt</span>Start now</button>
     <button id="qra-move-later" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">arrow_downward</span>Move later</button>
     <button id="qra-skip" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">remove_circle</span><span id="qra-skip-label">Skip exercise</span></button>
     <button id="qra-remove" style="display:none" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from today's session</button>
@@ -6745,7 +6746,12 @@ function renderExerciseCompletePhase(ex) {
       <div class="pt-1"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${ex.targetReps.length} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
       ${progressBox}
     </div>`;
-  const isLast = activeSession.currentExerciseIndex >= activeSession.exercises.length - 1;
+  // "Last" means no unfinished exercise remains anywhere in today's queue —
+  // not just "nothing after this index." Reordering, "Start now," and
+  // skipping can all put an out-of-order exercise ahead of one that's still
+  // unfinished, so a raw index comparison here would show "Finish Workout"
+  // while real work is still left undone.
+  const isLast = findNextUnfinishedExerciseIndex() === -1;
   footer.innerHTML = `
     <button data-action="${isLast ? 'finish-workout' : 'next-exercise'}" class="btn btn-green btn-pop w-full py-3.5 text-base">${isLast ? 'Finish Workout' : 'Next Exercise'}</button>
     <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-2 flex-wrap">
@@ -6757,10 +6763,25 @@ function renderExerciseCompletePhase(ex) {
     </div>`;
 }
 
+// The single source of truth for "what's next" across the guided workout —
+// scans TODAY's current queue order (activeSession.exercises, as reordered
+// by drag-and-drop/Start now/skip, never the saved Workout Group's order)
+// from the beginning for the first exercise that is neither the current one,
+// completed, nor skipped. Always restarts the scan from the front, so an
+// exercise completed out of order (e.g. via "Start now") can never cause an
+// earlier, still-unfinished exercise to be passed over. Returns -1 once
+// nothing unfinished remains.
+function findNextUnfinishedExerciseIndex() {
+  for (let i = 0; i < activeSession.exercises.length; i++) {
+    if (queueRowState(activeSession.exercises[i], i) === 'pending') return i;
+  }
+  return -1;
+}
+
 function goToNextExercise() {
-  const idx = activeSession.currentExerciseIndex;
-  if (idx < activeSession.exercises.length - 1) {
-    activeSession.currentExerciseIndex = idx + 1;
+  const nextIdx = findNextUnfinishedExerciseIndex();
+  if (nextIdx !== -1) {
+    activeSession.currentExerciseIndex = nextIdx;
     activeSession.phase = 'exercise';
     renderGuidedWorkout();
     saveActiveSessionDraft();
@@ -6972,7 +6993,11 @@ function renderRestUpNext(ex) {
       <p class="text-xs text-slate-400">Set ${nextSetNum} of ${totalTarget}</p>`;
   }
 
-  const nextEx = activeSession.exercises[activeSession.currentExerciseIndex + 1];
+  // The next unfinished exercise in today's current queue order — not
+  // simply "the next index" — so this preview can never point at an
+  // exercise that's already done or skipped.
+  const nextIdx = findNextUnfinishedExerciseIndex();
+  const nextEx = nextIdx !== -1 ? activeSession.exercises[nextIdx] : null;
   if (nextEx) {
     const sets = nextEx.targetReps.length;
     return `
@@ -7640,10 +7665,15 @@ function renderQueueRow(ex, idx) {
     detail = targetSetsLine(ex);
   }
 
+  // A completed exercise is never re-openable as the current exercise — the
+  // native `disabled` attribute means it can't fire a click/jump at all
+  // (no separate JS state check needed to keep it inert), matching "disable
+  // inappropriate actions" for completed rows.
+  const jumpDisabled = state === 'done';
   return `
     <div class="queue-row ${canDrag?'queue-reorderable':''} flex items-center gap-1.5 p-3 rounded-xl min-h-[3.25rem] ${rowExtra}" data-idx="${idx}">
       <span class="ms ${iconColor} flex-shrink-0" aria-hidden="true">${icon}</span>
-      <button class="queue-jump flex-1 text-left min-w-0 py-0.5" data-idx="${idx}">
+      <button class="queue-jump flex-1 text-left min-w-0 py-0.5 disabled:cursor-default" data-idx="${idx}" ${jumpDisabled ? 'disabled' : ''}>
         <p class="text-sm ${nameColor} truncate">${esc(ex.name)}</p>
         ${detail ? `<p class="text-xs ${detailColor} truncate">${esc(detail)}</p>` : ''}
       </button>
@@ -7664,10 +7694,7 @@ function renderQueue() {
     ? '🌱 All exercises complete for today.'
     : `${remaining} exercise${remaining !== 1 ? 's' : ''} left until today's growth is complete.`;
 
-  let nextIdx = -1;
-  for (let i = activeSession.currentExerciseIndex + 1; i < total; i++) {
-    if (queueRowState(activeSession.exercises[i], i) === 'pending') { nextIdx = i; break; }
-  }
+  const nextIdx = findNextUnfinishedExerciseIndex();
 
   document.getElementById('queue-list').innerHTML = activeSession.exercises.map((ex, idx) => {
     const label = idx === nextIdx ? `<p class="text-[11px] font-bold uppercase tracking-wider text-brand-500 pt-2 pl-1">Next</p>` : '';
@@ -7681,21 +7708,32 @@ document.getElementById('queue-backdrop').addEventListener('click', closeQueueDr
 document.getElementById('queue-add-ex-btn').addEventListener('click', () => {
   openPickExModal(id => { addExerciseToActiveSession(id); renderQueue(); }, []);
 });
+// Jumps the active session straight to exercise `idx` as the current
+// exercise — this is "Start now": a temporary jump for THIS session only,
+// never a rewrite of the saved Workout Group's exercise order (that order
+// lives in the group document, untouched by anything here; only
+// activeSession.currentExerciseIndex changes). Refuses to jump onto an
+// already-completed exercise — completed exercises are never re-openable
+// as the current exercise via this path.
+function jumpToExerciseNow(idx) {
+  const ex = activeSession.exercises[idx];
+  if (!ex || exerciseIsDone(ex)) return;
+  activeSession.currentExerciseIndex = idx;
+  activeSession.phase = 'exercise';
+  activeSession.restEndsAt = null; activeSession.restPausedRemainingMs = null; activeSession.restReady = false;
+  closeQueueDrawer();
+  renderGuidedWorkout(); saveActiveSessionDraft();
+}
+
 document.getElementById('queue-list').addEventListener('click', e => {
   if (e.target.closest('.queue-drag-handle')) return;
   const menuBtn = e.target.closest('.queue-row-menu');
   if (menuBtn) { openQueueRowActions(+menuBtn.dataset.idx); return; }
   const jump = e.target.closest('.queue-jump');
-  if (jump) {
-    activeSession.currentExerciseIndex = +jump.dataset.idx;
-    activeSession.phase = 'exercise';
-    activeSession.restEndsAt = null; activeSession.restPausedRemainingMs = null; activeSession.restReady = false;
-    closeQueueDrawer();
-    renderGuidedWorkout(); saveActiveSessionDraft();
-  }
+  if (jump) jumpToExerciseNow(+jump.dataset.idx);
 });
 
-// ── Queue drawer: row overflow actions (Move later / Skip / Remove) ────────
+// ── Queue drawer: row overflow actions (Start now / Move later / Skip / Remove) ────
 // A bottom sheet instead of tiny permanent icons — matches the rest of the
 // app's existing sheet-modal idiom and only ever touches the active session.
 let queueActionsIdx = null;
@@ -7703,6 +7741,11 @@ function openQueueRowActions(idx) {
   queueActionsIdx = idx;
   const ex = activeSession.exercises[idx];
   document.getElementById('qra-title').textContent = ex.name;
+  // "Start now" is only ever a valid action for an unfinished exercise —
+  // this menu is never opened for the current exercise in the first place
+  // (its row has no overflow button at all), so the only case left to guard
+  // against here is an already-completed one.
+  document.getElementById('qra-start-now').style.display = exerciseIsDone(ex) ? 'none' : '';
   document.getElementById('qra-skip-label').textContent = ex.skipped ? 'Unskip exercise' : 'Skip exercise';
   document.getElementById('qra-remove').style.display = !ex.sets.some(s => s.completed) ? '' : 'none';
   document.getElementById('queue-row-actions-modal').style.display = '';
@@ -7714,6 +7757,11 @@ function closeQueueRowActions() {
 document.getElementById('qra-cancel').addEventListener('click', closeQueueRowActions);
 document.getElementById('queue-row-actions-modal').addEventListener('click', e => {
   if (e.target.id === 'queue-row-actions-modal') closeQueueRowActions();
+});
+document.getElementById('qra-start-now').addEventListener('click', () => {
+  const idx = queueActionsIdx;
+  closeQueueRowActions();
+  if (idx != null) jumpToExerciseNow(idx);
 });
 document.getElementById('qra-move-later').addEventListener('click', () => {
   const idx = queueActionsIdx;
