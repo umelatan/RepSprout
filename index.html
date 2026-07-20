@@ -18,6 +18,37 @@ tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{body:['Inter','syst
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 <style>
 *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+/* Shared motion tokens — every interaction-driven transition/animation in the
+   app should reference these instead of hardcoding its own duration/easing,
+   so the whole app moves with one consistent, calm feel and
+   prefers-reduced-motion can kill it globally in one place. Ambient/
+   celebratory effects (plant sway, completion pops, sparkles) are
+   deliberately excluded — those are one-off design choices, not reusable UI
+   motion.
+   Philosophy: calm, smooth, deliberate — Apple Health / Calm / Headspace,
+   never instant or mechanical. RepSprout is a wellness app, not a
+   productivity tool: every transition should be visibly perceivable and
+   settle into place without snapping or bouncing.
+   Source of truth: Calendar's "Add activity" sheet (.cap-backdrop/.cap-sheet,
+   untouched by this system) —
+     backdrop: opacity 0→1,        300ms, cubic-bezier(.4,0,.2,1)  (Tailwind's default transition curve)
+     sheet:    translateY(100%→0), 300ms, cubic-bezier(0,0,.2,1)   (Tailwind's `ease-out`)
+   --rs-ease-standard is that backdrop/fade curve; --rs-ease-settle is that
+   sheet/movement curve. --rs-dur-sheet is pinned to that exact 300ms so
+   every other sheet/dialog in the app arrives at Calendar's own pace. */
+:root{
+  --rs-ease-standard:cubic-bezier(.4,0,.2,1);
+  --rs-ease-settle:cubic-bezier(0,0,.2,1);
+  --rs-dur-press:150ms;
+  --rs-dur-quick:240ms;
+  --rs-dur-standard:320ms;
+  --rs-dur-page:420ms;
+  --rs-dur-sheet:300ms;
+  --rs-dur-celebration:650ms;
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--rs-dur-press:0ms;--rs-dur-quick:0ms;--rs-dur-standard:0ms;--rs-dur-page:0ms;--rs-dur-sheet:0ms;--rs-dur-celebration:0ms;--rs-ease-settle:var(--rs-ease-standard)}
+}
 body{font-family:'Inter',sans-serif}
 .font-display,h1,h2,h3{font-family:'Plus Jakarta Sans',sans-serif}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(100,100,100,.3);border-radius:2px}
@@ -31,6 +62,19 @@ body{font-family:'Inter',sans-serif}
 @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes completePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes awSetFade{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes rsBackdropIn{0%{opacity:0}100%{opacity:1}}
+@keyframes rsBackdropOut{0%{opacity:1}100%{opacity:0}}
+/* Split fade/move into separate keyframes (rather than one combined
+   animation) so each can carry Calendar's own per-property easing —
+   .cap-sheet's fade and its translateY use two different curves, and a
+   single `animation` shorthand can't apply two timing functions to one
+   keyframe. No scale anywhere: Calendar's sheet is a pure vertical glide. */
+@keyframes rsFadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes rsFadeOut{0%{opacity:1}100%{opacity:0}}
+@keyframes rsMoveIn{0%{transform:translateY(20px)}100%{transform:translateY(0)}}
+@keyframes rsMoveOut{0%{transform:translateY(0)}100%{transform:translateY(20px)}}
+@keyframes rsViewIn{0%{opacity:0;transform:translateY(22px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes rsViewOut{0%{opacity:1}100%{opacity:0}}
 /* Combined (not stacked classes) so both keyframes genuinely run at once —
    two separate `animation:` rules on one element don't compose, the later
    one in the stylesheet just wins and silently drops the other. */
@@ -39,7 +83,7 @@ body{font-family:'Inter',sans-serif}
 /* Guided-workout pre-set screen: a gentle one-shot fade+rise applied to the
    Previous/recommendation/Set-indicator region on every set transition, so
    moving between sets never feels like an abrupt content swap. */
-.aw-set-fade{animation:awSetFade .3s ease-out}
+.aw-set-fade{animation:awSetFade var(--rs-dur-standard) var(--rs-ease-standard)}
 .p-sway{animation:sway 4s ease-in-out infinite;transform-origin:bottom center;display:inline-block}
 .p-droop{animation:droop 2.5s ease-in-out infinite;transform-origin:top center;display:inline-block}
 .p-bloom{animation:bloom 3s ease-in-out infinite;display:inline-block}
@@ -56,12 +100,59 @@ body{font-family:'Inter',sans-serif}
 .ms{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300;font-size:inherit;line-height:1;vertical-align:middle;user-select:none}
 .card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
+/* Tappable cards (.card combined with cursor-pointer) get the same press
+   feedback language as buttons, for free, via attribute match — no per-card
+   markup or JS needed. */
+.card[class*="cursor-pointer"]{transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
+.card[class*="cursor-pointer"]:active{transform:scale(.98)}
+/* Consistency sweep: dozens of nav links/chips/rows across the app use bare
+   Tailwind transition-* utilities with no explicit duration, which silently
+   fall back to Tailwind's own default (150ms) — quicker than the rest of
+   the app and not tied to any shared value. This brings all of them up to
+   --rs-dur-quick; anything that needs a different pace (sheets, progress
+   fills, page views) declares a more specific rule later in this file,
+   which correctly wins over this one. */
+[class*="transition-all"],[class*="transition-colors"],[class*="transition-opacity"]:not(.cap-backdrop),[class*="transition-transform"]:not(.cap-sheet){transition-duration:var(--rs-dur-quick)}
+/* Universal dialog/bottom-sheet entrance — every modal in the app shares the
+   same "fixed inset-0 z-[N] ... bg-black/50 backdrop-blur-sm" backdrop shell
+   with a single child dialog/sheet. Matching that shell by attribute (rather
+   than editing 30+ modals individually) gives every one of them a consistent
+   fade+rise entrance for free, reusing the display:none→'' restart that
+   #toast.show already relies on elsewhere in this file. Excludes the
+   drawer/queue/calendar-add backdrops, which already animate themselves via
+   opacity/transform toggles rather than display:none. */
+[class^="fixed inset-0 z-"][class*="bg-black/50"]{animation:rsBackdropIn var(--rs-dur-sheet) var(--rs-ease-standard)}
+[class^="fixed inset-0 z-"][class*="bg-black/50"]>div{animation:rsFadeIn var(--rs-dur-sheet) var(--rs-ease-standard),rsMoveIn var(--rs-dur-sheet) var(--rs-ease-settle)}
+/* Exit: rsHideModal() adds this class, waits for the reverse animation to
+   finish, then cuts display — same animate-out-then-hide shape as
+   Calendar's own closeCalendarAddModal(), just generalized to every modal. */
+[class^="fixed inset-0 z-"][class*="bg-black/50"].rs-modal-closing{animation:rsBackdropOut var(--rs-dur-sheet) var(--rs-ease-standard) forwards}
+[class^="fixed inset-0 z-"][class*="bg-black/50"].rs-modal-closing>div{animation:rsFadeOut var(--rs-dur-sheet) var(--rs-ease-standard) forwards,rsMoveOut var(--rs-dur-sheet) var(--rs-ease-settle) forwards}
+/* Page/tab entrance — goView() and switchWorkoutTab() both just flip
+   style.display between 'none' and '' on a fixed set of containers, so the
+   same display:none→'' restart used above gives every page (Home/Workout/
+   Calendar/Garden) and every Workout sub-tab (Hub/Groups/Exercises/Targets/
+   History) a consistent settle-in on every switch. Workout sub-tabs use only
+   the entrance (switchWorkoutTab keeps its existing instant swap); the 4 main
+   pages additionally get a matching exit — see goView()'s rs-view-leaving,
+   which fades the outgoing page out before the display swap instead of
+   cutting it instantly. */
+.rs-view{animation:rsViewIn var(--rs-dur-page) var(--rs-ease-standard)}
+.rs-view-leaving{animation:rsViewOut var(--rs-dur-quick) var(--rs-ease-standard) forwards}
+/* Selection feedback for every option pill/chip/card in the app — they all
+   already carry aria-pressed as the source of truth for "selected" (see
+   ct-freq-btn, et-freq-btn, ls-mark-working/warmup, exg-status-chip, etc.),
+   so one attribute rule gives all of them press feedback plus, for the ones
+   that toggle classes on a persistent node rather than re-rendering, a
+   smooth color/border transition on selection change. */
+[aria-pressed]{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),color var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
+[aria-pressed]:active{transform:scale(.98)}
 /* Workout hub cards — the same soft surface as .card, just a little larger/
    rounder and with a gentle press response instead of a hover chevron, so
    the whole card itself reads as the tap target ("beautiful object", not a
    navigation row). Press is a plain interaction-driven transition, not an
    infinite loop, so it's left out of the prefers-reduced-motion list below. */
-.wt-hub-card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:1.15rem 1.25rem;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease}
+.wt-hub-card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:1.15rem 1.25rem;transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .wt-hub-card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 .wt-hub-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .wt-hub-icon{width:3.75rem;height:3.75rem;flex-shrink:0}
@@ -71,7 +162,7 @@ body{font-family:'Inter',sans-serif}
    language as .wt-hub-card, min-height 44px+ touch target already satisfied
    by the icon + padding. Workout Group gets a subtle purple-tinted surface
    (never a heavier fill) for its "most common option" emphasis. */
-.cap-card{background:#fdfcfa;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s ease;min-height:44px}
+.cap-card{background:#fdfcfa;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px}
 .dark .cap-card{background:rgba(30,41,59,.6);border-color:rgba(51,65,85,.5)}
 .cap-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .cap-card-primary{background:#f8f5ff;border-color:#ede4fb}
@@ -99,7 +190,7 @@ body{font-family:'Inter',sans-serif}
 .pot-base{border-radius:0 0 .85rem .85rem}
 .aw-input{padding:.4rem .3rem;text-align:center;font-weight:600}
 @keyframes toastIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
-#toast.show{display:flex!important;animation:toastIn .2s ease-out}
+#toast.show{display:flex!important;animation:toastIn var(--rs-dur-standard) var(--rs-ease-settle)}
 .btn:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #16a34a;outline-offset:2px;border-radius:.5rem}
 /* Continuous watering "rain" while a set is active. Each individual droplet
    plays a short one-shot fall (that's what a real droplet does — it falls
@@ -162,10 +253,23 @@ body{font-family:'Inter',sans-serif}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
 .dark .queue-row-dragging{background:#1e293b}
-input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color .15s}
+/* Migrate the bespoke sheet/drawer transitions built earlier this session
+   from hardcoded Tailwind durations onto the shared token so they move in
+   lockstep with every other sheet in the app. Values are unchanged (300ms)
+   — this is a token migration, not a timing change. */
+#queue-backdrop,#queue-panel,.cap-backdrop,.cap-sheet{transition-duration:var(--rs-dur-sheet)}
+/* Every progress-bar fill in the app (companion plant growth, target
+   progress, exercise garden, workout/queue progress) is a plain
+   `transition-all duration-{500,700}` on a width-driven div. Matching them
+   by attribute pulls all of them onto the one shared progress token without
+   hunting down each template. */
+[class*="transition-all"][style*="width:"]{transition-duration:var(--rs-dur-celebration);transition-timing-function:var(--rs-ease-settle)}
+.exg-card,.bw-ex-card{transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
+.exg-card:active,.bw-ex-card:active{transform:scale(.98)}
+input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.5rem .75rem;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard)}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .dark input,.dark textarea,.dark select{background:#1e293b;color:#f1f5f9;border-color:#334155}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;padding:.625rem 1.25rem;border-radius:.75rem;font-weight:600;font-size:.875rem;cursor:pointer;transition:opacity .15s,transform .1s;border:none;font-family:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;padding:.625rem 1.25rem;border-radius:.75rem;font-weight:600;font-size:.875rem;cursor:pointer;transition:opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle);border:none;font-family:inherit}
 .btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-green{background:#22c55e;color:white}.btn-green:hover{opacity:.9}
 .btn-outline{background:transparent;color:#64748b;border:1px solid #e2e8f0}
@@ -176,7 +280,7 @@ input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .mg-full{background:rgba(34,197,94,.15);color:#22c55e;border-color:rgba(34,197,94,.3)}
 .mg-cardio{background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.3)}
 .cal-upper{background:#3b82f6}.cal-lower{background:#f97316}.cal-core{background:#a855f7}.cal-full{background:#22c55e}.cal-cardio{background:#ef4444}
-body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,color .25s}
+body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) var(--rs-ease-standard),border-color var(--rs-dur-standard) var(--rs-ease-standard),color var(--rs-dur-standard) var(--rs-ease-standard)}
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
@@ -302,7 +406,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </header>
 
     <!-- DASHBOARD -->
-    <section id="dashboard-view" class="flex-1 pb-8">
+    <section id="dashboard-view" class="rs-view flex-1 pb-8">
 
       <!-- Plant companion hero — full-bleed, the one true hero of the page -->
       <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-8 text-center">
@@ -366,7 +470,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
                 <span id="mission-stage-glow" class="stage-glow" aria-hidden="true"></span>
                 <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
                   <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
-                  <circle id="mission-stage-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset .6s ease"></circle>
+                  <circle id="mission-stage-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset var(--rs-dur-celebration) var(--rs-ease-settle)"></circle>
                 </svg>
                 <div id="mission-stage-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
                   <span id="mission-stage-emoji" class="text-xl leading-none" aria-hidden="true">🌱</span>
@@ -444,7 +548,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </section>
 
     <!-- WORKOUT -->
-    <section id="workout-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4 pb-8">
+    <section id="workout-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4 pb-8">
 
       <!-- Hub — the landing page for this tab (see switchWorkoutTab('hub') /
            renderWorkoutHub()). Groups/Exercises/Targets/History are now
@@ -454,7 +558,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            already names this page, and each card below is self-explanatory.
            First card sits directly under the app bar with the section's own
            top padding for breathing room (see #workout-view). -->
-      <div id="wt-hub" style="display:none">
+      <div id="wt-hub" style="display:none" class="rs-view">
         <div class="space-y-4">
           <button type="button" class="wt-hub-card w-full text-left flex items-center gap-4" data-tab="groups" aria-label="Workout Groups — create and manage your workout routines">
             <span class="wt-hub-icon p-breathe" aria-hidden="true">
@@ -561,7 +665,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       </div>
 
       <!-- Groups -->
-      <div id="wt-groups" style="display:none" class="space-y-3">
+      <div id="wt-groups" style="display:none" class="rs-view space-y-3">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div id="groups-list" class="space-y-3"></div>
       </div>
@@ -572,7 +676,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            into a summary + filters + status sections. See
            renderExerciseLibrary() — entry point name kept unchanged so
            every existing caller keeps working untouched. -->
-      <div id="wt-exercises" style="display:none" class="space-y-4">
+      <div id="wt-exercises" style="display:none" class="rs-view space-y-4">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
 
         <!-- No page heading here on purpose — the back button + toolbar +
@@ -611,7 +715,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            architecturally separate from Groups/Exercises (see
            calculateTargetGrowth()'s note on why Targets can never touch
            Double Progression or Exercise Plant state). -->
-      <div id="wt-targets" style="display:none" class="space-y-4">
+      <div id="wt-targets" style="display:none" class="rs-view space-y-4">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div class="flex items-center justify-between gap-2">
           <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg" role="group" aria-label="Filter targets">
@@ -624,14 +728,14 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
       </div>
 
       <!-- History -->
-      <div id="wt-history" style="display:none" class="space-y-3">
+      <div id="wt-history" style="display:none" class="rs-view space-y-3">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div id="session-history-list" class="space-y-3"></div>
       </div>
     </section>
 
     <!-- CALENDAR -->
-    <section id="calendar-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
+    <section id="calendar-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
       <div class="card p-4">
         <div class="flex items-center justify-between mb-4">
           <button id="cal-prev" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-slate-400"><span class="ms text-xl">chevron_left</span></button>
@@ -646,7 +750,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     </section>
 
     <!-- GARDEN / PROFILE -->
-    <section id="profile-view" style="display:none" class="flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
+    <section id="profile-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
       <div class="card p-6 text-center space-y-2">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active Companion</p>
         <div id="profile-plant-emoji" class="text-6xl p-bloom">🌱</div>
@@ -959,7 +1063,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
         <span id="ls-plant-glow" class="stage-glow"></span>
         <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
           <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
-          <circle id="ls-plant-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset .6s ease"></circle>
+          <circle id="ls-plant-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset var(--rs-dur-celebration) var(--rs-ease-settle)"></circle>
         </svg>
         <div id="ls-plant-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
           <span id="ls-plant-emoji" class="leading-none" style="font-size:1.35rem"></span>
@@ -3597,12 +3701,29 @@ function closeAllOpenWindows() {
 
 function goView(v) {
   closeAllOpenWindows();
-  VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
+  // Nav feedback (highlight/title) is synchronous — a tap should register
+  // instantly even though the page content below fades out/in.
   document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
+  // Also synchronous, same as before: callers that want a specific Workout
+  // sub-tab (e.g. `goView('workout'); switchWorkoutTab('targets')`) call
+  // switchWorkoutTab() themselves right after goView() returns, and that
+  // still has to win over this default — it can't be deferred into
+  // swapViews() below without a stale setTimeout re-asserting 'hub' after
+  // the caller already chose a different sub-tab.
   if (v === 'workout') switchWorkoutTab('hub');
+  const swapViews = () => { VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none'); };
+  const current = VIEWS.find(x => x !== v && document.getElementById(x+'-view').style.display !== 'none');
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!current || reducedMotion) { swapViews(); return; }
+  // Fade the outgoing page out (rs-view-leaving, --rs-dur-quick) before the
+  // display swap, so navigation never cuts instantly — the incoming page's
+  // own .rs-view entrance then plays as usual once it's shown.
+  const currentEl = document.getElementById(current+'-view');
+  currentEl.classList.add('rs-view-leaving');
+  setTimeout(() => { currentEl.classList.remove('rs-view-leaving'); swapViews(); }, 240);
 }
 
 document.querySelectorAll('.rs-nav,.rs-bnav').forEach(el =>
@@ -4064,13 +4185,13 @@ function openChooseCompanionModal() {
       </button>`;
   }).join('');
   document.querySelectorAll('.choose-companion-opt').forEach(btn => btn.addEventListener('click', async () => {
-    hide('choose-companion-modal');
+    rsHideModal('choose-companion-modal');
     await selectNextCompanion(btn.dataset.species);
     showToast('A new chapter is ready to grow.');
   }));
   show('choose-companion-modal');
 }
-document.getElementById('choose-companion-close').addEventListener('click', () => hide('choose-companion-modal'));
+document.getElementById('choose-companion-close').addEventListener('click', () => rsHideModal('choose-companion-modal'));
 document.getElementById('dash-choose-companion-btn').addEventListener('click', openChooseCompanionModal);
 
 function renderRecentWin() {
@@ -4669,7 +4790,7 @@ function openEditTargetLogModal(logId) {
   show('edit-target-log-modal');
 }
 function closeEditTargetLogModal() {
-  hide('edit-target-log-modal');
+  rsHideModal('edit-target-log-modal');
   etlLogId = null;
 }
 document.getElementById('etl-close').addEventListener('click', closeEditTargetLogModal);
@@ -4737,7 +4858,7 @@ function openTargetFullHistoryModal(targetId) {
     : `<p class="text-xs text-slate-400 text-center py-6">No earlier activity yet.</p>`;
   show('target-full-history-modal');
 }
-document.getElementById('tfh-close').addEventListener('click', () => hide('target-full-history-modal'));
+document.getElementById('tfh-close').addEventListener('click', () => rsHideModal('target-full-history-modal'));
 
 // ── Create Target ────────────────────────────────────────────────────────────
 // Pure UI/UX polish over the same state and the same createTarget() call —
@@ -4945,7 +5066,7 @@ function openCreateTargetModal() {
   ctUpdatePlantHelperText();
   show('create-target-modal');
 }
-document.getElementById('ct-close').addEventListener('click', () => hide('create-target-modal'));
+document.getElementById('ct-close').addEventListener('click', () => rsHideModal('create-target-modal'));
 document.getElementById('ct-create-btn').addEventListener('click', async () => {
   const btn = document.getElementById('ct-create-btn');
   if (btn.disabled) return;
@@ -4965,7 +5086,7 @@ document.getElementById('ct-create-btn').addEventListener('click', async () => {
       unit: ctTargetType === 'sessions' ? 'sessions' : ctUnit,
       frequency: ctFrequency, startDate
     });
-    hide('create-target-modal');
+    rsHideModal('create-target-modal');
     closeStartWorkoutChoice(); // harmless no-op if this wasn't opened from there — see sw-target-btn
     showToast('Target created.');
   } catch (e) {
@@ -5012,7 +5133,7 @@ function openLogTargetModal(targetId) {
   }
   show('log-target-modal');
 }
-document.getElementById('lt-close').addEventListener('click', () => hide('log-target-modal'));
+document.getElementById('lt-close').addEventListener('click', () => rsHideModal('log-target-modal'));
 document.getElementById('lt-amount-minus').addEventListener('click', () => {
   const inp = document.getElementById('lt-amount');
   inp.value = Math.max(0, round1((+inp.value || 0) - 1));
@@ -5035,7 +5156,7 @@ document.getElementById('lt-save-btn').addEventListener('click', async () => {
   try {
     const wasCompletedBefore = currentTargetProgress(target, getTargetLogsFor(ltTargetId)).isCompleted;
     const { newGrowth, previousGrowth } = await logTargetProgress(ltTargetId, amount);
-    hide('log-target-modal');
+    rsHideModal('log-target-modal');
     const nowCompleted = currentTargetProgress(targets[ltTargetId] || target, getTargetLogsFor(ltTargetId)).isCompleted;
     if (nowCompleted && !wasCompletedBefore) {
       showToast(`Target completed! Amazing work — you completed ${esc(target.name)}. 🌿`);
@@ -5070,18 +5191,18 @@ function openTargetActionsSheet(targetId) {
   pauseBtn.style.display = target.status === 'archived' ? 'none' : '';
   show('target-actions-modal');
 }
-document.getElementById('ta-close').addEventListener('click', () => hide('target-actions-modal'));
-document.getElementById('ta-edit-btn').addEventListener('click', () => { hide('target-actions-modal'); openEditTargetModal(taTargetId); });
+document.getElementById('ta-close').addEventListener('click', () => rsHideModal('target-actions-modal'));
+document.getElementById('ta-edit-btn').addEventListener('click', () => { rsHideModal('target-actions-modal'); openEditTargetModal(taTargetId); });
 document.getElementById('ta-pause-btn').addEventListener('click', async () => {
   const target = targets[taTargetId];
   if (!target) return;
-  hide('target-actions-modal');
+  rsHideModal('target-actions-modal');
   await setTargetStatus(taTargetId, target.status === 'paused' ? 'active' : 'paused');
 });
 document.getElementById('ta-archive-btn').addEventListener('click', async () => {
   const target = targets[taTargetId];
   if (!target) return;
-  hide('target-actions-modal');
+  rsHideModal('target-actions-modal');
   await setTargetStatus(taTargetId, target.status === 'archived' ? 'active' : 'archived');
   showToast(target.status === 'archived' ? 'Target restored.' : 'Target archived.');
 });
@@ -5089,7 +5210,7 @@ document.getElementById('ta-delete-btn').addEventListener('click', async () => {
   const target = targets[taTargetId];
   if (!target) return;
   if (!confirm(`Delete "${target.name}"? This removes its logged history too and cannot be undone.`)) return;
-  hide('target-actions-modal');
+  rsHideModal('target-actions-modal');
   await deleteTarget(taTargetId);
   showToast('Target deleted.');
 });
@@ -5127,7 +5248,7 @@ function openEditTargetModal(targetId) {
   hide('et-error');
   show('edit-target-modal');
 }
-document.getElementById('et-close').addEventListener('click', () => hide('edit-target-modal'));
+document.getElementById('et-close').addEventListener('click', () => rsHideModal('edit-target-modal'));
 document.querySelectorAll('.et-freq-btn').forEach(b => b.addEventListener('click', () => setEtFreqSelected(b.dataset.freq)));
 document.getElementById('et-save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('et-save-btn');
@@ -5148,7 +5269,7 @@ document.getElementById('et-save-btn').addEventListener('click', async () => {
     // past period reads as completed. Documented v1 simplification, not a
     // bug — see calculateTargetPeriodProgress().
     await updateTarget(taTargetId, { name, targetAmount: amount, frequency: freqBtn ? freqBtn.dataset.freq : targets[taTargetId].frequency });
-    hide('edit-target-modal');
+    rsHideModal('edit-target-modal');
     await recalculateAndPersistPlantGrowth();
     showToast('Target updated.');
   } catch (e) {
@@ -5175,11 +5296,11 @@ function openPickExModal(onSelect, excludeIds = []) {
   renderPickExList();
   document.getElementById('pick-ex-modal').style.display = '';
 }
-document.getElementById('pick-ex-close').addEventListener('click', () => document.getElementById('pick-ex-modal').style.display = 'none');
+document.getElementById('pick-ex-close').addEventListener('click', () => rsHideModal('pick-ex-modal'));
 document.getElementById('pick-ex-search').addEventListener('input', renderPickExList);
 document.getElementById('pick-ex-category').addEventListener('change', renderPickExList);
 document.getElementById('pick-ex-new').addEventListener('click', () => {
-  document.getElementById('pick-ex-modal').style.display = 'none';
+  rsHideModal('pick-ex-modal');
   openExerciseModal();
 });
 
@@ -5210,7 +5331,7 @@ function renderPickExList() {
   }).join('');
   list.querySelectorAll('.pick-ex-item').forEach(b =>
     b.addEventListener('click', () => {
-      document.getElementById('pick-ex-modal').style.display = 'none';
+      rsHideModal('pick-ex-modal');
       pickExOnSelect?.(b.dataset.id);
     })
   );
@@ -5223,7 +5344,7 @@ document.getElementById('import-cal-photo-btn').addEventListener('click', () => 
   document.getElementById('cal-photo-modal').style.display = '';
 });
 document.getElementById('cal-photo-close').addEventListener('click', () => {
-  document.getElementById('cal-photo-modal').style.display = 'none';
+  rsHideModal('cal-photo-modal');
 });
 document.getElementById('cal-photo-input').addEventListener('change', async function() {
   if (!this.files[0]) return;
@@ -5241,7 +5362,7 @@ document.getElementById('cal-photo-analyze-btn').addEventListener('click', async
     const b64 = await fileToBase64(file);
     const result = await extractCaloriesFromPhoto(b64);
     document.getElementById('finish-cal-burned').value = result.calories_burned || '';
-    document.getElementById('cal-photo-modal').style.display = 'none';
+    rsHideModal('cal-photo-modal');
   } catch(e) { alert('Error: ' + e.message); }
   finally { this.disabled = false; document.getElementById('cal-analyzing').style.display = 'none'; }
 });
@@ -5577,15 +5698,15 @@ function openExerciseActionsSheet(exerciseId) {
   document.getElementById('exg-actions-title').textContent = exercises[exerciseId].name;
   show('exg-actions-modal');
 }
-document.getElementById('exg-actions-close').addEventListener('click', () => hide('exg-actions-modal'));
-document.getElementById('exg-actions-view-btn').addEventListener('click', () => { hide('exg-actions-modal'); openExerciseDetail(exgActionsExerciseId); });
+document.getElementById('exg-actions-close').addEventListener('click', () => rsHideModal('exg-actions-modal'));
+document.getElementById('exg-actions-view-btn').addEventListener('click', () => { rsHideModal('exg-actions-modal'); openExerciseDetail(exgActionsExerciseId); });
 document.getElementById('exg-actions-delete-btn').addEventListener('click', async () => {
   const id = exgActionsExerciseId;
   if (!id || !exercises[id]) return;
   const usedIn = groupsUsingExercise(id);
   const warning = usedIn.length ? ` It will stay in: ${usedIn.map(g=>g.name).join(', ')}.` : '';
   if (!confirm(`Delete "${exercises[id].name}"? It will be hidden from your library and new groups, but past workouts and any groups using it are unaffected.${warning}`)) return;
-  hide('exg-actions-modal');
+  rsHideModal('exg-actions-modal');
   await set(ref(db, `exercises/${uid()}/${id}/archived`), true);
 });
 
@@ -5602,7 +5723,7 @@ let exerciseDetailId = null;
 function closeExerciseDetail() {
   exerciseDetailId = null;
   hide('exercise-detail-view');
-  hide('dp-how-it-works-modal');
+  rsHideModal('dp-how-it-works-modal');
 }
 
 function openExerciseDetail(exerciseId) {
@@ -5850,7 +5971,7 @@ function renderExerciseDetail(exerciseId) {
 }
 
 document.getElementById('exd-back-btn').addEventListener('click', closeExerciseDetail);
-document.getElementById('dp-how-close').addEventListener('click', () => hide('dp-how-it-works-modal'));
+document.getElementById('dp-how-close').addEventListener('click', () => rsHideModal('dp-how-it-works-modal'));
 
 function setExerciseModalMore(open) {
   document.getElementById('ex-modal-more').style.display = open ? '' : 'none';
@@ -5964,7 +6085,7 @@ function openExerciseModal(id = null) {
   setExerciseModalMore(false);
   document.getElementById('exercise-modal').style.display = '';
 }
-document.getElementById('ex-modal-close').addEventListener('click', () => document.getElementById('exercise-modal').style.display = 'none');
+document.getElementById('ex-modal-close').addEventListener('click', () => rsHideModal('exercise-modal'));
 document.getElementById('ex-modal-save').addEventListener('click', async () => {
   const btn = document.getElementById('ex-modal-save');
   if (btn.disabled) return; // guard against double-submit
@@ -6017,7 +6138,7 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
       newId = newRef.key;
       await set(newRef, data);
     }
-    document.getElementById('exercise-modal').style.display = 'none';
+    rsHideModal('exercise-modal');
 
     const groupModalOpen = document.getElementById('group-modal').style.display !== 'none';
     const buildWorkoutOpen = document.getElementById('build-workout-modal').style.display !== 'none';
@@ -6158,7 +6279,7 @@ function openGroupModal(id = null) {
   renderGmStep();
   document.getElementById('group-modal').style.display = '';
 }
-document.getElementById('group-modal-close').addEventListener('click', () => document.getElementById('group-modal').style.display = 'none');
+document.getElementById('group-modal-close').addEventListener('click', () => rsHideModal('group-modal'));
 document.getElementById('gm-name').addEventListener('input', () => hide('gm-name-error'));
 
 function renderGmStep() {
@@ -6318,7 +6439,7 @@ document.getElementById('gm-next-btn').addEventListener('click', async () => {
       } else {
         await set(push(ref(db, `users/${uid()}/groups`)), { ...data, createdAt: Date.now() });
       }
-      document.getElementById('group-modal').style.display = 'none';
+      rsHideModal('group-modal');
       switchWorkoutTab('groups');
       showToast(groupModalId ? 'Workout group updated.' : 'Workout group created.');
     } catch (err) {
@@ -6342,7 +6463,7 @@ document.getElementById('gm-duplicate-btn').addEventListener('click', async func
   try {
     const copy = { ...groupModalDraft, name: `${groupModalDraft.name} copy`, exercises: groupModalDraft.exercises.map(ge => ({ ...ge })) };
     await set(push(ref(db, `users/${uid()}/groups`)), { ...copy, description: copy.description || null, createdAt: Date.now(), updatedAt: Date.now() });
-    document.getElementById('group-modal').style.display = 'none';
+    rsHideModal('group-modal');
     switchWorkoutTab('groups');
     showToast('Workout group duplicated.');
   } catch (err) {
@@ -6358,7 +6479,7 @@ document.getElementById('gm-delete-btn').addEventListener('click', async functio
   this.disabled = true;
   try {
     await remove(ref(db, `users/${uid()}/groups/${groupModalId}`));
-    document.getElementById('group-modal').style.display = 'none';
+    rsHideModal('group-modal');
     switchWorkoutTab('groups');
     showToast('Workout group deleted.');
   } catch (err) {
@@ -6384,7 +6505,7 @@ const QUICK_WORKOUT_COLOR = '#22c55e';
 function openStartWorkoutChoice() {
   document.getElementById('start-workout-modal').style.display = '';
 }
-function closeStartWorkoutChoice() { document.getElementById('start-workout-modal').style.display = 'none'; }
+function closeStartWorkoutChoice() { rsHideModal('start-workout-modal'); }
 document.getElementById('sw-close').addEventListener('click', closeStartWorkoutChoice);
 // Deliberately does NOT close start-workout-modal — it stays open underneath
 // (both group-picker-modal and build-workout-modal sit at a higher z-index),
@@ -6423,7 +6544,7 @@ function openBuildTodaysWorkout() {
   showBwStep(1);
   document.getElementById('build-workout-modal').style.display = '';
 }
-function closeBuildWorkout() { document.getElementById('build-workout-modal').style.display = 'none'; }
+function closeBuildWorkout() { rsHideModal('build-workout-modal'); }
 function showBwStep(n) {
   document.getElementById('bw-step1').style.display = n === 1 ? 'flex' : 'none';
   document.getElementById('bw-step2').style.display = n === 2 ? 'flex' : 'none';
@@ -6668,7 +6789,7 @@ document.getElementById('bw-start-btn').addEventListener('click', () => {
 // this: it only hides group-picker-modal, revealing start-workout-modal
 // again, so backing out one level doesn't skip past it to Home.
 function closeGroupPicker() {
-  document.getElementById('group-picker-modal').style.display = 'none';
+  rsHideModal('group-picker-modal');
   closeStartWorkoutChoice();
 }
 
@@ -6726,7 +6847,7 @@ function openGroupPicker() {
   }
   document.getElementById('group-picker-modal').style.display = '';
 }
-document.getElementById('group-picker-close').addEventListener('click', () => document.getElementById('group-picker-modal').style.display = 'none');
+document.getElementById('group-picker-close').addEventListener('click', () => rsHideModal('group-picker-modal'));
 
 // ── Active workout draft persistence (resume after refresh) ────────────────
 // Deliberately localStorage, not Firebase — an in-progress workout is
@@ -6765,7 +6886,7 @@ function checkResumableSession() {
 
 document.getElementById('resume-btn').addEventListener('click', () => {
   const draft = loadActiveSessionDraft();
-  document.getElementById('resume-session-modal').style.display = 'none';
+  rsHideModal('resume-session-modal');
   if (!draft) return;
   activeSession = draft;
   document.getElementById('aw-group-name').textContent = draft.sessionType === 'quick' ? 'Quick Workout' : draft.groupName;
@@ -6777,7 +6898,7 @@ document.getElementById('resume-btn').addEventListener('click', () => {
 document.getElementById('resume-end-btn').addEventListener('click', () => {
   if (!confirm('End this workout without saving? This cannot be undone.')) return;
   clearActiveSessionDraft();
-  document.getElementById('resume-session-modal').style.display = 'none';
+  rsHideModal('resume-session-modal');
 });
 
 // ── Active workout ────────────────────────────────────────────────────────────
@@ -6807,7 +6928,7 @@ function startWorkoutSession(groupId) {
   if (activeSession) { alert('Finish or exit your current workout before starting another.'); return; }
   const g = groups[groupId];
   if (!g) return;
-  document.getElementById('group-picker-modal').style.display = 'none';
+  rsHideModal('group-picker-modal');
   const exList = (g.exercises || []).map(ge => buildSessionExercise(ge.exerciseId, ge)).filter(Boolean);
   if (!exList.length) { alert('This group has no exercises yet — add some first.'); return; }
   exList[0].entered = true;
@@ -7526,7 +7647,7 @@ function openDurationPicker({ title, subtitle, initialSeconds, onChoose }) {
   document.getElementById('duration-picker-modal').style.display = '';
 }
 function closeDurationPicker() {
-  document.getElementById('duration-picker-modal').style.display = 'none';
+  rsHideModal('duration-picker-modal');
   durationPickerOnChoose = null;
 }
 document.querySelectorAll('.duration-picker-opt').forEach(b => b.addEventListener('click', () => {
@@ -7566,7 +7687,7 @@ function openRestScopeModal(ex, secs) {
   document.getElementById('rest-scope-ex-name').textContent = ex.name;
   document.getElementById('rest-scope-modal').style.display = '';
 }
-function closeRestScopeModal() { document.getElementById('rest-scope-modal').style.display = 'none'; restScopeState = null; }
+function closeRestScopeModal() { rsHideModal('rest-scope-modal'); restScopeState = null; }
 document.getElementById('rest-scope-cancel-btn').addEventListener('click', closeRestScopeModal);
 document.getElementById('rest-scope-once-btn').addEventListener('click', () => {
   const { ex, secs } = restScopeState; closeRestScopeModal();
@@ -7586,7 +7707,7 @@ document.getElementById('rest-scope-global-btn').addEventListener('click', async
 
 // ── Rest screen's "Change rest duration" — five explicit, non-overlapping scopes ─
 function openChangeRestModal() { document.getElementById('change-rest-modal').style.display = ''; }
-function closeChangeRestModal() { document.getElementById('change-rest-modal').style.display = 'none'; }
+function closeChangeRestModal() { rsHideModal('change-rest-modal'); }
 document.getElementById('cr-cancel-btn').addEventListener('click', closeChangeRestModal);
 
 document.getElementById('cr-this-btn').addEventListener('click', () => {
@@ -7694,7 +7815,7 @@ function stopLsIdleWatering() {
 }
 function closeLogSetSheet() {
   stopLsIdleWatering();
-  document.getElementById('log-set-modal').style.display = 'none';
+  rsHideModal('log-set-modal');
 }
 // Warm-up sets earn no growth points in the real engine (workingSetsFor()
 // filters them out before anything is awarded) — so the copy here has to
@@ -8073,23 +8194,23 @@ function openEndReview() {
   document.getElementById('end-review-modal').style.display = '';
 }
 document.getElementById('end-review-continue-btn').addEventListener('click', () => {
-  document.getElementById('end-review-modal').style.display = 'none';
+  rsHideModal('end-review-modal');
   // Re-render so a still-active set resumes its watering loop rather than
   // staying in the cleared state stopPlantWatering() left it in.
   renderGuidedWorkout();
 });
 document.getElementById('end-review-queue-btn').addEventListener('click', () => {
-  document.getElementById('end-review-modal').style.display = 'none';
+  rsHideModal('end-review-modal');
   renderQueue();
   document.getElementById('queue-modal').style.display = '';
 });
 document.getElementById('end-review-finish-btn').addEventListener('click', () => {
-  document.getElementById('end-review-modal').style.display = 'none';
+  rsHideModal('end-review-modal');
   openFinishSummary();
 });
 document.getElementById('end-review-discard-btn').addEventListener('click', () => {
   if (!confirm('Discard this workout? This cannot be undone.')) return;
-  document.getElementById('end-review-modal').style.display = 'none';
+  rsHideModal('end-review-modal');
   stopPlantWatering();
   clearInterval(awTimerHandle);
   clearActiveSessionDraft();
@@ -8252,7 +8373,7 @@ function openQueueRowActions(idx) {
   document.getElementById('queue-row-actions-modal').style.display = '';
 }
 function closeQueueRowActions() {
-  document.getElementById('queue-row-actions-modal').style.display = 'none';
+  rsHideModal('queue-row-actions-modal');
   queueActionsIdx = null;
 }
 document.getElementById('qra-cancel').addEventListener('click', closeQueueRowActions);
@@ -8492,7 +8613,7 @@ document.getElementById('finish-more-toggle').addEventListener('click', () => {
 });
 
 document.getElementById('finish-continue-btn').addEventListener('click', () => {
-  document.getElementById('finish-modal').style.display = 'none';
+  rsHideModal('finish-modal');
 });
 
 document.getElementById('finish-discard-btn').addEventListener('click', () => {
@@ -8501,7 +8622,7 @@ document.getElementById('finish-discard-btn').addEventListener('click', () => {
   clearInterval(awTimerHandle);
   clearActiveSessionDraft();
   activeSession = null;
-  document.getElementById('finish-modal').style.display = 'none';
+  rsHideModal('finish-modal');
   hide('active-workout-view'); show('app-view');
   goView('dashboard');
 });
@@ -8584,7 +8705,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     stopPlantWatering();
     clearInterval(awTimerHandle);
     clearActiveSessionDraft();
-    document.getElementById('finish-modal').style.display = 'none';
+    rsHideModal('finish-modal');
     hide('active-workout-view'); show('app-view');
 
     celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
@@ -8620,7 +8741,7 @@ function openSaveAsGroupPrompt(sessionExercises) {
 }
 
 document.getElementById('sag-skip-btn').addEventListener('click', () => {
-  document.getElementById('save-as-group-modal').style.display = 'none';
+  rsHideModal('save-as-group-modal');
   goView('dashboard');
 });
 
@@ -8647,7 +8768,7 @@ document.getElementById('sag-save-btn').addEventListener('click', async () => {
       name, description: null, color: GROUP_COLORS[0],
       exercises: groupExercises, createdAt: Date.now(), updatedAt: Date.now()
     });
-    document.getElementById('save-as-group-modal').style.display = 'none';
+    rsHideModal('save-as-group-modal');
     showToast('Workout group created.');
     goView('dashboard');
   } catch (err) {
@@ -9094,7 +9215,7 @@ function openCalendarDaySheet(date) {
   wireCalDaySheetActions(date);
   document.getElementById('calendar-day-sheet').style.display = '';
 }
-document.getElementById('cds-close').addEventListener('click', () => document.getElementById('calendar-day-sheet').style.display = 'none');
+document.getElementById('cds-close').addEventListener('click', () => rsHideModal('calendar-day-sheet'));
 
 // ── Editing a completed workout's exercises/sets ─────────────────────────────
 // A history-correction tool, not a re-log: saving here only overwrites the
@@ -9353,7 +9474,7 @@ function openEditSessionModal(date, sessionId) {
   renderEsmExList();
   document.getElementById('edit-session-modal').style.display = '';
 }
-function closeEditSessionModal() { document.getElementById('edit-session-modal').style.display = 'none'; }
+function closeEditSessionModal() { rsHideModal('edit-session-modal'); }
 document.getElementById('esm-close').addEventListener('click', closeEditSessionModal);
 document.getElementById('esm-cancel-btn').addEventListener('click', closeEditSessionModal);
 // Duration/name stay tucked behind this pencil so the default view matches
@@ -9373,7 +9494,7 @@ document.getElementById('esm-duration').addEventListener('input', () => {
 });
 document.getElementById('esm-add-ex-btn').addEventListener('click', () => {
   const excludeIds = esmDraft.exercises.map(ex => ex.exerciseId);
-  document.getElementById('edit-session-modal').style.display = 'none';
+  rsHideModal('edit-session-modal');
   openPickExModal(id => {
     const entry = newSessionExerciseFromLibrary(id);
     if (entry) esmDraft.exercises.push(entry);
@@ -9404,7 +9525,7 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
     // derived fresh from `sessions` at render time, so the renders below
     // are all it takes to pick up any weight/rep change too.
     const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
-    document.getElementById('edit-session-modal').style.display = 'none';
+    rsHideModal('edit-session-modal');
     renderDashboard(); renderHistory(); renderCalendar(); renderProfile();
     if (calendarSelectedDate === esmDate) openCalendarDaySheet(esmDate);
     showToast(stageChangeMessage(previousGrowth, newGrowth) || 'Workout updated');
@@ -9453,10 +9574,10 @@ function wireCalDaySheetActions(date) {
     const { entryId, type } = btn.dataset;
     const entry = entriesForDate(date)[entryId];
     if (type === 'group') {
-      document.getElementById('calendar-day-sheet').style.display = 'none';
+      rsHideModal('calendar-day-sheet');
       startWorkoutSession(entry.workoutGroupId);
     } else if (type === 'quick') {
-      document.getElementById('calendar-day-sheet').style.display = 'none';
+      rsHideModal('calendar-day-sheet');
       startQuickWorkout(entry.plannedExerciseIds || []);
     } else if (type === 'activity') {
       const act = getActivity(entry.activityId);
@@ -9586,7 +9707,7 @@ function openCalendarAddPicker(date) {
   document.getElementById('cap-recovery-desc').textContent = `Plan a rest day to help ${plantName} recover.`;
   document.getElementById('cap-recovery-btn').setAttribute('aria-label', `Recovery Day — plan a rest day to help ${plantName} recover.`);
   document.getElementById('cap-footer-text').textContent = `Every plan helps ${plantName} grow.`;
-  document.getElementById('calendar-day-sheet').style.display = 'none';
+  rsHideModal('calendar-day-sheet');
   openCalendarAddModal();
 
   // None of the three buttons below hide calendar-add-modal before opening
@@ -9638,7 +9759,7 @@ function openCalendarAddPicker(date) {
         // This path never reaches finishActivityAdded(), so it's the one
         // place here that has to close calendar-add-modal itself.
         onConfirm: async ids => {
-          document.getElementById('calendar-day-sheet').style.display = 'none';
+          rsHideModal('calendar-day-sheet');
           closeCalendarAddModal();
           startQuickWorkout(ids);
         }
@@ -9734,13 +9855,13 @@ function openCalendarGroupPicker(title, onSelect) {
       </button>`;
     }).join('');
     list.querySelectorAll('.cgp-item').forEach(b => b.addEventListener('click', () => {
-      document.getElementById('calendar-group-picker-modal').style.display = 'none';
+      rsHideModal('calendar-group-picker-modal');
       onSelect(b.dataset.id);
     }));
   }
   document.getElementById('calendar-group-picker-modal').style.display = '';
 }
-document.getElementById('cgp-close').addEventListener('click', () => document.getElementById('calendar-group-picker-modal').style.display = 'none');
+document.getElementById('cgp-close').addEventListener('click', () => rsHideModal('calendar-group-picker-modal'));
 
 // ── Activity Library ─────────────────────────────────────────────────────────
 let activityLibraryOnSelect = null;
@@ -9755,7 +9876,7 @@ function renderActivityLibraryList() {
       <span class="min-w-0"><span class="block text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(a.name)}</span><span class="block text-xs text-slate-400">${esc(a.category)}${a.defaultDuration ? ' · ' + a.defaultDuration + ' min' : ''}</span></span>
     </button>`).join('');
   list.querySelectorAll('.actlib-item').forEach(b => b.addEventListener('click', () => {
-    document.getElementById('activity-library-modal').style.display = 'none';
+    rsHideModal('activity-library-modal');
     activityLibraryOnSelect?.(b.dataset.id);
   }));
 }
@@ -9765,10 +9886,10 @@ function openActivityLibrary(onSelect) {
   renderActivityLibraryList();
   document.getElementById('activity-library-modal').style.display = '';
 }
-document.getElementById('actlib-close').addEventListener('click', () => document.getElementById('activity-library-modal').style.display = 'none');
+document.getElementById('actlib-close').addEventListener('click', () => rsHideModal('activity-library-modal'));
 document.getElementById('actlib-search').addEventListener('input', renderActivityLibraryList);
 document.getElementById('actlib-create-btn').addEventListener('click', () => {
-  document.getElementById('activity-library-modal').style.display = 'none';
+  rsHideModal('activity-library-modal');
   openCustomActivityForm();
 });
 
@@ -9785,7 +9906,7 @@ function openCustomActivityForm() {
   document.getElementById('custom-activity-form-modal').style.display = '';
 }
 document.getElementById('actform-close').addEventListener('click', () => {
-  document.getElementById('custom-activity-form-modal').style.display = 'none';
+  rsHideModal('custom-activity-form-modal');
   document.getElementById('activity-library-modal').style.display = '';
 });
 document.getElementById('actform-save-btn').addEventListener('click', async () => {
@@ -9807,7 +9928,7 @@ document.getElementById('actform-save-btn').addEventListener('click', async () =
     const newRef = push(ref(db, `users/${uid()}/activities`));
     await set(newRef, data);
     customActivities[newRef.key] = data; // optimistic; onValue confirms shortly after
-    document.getElementById('custom-activity-form-modal').style.display = 'none';
+    rsHideModal('custom-activity-form-modal');
     activityLibraryOnSelect?.(newRef.key); // continue whatever flow opened the library
   } catch (e) {
     console.error('Failed to save activity:', e);
@@ -9839,7 +9960,7 @@ function openActivityDetailModal({ title, subtitle, showCalories = true, initial
   document.getElementById('activity-detail-modal').style.display = '';
 }
 document.getElementById('actdetail-cancel-btn').addEventListener('click', () => {
-  document.getElementById('activity-detail-modal').style.display = 'none';
+  rsHideModal('activity-detail-modal');
   activityDetailOnConfirm = null;
 });
 document.getElementById('actdetail-confirm-btn').addEventListener('click', async () => {
@@ -9856,7 +9977,7 @@ document.getElementById('actdetail-confirm-btn').addEventListener('click', async
   document.getElementById('actdetail-error').style.display = 'none';
   try {
     if (cb) await cb(details);
-    document.getElementById('activity-detail-modal').style.display = 'none';
+    rsHideModal('activity-detail-modal');
     activityDetailOnConfirm = null;
   } catch (e) {
     console.error('Failed to save:', e);
@@ -9911,7 +10032,7 @@ function openMultiExercisePicker({ title, subtitle, initialSelectedIds = [], con
   renderMultiExercisePickerList('');
   document.getElementById('multi-ex-picker-modal').style.display = '';
 }
-document.getElementById('mep-close').addEventListener('click', () => document.getElementById('multi-ex-picker-modal').style.display = 'none');
+document.getElementById('mep-close').addEventListener('click', () => rsHideModal('multi-ex-picker-modal'));
 document.getElementById('mep-search').addEventListener('input', e => renderMultiExercisePickerList(e.target.value));
 document.getElementById('mep-confirm-btn').addEventListener('click', async () => {
   const btn = document.getElementById('mep-confirm-btn');
@@ -9925,7 +10046,7 @@ document.getElementById('mep-confirm-btn').addEventListener('click', async () =>
   errEl.style.display = 'none';
   try {
     if (cb) await cb(ids);
-    document.getElementById('multi-ex-picker-modal').style.display = 'none';
+    rsHideModal('multi-ex-picker-modal');
   } catch (e) {
     console.error('Failed to save:', e);
     errEl.textContent = e.message || 'Something went wrong. Please try again.';
@@ -9987,6 +10108,24 @@ document.getElementById('dash-view-garden').addEventListener('click', () => goVi
 // ── Utility ────────────────────────────────────────────────────────────────
 function show(id){ document.getElementById(id).style.display = ''; }
 function hide(id){ document.getElementById(id).style.display = 'none'; }
+// Graceful close for the universal modal/sheet system (see the
+// `[class^="fixed inset-0 z-"][class*="bg-black/50"]` rules in <style>) —
+// mirrors calendar's own closeCalendarAddModal() exactly: play the reverse
+// animation, then cut display after it finishes, instead of an instant
+// display:none. 300 here matches --rs-dur-sheet; keep them in sync.
+function rsHideModal(id) {
+  const el = document.getElementById(id);
+  if (!el || el.style.display === 'none') return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.style.display = 'none';
+    return;
+  }
+  el.classList.add('rs-modal-closing');
+  setTimeout(() => {
+    el.style.display = 'none';
+    el.classList.remove('rs-modal-closing');
+  }, 300);
+}
 
 let toastTimer = null;
 let toastUndoCallback = null;
