@@ -30,11 +30,16 @@ body{font-family:'Inter',sans-serif}
 @keyframes sparklePulse{0%,100%{transform:scale(.8) rotate(0deg);opacity:.4}50%{transform:scale(1.2) rotate(15deg);opacity:1}}
 @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes completePop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+@keyframes awSetFade{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
 /* Combined (not stacked classes) so both keyframes genuinely run at once —
    two separate `animation:` rules on one element don't compose, the later
    one in the stylesheet just wins and silently drops the other. */
 .p-sway-breathe{animation:sway 4s ease-in-out infinite,breathe 3.2s ease-in-out infinite;transform-origin:bottom center;display:inline-block}
 .ls-complete-pop{animation:completePop .5s ease-out}
+/* Guided-workout pre-set screen: a gentle one-shot fade+rise applied to the
+   Previous/recommendation/Set-indicator region on every set transition, so
+   moving between sets never feels like an abrupt content swap. */
+.aw-set-fade{animation:awSetFade .3s ease-out}
 .p-sway{animation:sway 4s ease-in-out infinite;transform-origin:bottom center;display:inline-block}
 .p-droop{animation:droop 2.5s ease-in-out infinite;transform-origin:top center;display:inline-block}
 .p-bloom{animation:bloom 3s ease-in-out infinite;display:inline-block}
@@ -118,7 +123,7 @@ body{font-family:'Inter',sans-serif}
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade{animation:none!important;transition:none!important}
 }
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
@@ -6494,13 +6499,27 @@ function renderNextTargetBlock(p, ex) {
     supportingText = `Stay at ${p.currentWeight} ${unit}`;
   }
 
+  // The cue stays small and light — it's an introduction, not the point.
+  // The target number is the hero: bigger, bolder, and the only fully
+  // high-contrast text in the block.
   const toneColor = ready ? 'text-brand-500' : 'text-slate-500 dark:text-slate-400';
   return `
     <div class="w-full max-w-xs">
-      <p class="text-base font-semibold ${toneColor} flex items-center justify-center gap-1.5"><span class="ms text-lg" aria-hidden="true">eco</span>${esc(cue)}</p>
-      <p class="font-display font-extrabold text-3xl text-slate-800 dark:text-white mt-2 leading-none">${esc(targetText)}</p>
+      <p class="text-xs font-semibold uppercase tracking-wide ${toneColor} flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${esc(cue)}</p>
+      <p class="font-display font-extrabold text-4xl text-slate-800 dark:text-white mt-2.5 leading-none">${esc(targetText)}</p>
       ${supportingText ? `<p class="text-sm text-slate-400 mt-2.5">${esc(supportingText)}</p>` : ''}
     </div>`;
+}
+
+// A minimal dot stepper under "Set X of Y" — purely decorative reinforcement
+// of the same number already in that text (aria-hidden; the text stays the
+// one accessible source of truth). Filled count matches the CURRENT set
+// number (not completed-only), so "Set 1 of 3" itself shows one filled dot,
+// "Set 2 of 3" shows two, etc. — the same convention shown in the task spec.
+function renderSetDots(setNum, total) {
+  return `<div class="flex items-center justify-center gap-1.5" aria-hidden="true">${
+    Array.from({ length: total }, (_, i) => `<span class="w-2 h-2 rounded-full ${i < setNum ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'} transition-colors duration-300"></span>`).join('')
+  }</div>`;
 }
 
 // Current exercise, idle — covers both the very-first-exercise case (goes
@@ -6576,15 +6595,18 @@ function renderExercisePhase(ex) {
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
       <p class="text-xs text-slate-400">Exercise ${activeSession.currentExerciseIndex+1} of ${activeSession.exercises.length}</p>
       <button id="aw-ex-name-btn" type="button" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white hover:text-brand-500 transition-colors" aria-label="View ${esc(ex.name)} progress">${esc(ex.name)}</button>
-      <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800 max-w-xs w-full pt-1">
-        <div class="text-left pr-4"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
-        <div class="text-left pl-4"><p class="text-xs text-slate-400">${esc(prevLabel)}</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevValue)}</p></div>
+      <div class="aw-set-fade w-full flex flex-col items-center">
+        <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800 max-w-xs w-full pt-1">
+          <div class="text-left pr-4"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
+          <div class="text-left pl-4"><p class="text-xs text-slate-400">${esc(prevLabel)}</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevValue)}</p></div>
+        </div>
+        <div class="w-full max-w-xs border-t border-slate-200 dark:border-slate-800 mt-3"></div>
+        <div class="pt-3">${nextTargetHtml || todayFallbackHtml}</div>
+        <div class="w-full max-w-xs border-t border-slate-200 dark:border-slate-800 mt-3"></div>
+        ${completedRows ? `<div class="space-y-0.5 pt-3">${completedRows}</div>` : ''}
+        <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white pt-5">Set ${setNum} of ${totalTarget}</p>
+        <div class="pt-2.5">${renderSetDots(setNum, totalTarget)}</div>
       </div>
-      <div class="w-full max-w-xs border-t border-slate-200 dark:border-slate-800"></div>
-      ${nextTargetHtml || todayFallbackHtml}
-      <div class="w-full max-w-xs border-t border-slate-200 dark:border-slate-800"></div>
-      ${completedRows ? `<div class="space-y-0.5">${completedRows}</div>` : ''}
-      <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white pt-1">Set ${setNum} of ${totalTarget}</p>
     </div>`;
   footer.innerHTML = `
     <button data-action="start-set" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Set</button>
