@@ -7840,6 +7840,17 @@ document.getElementById('queue-list').addEventListener('pointermove', e => {
   const draggedIndex = rows.indexOf(queueDrag.row);
   const draggedRect = queueDrag.row.getBoundingClientRect();
   const draggedMid = draggedRect.top + draggedRect.height / 2;
+
+  // FLIP (First-Last-Invert-Play): record where every other row sits right
+  // now, so any row the swaps below actually displace can be animated
+  // sliding smoothly into its new slot afterward, instead of the plain
+  // instant DOM-reflow snap that made the whole drag feel blocky — only the
+  // actively-dragged row itself should track the pointer with zero lag
+  // (it already does, via the direct transform above); its neighbors should
+  // ease into place.
+  const beforeTops = new Map();
+  rows.forEach(r => { if (r !== queueDrag.row) beforeTops.set(r, r.getBoundingClientRect().top); });
+
   // Reordering the DOM mid-drag changes the dragged row's *natural* (un-
   // transformed) slot by one sibling's height — without compensating for
   // that, the row's on-screen position jumps the instant it crosses a
@@ -7860,6 +7871,18 @@ document.getElementById('queue-list').addEventListener('pointermove', e => {
     queueDrag.startY += anchorShift;
     queueDrag.row.style.transform = `translateY(${e.clientY - queueDrag.startY}px)`;
   }
+
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  beforeTops.forEach((oldTop, r) => {
+    const delta = oldTop - r.getBoundingClientRect().top;
+    if (!delta || reducedMotion) return;
+    r.style.transition = 'none';
+    r.style.transform = `translateY(${delta}px)`;
+    requestAnimationFrame(() => {
+      r.style.transition = 'transform .18s ease';
+      r.style.transform = '';
+    });
+  });
 });
 document.getElementById('queue-list').addEventListener('pointerup', e => {
   clearQueuePending();
