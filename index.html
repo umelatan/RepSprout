@@ -3481,7 +3481,36 @@ function getGreeting() {
   return `Good ${part}${first ? ', ' + first : ''}`;
 }
 
+// Closes every open modal/drill-down "window" so navigating via the bottom
+// nav, sidebar nav, or mobile drawer always actually lands the user on the
+// tapped tab instead of leaving something open on top of it. Deliberately
+// excludes the in-progress guided workout itself (active-workout-view) and
+// its own floating pickers/sheets (log-set/duration-picker/rest-scope/
+// change-rest/queue/queue-row-actions/finish-modal/end-review-modal) — that
+// screen already has its own explicit exit flow (the header's End Workout
+// button), and there is no "resume" affordance elsewhere in the app that
+// could bring an in-progress session's view back once hidden, so silently
+// dismissing it from a stray nav tap would strand the user mid-workout.
+function closeAllOpenWindows() {
+  closeMobDrawer();
+  closeTargetDetail();
+  closeEditTargetLogModal();
+  closeExerciseDetail();
+  closeGroupPicker(); // also closes start-workout-modal
+  closeBuildWorkout();
+  closeEditSessionModal();
+  [
+    'choose-companion-modal', 'resume-session-modal',
+    'create-target-modal', 'log-target-modal', 'target-actions-modal', 'exg-actions-modal',
+    'edit-target-modal', 'target-full-history-modal',
+    'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal', 'cal-photo-modal',
+    'calendar-day-sheet', 'calendar-add-modal', 'calendar-group-picker-modal',
+    'activity-library-modal', 'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal'
+  ].forEach(hide);
+}
+
 function goView(v) {
+  closeAllOpenWindows();
   VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
   document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
