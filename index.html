@@ -6490,8 +6490,11 @@ function renderNextTargetBlock(p, ex) {
 
   let targetText, supportingText;
   if (ready) {
-    targetText = ex.weightIncrement ? `${round1(p.currentWeight + ex.weightIncrement)} ${unit}` : 'Increase to your next available weight.';
-    supportingText = (p.targetMinReps != null && p.targetMaxReps != null) ? `Keep ${p.targetMinReps}–${p.targetMaxReps} reps` : '';
+    // A short, concrete fallback when there's no configured weight
+    // increment to compute an exact number from — "20 kg+" still reuses the
+    // one real value we do have (currentWeight) instead of a vague sentence.
+    targetText = ex.weightIncrement ? `${round1(p.currentWeight + ex.weightIncrement)} ${unit}` : `${p.currentWeight} ${unit}+`;
+    supportingText = (p.targetMinReps != null && p.targetMaxReps != null) ? `${p.targetMinReps}–${p.targetMaxReps} reps` : '';
   } else {
     const lo = p.targetMaxReps != null ? Math.min((p.currentReps || 0) + 1, p.targetMaxReps) : null;
     const hi = p.targetMaxReps;
@@ -6499,15 +6502,16 @@ function renderNextTargetBlock(p, ex) {
     supportingText = `Stay at ${p.currentWeight} ${unit}`;
   }
 
-  // The cue stays small and light — it's an introduction, not the point.
-  // The target number is the hero: bigger, bolder, and the only fully
-  // high-contrast text in the block.
+  // Three-tier hierarchy: the cue is a small, sentence-case introduction
+  // (secondary), the target is the large hero (primary), and the rep
+  // context underneath is the smallest, most muted line (tertiary) — never
+  // competing with the number above it.
   const toneColor = ready ? 'text-brand-500' : 'text-slate-500 dark:text-slate-400';
   return `
     <div class="w-full max-w-xs">
-      <p class="text-xs font-semibold uppercase tracking-wide ${toneColor} flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${esc(cue)}</p>
-      <p class="font-display font-extrabold text-4xl text-slate-800 dark:text-white mt-2.5 leading-none">${esc(targetText)}</p>
-      ${supportingText ? `<p class="text-sm text-slate-400 mt-2.5">${esc(supportingText)}</p>` : ''}
+      <p class="text-xs font-medium ${toneColor} flex items-center justify-center gap-1"><span aria-hidden="true">🌱</span>${esc(cue)}</p>
+      <p class="font-display font-extrabold text-4xl text-slate-800 dark:text-white mt-2 leading-none">${esc(targetText)}</p>
+      ${supportingText ? `<p class="text-xs text-slate-400 mt-2">${esc(supportingText)}</p>` : ''}
     </div>`;
 }
 
