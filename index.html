@@ -2699,6 +2699,30 @@ function formatTargetLogTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+// A THIRD, more relative tier ("N days ago") on top of targetHistoryDayLabel()'s
+// Today/Yesterday/absolute-date — used only by the Home/Targets card's own
+// compact "Previous: ..." line, kept as its own function so the Target
+// History page's day labels (which never use "N days ago") are never
+// affected by this. Recent-but-not-yesterday dates read as relative for up
+// to a week; anything older falls back to the same short absolute format.
+function targetPreviousActivityDateLabel(dateStr) {
+  const diff = Math.round((new Date(todayStr() + 'T12:00:00') - new Date(dateStr + 'T12:00:00')) / 86400000);
+  if (diff === 1) return 'Yesterday';
+  if (diff > 1 && diff <= 6) return `${diff} days ago`;
+  return fmtDate(dateStr);
+}
+
+// "Previous: {when} • {amount} {unit}" for the card's quick-context line, or
+// "No previous activity" — reuses findLastCompletedTargetPeriod() exactly
+// as-is (the same completion rule the Target Detail page's own Last Activity
+// section and the progress bar already agree on), fed today's live logs so
+// it can never include today's own activity as "previous."
+function targetPreviousActivityLabel(target, id) {
+  const last = findLastCompletedTargetPeriod(target, getTargetLogsFor(id));
+  if (!last) return 'No previous activity';
+  return `Previous: ${targetPreviousActivityDateLabel(last.periodStart)} • ${last.totalLogged} ${targetUnitLabel(target)}`;
+}
+
 async function setTargetStatus(targetId, status) {
   await updateTarget(targetId, { status });
 }
@@ -4270,6 +4294,7 @@ function targetCardHtml(id, target, progress) {
         </div>
         ${remainingLabel ? `<p class="text-[11px] text-slate-400 mt-1">${esc(remainingLabel)}</p>` : ''}
       </div>
+      <p class="text-[11px] text-slate-400">${esc(targetPreviousActivityLabel(target, id))}</p>
       <button type="button" class="tgt-log-btn btn text-sm bg-lavender-500 hover:bg-lavender-600 text-white w-full py-2" data-id="${id}" aria-label="Add log for ${esc(target.name)}">+ Add log</button>
     </div>`;
 }
