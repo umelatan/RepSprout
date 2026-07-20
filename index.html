@@ -6457,6 +6457,59 @@ function renderGuidedWorkout() {
   else renderExercisePhase(ex);
 }
 
+// The "Next target" block on the pre-set screen — answers "what should I do
+// for this set?" using the EXACT SAME Double Progression source of truth the
+// Exercise Progress Detail page reads (DoubleProgressionStrategy /
+// calculateExerciseDoubleProgression()), called the same way (no
+// pendingSession preview — exd itself never previews an in-progress,
+// unsaved workout either, so this stays byte-for-byte consistent with
+// whatever exd would show for this exact position right now). Only
+// reformats already-computed fields (status, currentWeight, currentReps,
+// targetMaxReps) for this compact layout — never re-derives readiness.
+// Returns '' when there's nothing meaningful to recommend (never logged
+// before, skipped/incomplete history, or Double Progression not
+// configured/disabled) so callers can fall back to the plain "Today" line.
+function renderNextTargetBlock(p, ex) {
+  if (!p || p.currentWeight == null) return '';
+  if (p.status === DP_STATUS.SKIPPED || p.status === DP_STATUS.INCOMPLETE) return '';
+  const unit = ex.unit || 'kg';
+  let valueText, statusText, leafCue, ready = false;
+  switch (p.status) {
+    case DP_STATUS.READY_TO_INCREASE: {
+      const nextWeight = ex.weightIncrement ? round1(p.currentWeight + ex.weightIncrement) : null;
+      valueText = nextWeight != null ? `${nextWeight} ${unit}` : `Heavier than ${p.currentWeight} ${unit}`;
+      statusText = 'Ready to increase'; leafCue = 'Grow a new leaf'; ready = true;
+      break;
+    }
+    case DP_STATUS.INCREASED_WEIGHT:
+      valueText = `${p.currentWeight} ${unit}`;
+      statusText = 'Continue at this weight'; leafCue = 'Grow this leaf';
+      break;
+    case DP_STATUS.BELOW_RANGE:
+      valueText = `${p.currentWeight} ${unit}`;
+      statusText = 'Repeat this weight'; leafCue = 'Grow this leaf';
+      break;
+    case DP_STATUS.BUILDING_REPS:
+    default: {
+      const lo = p.targetMaxReps != null ? Math.min((p.currentReps || 0) + 1, p.targetMaxReps) : null;
+      const hi = p.targetMaxReps;
+      valueText = (lo != null && hi != null)
+        ? (lo === hi ? `${p.currentWeight} ${unit} × ${hi} reps` : `${p.currentWeight} ${unit} × ${lo}–${hi} reps`)
+        : `${p.currentWeight} ${unit}`;
+      statusText = 'Build reps'; leafCue = 'Grow this leaf';
+      break;
+    }
+  }
+  const toneColor = ready ? 'text-brand-500' : 'text-slate-500 dark:text-slate-400';
+  return `
+    <div class="pt-1">
+      <p class="text-[11px] text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>${esc(leafCue)}</p>
+      <p class="text-xs text-slate-400 mt-1">Next target</p>
+      <p class="font-display font-extrabold text-xl text-slate-800 dark:text-white">${esc(valueText)}</p>
+      <p class="text-xs font-semibold ${toneColor} mt-0.5">${esc(statusText)}</p>
+    </div>`;
+}
+
 // Current exercise, idle — covers both the very-first-exercise case (goes
 // straight to "Set 1, Start Set") and the "Up Next" transition every later
 // exercise shows first (requires an explicit Start Exercise tap).
@@ -6497,6 +6550,23 @@ function renderExercisePhase(ex) {
     return `<p class="text-xs text-slate-400">${label} · ${s.weight||0} ${ex.unit} × ${s.reps||0}</p>`;
   }).join('');
 
+  // "Next target" replaces the plain "Today" weight line whenever there's a
+  // real Double Progression recommendation for THIS pending set — warm-up
+  // sets (checked structurally even though a not-yet-logged set is never
+  // warmup by construction — see buildSessionExercise) always keep the
+  // standard "Today" display instead, per the task's explicit exclusion.
+  const currentSet = ex.sets[si];
+  let nextTargetHtml = '';
+  if (!currentSet.warmup) {
+    const dpEnabled = ex.progressionEnabled !== false;
+    const dpResult = dpEnabled ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId) : null;
+    const dpPositions = dpEnabled && dpResult.configured ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId) : [];
+    const workingSetNum = getWorkingSetNumber(currentSet, ex.sets); // 1-based, null only for a warm-up
+    const p = workingSetNum ? dpPositions[workingSetNum - 1] : null;
+    nextTargetHtml = renderNextTargetBlock(p, ex);
+  }
+  const todayFallbackHtml = `<div><p class="text-xs text-slate-400">Today</p><p class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">${currentSet.weight||ex.weight||0} ${ex.unit}</p></div>`;
+
   main.innerHTML = `
     <div class="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
       <p class="text-xs text-slate-400">Exercise ${activeSession.currentExerciseIndex+1} of ${activeSession.exercises.length}</p>
@@ -6505,7 +6575,7 @@ function renderExercisePhase(ex) {
         <div><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
         <div><p class="text-xs text-slate-400">Previous</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevLine)}</p></div>
       </div>
-      <div><p class="text-xs text-slate-400">Today</p><p class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">${ex.sets[si].weight||ex.weight||0} ${ex.unit}</p></div>
+      ${nextTargetHtml || todayFallbackHtml}
       ${completedRows ? `<div class="space-y-0.5">${completedRows}</div>` : ''}
       <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white pt-1">Set ${setNum} of ${totalTarget}</p>
     </div>`;
