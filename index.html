@@ -6457,56 +6457,49 @@ function renderGuidedWorkout() {
   else renderExercisePhase(ex);
 }
 
-// The "Next target" block on the pre-set screen — answers "what should I do
-// for this set?" using the EXACT SAME Double Progression source of truth the
-// Exercise Progress Detail page reads (DoubleProgressionStrategy /
-// calculateExerciseDoubleProgression()), called the same way (no
-// pendingSession preview — exd itself never previews an in-progress,
-// unsaved workout either, so this stays byte-for-byte consistent with
-// whatever exd would show for this exact position right now). Only
-// reformats already-computed fields (status, currentWeight, currentReps,
-// targetMaxReps) for this compact layout — never re-derives readiness.
-// Returns '' when there's nothing meaningful to recommend (never logged
-// before, skipped/incomplete history, or Double Progression not
-// configured/disabled) so callers can fall back to the plain "Today" line.
+// The progression block on the pre-set screen — answers "what should I do
+// for this set?" in exactly three lines: a plant-themed coaching phrase, one
+// large clear target, one small supporting instruction. Uses the EXACT SAME
+// Double Progression source of truth the Exercise Progress Detail page reads
+// (DoubleProgressionStrategy/calculateExerciseDoubleProgression()), called
+// the same way (no pendingSession preview — exd itself never previews an
+// in-progress, unsaved workout either, so this stays byte-for-byte
+// consistent with whatever exd would show for this exact position right
+// now). Only reformats already-computed fields (status, currentWeight,
+// currentReps, targetMinReps/targetMaxReps) for this compact layout — never
+// re-derives readiness. Returns '' when there's nothing meaningful to
+// recommend (never logged before, skipped/incomplete history, or Double
+// Progression not configured/disabled) so callers can fall back to the
+// plain "Today" line.
 function renderNextTargetBlock(p, ex) {
   if (!p || p.currentWeight == null) return '';
   if (p.status === DP_STATUS.SKIPPED || p.status === DP_STATUS.INCOMPLETE) return '';
   const unit = ex.unit || 'kg';
-  let valueText, statusText, leafCue, ready = false;
-  switch (p.status) {
-    case DP_STATUS.READY_TO_INCREASE: {
-      const nextWeight = ex.weightIncrement ? round1(p.currentWeight + ex.weightIncrement) : null;
-      valueText = nextWeight != null ? `${nextWeight} ${unit}` : `Heavier than ${p.currentWeight} ${unit}`;
-      statusText = 'Ready to increase'; leafCue = 'Grow a new leaf'; ready = true;
-      break;
-    }
-    case DP_STATUS.INCREASED_WEIGHT:
-      valueText = `${p.currentWeight} ${unit}`;
-      statusText = 'Continue at this weight'; leafCue = 'Grow this leaf';
-      break;
-    case DP_STATUS.BELOW_RANGE:
-      valueText = `${p.currentWeight} ${unit}`;
-      statusText = 'Repeat this weight'; leafCue = 'Grow this leaf';
-      break;
-    case DP_STATUS.BUILDING_REPS:
-    default: {
-      const lo = p.targetMaxReps != null ? Math.min((p.currentReps || 0) + 1, p.targetMaxReps) : null;
-      const hi = p.targetMaxReps;
-      valueText = (lo != null && hi != null)
-        ? (lo === hi ? `${p.currentWeight} ${unit} × ${hi} reps` : `${p.currentWeight} ${unit} × ${lo}–${hi} reps`)
-        : `${p.currentWeight} ${unit}`;
-      statusText = 'Build reps'; leafCue = 'Grow this leaf';
-      break;
-    }
+  const ready = p.status === DP_STATUS.READY_TO_INCREASE;
+  // "Ready to grow a new leaf" only for a genuine weight-increase signal;
+  // every other in-progress status (still building reps, just increased and
+  // resetting the rep count, or fell below range) reads as "still working on
+  // this same leaf" — one shared, simple phrase rather than four near-
+  // duplicate ones, per the task's "keep it simple" instruction.
+  const cue = ready ? 'Ready to grow a new leaf' : 'Grow this leaf';
+
+  let targetText, supportingText;
+  if (ready) {
+    targetText = ex.weightIncrement ? `${round1(p.currentWeight + ex.weightIncrement)} ${unit}` : 'Increase to your next available weight.';
+    supportingText = (p.targetMinReps != null && p.targetMaxReps != null) ? `Keep ${p.targetMinReps}–${p.targetMaxReps} reps` : '';
+  } else {
+    const lo = p.targetMaxReps != null ? Math.min((p.currentReps || 0) + 1, p.targetMaxReps) : null;
+    const hi = p.targetMaxReps;
+    targetText = (lo != null && hi != null) ? (lo === hi ? `${hi} reps` : `${lo}–${hi} reps`) : `${p.currentWeight} ${unit}`;
+    supportingText = `Stay at ${p.currentWeight} ${unit}`;
   }
+
   const toneColor = ready ? 'text-brand-500' : 'text-slate-500 dark:text-slate-400';
   return `
     <div class="pt-1">
-      <p class="text-[11px] text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>${esc(leafCue)}</p>
-      <p class="text-xs text-slate-400 mt-1">Next target</p>
-      <p class="font-display font-extrabold text-xl text-slate-800 dark:text-white">${esc(valueText)}</p>
-      <p class="text-xs font-semibold ${toneColor} mt-0.5">${esc(statusText)}</p>
+      <p class="text-sm font-semibold ${toneColor} flex items-center justify-center gap-1.5"><span class="ms text-base" aria-hidden="true">eco</span>${esc(cue)}</p>
+      <p class="font-display font-extrabold text-3xl text-slate-800 dark:text-white mt-1">${esc(targetText)}</p>
+      ${supportingText ? `<p class="text-xs text-slate-400 mt-1">${esc(supportingText)}</p>` : ''}
     </div>`;
 }
 
@@ -6550,21 +6543,33 @@ function renderExercisePhase(ex) {
     return `<p class="text-xs text-slate-400">${label} · ${s.weight||0} ${ex.unit} × ${s.reps||0}</p>`;
   }).join('');
 
-  // "Next target" replaces the plain "Today" weight line whenever there's a
-  // real Double Progression recommendation for THIS pending set — warm-up
-  // sets (checked structurally even though a not-yet-logged set is never
-  // warmup by construction — see buildSessionExercise) always keep the
-  // standard "Today" display instead, per the task's explicit exclusion.
+  // Both the "Previous" grid cell and the progression block below read from
+  // the SAME Double Progression position `p` for this pending set — one
+  // source of truth, so the previous result shown can never disagree with
+  // the recommendation derived from it. Warm-up sets (checked structurally
+  // even though a not-yet-logged set is never warmup by construction — see
+  // buildSessionExercise) never get a working-set position at all, so they
+  // fall back to the exercise-level "Today"/whole-history summary instead.
   const currentSet = ex.sets[si];
-  let nextTargetHtml = '';
-  if (!currentSet.warmup) {
-    const dpEnabled = ex.progressionEnabled !== false;
-    const dpResult = dpEnabled ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId) : null;
-    const dpPositions = dpEnabled && dpResult.configured ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId) : [];
-    const workingSetNum = getWorkingSetNumber(currentSet, ex.sets); // 1-based, null only for a warm-up
-    const p = workingSetNum ? dpPositions[workingSetNum - 1] : null;
-    nextTargetHtml = renderNextTargetBlock(p, ex);
-  }
+  const dpEnabled = ex.progressionEnabled !== false;
+  const dpResult = (!currentSet.warmup && dpEnabled) ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId) : null;
+  const dpPositions = (dpResult && dpResult.configured) ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId) : [];
+  const workingSetNum = currentSet.warmup ? null : getWorkingSetNumber(currentSet, ex.sets); // 1-based, null for a warm-up
+  const p = workingSetNum ? dpPositions[workingSetNum - 1] : null;
+
+  // Previous performance for THIS working set specifically — p.currentWeight/
+  // currentReps already ARE "whatever was logged last time for this exact
+  // position" (calculateExerciseDoubleProgression() updates them on every
+  // session it walks), so this is the same data the recommendation itself is
+  // derived from, not a second lookup. Falls back to the whole-exercise
+  // last-session summary when there's no per-position data (unconfigured/
+  // disabled/warm-up), same as before.
+  const prevLabel = workingSetNum ? `Set ${workingSetNum}` : 'Previous';
+  const prevValue = p
+    ? (p.currentWeight != null ? `${p.currentWeight} ${ex.unit} × ${p.currentReps || 0}` : 'First time')
+    : prevLine;
+
+  const nextTargetHtml = renderNextTargetBlock(p, ex);
   const todayFallbackHtml = `<div><p class="text-xs text-slate-400">Today</p><p class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">${currentSet.weight||ex.weight||0} ${ex.unit}</p></div>`;
 
   main.innerHTML = `
@@ -6573,7 +6578,7 @@ function renderExercisePhase(ex) {
       <button id="aw-ex-name-btn" type="button" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white hover:text-brand-500 transition-colors" aria-label="View ${esc(ex.name)} progress">${esc(ex.name)}</button>
       <div class="grid grid-cols-2 gap-4 text-left max-w-xs w-full pt-1">
         <div><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
-        <div><p class="text-xs text-slate-400">Previous</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevLine)}</p></div>
+        <div><p class="text-xs text-slate-400">${esc(prevLabel)}</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevValue)}</p></div>
       </div>
       ${nextTargetHtml || todayFallbackHtml}
       ${completedRows ? `<div class="space-y-0.5">${completedRows}</div>` : ''}
