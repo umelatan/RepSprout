@@ -6490,10 +6490,10 @@ function renderNextTargetBlock(p, ex) {
 
   let targetText, supportingText;
   if (ready) {
-    // A short, concrete fallback when there's no configured weight
-    // increment to compute an exact number from — "20 kg+" still reuses the
-    // one real value we do have (currentWeight) instead of a vague sentence.
-    targetText = ex.weightIncrement ? `${round1(p.currentWeight + ex.weightIncrement)} ${unit}` : `${p.currentWeight} ${unit}+`;
+    // A short fallback when there's no configured weight increment to
+    // compute an exact number from — a plain instruction instead of a
+    // fabricated number or a long sentence.
+    targetText = ex.weightIncrement ? `${round1(p.currentWeight + ex.weightIncrement)} ${unit}` : 'Increase weight';
     supportingText = (p.targetMinReps != null && p.targetMaxReps != null) ? `${p.targetMinReps}–${p.targetMaxReps} reps` : '';
   } else {
     const lo = p.targetMaxReps != null ? Math.min((p.currentReps || 0) + 1, p.targetMaxReps) : null;
