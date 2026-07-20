@@ -1164,8 +1164,8 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <div id="queue-list" class="flex-1 overflow-y-auto p-3 space-y-1"></div>
     <div class="flex-shrink-0 p-3 border-t border-slate-100 dark:border-slate-700 space-y-2">
       <p id="queue-encouragement" class="text-center text-[11px] text-slate-400"></p>
-      <button id="queue-add-ex-btn" style="display:none" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
-        <span class="ms text-base" aria-hidden="true">add</span>Add exercise
+      <button id="queue-add-to-workout-btn" class="w-full py-2 text-sm font-semibold text-brand-500 hover:underline flex items-center justify-center gap-1">
+        <span class="ms text-base" aria-hidden="true">add</span>Add to today's workout
       </button>
       <button id="queue-return-btn" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Return to current exercise</button>
     </div>
@@ -1181,6 +1181,92 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <button id="qra-skip" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">remove_circle</span><span id="qra-skip-label">Skip exercise</span></button>
     <button id="qra-remove" style="display:none" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from today's session</button>
     <button id="qra-cancel" class="w-full text-center px-3 py-3 rounded-xl text-sm font-semibold text-slate-400">Cancel</button>
+  </div>
+</div>
+
+<!-- Guided workout: "Add to today's workout" — same visual language and
+     open/close motion as Calendar's "Add to Calendar" sheet (.cap-backdrop/
+     .cap-sheet, cap-card cards), just a separate instance since this one is
+     opened from inside an active session rather than from a calendar date.
+     Session-only: picking either option here never touches the saved
+     Workout Group, only activeSession (see openAddToWorkoutSheet() and its
+     card handlers). -->
+<div id="atw-modal" style="display:none" class="cap-backdrop fixed inset-0 z-[62] flex items-end justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+  <div id="atw-sheet" class="cap-sheet bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col translate-y-full transition-transform duration-300 ease-out" style="max-height:88vh">
+    <div id="atw-drag-handle" class="flex justify-center pt-2.5 pb-1 flex-shrink-0" style="touch-action:none" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex-shrink-0">
+      <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Add to today's workout</h3>
+      <p class="text-xs text-slate-400 mt-0.5">What would you like to add?</p>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 pb-5 space-y-2.5">
+      <button id="atw-exercise-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Exercise — add one of your existing exercises.">
+        <span class="cap-card-icon flex-shrink-0" aria-hidden="true">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="atwExA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+            <rect x="6" y="27" width="9" height="10" rx="2.5" fill="url(#atwExA)"/>
+            <rect x="49" y="27" width="9" height="10" rx="2.5" fill="url(#atwExA)"/>
+            <rect x="3" y="29" width="6" height="6" rx="1.5" fill="url(#atwExA)"/>
+            <rect x="55" y="29" width="6" height="6" rx="1.5" fill="url(#atwExA)"/>
+            <rect x="15" y="30" width="34" height="4" rx="2" fill="url(#atwExA)"/>
+            <path d="M32 24c-2-5-8-6-11-2-2 3 0 7 4 8" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M31 21c1-3 4-4 4-4" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Exercise</p>
+          <p class="text-xs text-slate-400 mt-0.5">Add one of your existing exercises.</p>
+        </div>
+        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>
+      <button id="atw-activity-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Other Activity — cardio, pilates, yoga, swimming and more.">
+        <span class="cap-card-icon flex-shrink-0" aria-hidden="true">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="atwActA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs>
+            <path d="M10 44c0-6 4-9 10-9h20c6 0 10-3 12-7l3 5c-2 6-8 11-15 11H16c-3 0-6 0-6 0z" fill="url(#atwActA)"/>
+            <rect x="9" y="42" width="10" height="7" rx="3.5" fill="#166534"/>
+            <path d="M27 18c-2-4-7-5-10-2-2 3 0 6 3 7" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Other Activity</p>
+          <p class="text-xs text-slate-400 mt-0.5">Cardio, pilates, yoga, swimming and more.</p>
+        </div>
+        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Guided workout: "Add [Exercise] — choose where to place it". Opens after
+     picking an exercise from the shared library (openPickExModal) while
+     atw-modal is open underneath; Cancel reveals atw-modal again, Start now/
+     Add to end both close everything and fall through to the exact same
+     addExerciseToActiveSession()/jumpToExerciseNow() the queue's own row
+     actions already use. -->
+<div id="aep-modal" style="display:none" class="cap-backdrop fixed inset-0 z-[63] flex items-end justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+  <div id="aep-sheet" class="cap-sheet bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col translate-y-full transition-transform duration-300 ease-out" style="max-height:88vh">
+    <div id="aep-drag-handle" class="flex justify-center pt-2.5 pb-1 flex-shrink-0" style="touch-action:none" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-4 flex-shrink-0 text-center">
+      <h3 id="aep-title" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></h3>
+      <p class="text-xs text-slate-400 mt-0.5">Choose where to place it.</p>
+    </div>
+    <div class="px-5 pb-5 space-y-2">
+      <button id="aep-start-now-btn" type="button" class="cap-card cap-card-primary w-full flex items-center gap-3 rounded-2xl p-3.5 text-left">
+        <span class="ms text-2xl text-brand-500 flex-shrink-0" aria-hidden="true">bolt</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Start now</p>
+          <p class="text-xs text-slate-400 mt-0.5">Begin this exercise immediately.</p>
+        </div>
+      </button>
+      <button id="aep-end-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left">
+        <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">list</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Add to end</p>
+          <p class="text-xs text-slate-400 mt-0.5">Append it after the last unfinished exercise.</p>
+        </div>
+      </button>
+      <button id="aep-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -8305,7 +8391,6 @@ function renderQueueRow(ex, idx) {
 }
 function renderQueue() {
   document.getElementById('queue-title').textContent = activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName;
-  document.getElementById('queue-add-ex-btn').style.display = activeSession.sessionType === 'quick' ? '' : 'none';
 
   const total = activeSession.exercises.length;
   const doneCount = activeSession.exercises.filter(exerciseIsDone).length;
@@ -8327,9 +8412,7 @@ function renderQueue() {
 document.getElementById('queue-close').addEventListener('click', closeQueueDrawer);
 document.getElementById('queue-return-btn').addEventListener('click', closeQueueDrawer);
 document.getElementById('queue-backdrop').addEventListener('click', closeQueueDrawer);
-document.getElementById('queue-add-ex-btn').addEventListener('click', () => {
-  openPickExModal(id => { addExerciseToActiveSession(id); renderQueue(); }, []);
-});
+document.getElementById('queue-add-to-workout-btn').addEventListener('click', openAddToWorkoutSheet);
 // Jumps the active session straight to exercise `idx` as the current
 // exercise — this is "Start now": a temporary jump for THIS session only,
 // never a rewrite of the saved Workout Group's exercise order (that order
@@ -8541,9 +8624,12 @@ document.getElementById('queue-list').addEventListener('pointercancel', e => {
   header.addEventListener('pointercancel', endSwipe);
 })();
 
-// Shared by the queue's "Add exercise" and Quick Workout's auto-opened
-// picker — one place that decides how an exercise enters the active session,
-// regardless of whether the workout is grouped or freeform.
+// Shared by "Add to today's workout" (both its Start now/Add to end paths)
+// and Quick Workout's auto-opened picker — one place that decides how an
+// exercise enters the active session, regardless of whether the workout is
+// grouped or freeform. Always appends to the end of activeSession.exercises
+// and never touches the saved Workout Group, so plain "add it" always means
+// "add to end" — jumpToExerciseNow() is what makes an addition "start now".
 function addExerciseToActiveSession(id) {
   const already = activeSession.exercises.some(e => e.exerciseId === id);
   if (already) {
@@ -8558,6 +8644,121 @@ function addExerciseToActiveSession(id) {
   renderGuidedWorkout();
   saveActiveSessionDraft();
 }
+
+// ── "Add to today's workout" — Workout Queue footer entry point ────────────
+// Everything below only ever touches activeSession (via addExerciseToActiveSession
+// / jumpToExerciseNow for exercises, or logOtherActivitySession for other
+// activities, all pre-existing) — the saved Workout Group is never written to,
+// so a Group stays a template regardless of what gets added mid-session.
+function openAddToWorkoutSheet() {
+  document.getElementById('atw-modal').style.display = '';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById('atw-modal').classList.remove('opacity-0');
+    document.getElementById('atw-sheet').classList.remove('translate-y-full');
+  }));
+}
+function closeAddToWorkoutSheet() {
+  const modal = document.getElementById('atw-modal');
+  modal.classList.add('opacity-0');
+  document.getElementById('atw-sheet').classList.add('translate-y-full');
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => { modal.style.display = 'none'; }, reducedMotion ? 0 : 300);
+}
+document.getElementById('atw-modal').addEventListener('click', e => { if (e.target.id === 'atw-modal') closeAddToWorkoutSheet(); });
+
+// Opened after picking an exercise from the shared library picker
+// (openPickExModal) — atw-modal is left open underneath, same convention
+// Calendar's own add-picker uses for its sub-flows, so Cancel here just
+// reveals it again instead of exiting the whole "add" flow.
+function openAddExercisePlacementSheet(exerciseId) {
+  const ex = exercises[exerciseId];
+  if (!ex) return;
+  document.getElementById('aep-title').textContent = `Add ${ex.name}`;
+  document.getElementById('aep-modal').style.display = '';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById('aep-modal').classList.remove('opacity-0');
+    document.getElementById('aep-sheet').classList.remove('translate-y-full');
+  }));
+  document.getElementById('aep-start-now-btn').onclick = () => {
+    closeAddExercisePlacementSheet();
+    closeAddToWorkoutSheet();
+    // addExerciseToActiveSession() can no-op (the user declining its "already
+    // added, add again?" confirm()), so only jump if it actually appended —
+    // otherwise this would jump onto whatever unrelated exercise already sat
+    // last in the queue.
+    const lengthBefore = activeSession.exercises.length;
+    addExerciseToActiveSession(exerciseId);
+    if (activeSession.exercises.length > lengthBefore) {
+      // Same "Start now" jump the queue's own row-actions menu uses.
+      jumpToExerciseNow(activeSession.exercises.length - 1);
+    }
+  };
+  document.getElementById('aep-end-btn').onclick = () => {
+    closeAddExercisePlacementSheet();
+    closeAddToWorkoutSheet();
+    addExerciseToActiveSession(exerciseId);
+    renderQueue();
+  };
+}
+function closeAddExercisePlacementSheet() {
+  const modal = document.getElementById('aep-modal');
+  modal.classList.add('opacity-0');
+  document.getElementById('aep-sheet').classList.add('translate-y-full');
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(() => { modal.style.display = 'none'; }, reducedMotion ? 0 : 300);
+}
+document.getElementById('aep-cancel-btn').addEventListener('click', closeAddExercisePlacementSheet);
+document.getElementById('aep-modal').addEventListener('click', e => { if (e.target.id === 'aep-modal') closeAddExercisePlacementSheet(); });
+
+// Swipe-down-to-dismiss for the two sheets above — same technique as
+// Calendar's own initCapSwipeClose(), generalized so it isn't duplicated
+// twice; left as a new helper rather than refactoring initCapSwipeClose
+// itself, since Calendar's own code isn't otherwise touched by this feature.
+function initAddSheetSwipeClose(handleId, sheetId, onDismiss) {
+  const handle = document.getElementById(handleId);
+  const sheet = document.getElementById(sheetId);
+  let startY = null, dragging = false;
+  handle.addEventListener('pointerdown', e => { startY = e.clientY; dragging = true; sheet.style.transition = 'none'; });
+  handle.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dy = Math.max(0, e.clientY - startY);
+    sheet.style.transform = `translateY(${dy}px)`;
+  });
+  const end = e => {
+    if (!dragging) return;
+    dragging = false;
+    sheet.style.transition = '';
+    const dy = Math.max(0, (e.clientY ?? startY) - startY);
+    sheet.style.transform = '';
+    if (dy > 80) onDismiss();
+  };
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+}
+initAddSheetSwipeClose('atw-drag-handle', 'atw-sheet', closeAddToWorkoutSheet);
+initAddSheetSwipeClose('aep-drag-handle', 'aep-sheet', closeAddExercisePlacementSheet);
+
+document.getElementById('atw-exercise-btn').addEventListener('click', () => {
+  openPickExModal(id => openAddExercisePlacementSheet(id), []);
+});
+document.getElementById('atw-activity-btn').addEventListener('click', () => {
+  openActivityLibrary(activityId => {
+    const act = getActivity(activityId);
+    openActivityDetailModal({
+      title: act?.name || 'Activity', subtitle: fmtDate(todayStr()), showCalories: true,
+      initialDuration: act?.defaultDuration, confirmLabel: 'Log Activity',
+      onConfirm: async details => {
+        // Same session-logging path Calendar's "today" Other Activity option
+        // uses — writes to sessions/{uid}/{today} independent of
+        // activeSession, so it nurtures the Companion Plant without creating
+        // or progressing an Exercise Plant (exercises: [] on this record).
+        const { previousGrowth, newGrowth } = await logOtherActivitySession(todayStr(), activityId, details);
+        closeAddToWorkoutSheet();
+        finishActivityAdded(todayStr(), stageChangeMessage(previousGrowth, newGrowth));
+      }
+    });
+  });
+});
 
 // ── Finish workout ───────────────────────────────────────────────────────────
 // Called from the last exercise's "Finish Workout" and from the End Workout
