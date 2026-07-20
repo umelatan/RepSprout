@@ -542,7 +542,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
       <!-- Groups -->
       <div id="wt-groups" style="display:none" class="space-y-3">
-        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div id="groups-list" class="space-y-3"></div>
       </div>
 
@@ -553,17 +553,21 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            renderExerciseLibrary() — entry point name kept unchanged so
            every existing caller keeps working untouched. -->
       <div id="wt-exercises" style="display:none" class="space-y-4">
-        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
 
-        <h2 class="font-display font-extrabold text-lg text-slate-800 dark:text-white -mb-1">Exercise Garden</h2>
+        <h2 class="font-display font-extrabold text-lg text-slate-800 dark:text-white -mb-1">Exercises</h2>
 
+        <!-- Search / Add / Filter share one component family: same height
+             (py-2.5), same corner radius (rounded-xl), same neutral border
+             color (matching the global input border tokens) — only the
+             primary Add action gets the filled/no-border treatment. -->
         <div class="flex items-center gap-2">
           <div class="relative flex-1 min-w-0">
             <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
-            <input id="ex-search" type="text" placeholder="Search exercises..." class="pl-9" aria-label="Search exercises">
+            <input id="ex-search" type="text" placeholder="Search exercises..." class="pl-9 py-2.5 rounded-xl" aria-label="Search exercises">
           </div>
-          <button id="new-exercise-btn" type="button" class="btn btn-green px-3.5 py-2.5 text-sm flex-shrink-0 flex items-center gap-1 whitespace-nowrap"><span class="ms text-base" aria-hidden="true">add</span>Add exercise</button>
-          <button id="exg-filter-toggle" type="button" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More filters" aria-expanded="false" aria-controls="exg-group-filter-wrap"><span class="ms text-lg" aria-hidden="true">tune</span></button>
+          <button id="new-exercise-btn" type="button" class="btn btn-green px-3.5 py-2.5 text-sm rounded-xl flex-shrink-0 flex items-center gap-1 whitespace-nowrap"><span class="ms text-base" aria-hidden="true">add</span>Add exercise</button>
+          <button id="exg-filter-toggle" type="button" class="py-2.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More filters" aria-expanded="false" aria-controls="exg-group-filter-wrap"><span class="ms text-lg" aria-hidden="true">tune</span></button>
         </div>
 
         <!-- Summary — every number here is derived live from calculateExerciseDoubleProgression() over all non-archived exercises (see renderExerciseLibrary()), never hardcoded. -->
@@ -586,7 +590,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            calculateTargetGrowth()'s note on why Targets can never touch
            Double Progression or Exercise Plant state). -->
       <div id="wt-targets" style="display:none" class="space-y-4">
-        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div class="flex items-center justify-between gap-2">
           <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg" role="group" aria-label="Filter targets">
             <button class="tgt-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="active">Active</button>
@@ -599,7 +603,7 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
 
       <!-- History -->
       <div id="wt-history" style="display:none" class="space-y-3">
-        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout hub"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div id="session-history-list" class="space-y-3"></div>
       </div>
     </section>
@@ -4857,8 +4861,7 @@ function renderExgSummary(entries) {
   document.getElementById('exg-summary').innerHTML = `
     <div class="flex items-start justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <p class="font-display font-bold text-base text-slate-800 dark:text-white flex items-center gap-1.5">Your exercise garden<span aria-hidden="true">🌿</span></p>
-        <p class="text-xs text-slate-400 mt-0.5">${total} exercise${total === 1 ? '' : 's'}</p>
+        <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">${total} exercise${total === 1 ? '' : 's'}</p>
         <div class="flex items-center gap-4 mt-2.5">
           <div><span class="text-lg font-display font-extrabold text-brand-500">${sprouts}</span><span class="text-xs text-slate-400 block">Sprout${sprouts === 1 ? '' : 's'}</span></div>
           <div><span class="text-lg font-display font-extrabold text-blue-500">${growing}</span><span class="text-xs text-slate-400 block">Growing</span></div>
