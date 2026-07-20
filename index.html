@@ -7840,13 +7840,26 @@ document.getElementById('queue-list').addEventListener('pointermove', e => {
   const draggedIndex = rows.indexOf(queueDrag.row);
   const draggedRect = queueDrag.row.getBoundingClientRect();
   const draggedMid = draggedRect.top + draggedRect.height / 2;
+  // Reordering the DOM mid-drag changes the dragged row's *natural* (un-
+  // transformed) slot by one sibling's height — without compensating for
+  // that, the row's on-screen position jumps the instant it crosses a
+  // neighbor, because its transform stays fixed while its underlying layout
+  // position just shifted. Shifting startY by that same height keeps the
+  // transform (recomputed right after) landing on the exact same pixel the
+  // row was already at, so the swap is invisible and the drag keeps
+  // following the pointer smoothly instead of snapping.
+  let anchorShift = 0;
   rows.forEach((sib, i) => {
     if (sib === queueDrag.row || !sib.classList.contains('queue-reorderable')) return;
     const r = sib.getBoundingClientRect();
     const sibMid = r.top + r.height / 2;
-    if (i < draggedIndex && draggedMid < sibMid) list.insertBefore(queueDrag.row, sib);
-    else if (i > draggedIndex && draggedMid > sibMid) list.insertBefore(sib, queueDrag.row);
+    if (i < draggedIndex && draggedMid < sibMid) { list.insertBefore(queueDrag.row, sib); anchorShift -= r.height; }
+    else if (i > draggedIndex && draggedMid > sibMid) { list.insertBefore(sib, queueDrag.row); anchorShift += r.height; }
   });
+  if (anchorShift) {
+    queueDrag.startY += anchorShift;
+    queueDrag.row.style.transform = `translateY(${e.clientY - queueDrag.startY}px)`;
+  }
 });
 document.getElementById('queue-list').addEventListener('pointerup', e => {
   clearQueuePending();
