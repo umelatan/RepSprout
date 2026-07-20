@@ -553,10 +553,12 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
            renderExerciseLibrary() — entry point name kept unchanged so
            every existing caller keeps working untouched. -->
       <div id="wt-exercises" style="display:none" class="space-y-4">
-        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
 
-        <h2 class="font-display font-extrabold text-lg text-slate-800 dark:text-white -mb-1">Exercises</h2>
-
+        <!-- No page heading here on purpose — the back button + toolbar +
+             summary card already make this the Exercises page without
+             repeating a title (mirrors the Workout hub's own no-heading
+             treatment). -->
         <!-- Search / Add / Filter share one component family: same height
              (py-2.5), same corner radius (rounded-xl), same neutral border
              color (matching the global input border tokens) — only the
