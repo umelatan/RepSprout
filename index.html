@@ -145,6 +145,7 @@ body{font-family:'Inter',sans-serif}
 #create-target-modal input[type=number],#log-target-modal input[type=number],#edit-target-modal input[type=number],#edit-target-log-modal input[type=number]{-moz-appearance:textfield}
 #edit-target-log-modal #etl-amount{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #create-target-modal .ct-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
+#edit-target-modal .et-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
@@ -1379,7 +1380,6 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
     <button id="ta-edit-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit target</button>
     <button id="ta-pause-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">pause_circle</span></button>
     <button id="ta-archive-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">archive</span></button>
-    <button id="ta-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete target</button>
   </div>
 </div>
 
@@ -1403,31 +1403,57 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
      Target's steps 2-4, just pre-filled and without the activity picker
      (changing what a target is "for" is a delete+recreate, not an edit). -->
 <div id="edit-target-modal" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
-    <div class="flex items-center justify-between">
-      <h3 id="et-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
-      <button id="et-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
-    <div>
-      <label for="et-name" class="text-xs font-semibold text-slate-400 block mb-1">Target name</label>
-      <input id="et-name" type="text">
-    </div>
-    <div>
-      <label for="et-amount" class="text-xs font-semibold text-slate-400 block mb-1">Target amount</label>
-      <div class="flex items-center gap-2">
-        <input id="et-amount" type="number" inputmode="decimal" min="0" class="flex-1">
-        <span id="et-amount-unit" class="text-sm font-semibold text-slate-400 flex-shrink-0"></span>
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm max-h-[92vh] flex flex-col">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0 md:hidden" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-2 pb-1 flex items-start justify-between gap-3 flex-shrink-0">
+      <div class="min-w-0">
+        <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Edit Target</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Update your target details.</p>
       </div>
+      <button id="et-close" class="p-2 -mt-1 -mr-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <div>
-      <p class="text-xs font-semibold text-slate-400 mb-1.5">Frequency</p>
-      <div class="grid grid-cols-2 gap-2">
-        <button id="et-freq-daily" type="button" class="et-freq-btn btn py-2.5 text-sm" data-freq="daily">Daily</button>
-        <button id="et-freq-weekly" type="button" class="et-freq-btn btn py-2.5 text-sm" data-freq="weekly">Weekly</button>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <!-- Each field reads as its own calm settings section — a soft card
+           with a small icon+label header, and the actual input as a filled,
+           borderless surface nested inside (see #edit-target-modal
+           .et-plain-input below) rather than a plain outlined box. -->
+      <div class="card p-4 space-y-2.5">
+        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">eco</span>Name</p>
+        <div class="bg-slate-100 dark:bg-slate-800 rounded-xl px-3.5 py-3">
+          <input id="et-name" type="text" class="et-plain-input font-display font-bold text-base text-slate-800 dark:text-white">
+        </div>
       </div>
+
+      <div class="card p-4 space-y-2.5">
+        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">track_changes</span>Goal</p>
+        <div class="bg-slate-100 dark:bg-slate-800 rounded-xl px-3.5 py-3 flex items-center justify-between gap-2">
+          <input id="et-amount" type="number" inputmode="decimal" min="0" class="et-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white" style="width:5rem">
+          <span id="et-amount-unit" class="text-sm font-semibold text-slate-400 flex-shrink-0"></span>
+        </div>
+      </div>
+
+      <div class="card p-4 space-y-2.5">
+        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">sync</span>Frequency</p>
+        <div class="flex gap-2" role="group" aria-label="Frequency">
+          <button id="et-freq-daily" type="button" class="et-freq-btn flex-1 flex items-center gap-2 rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-3.5 py-3 text-left transition-colors" data-freq="daily" aria-pressed="false">
+            <span class="ms et-freq-radio text-xl flex-shrink-0" aria-hidden="true">radio_button_unchecked</span>
+            <span class="text-sm font-semibold">Daily</span>
+          </button>
+          <button id="et-freq-weekly" type="button" class="et-freq-btn flex-1 flex items-center gap-2 rounded-2xl border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-3.5 py-3 text-left transition-colors" data-freq="weekly" aria-pressed="false">
+            <span class="ms et-freq-radio text-xl flex-shrink-0" aria-hidden="true">radio_button_unchecked</span>
+            <span class="text-sm font-semibold">Weekly</span>
+          </button>
+        </div>
+      </div>
+
+      <p id="et-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
+      <button id="et-save-btn" class="btn w-full py-3.5 text-base rounded-2xl bg-lavender-500 hover:bg-lavender-600 text-white">Save</button>
     </div>
-    <p id="et-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
-    <button id="et-save-btn" class="btn w-full py-3 text-sm bg-lavender-500 hover:bg-lavender-600 text-white">Save changes</button>
+
+    <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 px-5 py-3">
+      <button id="et-delete-btn" type="button" class="w-full flex items-center justify-center gap-2 py-2 text-sm font-semibold text-red-500 hover:text-red-600"><span class="ms text-lg" aria-hidden="true">delete</span>Delete target</button>
+    </div>
   </div>
 </div>
 
@@ -4944,41 +4970,50 @@ document.getElementById('ta-archive-btn').addEventListener('click', async () => 
   await setTargetStatus(taTargetId, target.status === 'archived' ? 'active' : 'archived');
   showToast(target.status === 'archived' ? 'Target restored.' : 'Target archived.');
 });
-document.getElementById('ta-delete-btn').addEventListener('click', async () => {
-  const target = targets[taTargetId];
-  if (!target) return;
-  if (!confirm(`Delete "${target.name}"? This removes its logged history too and cannot be undone.`)) return;
-  hide('target-actions-modal');
-  await deleteTarget(taTargetId);
-  showToast('Target deleted.');
-});
+// Toggles one Frequency pill's selected look — purple border/tint + a
+// filled radio glyph when selected, neutral outline + an empty radio glyph
+// otherwise. aria-pressed is the source of truth read back at save time
+// (see the et-save-btn handler below), not a specific background color
+// class, so this stays correct regardless of exact styling tweaks.
+function setEtFreqSelected(freq) {
+  document.querySelectorAll('.et-freq-btn').forEach(b => {
+    const on = b.dataset.freq === freq;
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('border-lavender-400', on);
+    b.classList.toggle('dark:border-lavender-500', on);
+    b.classList.toggle('bg-lavender-50', on);
+    b.classList.toggle('dark:bg-lavender-950/25', on);
+    b.classList.toggle('text-lavender-700', on);
+    b.classList.toggle('dark:text-lavender-300', on);
+    b.classList.toggle('border-slate-200', !on);
+    b.classList.toggle('dark:border-slate-700', !on);
+    b.classList.toggle('text-slate-600', !on);
+    b.classList.toggle('dark:text-slate-300', !on);
+    b.querySelector('.et-freq-radio').textContent = on ? 'radio_button_checked' : 'radio_button_unchecked';
+  });
+}
 
 function openEditTargetModal(targetId) {
   const target = targets[targetId];
   if (!target) return;
   taTargetId = targetId;
-  document.getElementById('et-title').textContent = `Edit ${target.name}`;
   document.getElementById('et-name').value = target.name;
   document.getElementById('et-amount').value = target.targetAmount;
   document.getElementById('et-amount-unit').textContent = targetUnitLabel(target);
-  document.querySelectorAll('.et-freq-btn').forEach(b => {
-    const on = b.dataset.freq === target.frequency;
-    b.classList.toggle('bg-lavender-500', on); b.classList.toggle('text-white', on);
-    b.classList.toggle('bg-slate-100', !on); b.classList.toggle('dark:bg-slate-800', !on);
-    b.classList.toggle('text-slate-500', !on); b.classList.toggle('dark:text-slate-400', !on);
-  });
+  setEtFreqSelected(target.frequency);
   hide('et-error');
   show('edit-target-modal');
 }
 document.getElementById('et-close').addEventListener('click', () => hide('edit-target-modal'));
-document.querySelectorAll('.et-freq-btn').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('.et-freq-btn').forEach(x => {
-    const on = x === b;
-    x.classList.toggle('bg-lavender-500', on); x.classList.toggle('text-white', on);
-    x.classList.toggle('bg-slate-100', !on); x.classList.toggle('dark:bg-slate-800', !on);
-    x.classList.toggle('text-slate-500', !on); x.classList.toggle('dark:text-slate-400', !on);
-  });
-}));
+document.querySelectorAll('.et-freq-btn').forEach(b => b.addEventListener('click', () => setEtFreqSelected(b.dataset.freq)));
+document.getElementById('et-delete-btn').addEventListener('click', async () => {
+  const target = targets[taTargetId];
+  if (!target) return;
+  if (!confirm(`Delete "${target.name}"? This removes its logged history too and cannot be undone.`)) return;
+  hide('edit-target-modal');
+  await deleteTarget(taTargetId);
+  showToast('Target deleted.');
+});
 document.getElementById('et-save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('et-save-btn');
   if (btn.disabled || !taTargetId) return;
@@ -4986,7 +5021,7 @@ document.getElementById('et-save-btn').addEventListener('click', async () => {
   hide('et-error');
   const name = document.getElementById('et-name').value.trim();
   const amount = +document.getElementById('et-amount').value || 0;
-  const freqBtn = document.querySelector('.et-freq-btn.bg-lavender-500');
+  const freqBtn = document.querySelector('.et-freq-btn[aria-pressed="true"]');
   if (!name) { errEl.textContent = 'Enter a target name.'; show('et-error'); return; }
   if (amount <= 0) { errEl.textContent = 'Enter a target amount greater than zero.'; show('et-error'); return; }
   const prevLabel = btn.textContent;
