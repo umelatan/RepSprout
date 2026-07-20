@@ -140,8 +140,10 @@ body{font-family:'Inter',sans-serif}
 #exercise-modal .ex-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
 #log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
-#edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-#create-target-modal input[type=number],#log-target-modal input[type=number],#edit-target-modal input[type=number]{-moz-appearance:textfield}
+#edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button,
+#edit-target-log-modal input[type=number]::-webkit-outer-spin-button,#edit-target-log-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#create-target-modal input[type=number],#log-target-modal input[type=number],#edit-target-modal input[type=number],#edit-target-log-modal input[type=number]{-moz-appearance:textfield}
+#edit-target-log-modal #etl-amount{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #create-target-modal .ct-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
@@ -1429,6 +1431,64 @@ body,.card,aside,header,nav{transition:background-color .25s,border-color .25s,c
   </div>
 </div>
 
+<!-- ══════════ TARGET DETAIL ══════════
+     Drill-down from a target card in the Targets tab (see openTargetDetail()
+     in the module script) — never from Home's own preview card, which keeps
+     its existing "go to Targets tab" tap behavior unchanged. Same full-
+     screen overlay shape as Exercise Progress Detail, just for a Target:
+     progress, Today's Activity (every individual log, each editable/
+     deletable), History (recent days, with a link to the full list), and
+     Last Activity (the most recent COMPLETED day/week, reusing the same
+     calculateTargetPeriodProgress() the current-period progress already
+     uses — never a second completion rule). -->
+<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-slate-50 dark:bg-slate-950 flex flex-col">
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
+    <button id="tgd-back-btn" class="p-2 text-slate-400 hover:text-lavender-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+    <div class="min-w-0 flex-1">
+      <h2 id="tgd-name" class="font-display font-bold text-base text-slate-800 dark:text-white truncate"></h2>
+      <p id="tgd-meta" class="text-[11px] text-slate-400 truncate"></p>
+    </div>
+    <button id="tgd-edit-btn" class="text-slate-400 hover:text-lavender-500 flex-shrink-0 p-2" aria-label="Edit target"><span class="ms text-lg" aria-hidden="true">edit</span></button>
+  </header>
+  <main class="flex-1 overflow-y-auto p-4 space-y-5" id="tgd-main"></main>
+</div>
+
+<!-- Edit or delete one Activity Log entry — the total is never edited
+     directly (see updateTargetLog()); this only ever changes one entry, and
+     the day's/period's total is always recomputed fresh from whatever logs
+     remain. -->
+<div id="edit-target-log-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-base text-slate-800 dark:text-white">Edit entry</h3>
+      <button id="etl-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <p id="etl-time-label" class="text-xs text-slate-400 text-center"></p>
+    <div id="etl-amount-wrap" class="flex items-center gap-3 justify-center">
+      <button id="etl-amount-minus" type="button" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease amount"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+      <input id="etl-amount" type="number" inputmode="decimal" min="0" class="text-center font-display font-bold text-2xl" style="width:6rem" aria-label="Amount">
+      <span id="etl-amount-unit" class="text-sm font-semibold text-slate-400 flex-shrink-0"></span>
+      <button id="etl-amount-plus" type="button" class="w-10 h-10 rounded-full border-2 border-lavender-400 text-lavender-500 flex items-center justify-center flex-shrink-0" aria-label="Increase amount"><span class="ms text-lg" aria-hidden="true">add</span></button>
+    </div>
+    <p id="etl-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
+    <button id="etl-save-btn" class="btn w-full py-3 text-base bg-lavender-500 hover:bg-lavender-600 text-white">Save changes</button>
+    <button id="etl-delete-btn" class="text-xs font-semibold text-red-400 hover:underline w-full text-center py-2">Delete entry</button>
+  </div>
+</div>
+
+<!-- "View full history" — every day this target has ever logged activity,
+     most recent first. Same day-bucketed totals as the Target Detail page's
+     own compact History list, just unlimited. -->
+<div id="target-full-history-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between flex-shrink-0">
+      <h3 id="tfh-title" class="font-display font-bold text-base text-slate-800 dark:text-white truncate">History</h3>
+      <button id="tfh-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <div id="tfh-list" class="flex-1 overflow-y-auto space-y-1"></div>
+  </div>
+</div>
+
 <!-- Choose today's workout group (Start Growing) -->
 <div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
@@ -2573,6 +2633,72 @@ async function deleteTargetLog(logId) {
   return await recalculateAndPersistPlantGrowth();
 }
 
+// Edits ONE log entry's amount — never the day's/period's total, which has
+// no stored field of its own and is always recomputed by
+// calculateTargetPeriodProgress() from whichever logs exist at read time.
+// Same "recalculate from scratch, never patch a running counter" policy as
+// deleteTargetLog() above, so editing a log that crosses (or un-crosses) a
+// completion threshold is reflected immediately with nothing else to
+// reconcile.
+async function updateTargetLog(logId, amount) {
+  const existing = targetLogs[logId];
+  if (!existing) return null;
+  const updated = { ...existing, amount, updatedAt: Date.now() };
+  await set(ref(db, `users/${uid()}/targetLogs/${logId}`), updated);
+  targetLogs[logId] = updated;
+  return await recalculateAndPersistPlantGrowth();
+}
+
+// Every log this target has ever received, bucketed by the calendar day it
+// occurred on — the "Daily Activity" grouping the Target Detail page's
+// Today's Activity/History sections both read from. A day's total is always
+// the sum of that day's individual logs, never a separately stored value.
+function groupTargetLogsByDay(logs) {
+  const byDay = {};
+  logs.forEach(l => {
+    const day = targetLogDateStr(l.occurredAt);
+    (byDay[day] ??= []).push(l);
+  });
+  return byDay;
+}
+
+// Scans backward from yesterday (or the week containing yesterday, for a
+// weekly target) for the most recent period that was actually COMPLETED —
+// reusing calculateTargetPeriodProgress()/getCurrentTargetPeriod() exactly
+// as-is, never a second completion rule — so "Last activity" always agrees
+// with whatever the current-period progress bar and Plant Progress already
+// consider a completion. Returns null if the target has never once been
+// completed.
+function findLastCompletedTargetPeriod(target, logs) {
+  const step = target.frequency === 'weekly' ? 7 : 1;
+  const earliest = target.frequency === 'weekly' ? isoWeekStartFor(target.startDate) : target.startDate;
+  let cursor = addDaysToDateStr(todayStr(), -step);
+  let guard = 0;
+  while (cursor >= earliest && guard < 400) {
+    const { periodStart, periodEnd } = getCurrentTargetPeriod(target, cursor);
+    const progress = calculateTargetPeriodProgress(target, logs, periodStart, periodEnd);
+    if (progress.isCompleted) return progress;
+    cursor = addDaysToDateStr(cursor, -step);
+    guard++;
+  }
+  return null;
+}
+
+// "Today" / "Yesterday" / the app's existing short date format — a
+// standalone-label variant of the same day-diff math relativeDays() already
+// uses inline in sentences elsewhere; kept separate so changing this
+// capitalized, label-style wording can never affect that unrelated surface.
+function targetHistoryDayLabel(dateStr) {
+  const diff = Math.round((new Date(todayStr() + 'T12:00:00') - new Date(dateStr + 'T12:00:00')) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return fmtDate(dateStr);
+}
+
+function formatTargetLogTime(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 async function setTargetStatus(targetId, status) {
   await updateTarget(targetId, { status });
 }
@@ -3242,11 +3368,11 @@ function subscribeData() {
   // see calculateTargetGrowth()'s own note on this. Both listeners re-render
   // Home (the compact preview/invitation) and the Targets tab.
   const rTargets = ref(db, `users/${uid()}/targets`);
-  onValue(rTargets, snap => { targets = snap.val() || {}; renderTargetsTab(); renderDashboard(); }, e => console.error(e));
+  onValue(rTargets, snap => { targets = snap.val() || {}; renderTargetsTab(); renderDashboard(); refreshTargetDetailIfOpen(); }, e => console.error(e));
   dataRefs.push(rTargets);
 
   const rTargetLogs = ref(db, `users/${uid()}/targetLogs`);
-  onValue(rTargetLogs, snap => { targetLogs = snap.val() || {}; renderTargetsTab(); renderDashboard(); }, e => console.error(e));
+  onValue(rTargetLogs, snap => { targetLogs = snap.val() || {}; renderTargetsTab(); renderDashboard(); refreshTargetDetailIfOpen(); }, e => console.error(e));
   dataRefs.push(rTargetLogs);
 
   const rProfile = ref(db, `users/${uid()}`);
@@ -4123,13 +4249,6 @@ function targetUnitLabel(target) {
   if (target.targetType === 'sessions') return target.targetAmount === 1 ? 'session' : 'sessions';
   return target.unit || TARGET_TYPE_DEFAULT_UNIT[target.targetType];
 }
-function targetLogButtonLabel(target) {
-  return target.targetType === 'sessions' ? 'Log session'
-    : target.targetType === 'duration' ? 'Log time'
-    : target.targetType === 'distance' ? 'Log distance'
-    : 'Log reps';
-}
-
 function targetCardHtml(id, target, progress) {
   const unit = targetUnitLabel(target);
   const freqLabel = target.frequency === 'daily' ? 'Daily' : 'Weekly';
@@ -4151,7 +4270,7 @@ function targetCardHtml(id, target, progress) {
         </div>
         ${remainingLabel ? `<p class="text-[11px] text-slate-400 mt-1">${esc(remainingLabel)}</p>` : ''}
       </div>
-      <button type="button" class="tgt-log-btn btn text-sm bg-lavender-500 hover:bg-lavender-600 text-white w-full py-2" data-id="${id}" aria-label="${esc(targetLogButtonLabel(target))} for ${esc(target.name)}">+ ${targetLogButtonLabel(target)}</button>
+      <button type="button" class="tgt-log-btn btn text-sm bg-lavender-500 hover:bg-lavender-600 text-white w-full py-2" data-id="${id}" aria-label="Add log for ${esc(target.name)}">+ Add log</button>
     </div>`;
 }
 
@@ -4246,6 +4365,213 @@ function renderTargetsTab() {
 
 document.querySelectorAll('.tgt-status-tab').forEach(b => b.addEventListener('click', () => { targetsStatusFilter = b.dataset.status; renderTargetsTab(); }));
 document.getElementById('tgt-create-btn-top').addEventListener('click', () => openCreateTargetModal());
+
+// Tapping a target card (anywhere but its own Log/manage buttons) opens
+// Target Detail — delegated on the tab's stable body element so it survives
+// every renderTargetsTab() re-render. Deliberately separate from Home's own
+// preview-card delegation (dash-target-preview-body), which keeps its
+// existing "go to the Targets tab" behavior untouched.
+document.getElementById('wt-targets-body').addEventListener('click', e => {
+  if (e.target.closest('.tgt-log-btn, .tgt-more-btn')) return;
+  const card = e.target.closest('[data-target-id]');
+  if (card) openTargetDetail(card.dataset.targetId);
+});
+
+// ── Target Detail ────────────────────────────────────────────────────────────
+// Drill-down page for one target — progress, every individual Activity Log
+// for today (each editable/deletable), recent History, and Last Activity.
+// Everything here is derived fresh from targets/targetLogs on every render,
+// same "never a stored total" policy as the compact card.
+let tgdTargetId = null;
+const TGD_HISTORY_PREVIEW_COUNT = 5;
+
+function closeTargetDetail() {
+  tgdTargetId = null;
+  hide('target-detail-view');
+}
+function refreshTargetDetailIfOpen() {
+  if (tgdTargetId && targets[tgdTargetId]) renderTargetDetail(tgdTargetId);
+  else if (tgdTargetId && !targets[tgdTargetId]) closeTargetDetail(); // target itself was deleted elsewhere
+}
+
+function targetActivityLogRowHtml(log, unit) {
+  return `
+    <div class="tgd-log-row card p-3 flex items-center justify-between gap-3" data-log-id="${log.id}">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${round1(log.amount || 0)} ${esc(unit)}</p>
+        <p class="text-xs text-slate-400">${formatTargetLogTime(log.occurredAt)}</p>
+      </div>
+      <button type="button" class="tgd-log-edit-btn p-1.5 text-slate-300 hover:text-lavender-500 flex-shrink-0" data-log-id="${log.id}" aria-label="Edit this entry"><span class="ms text-lg" aria-hidden="true">edit</span></button>
+    </div>`;
+}
+
+function renderTargetDetail(targetId) {
+  const target = targets[targetId];
+  if (!target) { closeTargetDetail(); return; }
+  const unit = targetUnitLabel(target);
+  const freqLabel = target.frequency === 'daily' ? 'Daily' : 'Weekly';
+  const logs = getTargetLogsFor(targetId);
+  const today = todayStr();
+  const progress = currentTargetProgress(target, logs, today);
+
+  document.getElementById('tgd-name').textContent = target.name;
+  document.getElementById('tgd-meta').textContent = `${freqLabel} · ${target.targetAmount} ${unit}`;
+
+  const remainingLabel = progress.remaining > 0 ? `${progress.remaining} ${unit} remaining` : '';
+  const progressHtml = `
+    <div class="card p-4">
+      <p class="text-sm font-bold text-lavender-600 dark:text-lavender-400 mb-1.5">${progress.totalLogged} / ${progress.targetAmount} ${esc(unit)}</p>
+      <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${progress.percentage}" aria-valuemin="0" aria-valuemax="100">
+        <div class="h-full bg-lavender-500 rounded-full transition-all duration-500" style="width:${progress.percentage}%"></div>
+      </div>
+      ${remainingLabel ? `<p class="text-[11px] text-slate-400 mt-1.5">${esc(remainingLabel)}</p>` : ''}
+    </div>`;
+
+  // Last Activity — the most recent COMPLETED period, reusing the exact same
+  // completion rule the progress bar above and Plant Progress already use.
+  const lastCompleted = findLastCompletedTargetPeriod(target, logs);
+  const lastActivityHtml = lastCompleted ? `
+    <div>
+      <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">Last activity</p>
+      <p class="text-sm text-slate-600 dark:text-slate-300">${targetHistoryDayLabel(lastCompleted.periodStart)} • ${lastCompleted.totalLogged} ${esc(unit)}</p>
+    </div>` : '';
+
+  // Today's Activity — every individual log, newest first; the day's total
+  // above is always the sum of exactly these entries, never a separate value.
+  const todaysLogs = (groupTargetLogsByDay(logs)[today] || []).sort((a, b) => b.occurredAt - a.occurredAt);
+  // Paused/archived targets never show a quick-log action on their compact
+  // card either (see targetArchivedCardHtml()) — Target Detail keeps that
+  // same rule instead of offering a new way around it.
+  const canLog = target.status === 'active';
+  const todaysActivityHtml = `
+    <div>
+      <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">Today's activity</p>
+      <div class="space-y-1.5">
+        ${todaysLogs.length ? todaysLogs.map(l => targetActivityLogRowHtml(l, unit)).join('') : `<p class="text-xs text-slate-400 text-center py-3">No activity logged yet today.</p>`}
+      </div>
+      ${canLog ? `<button type="button" id="tgd-add-log-btn" class="btn text-sm bg-lavender-500 hover:bg-lavender-600 text-white w-full py-2 mt-2"><span class="ms text-base align-middle" aria-hidden="true">add</span> Add log</button>` : ''}
+    </div>`;
+
+  // History — recent PAST days (today is already shown above), each day's
+  // own total, most recent first.
+  const byDay = groupTargetLogsByDay(logs);
+  const historyDays = Object.keys(byDay).filter(d => d !== today).sort().reverse();
+  const historyPreview = historyDays.slice(0, TGD_HISTORY_PREVIEW_COUNT);
+  const historyHtml = `
+    <div>
+      <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">History</p>
+      ${historyPreview.length ? `
+        <div class="card p-1.5 space-y-0.5">
+          ${historyPreview.map(d => {
+            const total = round1(byDay[d].reduce((sum, l) => sum + (+l.amount || 0), 0));
+            return `<div class="flex items-center justify-between px-2.5 py-2"><p class="text-sm text-slate-600 dark:text-slate-300">${esc(targetHistoryDayLabel(d))}</p><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${total} ${esc(unit)}</p></div>`;
+          }).join('')}
+        </div>
+        ${historyDays.length > TGD_HISTORY_PREVIEW_COUNT ? `<button type="button" id="tgd-view-history-btn" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline mt-2">View full history →</button>` : ''}
+      ` : `<p class="text-xs text-slate-400 text-center py-3">No earlier activity yet.</p>`}
+    </div>`;
+
+  document.getElementById('tgd-main').innerHTML = progressHtml + lastActivityHtml + todaysActivityHtml + historyHtml;
+
+  document.getElementById('tgd-add-log-btn')?.addEventListener('click', () => openLogTargetModal(targetId));
+  document.getElementById('tgd-view-history-btn')?.addEventListener('click', () => openTargetFullHistoryModal(targetId));
+  document.querySelectorAll('.tgd-log-edit-btn').forEach(b => b.addEventListener('click', () => openEditTargetLogModal(b.dataset.logId)));
+}
+
+function openTargetDetail(targetId) {
+  if (!targets[targetId]) return;
+  tgdTargetId = targetId;
+  renderTargetDetail(targetId);
+  show('target-detail-view');
+}
+document.getElementById('tgd-back-btn').addEventListener('click', closeTargetDetail);
+document.getElementById('tgd-edit-btn').addEventListener('click', () => { if (tgdTargetId) openEditTargetModal(tgdTargetId); });
+
+// ── Edit / delete one Activity Log entry ────────────────────────────────────
+let etlLogId = null;
+function openEditTargetLogModal(logId) {
+  const log = targetLogs[logId];
+  const target = log && targets[log.targetId];
+  if (!log || !target) return;
+  etlLogId = logId;
+  hide('etl-error');
+  document.getElementById('etl-time-label').textContent = `Logged ${formatTargetLogTime(log.occurredAt)}`;
+  const isSessions = target.targetType === 'sessions';
+  document.getElementById('etl-amount-wrap').style.display = isSessions ? 'none' : '';
+  document.getElementById('etl-amount').value = log.amount || 0;
+  document.getElementById('etl-amount-unit').textContent = targetUnitLabel(target);
+  show('edit-target-log-modal');
+}
+function closeEditTargetLogModal() {
+  hide('edit-target-log-modal');
+  etlLogId = null;
+}
+document.getElementById('etl-close').addEventListener('click', closeEditTargetLogModal);
+document.getElementById('etl-amount-minus').addEventListener('click', () => {
+  const inp = document.getElementById('etl-amount');
+  inp.value = Math.max(0, round1((+inp.value || 0) - 1));
+});
+document.getElementById('etl-amount-plus').addEventListener('click', () => {
+  const inp = document.getElementById('etl-amount');
+  inp.value = round1((+inp.value || 0) + 1);
+});
+document.getElementById('etl-save-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('etl-save-btn');
+  if (btn.disabled || !etlLogId) return;
+  const log = targetLogs[etlLogId];
+  const target = log && targets[log.targetId];
+  if (!log || !target) return;
+  const errEl = document.getElementById('etl-error');
+  hide('etl-error');
+  const amount = target.targetType === 'sessions' ? (log.amount || 1) : (+document.getElementById('etl-amount').value || 0);
+  if (amount <= 0) { errEl.textContent = 'Enter an amount greater than zero.'; show('etl-error'); return; }
+  const prevLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await updateTargetLog(etlLogId, amount);
+    closeEditTargetLogModal();
+    showToast('Entry updated.');
+  } catch (e) {
+    console.error('Failed to update target log:', e);
+    errEl.textContent = 'Could not save this change. Please try again.';
+    show('etl-error');
+  } finally {
+    btn.disabled = false; btn.textContent = prevLabel;
+  }
+});
+document.getElementById('etl-delete-btn').addEventListener('click', async () => {
+  if (!etlLogId) return;
+  if (!confirm('Delete this entry? The day\'s total will be recalculated from what remains.')) return;
+  const logId = etlLogId;
+  closeEditTargetLogModal();
+  try {
+    await deleteTargetLog(logId);
+    showToast('Entry deleted.');
+  } catch (e) {
+    console.error('Failed to delete target log:', e);
+    alert('Could not delete this entry. Please try again.');
+  }
+});
+
+// ── Full history (every day, not just the recent preview) ──────────────────
+function openTargetFullHistoryModal(targetId) {
+  const target = targets[targetId];
+  if (!target) return;
+  const unit = targetUnitLabel(target);
+  const logs = getTargetLogsFor(targetId);
+  const today = todayStr();
+  const byDay = groupTargetLogsByDay(logs);
+  const days = Object.keys(byDay).filter(d => d !== today).sort().reverse();
+  document.getElementById('tfh-title').textContent = `${target.name} history`;
+  document.getElementById('tfh-list').innerHTML = days.length
+    ? days.map(d => {
+        const total = round1(byDay[d].reduce((sum, l) => sum + (+l.amount || 0), 0));
+        return `<div class="flex items-center justify-between px-2.5 py-2.5 border-b border-slate-100 dark:border-slate-700 last:border-0"><p class="text-sm text-slate-600 dark:text-slate-300">${esc(targetHistoryDayLabel(d))}</p><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${total} ${esc(unit)}</p></div>`;
+      }).join('')
+    : `<p class="text-xs text-slate-400 text-center py-6">No earlier activity yet.</p>`;
+  show('target-full-history-modal');
+}
+document.getElementById('tfh-close').addEventListener('click', () => hide('target-full-history-modal'));
 
 // ── Create Target ────────────────────────────────────────────────────────────
 // Pure UI/UX polish over the same state and the same createTarget() call —
