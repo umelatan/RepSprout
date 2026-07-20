@@ -6564,7 +6564,7 @@ function renderExercisePhase(ex) {
   // derived from, not a second lookup. Falls back to the whole-exercise
   // last-session summary when there's no per-position data (unconfigured/
   // disabled/warm-up), same as before.
-  const prevLabel = workingSetNum ? `Set ${workingSetNum}` : 'Previous';
+  const prevLabel = workingSetNum ? `Previous (Set ${workingSetNum})` : 'Previous';
   const prevValue = p
     ? (p.currentWeight != null ? `${p.currentWeight} ${ex.unit} × ${p.currentReps || 0}` : 'First time')
     : prevLine;
