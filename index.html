@@ -4011,6 +4011,15 @@ function totalLoggedSessions() {
   return Object.values(sessions).reduce((sum, day) => sum + Object.keys(day || {}).length, 0);
 }
 
+// Dates with at least one real workout/activity — a day that only has a
+// Recovery Day session (sessionType 'recovery') doesn't count as one of the
+// Home page's "workouts", the same way it's already excluded from the "Last
+// session" stat below. Streak intentionally stays on allSessionDates() —
+// resting still keeps the streak alive, this only affects the workout count.
+function nonRecoveryWorkoutDates() {
+  return Object.entries(sessions).filter(([, day]) => day && Object.values(day).some(s => s?.sessionType !== 'recovery')).map(([date]) => date);
+}
+
 // Finds the exercise closest to its next weight increase, consuming the
 // weightUpFlag/targetReps state that nextProgression() already maintains
 // rather than recomputing progression from raw history.
@@ -4154,7 +4163,7 @@ function renderDashStats(sessionDates, hasHistory) {
     check.setDate(check.getDate()-1);
   }
   document.getElementById('streak-val').textContent = streak;
-  document.getElementById('total-sessions-val').textContent = sessionDates.length;
+  document.getElementById('total-sessions-val').textContent = nonRecoveryWorkoutDates().length;
   // "Last session" means an actual workout or exercise activity — a
   // Recovery Day is real rest, not something to report as your last
   // session, so it's excluded here even though it still counts toward the
