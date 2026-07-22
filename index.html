@@ -6552,7 +6552,14 @@ function openGroupModal(id = null) {
   refreshGmFormState();
   show('group-modal');
 }
-document.getElementById('group-modal-close').addEventListener('click', () => hide('group-modal'));
+document.getElementById('group-modal-close').addEventListener('click', () => {
+  // Same dirty-check Save Changes already uses — only interrupt Back when
+  // there's actually something that would be lost.
+  if (gmFormSnapshot() !== groupModalOriginalSnapshot) {
+    if (!confirm('Discard changes to this workout group?')) return;
+  }
+  hide('group-modal');
+});
 document.getElementById('gm-name').addEventListener('input', () => { hide('gm-name-error'); refreshGmFormState(); });
 document.getElementById('gm-desc').addEventListener('input', () => {
   document.getElementById('gm-desc-count').textContent = `${document.getElementById('gm-desc').value.length}/100`;
