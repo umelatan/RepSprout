@@ -259,6 +259,18 @@ body{font-family:'Inter',sans-serif}
 .gm-ex-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white;border-radius:.75rem}
 .dark .gm-ex-row-dragging{background:#1e293b}
 .gm-ex-row-dragging .gm-ex-drag-handle{color:#22c55e!important}
+/* Exercise Settings sheet — settings rows and circular stepper buttons get
+   the same calm press feedback as the rest of the app, just with their own
+   local classes since neither .btn nor .card[cursor-pointer] fit this shape. */
+.gm-settings-row{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.gm-settings-row:active{background:rgba(0,0,0,.03)}
+.dark .gm-settings-row:active{background:rgba(255,255,255,.04)}
+.gm-stepper-btn{transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.gm-stepper-btn:active{transform:scale(.92);background:rgba(0,0,0,.08)}
+.dark .gm-stepper-btn:active{background:rgba(255,255,255,.12)}
+.gm-stepper-btn:disabled{opacity:.35}
+@keyframes gmValuePop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.gm-value-pop{animation:gmValuePop var(--rs-dur-quick) var(--rs-ease-settle)}
 /* Migrate the bespoke sheet/drawer transitions built earlier this session
    from hardcoded Tailwind durations onto the shared token so they move in
    lockstep with every other sheet in the app. Values are unchanged (300ms)
@@ -1813,30 +1825,116 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Group editor: per-exercise sets/reps defaults (replaces the old always-
-     visible inline number inputs — same fields, moved behind "Exercise
-     settings" so the exercise list itself stays text-led). -->
-<div id="gm-ex-settings-modal" style="display:none" class="fixed inset-0 z-[67] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4">
-    <div class="flex items-center justify-between">
-      <h3 id="gmes-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
-      <button id="gmes-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
-    <div>
-      <label class="text-xs font-semibold text-slate-400 block mb-1">Sets</label>
-      <input id="gmes-sets" type="number" min="1" max="10">
-    </div>
-    <div class="flex items-center gap-2">
-      <div class="flex-1">
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Min reps</label>
-        <input id="gmes-min" type="number" min="1" max="50">
+<!-- Group editor: per-exercise sets/reps defaults. A calm settings sheet
+     (rows with title/value/chevron), not a form — Sets and Rep range each
+     drill into their own dedicated stepper sheet below rather than exposing
+     browser number inputs here. Nothing writes to groupModalDraft until
+     this sheet's own Save; Sets/Rep range's "Done" only commits into the
+     local gmesDraft, which this sheet's rows reflect live. -->
+<div id="gm-ex-settings-modal" style="display:none" class="fixed inset-0 z-[67] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:88vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="flex-1 overflow-y-auto px-5 pb-5">
+      <div class="pt-1 pb-4">
+        <h3 id="gmes-title" class="font-display font-bold text-xl text-slate-800 dark:text-white truncate"></h3>
+        <p id="gmes-muscle" class="text-sm text-slate-400 mt-0.5"></p>
+        <p class="text-xs text-slate-400 mt-2">Configure this exercise for this workout group.</p>
       </div>
-      <div class="flex-1">
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Max reps</label>
-        <input id="gmes-max" type="number" min="1" max="50">
+
+      <div class="card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
+        <button id="gmes-sets-row" type="button" class="gm-settings-row w-full flex items-center justify-between gap-2 p-3.5 text-left" style="min-height:44px" aria-label="Sets">
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Sets</span>
+          <span class="flex items-center gap-1 text-sm text-slate-400">
+            <span id="gmes-sets-value" class="tabular-nums"></span>
+            <span class="ms text-slate-300 dark:text-slate-600" aria-hidden="true">chevron_right</span>
+          </span>
+        </button>
+        <button id="gmes-reps-row" type="button" class="gm-settings-row w-full flex items-center justify-between gap-2 p-3.5 text-left" style="min-height:44px" aria-label="Rep range">
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Rep range</span>
+          <span class="flex items-center gap-1 text-sm text-slate-400">
+            <span id="gmes-reps-value" class="tabular-nums"></span>
+            <span class="ms text-slate-300 dark:text-slate-600" aria-hidden="true">chevron_right</span>
+          </span>
+        </button>
+        <button id="gmes-progression-row" type="button" class="gm-settings-row w-full flex items-center justify-between gap-2 p-3.5 text-left" style="min-height:44px" aria-label="Progression">
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Progression</span>
+          <span class="flex items-center gap-1 text-sm text-slate-400">
+            <span id="gmes-progression-value"></span>
+            <span class="ms text-slate-300 dark:text-slate-600" aria-hidden="true">chevron_right</span>
+          </span>
+        </button>
       </div>
+
+      <!-- Typography-only summary — no icons/illustrations, just a calm
+           restatement of what Save will actually apply. -->
+      <div class="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Workout Preview</p>
+        <p id="gmes-preview-sets" class="text-sm text-slate-600 dark:text-slate-300"></p>
+        <p id="gmes-preview-reps" class="text-sm text-slate-600 dark:text-slate-300"></p>
+      </div>
+
+      <!-- Neutral, not green — green stays reserved for growth/completion
+           elsewhere in the app; this is a configuration action, not one of
+           those moments. -->
+      <button id="gmes-save" type="button" class="w-full mt-5 py-3 rounded-2xl text-sm font-bold bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900">Save</button>
     </div>
-    <button id="gmes-save" type="button" class="btn btn-green w-full py-2.5">Save</button>
+  </div>
+</div>
+
+<!-- Sets stepper sheet — opened from gmes-sets-row. Commits only into
+     gmesDraft; the outer Exercise Settings sheet's own Save is what
+     actually persists into groupModalDraft. -->
+<div id="gmes-sets-modal" style="display:none" class="fixed inset-0 z-[68] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pb-6 text-center">
+      <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white mt-1">Sets</h3>
+      <p class="text-xs text-slate-400 mt-0.5 mb-6">How many sets would you like to perform?</p>
+      <div class="flex items-center justify-center gap-6">
+        <button id="gmss-minus" type="button" class="gm-stepper-btn w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
+        <span id="gmss-value" class="font-display font-bold text-slate-800 dark:text-white tabular-nums" style="font-size:2.75rem;min-width:3ch" aria-live="polite">3</span>
+        <button id="gmss-plus" type="button" class="gm-stepper-btn w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-2xl" aria-hidden="true">add</span></button>
+      </div>
+      <p class="text-xs text-slate-400 mt-5">Recommended: 3–4 sets</p>
+      <button id="gmss-done" type="button" class="w-full mt-6 py-3 rounded-2xl text-sm font-bold bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rep range sheet — dual custom steppers (Option B from the task: simpler
+     and fully keyboard-accessible by construction, versus building a
+     two-thumb slider with its own drag/ARIA-slider handling for the same
+     result). Min/max are kept from crossing each other rather than merely
+     blocked, so the range always stays valid. -->
+<div id="gmes-reps-modal" style="display:none" class="fixed inset-0 z-[68] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pb-6">
+      <div class="text-center">
+        <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white mt-1">Rep range</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Select the range of reps you want to work in.</p>
+        <p id="gmrr-value" class="font-display font-bold text-slate-800 dark:text-white tabular-nums mt-4 mb-6" style="font-size:2.25rem" aria-live="polite"></p>
+      </div>
+      <div class="space-y-5">
+        <div>
+          <p class="text-xs font-semibold text-slate-400 text-center mb-2">Minimum</p>
+          <div class="flex items-center justify-center gap-5">
+            <button id="gmrr-min-minus" type="button" class="gm-stepper-btn w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease minimum reps"><span class="ms text-xl" aria-hidden="true">remove</span></button>
+            <span id="gmrr-min-value" class="font-display font-bold text-2xl text-slate-800 dark:text-white tabular-nums" style="min-width:2.5ch;text-align:center" aria-live="polite">8</span>
+            <button id="gmrr-min-plus" type="button" class="gm-stepper-btn w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase minimum reps"><span class="ms text-xl" aria-hidden="true">add</span></button>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-slate-400 text-center mb-2">Maximum</p>
+          <div class="flex items-center justify-center gap-5">
+            <button id="gmrr-max-minus" type="button" class="gm-stepper-btn w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease maximum reps"><span class="ms text-xl" aria-hidden="true">remove</span></button>
+            <span id="gmrr-max-value" class="font-display font-bold text-2xl text-slate-800 dark:text-white tabular-nums" style="min-width:2.5ch;text-align:center" aria-live="polite">12</span>
+            <button id="gmrr-max-plus" type="button" class="gm-stepper-btn w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase maximum reps"><span class="ms text-xl" aria-hidden="true">add</span></button>
+          </div>
+        </div>
+      </div>
+      <button id="gmrr-done" type="button" class="w-full mt-6 py-3 rounded-2xl text-sm font-bold bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900">Done</button>
+    </div>
   </div>
 </div>
 
@@ -6585,32 +6683,135 @@ document.getElementById('gmea-remove').addEventListener('click', () => {
   renderGmExerciseList();
 });
 
-// ── Per-exercise sets/reps defaults — same fields the old inline inputs
-// edited, just moved behind "Exercise settings" so the list itself stays
-// text-led. ──────────────────────────────────────────────────────────────
+// ── Exercise Settings — a settings list (title/value/chevron rows), not a
+// form. Sets and Rep range each drill into their own stepper sheet; nothing
+// here writes into groupModalDraft.exercises until this sheet's own Save —
+// gmesDraft is a local scratch copy the sub-sheets read/write freely. ──────
+// Single point of truth for the Progression row's label, so a future second
+// progression system only needs to change this one function, not every
+// place "Double Progression" would otherwise be hardcoded.
+function progressionLabelFor(ex) {
+  return (ex && ex.progressionEnabled === false) ? 'Off' : 'Double Progression';
+}
+
 let gmExSettingsIdx = null;
+let gmesDraft = null; // { sets, min, max } — local scratch, committed on gmes-save
+
 function openGmExerciseSettings(idx) {
   const ge = groupModalDraft.exercises[idx];
   const ex = ge && exercises[ge.exerciseId];
   if (!ex) return;
   gmExSettingsIdx = idx;
+  gmesDraft = { sets: ge.defaultSets, min: ge.minReps, max: ge.maxReps };
   document.getElementById('gmes-title').textContent = ex.name;
-  document.getElementById('gmes-sets').value = ge.defaultSets;
-  document.getElementById('gmes-min').value = ge.minReps;
-  document.getElementById('gmes-max').value = ge.maxReps;
+  document.getElementById('gmes-muscle').textContent = MG_LABEL[ex.muscleGroup] || ex.muscleGroup || '';
+  renderGmesMainSheet();
   document.getElementById('gm-ex-settings-modal').style.display = '';
 }
-document.getElementById('gmes-close').addEventListener('click', () => rsHideModal('gm-ex-settings-modal'));
+function renderGmesMainSheet() {
+  const ex = exercises[groupModalDraft.exercises[gmExSettingsIdx].exerciseId];
+  document.getElementById('gmes-sets-value').textContent = gmesDraft.sets;
+  document.getElementById('gmes-reps-value').textContent = `${gmesDraft.min}–${gmesDraft.max} reps`;
+  document.getElementById('gmes-progression-value').textContent = progressionLabelFor(ex);
+  document.getElementById('gmes-preview-sets').textContent = `${gmesDraft.sets} set${gmesDraft.sets!==1?'s':''}`;
+  document.getElementById('gmes-preview-reps').textContent = `${gmesDraft.min}–${gmesDraft.max} reps per set`;
+}
 document.getElementById('gm-ex-settings-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-settings-modal') rsHideModal('gm-ex-settings-modal'); });
+document.getElementById('gmes-progression-row').addEventListener('click', () => show('dp-how-it-works-modal'));
 document.getElementById('gmes-save').addEventListener('click', () => {
-  const i = gmExSettingsIdx;
-  const ge = i != null ? groupModalDraft.exercises[i] : null;
+  const ge = gmExSettingsIdx != null ? groupModalDraft.exercises[gmExSettingsIdx] : null;
   if (!ge) return;
-  ge.defaultSets = Math.max(1, +document.getElementById('gmes-sets').value || 3);
-  ge.minReps = +document.getElementById('gmes-min').value || 8;
-  ge.maxReps = +document.getElementById('gmes-max').value || 12;
+  ge.defaultSets = gmesDraft.sets;
+  ge.minReps = gmesDraft.min;
+  ge.maxReps = gmesDraft.max;
   rsHideModal('gm-ex-settings-modal');
   renderGmExerciseList();
+});
+
+// Brief scale-up on a value change — restarts even on rapid repeated taps
+// (the reflow forces the animation to replay instead of being a no-op when
+// the class never actually toggles off).
+function popGmValue(el) {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  el.classList.remove('gm-value-pop');
+  void el.offsetWidth;
+  el.classList.add('gm-value-pop');
+}
+function gmHaptic() { if (navigator.vibrate) navigator.vibrate(8); }
+
+// ── Sets stepper sheet ───────────────────────────────────────────────────
+const GM_SETS_MIN = 1, GM_SETS_MAX = 10;
+function openGmSetsSheet() {
+  renderGmSetsSheet();
+  document.getElementById('gmes-sets-modal').style.display = '';
+}
+function renderGmSetsSheet() {
+  document.getElementById('gmss-value').textContent = gmesDraft.sets;
+  document.getElementById('gmss-minus').disabled = gmesDraft.sets <= GM_SETS_MIN;
+  document.getElementById('gmss-plus').disabled = gmesDraft.sets >= GM_SETS_MAX;
+}
+document.getElementById('gmes-sets-row').addEventListener('click', openGmSetsSheet);
+document.getElementById('gmes-sets-modal').addEventListener('click', e => { if (e.target.id === 'gmes-sets-modal') rsHideModal('gmes-sets-modal'); });
+document.getElementById('gmss-minus').addEventListener('click', () => {
+  if (gmesDraft.sets <= GM_SETS_MIN) return;
+  gmesDraft.sets--; gmHaptic(); renderGmSetsSheet(); popGmValue(document.getElementById('gmss-value'));
+});
+document.getElementById('gmss-plus').addEventListener('click', () => {
+  if (gmesDraft.sets >= GM_SETS_MAX) return;
+  gmesDraft.sets++; gmHaptic(); renderGmSetsSheet(); popGmValue(document.getElementById('gmss-value'));
+});
+document.getElementById('gmss-done').addEventListener('click', () => {
+  rsHideModal('gmes-sets-modal');
+  renderGmesMainSheet();
+});
+
+// ── Rep range sheet ──────────────────────────────────────────────────────
+// Min/max are kept from crossing each other (moving the other bound along
+// with it) rather than just blocking the tap at the boundary, so the range
+// shown is always valid.
+const GM_REPS_MIN = 1, GM_REPS_MAX = 50;
+function openGmRepsSheet() {
+  renderGmRepsSheet();
+  document.getElementById('gmes-reps-modal').style.display = '';
+}
+function renderGmRepsSheet() {
+  document.getElementById('gmrr-value').textContent = `${gmesDraft.min}–${gmesDraft.max} reps`;
+  document.getElementById('gmrr-min-value').textContent = gmesDraft.min;
+  document.getElementById('gmrr-max-value').textContent = gmesDraft.max;
+  document.getElementById('gmrr-min-minus').disabled = gmesDraft.min <= GM_REPS_MIN;
+  document.getElementById('gmrr-min-plus').disabled = gmesDraft.min >= GM_REPS_MAX;
+  document.getElementById('gmrr-max-minus').disabled = gmesDraft.max <= GM_REPS_MIN;
+  document.getElementById('gmrr-max-plus').disabled = gmesDraft.max >= GM_REPS_MAX;
+}
+document.getElementById('gmes-reps-row').addEventListener('click', openGmRepsSheet);
+document.getElementById('gmes-reps-modal').addEventListener('click', e => { if (e.target.id === 'gmes-reps-modal') rsHideModal('gmes-reps-modal'); });
+document.getElementById('gmrr-min-minus').addEventListener('click', () => {
+  if (gmesDraft.min <= GM_REPS_MIN) return;
+  gmesDraft.min--; gmHaptic(); renderGmRepsSheet();
+  popGmValue(document.getElementById('gmrr-min-value')); popGmValue(document.getElementById('gmrr-value'));
+});
+document.getElementById('gmrr-min-plus').addEventListener('click', () => {
+  if (gmesDraft.min >= GM_REPS_MAX) return;
+  gmesDraft.min++;
+  if (gmesDraft.min > gmesDraft.max) gmesDraft.max = gmesDraft.min;
+  gmHaptic(); renderGmRepsSheet();
+  popGmValue(document.getElementById('gmrr-min-value')); popGmValue(document.getElementById('gmrr-value'));
+});
+document.getElementById('gmrr-max-minus').addEventListener('click', () => {
+  if (gmesDraft.max <= GM_REPS_MIN) return;
+  gmesDraft.max--;
+  if (gmesDraft.max < gmesDraft.min) gmesDraft.min = gmesDraft.max;
+  gmHaptic(); renderGmRepsSheet();
+  popGmValue(document.getElementById('gmrr-max-value')); popGmValue(document.getElementById('gmrr-value'));
+});
+document.getElementById('gmrr-max-plus').addEventListener('click', () => {
+  if (gmesDraft.max >= GM_REPS_MAX) return;
+  gmesDraft.max++; gmHaptic(); renderGmRepsSheet();
+  popGmValue(document.getElementById('gmrr-max-value')); popGmValue(document.getElementById('gmrr-value'));
+});
+document.getElementById('gmrr-done').addEventListener('click', () => {
+  rsHideModal('gmes-reps-modal');
+  renderGmesMainSheet();
 });
 
 // ── Drag-and-drop reordering ─────────────────────────────────────────────
