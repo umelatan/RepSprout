@@ -6386,7 +6386,7 @@ function renderGroupsList() {
     const lastLabel = lastDate ? `Last completed ${relativeDays(lastDate)}` : 'Not completed yet';
     const color = g.color || GROUP_COLORS[0];
     return `
-      <div class="card p-4 space-y-2">
+      <div class="group-card card p-4 space-y-2 cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="Edit ${esc(g.name)}">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
@@ -6400,8 +6400,22 @@ function renderGroupsList() {
       </div>`;
   }).join('') + CREATE_GROUP_CTA;
 
-  list.querySelectorAll('.start-group-btn').forEach(b => b.addEventListener('click', () => startWorkoutSession(b.dataset.id)));
-  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', () => openGroupActionsSheet(b.dataset.id)));
+  // Tapping the card itself opens the editor directly — Start/overflow stay
+  // their own distinct actions, so this only fires when neither was the
+  // actual target (and is skipped entirely from the keyboard Enter/Space
+  // path when focus is already on one of those inner buttons).
+  list.querySelectorAll('.group-card').forEach(card => {
+    const open = e => {
+      if (e.target.closest('.start-group-btn, .group-actions-btn')) return;
+      openGroupModal(card.dataset.id);
+    };
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); open(e); }
+    });
+  });
+  list.querySelectorAll('.start-group-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); startWorkoutSession(b.dataset.id); }));
+  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupActionsSheet(b.dataset.id); }));
 }
 
 let groupActionsId = null;
