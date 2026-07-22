@@ -7008,10 +7008,10 @@ const QUICK_WORKOUT_COLOR = '#22c55e';
 // Quick Workout entry already uses. There is no second workout engine here —
 // both paths converge on the exact same activeSession/guided-flow code the
 // moment a session actually starts.
-// title is optional — the "Start Growing" entry point deliberately shows no
-// title (the three cards are self-explanatory there), while "Log another
-// activity" gets one since it's the same shared sheet reused for a
-// different moment in the flow.
+// Same shared sheet, two entry points, two titles — "Start Growing" reads
+// "Start a workout", "Log another activity" reads "Log another workout".
+// title stays optional (falls back to hiding sw-title) in case a future
+// caller opens this with no natural title of its own.
 function openStartWorkoutChoice(title = '') {
   const titleEl = document.getElementById('sw-title');
   titleEl.textContent = title;
@@ -10690,7 +10690,7 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
   if (!btn) return;
   const action = btn.dataset.action;
   const today = todayStr();
-  if (action === 'start-growing') openStartWorkoutChoice();
+  if (action === 'start-growing') openStartWorkoutChoice('Start a workout');
   else if (action === 'log-another') openStartWorkoutChoice('Log another workout');
   if (action === 'view-workout') { goView('workout'); switchWorkoutTab('history'); }
 
