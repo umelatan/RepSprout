@@ -1830,8 +1830,9 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </main>
   <!-- Same muted-lavender Save style as Exercise Configuration, disabled
        until the form actually differs from what it opened with (see
-       refreshGmFormState()/groupModalOriginalSnapshot). -->
-  <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800">
+       refreshGmFormState()/groupModalOriginalSnapshot). No backdrop bar —
+       the button sits directly on the page background. -->
+  <div class="flex-shrink-0 p-4">
     <button id="gm-save-btn" type="button" disabled class="w-full py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white transition-opacity disabled:opacity-40">Save changes</button>
   </div>
 </div>
