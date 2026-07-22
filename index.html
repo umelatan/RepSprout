@@ -1837,6 +1837,24 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Discard-changes confirmation for Edit Group's Back button — replaces a
+     plain confirm(). Same small-dialog shell as every other action sheet in
+     the app, so it inherits the shared entrance/exit motion automatically.
+     Continue editing (safe) is the prominent action; Discard changes
+     (destructive) stays a de-emphasized red text action below it. -->
+<div id="discard-changes-modal" style="display:none" class="fixed inset-0 z-[48] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 text-center">
+    <div>
+      <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Discard changes?</h3>
+      <p id="discard-changes-message" class="text-sm text-slate-400 mt-1.5"></p>
+    </div>
+    <div class="space-y-1">
+      <button id="discard-changes-continue" type="button" class="w-full py-3 rounded-2xl text-sm font-bold bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900">Continue editing</button>
+      <button id="discard-changes-confirm" type="button" class="w-full py-2.5 text-sm font-semibold text-red-500">Discard changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- Group editor: per-exercise row overflow. Move up/down were removed —
      drag-and-drop (gm-config-list's own pointer handlers) is the only
      reordering path now that the list supports it directly. -->
@@ -6556,8 +6574,20 @@ document.getElementById('group-modal-close').addEventListener('click', () => {
   // Same dirty-check Save Changes already uses — only interrupt Back when
   // there's actually something that would be lost.
   if (gmFormSnapshot() !== groupModalOriginalSnapshot) {
-    if (!confirm('Discard changes to this workout group?')) return;
+    openDiscardGroupChangesSheet();
+    return;
   }
+  hide('group-modal');
+});
+function openDiscardGroupChangesSheet() {
+  const name = document.getElementById('gm-name').value.trim() || groupModalDraft.name || 'this workout group';
+  document.getElementById('discard-changes-message').textContent = `Your changes to "${name}" haven't been saved.`;
+  document.getElementById('discard-changes-modal').style.display = '';
+}
+document.getElementById('discard-changes-modal').addEventListener('click', e => { if (e.target.id === 'discard-changes-modal') rsHideModal('discard-changes-modal'); });
+document.getElementById('discard-changes-continue').addEventListener('click', () => rsHideModal('discard-changes-modal'));
+document.getElementById('discard-changes-confirm').addEventListener('click', () => {
+  rsHideModal('discard-changes-modal');
   hide('group-modal');
 });
 document.getElementById('gm-name').addEventListener('input', () => { hide('gm-name-error'); refreshGmFormState(); });
