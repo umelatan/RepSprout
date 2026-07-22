@@ -1778,18 +1778,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <label class="text-xs font-semibold text-slate-400 block mb-2">Accent colour</label>
         <div id="gm-color-picker" class="flex gap-3"></div>
         <p class="text-[11px] text-slate-400 mt-1.5">Choose a colour to identify this workout.</p>
-
-        <!-- Live, non-interactive preview — no buttons/tabindex/handlers, so
-             it can never be mistaken for the real card. -->
-        <div class="mt-4 card p-4 space-y-2">
-          <div class="flex items-center gap-2">
-            <span id="gm-preview-dot" class="w-2 h-2 rounded-full flex-shrink-0" aria-hidden="true"></span>
-            <p id="gm-preview-name" class="font-display font-bold text-sm text-slate-800 dark:text-white truncate"></p>
-          </div>
-          <p class="text-xs text-slate-400 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">calendar_month</span><span id="gm-preview-count"></span></p>
-          <span id="gm-preview-start" class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold">Start workout</span>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1.5">Used throughout your workout cards and queue.</p>
       </div>
 
       <div>
@@ -6611,19 +6599,7 @@ function gmFormSnapshot() {
     exercises: groupModalDraft.exercises
   });
 }
-function renderGmPreview() {
-  const name = document.getElementById('gm-name').value.trim() || 'Untitled group';
-  const color = groupModalDraft.color;
-  const count = groupModalDraft.exercises.length;
-  document.getElementById('gm-preview-dot').style.background = color;
-  document.getElementById('gm-preview-name').textContent = name;
-  document.getElementById('gm-preview-count').textContent = `${count} exercise${count!==1?'s':''}`;
-  const startEl = document.getElementById('gm-preview-start');
-  startEl.style.background = `${color}1f`;
-  startEl.style.color = color;
-}
 function refreshGmFormState() {
-  renderGmPreview();
   document.getElementById('gm-save-btn').disabled = (gmFormSnapshot() === groupModalOriginalSnapshot);
 }
 
