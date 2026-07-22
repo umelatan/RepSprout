@@ -1310,22 +1310,24 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      one-off list of exercises for today. Two equal options, not a
      primary/secondary pair — see openStartWorkoutChoice(). -->
 <div id="start-workout-modal" style="display:none" class="fixed inset-0 z-[64] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 pt-2 space-y-3">
-    <div class="flex justify-end">
-      <button id="sw-close" class="text-slate-400 p-1 -mr-2 -mt-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+  <div class="bg-white dark:bg-slate-800 rounded-t-3xl md:rounded-3xl w-full max-w-sm p-5 pt-2 space-y-3">
+    <div class="flex justify-center pb-1" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="flex items-center gap-2">
+      <h3 id="sw-title" class="font-display font-bold text-lg text-slate-800 dark:text-white flex-1 truncate"></h3>
+      <button id="sw-close" class="text-slate-400 p-1 -mr-1 flex-shrink-0 ml-auto" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
     <button id="sw-group-btn" type="button" class="w-full flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">🏋️</span>
       <div class="min-w-0">
         <p class="text-sm font-bold text-slate-800 dark:text-white">Workout Group</p>
-        <p class="text-xs text-slate-400">Follow one of your saved routines.</p>
+        <p class="text-xs text-slate-400">Log one of your saved workout groups.</p>
       </div>
     </button>
     <button id="sw-build-btn" type="button" class="w-full flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">✨</span>
       <div class="min-w-0">
-        <p class="text-sm font-bold text-slate-800 dark:text-white">Build Today's Workout</p>
-        <p class="text-xs text-slate-400">Choose the exercises you want to do today.</p>
+        <p class="text-sm font-bold text-slate-800 dark:text-white">Build a Workout</p>
+        <p class="text-xs text-slate-400">Log a custom workout.</p>
       </div>
     </button>
     <!-- A third, equal option — not visually emphasized over the two
@@ -1334,7 +1336,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <span class="text-2xl flex-shrink-0" aria-hidden="true">🎯</span>
       <div class="min-w-0">
         <p class="text-sm font-bold text-slate-800 dark:text-white">Create Target</p>
-        <p class="text-xs text-slate-400">Track a personal daily or weekly goal.</p>
+        <p class="text-xs text-slate-400">Create a new fitness goal.</p>
       </div>
     </button>
   </div>
@@ -7006,7 +7008,14 @@ const QUICK_WORKOUT_COLOR = '#22c55e';
 // Quick Workout entry already uses. There is no second workout engine here —
 // both paths converge on the exact same activeSession/guided-flow code the
 // moment a session actually starts.
-function openStartWorkoutChoice() {
+// title is optional — the "Start Growing" entry point deliberately shows no
+// title (the three cards are self-explanatory there), while "Log another
+// activity" gets one since it's the same shared sheet reused for a
+// different moment in the flow.
+function openStartWorkoutChoice(title = '') {
+  const titleEl = document.getElementById('sw-title');
+  titleEl.textContent = title;
+  titleEl.style.display = title ? '' : 'none';
   document.getElementById('start-workout-modal').style.display = '';
 }
 function closeStartWorkoutChoice() { rsHideModal('start-workout-modal'); }
@@ -10681,7 +10690,8 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
   if (!btn) return;
   const action = btn.dataset.action;
   const today = todayStr();
-  if (action === 'start-growing' || action === 'log-another') openStartWorkoutChoice();
+  if (action === 'start-growing') openStartWorkoutChoice();
+  else if (action === 'log-another') openStartWorkoutChoice('Log another workout');
   if (action === 'view-workout') { goView('workout'); switchWorkoutTab('history'); }
 
   // Today's Mission reading a calendar plan — Change/Add Another both reuse
