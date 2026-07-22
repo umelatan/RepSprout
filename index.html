@@ -1763,30 +1763,43 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="group-modal-close" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <h2 id="group-modal-title" class="font-display font-bold text-base text-slate-800 dark:text-white flex-1 truncate">Edit group</h2>
-    <button id="gm-save-btn" type="button" class="text-sm font-bold text-brand-500 px-2 py-1.5 flex-shrink-0">Save</button>
   </header>
   <main class="flex-1 overflow-y-auto">
     <div class="max-w-2xl w-full mx-auto p-4 space-y-6">
-      <section class="space-y-3">
-        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Group details</h3>
-        <div>
-          <label class="text-xs font-semibold text-slate-400 block mb-1">Group name</label>
-          <input id="gm-name" type="text" placeholder="e.g. Upper Body A" class="!bg-slate-100 dark:!bg-slate-800 !border-transparent">
-          <p id="gm-name-error" style="display:none" class="text-xs text-red-500 mt-1">Enter a group name.</p>
-        </div>
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-semibold text-slate-400">Description (optional)</label>
-            <span id="gm-desc-count" class="text-[11px] text-slate-400"></span>
+      <!-- No "Group details" heading — the page is short enough that
+           whitespace alone separates Name/Accent colour/Description. -->
+      <div>
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Name</label>
+        <input id="gm-name" type="text" placeholder="e.g. Upper Body A" class="!bg-slate-100 dark:!bg-slate-800 !border-transparent text-lg font-display font-semibold">
+        <p id="gm-name-error" style="display:none" class="text-xs text-red-500 mt-1">Enter a group name.</p>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-400 block mb-2">Accent colour</label>
+        <div id="gm-color-picker" class="flex gap-3"></div>
+        <p class="text-[11px] text-slate-400 mt-1.5">Choose a colour to identify this workout.</p>
+
+        <!-- Live, non-interactive preview — no buttons/tabindex/handlers, so
+             it can never be mistaken for the real card. -->
+        <div class="mt-4 card p-4 space-y-2">
+          <div class="flex items-center gap-2">
+            <span id="gm-preview-dot" class="w-2 h-2 rounded-full flex-shrink-0" aria-hidden="true"></span>
+            <p id="gm-preview-name" class="font-display font-bold text-sm text-slate-800 dark:text-white truncate"></p>
           </div>
-          <textarea id="gm-desc" rows="2" maxlength="100" placeholder="e.g. Push-focused, heavier days." class="!bg-slate-100 dark:!bg-slate-800 !border-transparent resize-none"></textarea>
+          <p class="text-xs text-slate-400 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">calendar_month</span><span id="gm-preview-count"></span></p>
+          <span id="gm-preview-start" class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold">Start workout</span>
         </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-400 block mb-2">Group color</label>
-          <div id="gm-color-picker" class="flex gap-3"></div>
-          <p class="text-[11px] text-slate-400 mt-1.5">This color is the group's only visual identity.</p>
+        <p class="text-[11px] text-slate-400 mt-1.5">Used throughout your workout cards and queue.</p>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-semibold text-slate-400">Description (optional)</label>
+          <span id="gm-desc-count" class="text-[11px] text-slate-400"></span>
         </div>
-      </section>
+        <textarea id="gm-desc" rows="1" maxlength="100" placeholder="Push-focused, heavier days." class="!bg-slate-100 dark:!bg-slate-800 !border-transparent resize-none"></textarea>
+        <p class="text-[11px] text-slate-400 mt-1.5">Add notes to remember what this group is about.</p>
+      </div>
 
       <section class="space-y-2">
         <div class="flex items-center justify-between">
@@ -1815,6 +1828,12 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </section>
     </div>
   </main>
+  <!-- Same muted-lavender Save style as Exercise Configuration, disabled
+       until the form actually differs from what it opened with (see
+       refreshGmFormState()/groupModalOriginalSnapshot). -->
+  <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800">
+    <button id="gm-save-btn" type="button" disabled class="w-full py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white transition-opacity disabled:opacity-40">Save changes</button>
+  </div>
 </div>
 
 <!-- Group editor: per-exercise row overflow. Move up/down were removed —
@@ -6519,20 +6538,56 @@ function openGroupModal(id = null) {
   document.getElementById('gm-duplicate-btn').style.display = id ? '' : 'none';
   document.getElementById('gm-delete-btn').style.display = id ? '' : 'none';
   hide('gm-name-error'); hide('gm-ex-error'); hide('gm-save-error');
-  document.getElementById('gm-save-btn').disabled = false;
-  document.getElementById('gm-save-btn').textContent = 'Save';
+  document.getElementById('gm-save-btn').textContent = 'Save changes';
   document.getElementById('gm-name').value = groupModalDraft.name;
   document.getElementById('gm-desc').value = groupModalDraft.description;
   document.getElementById('gm-desc-count').textContent = `${groupModalDraft.description.length}/100`;
   renderGmColorPicker();
   renderGmExerciseList();
+  // Snapshot after the initial render so refreshGmFormState() has a stable
+  // baseline — everything the user does from here either matches it
+  // (Save stays disabled) or doesn't (Save enables).
+  groupModalOriginalSnapshot = gmFormSnapshot();
+  refreshGmFormState();
   show('group-modal');
 }
 document.getElementById('group-modal-close').addEventListener('click', () => hide('group-modal'));
-document.getElementById('gm-name').addEventListener('input', () => hide('gm-name-error'));
+document.getElementById('gm-name').addEventListener('input', () => { hide('gm-name-error'); refreshGmFormState(); });
 document.getElementById('gm-desc').addEventListener('input', () => {
   document.getElementById('gm-desc-count').textContent = `${document.getElementById('gm-desc').value.length}/100`;
+  refreshGmFormState();
 });
+
+// ── Dirty-check for the whole form (name/description/color/exercises) —
+// Save Changes stays disabled until something actually differs from the
+// snapshot taken when the sheet opened. One JSON-string comparison instead
+// of hooking every individual mutation site (add/remove/reorder/exercise
+// settings already all funnel through renderGmExerciseList(), which calls
+// this too).
+let groupModalOriginalSnapshot = '';
+function gmFormSnapshot() {
+  return JSON.stringify({
+    name: document.getElementById('gm-name').value.trim(),
+    description: document.getElementById('gm-desc').value.trim(),
+    color: groupModalDraft.color,
+    exercises: groupModalDraft.exercises
+  });
+}
+function renderGmPreview() {
+  const name = document.getElementById('gm-name').value.trim() || 'Untitled group';
+  const color = groupModalDraft.color;
+  const count = groupModalDraft.exercises.length;
+  document.getElementById('gm-preview-dot').style.background = color;
+  document.getElementById('gm-preview-name').textContent = name;
+  document.getElementById('gm-preview-count').textContent = `${count} exercise${count!==1?'s':''}`;
+  const startEl = document.getElementById('gm-preview-start');
+  startEl.style.background = `${color}1f`;
+  startEl.style.color = color;
+}
+function refreshGmFormState() {
+  renderGmPreview();
+  document.getElementById('gm-save-btn').disabled = (gmFormSnapshot() === groupModalOriginalSnapshot);
+}
 
 // Selected swatch grows slightly and gets a checkmark — color is never the
 // only signal for the selection. The scale/box-shadow transition is the
@@ -6544,7 +6599,7 @@ function renderGmColorPicker() {
     const selected = groupModalDraft.color === c;
     return `
     <button type="button" class="gm-color-swatch w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center" data-color="${c}"
-      style="background:${c};transform:${selected ? 'scale(1.1)' : 'scale(1)'};box-shadow:${selected ? `0 0 0 2px white, 0 0 0 4px ${c}` : 'none'}"
+      style="background:${c};transform:${selected ? 'scale(1.1)' : 'scale(1)'};box-shadow:${selected ? `0 0 0 2px white, 0 0 0 3px ${c}` : 'none'}"
       aria-label="${esc(c)}" aria-pressed="${selected}">
       ${selected ? '<span class="ms text-white text-lg" aria-hidden="true">check</span>' : ''}
     </button>`;
@@ -6552,6 +6607,7 @@ function renderGmColorPicker() {
   wrap.querySelectorAll('.gm-color-swatch').forEach(b => b.addEventListener('click', () => {
     groupModalDraft.color = b.dataset.color;
     renderGmColorPicker();
+    refreshGmFormState();
   }));
 }
 
@@ -6566,6 +6622,7 @@ function renderGmExerciseList() {
   if (!count) {
     list.className = '';
     list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No exercises yet — add one below.</p>';
+    refreshGmFormState();
     return;
   }
   list.className = 'card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden';
@@ -6584,6 +6641,7 @@ function renderGmExerciseList() {
     </div>`;
   }).join('');
   list.querySelectorAll('.gm-ex-menu-btn').forEach(b => b.addEventListener('click', () => openGmExerciseActions(+b.dataset.idx)));
+  refreshGmFormState();
 }
 
 document.getElementById('gm-add-new-ex').addEventListener('click', () => {
