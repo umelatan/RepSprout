@@ -6472,6 +6472,7 @@ function renderGroupsList() {
           </div>
           <button class="group-actions-btn -mr-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex-shrink-0 flex items-center justify-center" style="min-width:44px;min-height:44px" data-id="${id}" aria-label="Group actions for ${esc(g.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
         </div>
+        ${g.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 truncate">${esc(g.description)}</p>` : ''}
         <p class="text-xs text-slate-400 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">calendar_month</span>${exList.length} exercise${exList.length!==1?'s':''} · ${lastLabel}</p>
         ${preview ? `<p class="text-xs text-slate-400 truncate">${preview}</p>` : ''}
         <button class="start-group-btn inline-flex items-center justify-center px-4 rounded-xl text-sm font-semibold transition-all" style="background:${color}1f;color:${color};min-height:44px" data-id="${id}">Start workout</button>
