@@ -253,6 +253,12 @@ body{font-family:'Inter',sans-serif}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
 .queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
 .dark .queue-row-dragging{background:#1e293b}
+/* Group editor's exercise reorder — same lift-and-brighten language as the
+   queue's own drag, a separate rule since it's a separate implementation
+   (see armGmExDrag()/endGmExDrag()). */
+.gm-ex-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white;border-radius:.75rem}
+.dark .gm-ex-row-dragging{background:#1e293b}
+.gm-ex-row-dragging .gm-ex-drag-handle{color:#22c55e!important}
 /* Migrate the bespoke sheet/drawer transitions built earlier this session
    from hardcoded Tailwind durations onto the shared token so they move in
    lockstep with every other sheet in the app. Values are unchanged (300ms)
@@ -667,6 +673,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <!-- Groups -->
       <div id="wt-groups" style="display:none" class="rs-view space-y-3">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500 -mb-1" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <h2 class="font-display font-bold text-xl text-slate-800 dark:text-white">Workout groups</h2>
+            <p class="text-sm text-slate-400 mt-0.5">Choose a plan and start growing.</p>
+          </div>
+          <button id="wt-groups-create-icon-btn" type="button" class="rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex-shrink-0 flex items-center justify-center" style="min-width:44px;min-height:44px" aria-label="Create workout group"><span class="ms text-xl" aria-hidden="true">add</span></button>
+        </div>
+        <p id="wt-groups-summary" class="text-xs text-slate-400 flex items-center gap-1"></p>
         <div id="groups-list" class="space-y-3"></div>
       </div>
 
@@ -1582,6 +1596,22 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Workout Group card overflow — quick access to Edit/Duplicate/Delete
+     without opening the full editor first, same idiom as exg-actions-modal
+     above. Duplicate/Delete call the exact same code the editor's own
+     Duplicate/Delete rows use (see wga-duplicate-btn/wga-delete-btn). -->
+<div id="group-actions-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="wga-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="wga-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="wga-edit-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit group</button>
+    <button id="wga-duplicate-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">content_copy</span>Duplicate group</button>
+    <button id="wga-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete group</button>
+  </div>
+</div>
+
 <!-- Edit Target — reuses the exact same amount/frequency controls as Create
      Target's steps 2-4, just pre-filled and without the activity picker
      (changing what a target is "for" is a delete+recreate, not an edit). -->
@@ -1707,48 +1737,107 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 </div>
 
 <!-- Create / edit workout group -->
-<div id="group-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[88vh] overflow-y-auto">
+<!-- Edit/New Workout Group — one scrollable screen (no wizard steps). Same
+     shell pattern as exercise-detail-view/target-detail-view: sticky header,
+     scrollable main, plain show()/hide(). Group identity is name + gm-color-picker
+     only — no cover image, no inferred icon. -->
+<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-slate-50 dark:bg-slate-950 flex flex-col">
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
+    <button id="group-modal-close" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+    <h2 id="group-modal-title" class="font-display font-bold text-base text-slate-800 dark:text-white flex-1 truncate">Edit group</h2>
+    <button id="gm-save-btn" type="button" class="text-sm font-bold text-brand-500 px-2 py-1.5 flex-shrink-0">Save</button>
+  </header>
+  <main class="flex-1 overflow-y-auto">
+    <div class="max-w-2xl w-full mx-auto p-4 space-y-6">
+      <section class="space-y-3">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Group details</h3>
+        <div>
+          <label class="text-xs font-semibold text-slate-400 block mb-1">Group name</label>
+          <input id="gm-name" type="text" placeholder="e.g. Upper Body A" class="!bg-slate-100 dark:!bg-slate-800 !border-transparent">
+          <p id="gm-name-error" style="display:none" class="text-xs text-red-500 mt-1">Enter a group name.</p>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold text-slate-400">Description (optional)</label>
+            <span id="gm-desc-count" class="text-[11px] text-slate-400"></span>
+          </div>
+          <textarea id="gm-desc" rows="2" maxlength="100" placeholder="e.g. Push-focused, heavier days." class="!bg-slate-100 dark:!bg-slate-800 !border-transparent resize-none"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-400 block mb-2">Group color</label>
+          <div id="gm-color-picker" class="flex gap-3"></div>
+          <p class="text-[11px] text-slate-400 mt-1.5">This color is the group's only visual identity.</p>
+        </div>
+      </section>
+
+      <section class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-display font-bold text-slate-800 dark:text-white">Exercises</h3>
+          <span id="gm-ex-count" class="text-xs text-slate-400"></span>
+        </div>
+        <p class="text-xs text-slate-400">Hold and drag to reorder your workout.</p>
+        <div id="gm-config-list" class="card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden"></div>
+        <p id="gm-ex-error" style="display:none" class="text-xs text-red-500">Add at least one exercise.</p>
+        <button id="gm-add-new-ex" type="button" class="w-full py-2.5 text-sm font-semibold text-brand-500 hover:underline flex items-center justify-center gap-1">
+          <span class="ms text-base" aria-hidden="true">add</span>Add exercise
+        </button>
+      </section>
+
+      <p id="gm-save-error" style="display:none" class="text-xs text-red-500 text-center"></p>
+
+      <section class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button id="gm-duplicate-btn" type="button" style="display:none" class="w-full flex items-center gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-slate-600 dark:text-slate-300">
+          <span class="ms text-lg text-slate-400" aria-hidden="true">content_copy</span>Duplicate group
+          <span class="ms text-slate-300 dark:text-slate-600 ml-auto" aria-hidden="true">chevron_right</span>
+        </button>
+        <button id="gm-delete-btn" type="button" style="display:none" class="w-full flex items-center gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-red-500">
+          <span class="ms text-lg" aria-hidden="true">delete</span>Delete group
+          <span class="ms text-red-300 dark:text-red-800 ml-auto" aria-hidden="true">chevron_right</span>
+        </button>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Group editor: per-exercise row overflow (Remove from group / Exercise
+     settings / accessible Move up-down alternative to dragging). -->
+<div id="gm-ex-actions-modal" style="display:none" class="fixed inset-0 z-[66] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-1">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="gmea-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="gmea-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="gmea-move-up" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3 disabled:opacity-30"><span class="ms text-lg text-slate-400" aria-hidden="true">arrow_upward</span>Move up</button>
+    <button id="gmea-move-down" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3 disabled:opacity-30"><span class="ms text-lg text-slate-400" aria-hidden="true">arrow_downward</span>Move down</button>
+    <button id="gmea-settings" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">tune</span>Exercise settings</button>
+    <button id="gmea-remove" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from group</button>
+  </div>
+</div>
+
+<!-- Group editor: per-exercise sets/reps defaults (replaces the old always-
+     visible inline number inputs — same fields, moved behind "Exercise
+     settings" so the exercise list itself stays text-led). -->
+<div id="gm-ex-settings-modal" style="display:none" class="fixed inset-0 z-[67] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4">
     <div class="flex items-center justify-between">
-      <h3 id="group-modal-title" class="font-display font-bold text-slate-800 dark:text-white">New workout group</h3>
-      <button id="group-modal-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+      <h3 id="gmes-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="gmes-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <div class="flex gap-1.5">
-      <div class="h-1 flex-1 rounded-full bg-brand-500" id="gm-p1"></div>
-      <div class="h-1 flex-1 rounded-full bg-slate-200 dark:bg-slate-700" id="gm-p2"></div>
-      <div class="h-1 flex-1 rounded-full bg-slate-200 dark:bg-slate-700" id="gm-p3"></div>
+    <div>
+      <label class="text-xs font-semibold text-slate-400 block mb-1">Sets</label>
+      <input id="gmes-sets" type="number" min="1" max="10">
     </div>
-
-    <div id="gm-step1" class="space-y-3">
-      <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Group name</label>
-        <input id="gm-name" type="text" placeholder="e.g. Upper Body A">
-        <p id="gm-name-error" style="display:none" class="text-xs text-red-500 mt-1">Enter a group name.</p>
+    <div class="flex items-center gap-2">
+      <div class="flex-1">
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Min reps</label>
+        <input id="gmes-min" type="number" min="1" max="50">
       </div>
-      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Description (optional)</label><input id="gm-desc" type="text" placeholder="e.g. Push-focused, heavier days"></div>
-      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Color</label><div id="gm-color-picker" class="flex gap-2"></div></div>
-      <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
-        <button id="gm-duplicate-btn" type="button" style="display:none" class="text-slate-400 hover:underline py-2">Duplicate</button>
-        <button id="gm-delete-btn" type="button" style="display:none" class="text-red-400 hover:underline py-2">Delete group</button>
+      <div class="flex-1">
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Max reps</label>
+        <input id="gmes-max" type="number" min="1" max="50">
       </div>
     </div>
-
-    <div id="gm-step2" style="display:none" class="space-y-3">
-      <input id="gm-ex-search" type="text" placeholder="Search exercises">
-      <div id="gm-ex-picklist" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
-      <p id="gm-ex-error" style="display:none" class="text-xs text-red-500">Select at least one exercise.</p>
-      <button id="gm-add-new-ex" type="button" class="text-xs font-semibold text-brand-500 hover:underline py-1">+ Create new exercise</button>
-    </div>
-
-    <div id="gm-step3" style="display:none" class="space-y-2">
-      <div id="gm-config-list" class="space-y-2 max-h-72 overflow-y-auto"></div>
-    </div>
-
-    <p id="gm-save-error" style="display:none" class="text-xs text-red-500 text-center"></p>
-    <div class="flex items-center gap-2 pt-2">
-      <button id="gm-back-btn" type="button" class="btn btn-outline flex-1 py-2.5">Back</button>
-      <button id="gm-next-btn" type="button" class="btn btn-green flex-1 py-2.5">Next</button>
-    </div>
+    <button id="gmes-save" type="button" class="btn btn-green w-full py-2.5">Save</button>
   </div>
 </div>
 
@@ -2288,7 +2377,6 @@ let awTimerHandle = null;
 let waterTimeoutHandle = null; // recurring setTimeout id driving the droplet-spawn loop
 
 // Group-builder modal state
-let groupModalStep = 1;
 let groupModalId = null;
 let groupModalDraft = null; // { name, description, color, exercises:[{exerciseId,defaultSets,minReps,maxReps,notes}] }
 
@@ -6206,7 +6294,6 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
     }
     rsHideModal('exercise-modal');
 
-    const groupModalOpen = document.getElementById('group-modal').style.display !== 'none';
     const buildWorkoutOpen = document.getElementById('build-workout-modal').style.display !== 'none';
     if (buildWorkoutOpen && !id && newId) {
       // Created inline from the Build Today's Workout picker (its own
@@ -6216,14 +6303,6 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
       buildTodaySelectedIds.push(newId);
       renderBwFilterChips(); renderBwRecent(); renderBwList(document.getElementById('bw-search').value); updateBwBottomBar();
       if (document.getElementById('bw-step2').style.display !== 'none') renderBwReview();
-      showToast('Exercise created and added.');
-    } else if (groupModalOpen && groupModalStep === 2 && !id && newId) {
-      // Created inline from the group builder's "pick exercises" step —
-      // bring it straight into view and pre-select it instead of leaving
-      // the user staring at a list that still looks empty.
-      groupModalDraft.exercises.push({ exerciseId: newId, defaultSets, minReps: minReps ?? 8, maxReps: maxReps ?? 12, notes: '' });
-      renderGmExPicklist(document.getElementById('gm-ex-search').value);
-      hide('gm-ex-error');
       showToast('Exercise created and added.');
     } else if (wasFirstExercise) {
       goView('workout'); switchWorkoutTab('groups');
@@ -6255,18 +6334,24 @@ function relativeDays(dateStr) {
   return `${diff} days ago`;
 }
 
+// Lightweight row, not a dashed box — a Workout Group is a template you
+// reach for often, not a rare "empty state" action, so it should read like
+// any other secondary row action in the app (see the queue's own "Add to
+// today's workout" link) rather than a call-out box.
 const CREATE_GROUP_CTA = `
-  <button data-action="create-group" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
+  <button data-action="create-group" class="w-full py-3 px-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl text-sm font-semibold text-brand-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
     <span class="ms text-base" aria-hidden="true">add</span>Create workout group
   </button>`;
 
 function renderGroupsList() {
   const list = document.getElementById('groups-list');
   const items = Object.entries(groups).filter(([,g]) => !g.archived);
+  const summaryEl = document.getElementById('wt-groups-summary');
 
   // Exercises must exist before a group is worth creating — never lead a
   // user into building an empty group.
   if (!hasAnyExercise()) {
+    summaryEl.textContent = '';
     list.innerHTML = `
       <div class="text-center py-6 space-y-3">
         <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">You haven't created any exercises yet.</p>
@@ -6277,6 +6362,7 @@ function renderGroupsList() {
   }
 
   if (!items.length) {
+    summaryEl.textContent = '';
     list.innerHTML = `
       <div class="text-center py-6 space-y-3">
         <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">You haven't created a workout group yet.</p>
@@ -6287,29 +6373,60 @@ function renderGroupsList() {
     return;
   }
 
+  const totalExercises = items.reduce((sum, [,g]) => sum + (g.exercises || []).length, 0);
+  summaryEl.innerHTML = `<span class="ms text-sm" aria-hidden="true">eco</span>${items.length} group${items.length!==1?'s':''} · ${totalExercises} exercise${totalExercises!==1?'s':''}`;
+
+  // Identity comes only from name + this restrained colour accent (a small
+  // dot, and a soft tint on Start) — never an inferred icon/illustration,
+  // and never a saturated border wrapping the whole card.
   list.innerHTML = items.map(([id, g]) => {
     const exList = (g.exercises || []).map(ge => exercises[ge.exerciseId]).filter(Boolean);
-    const preview = exList.slice(0,3).map(e => esc(e.name)).join(', ') + (exList.length > 3 ? '…' : '');
+    const preview = exList.slice(0,3).map(e => esc(e.name)).join(' • ') + (exList.length > 3 ? ` +${exList.length - 3}` : '');
     const lastDate = lastCompletedDate(id);
     const lastLabel = lastDate ? `Last completed ${relativeDays(lastDate)}` : 'Not completed yet';
     const color = g.color || GROUP_COLORS[0];
     return `
-      <div class="card p-4 space-y-2" style="border:1px solid ${color}">
+      <div class="card p-4 space-y-2">
         <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <p class="font-display font-bold text-sm text-slate-800 dark:text-white">${esc(g.name)}</p>
-            <p class="text-xs text-slate-400">${exList.length} exercise${exList.length!==1?'s':''} · ${lastLabel}</p>
+          <div class="min-w-0 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
+            <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${esc(g.name)}</p>
           </div>
-          <button class="edit-group-btn p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex-shrink-0" data-id="${id}"><span class="ms text-lg" aria-hidden="true">edit</span></button>
+          <button class="group-actions-btn -mr-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex-shrink-0 flex items-center justify-center" style="min-width:44px;min-height:44px" data-id="${id}" aria-label="Group actions for ${esc(g.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
         </div>
+        <p class="text-xs text-slate-400 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">calendar_month</span>${exList.length} exercise${exList.length!==1?'s':''} · ${lastLabel}</p>
         ${preview ? `<p class="text-xs text-slate-400 truncate">${preview}</p>` : ''}
-        <button class="start-group-btn btn w-full py-2.5" style="background:${color};color:white" data-id="${id}">Start</button>
+        <button class="start-group-btn inline-flex items-center justify-center px-4 rounded-xl text-sm font-semibold transition-all" style="background:${color}1f;color:${color};min-height:44px" data-id="${id}">Start workout</button>
       </div>`;
   }).join('') + CREATE_GROUP_CTA;
 
   list.querySelectorAll('.start-group-btn').forEach(b => b.addEventListener('click', () => startWorkoutSession(b.dataset.id)));
-  list.querySelectorAll('.edit-group-btn').forEach(b => b.addEventListener('click', () => openGroupModal(b.dataset.id)));
+  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', () => openGroupActionsSheet(b.dataset.id)));
 }
+
+let groupActionsId = null;
+function openGroupActionsSheet(id) {
+  const g = groups[id];
+  if (!g) return;
+  groupActionsId = id;
+  document.getElementById('wga-title').textContent = g.name;
+  document.getElementById('group-actions-modal').style.display = '';
+}
+document.getElementById('wga-close').addEventListener('click', () => rsHideModal('group-actions-modal'));
+document.getElementById('group-actions-modal').addEventListener('click', e => { if (e.target.id === 'group-actions-modal') rsHideModal('group-actions-modal'); });
+document.getElementById('wga-edit-btn').addEventListener('click', () => {
+  rsHideModal('group-actions-modal');
+  if (groupActionsId) openGroupModal(groupActionsId);
+});
+document.getElementById('wga-duplicate-btn').addEventListener('click', () => {
+  rsHideModal('group-actions-modal');
+  if (groupActionsId) duplicateWorkoutGroup(groupActionsId);
+});
+document.getElementById('wga-delete-btn').addEventListener('click', () => {
+  rsHideModal('group-actions-modal');
+  if (groupActionsId) deleteWorkoutGroup(groupActionsId);
+});
+document.getElementById('wt-groups-create-icon-btn').addEventListener('click', () => openGroupModal());
 
 // Delegated so the dynamically-rendered empty-state / trailing CTA buttons
 // (which change identity on every re-render) don't need per-render rebinding.
@@ -6320,7 +6437,7 @@ document.getElementById('groups-list').addEventListener('click', e => {
   else if (btn.dataset.action === 'create-exercise') openExerciseModal();
 });
 
-// ── Group builder modal (3 steps: details -> pick exercises -> configure) ───
+// ── Group editor: one scrollable screen (no wizard) ─────────────────────────
 function hasAnyExercise() { return Object.values(exercises).some(ex => !ex.archived); }
 
 function openGroupModal(id = null) {
@@ -6336,225 +6453,333 @@ function openGroupModal(id = null) {
   groupModalDraft = g
     ? { name: g.name, description: g.description || '', color: g.color || GROUP_COLORS[0], exercises: (g.exercises || []).map(ge => ({ ...ge })) }
     : { name: '', description: '', color: GROUP_COLORS[0], exercises: [] };
-  document.getElementById('group-modal-title').textContent = id ? 'Edit workout group' : 'New workout group';
+  document.getElementById('group-modal-title').textContent = id ? 'Edit group' : 'New workout group';
   document.getElementById('gm-duplicate-btn').style.display = id ? '' : 'none';
   document.getElementById('gm-delete-btn').style.display = id ? '' : 'none';
   hide('gm-name-error'); hide('gm-ex-error'); hide('gm-save-error');
-  document.getElementById('gm-next-btn').disabled = false;
-  groupModalStep = 1;
-  renderGmStep();
-  document.getElementById('group-modal').style.display = '';
+  document.getElementById('gm-save-btn').disabled = false;
+  document.getElementById('gm-save-btn').textContent = 'Save';
+  document.getElementById('gm-name').value = groupModalDraft.name;
+  document.getElementById('gm-desc').value = groupModalDraft.description;
+  document.getElementById('gm-desc-count').textContent = `${groupModalDraft.description.length}/100`;
+  renderGmColorPicker();
+  renderGmExerciseList();
+  show('group-modal');
 }
-document.getElementById('group-modal-close').addEventListener('click', () => rsHideModal('group-modal'));
+document.getElementById('group-modal-close').addEventListener('click', () => hide('group-modal'));
 document.getElementById('gm-name').addEventListener('input', () => hide('gm-name-error'));
+document.getElementById('gm-desc').addEventListener('input', () => {
+  document.getElementById('gm-desc-count').textContent = `${document.getElementById('gm-desc').value.length}/100`;
+});
 
-function renderGmStep() {
-  [1,2,3].forEach(n => {
-    document.getElementById('gm-step'+n).style.display = n === groupModalStep ? '' : 'none';
-    document.getElementById('gm-p'+n).className = `h-1 flex-1 rounded-full ${n <= groupModalStep ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'}`;
-  });
-  document.getElementById('gm-back-btn').style.display = groupModalStep === 1 ? 'none' : '';
-  document.getElementById('gm-next-btn').textContent = groupModalStep === 3 ? 'Save group' : 'Next';
-  hide('gm-save-error');
-
-  if (groupModalStep === 1) {
-    document.getElementById('gm-name').value = groupModalDraft.name;
-    document.getElementById('gm-desc').value = groupModalDraft.description;
-    renderGmColorPicker();
-  } else if (groupModalStep === 2) {
-    renderGmExPicklist('');
-  } else {
-    renderGmConfigList();
-  }
-}
-
+// Selected swatch grows slightly and gets a checkmark — color is never the
+// only signal for the selection. The scale/box-shadow transition is the
+// shared [aria-pressed] motion rule already applied app-wide, not a
+// one-off animation.
 function renderGmColorPicker() {
   const wrap = document.getElementById('gm-color-picker');
-  wrap.innerHTML = GROUP_COLORS.map(c => `
-    <button type="button" class="gm-color-swatch w-8 h-8 rounded-full flex-shrink-0" data-color="${c}"
-      style="background:${c};${groupModalDraft.color === c ? `box-shadow:0 0 0 2px white, 0 0 0 4px ${c}` : ''}"></button>
-  `).join('');
+  wrap.innerHTML = GROUP_COLORS.map(c => {
+    const selected = groupModalDraft.color === c;
+    return `
+    <button type="button" class="gm-color-swatch w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center" data-color="${c}"
+      style="background:${c};transform:${selected ? 'scale(1.1)' : 'scale(1)'};box-shadow:${selected ? `0 0 0 2px white, 0 0 0 4px ${c}` : 'none'}"
+      aria-label="${esc(c)}" aria-pressed="${selected}">
+      ${selected ? '<span class="ms text-white text-lg" aria-hidden="true">check</span>' : ''}
+    </button>`;
+  }).join('');
   wrap.querySelectorAll('.gm-color-swatch').forEach(b => b.addEventListener('click', () => {
     groupModalDraft.color = b.dataset.color;
     renderGmColorPicker();
   }));
 }
 
-function renderGmExPicklist(q) {
-  const list = document.getElementById('gm-ex-picklist');
-  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived && (!q || ex.name?.toLowerCase().includes(q.toLowerCase())));
-  if (!items.length) {
-    list.innerHTML = Object.keys(exercises).length
-      ? '<p class="text-xs text-slate-400 text-center py-3">No exercises match your search.</p>'
-      : '<p class="text-xs text-slate-400 text-center py-3">No exercises yet — create your first one below.</p>';
-    return;
-  }
-  const selectedIds = new Set(groupModalDraft.exercises.map(ge => ge.exerciseId));
-  list.innerHTML = items.map(([id, ex]) => `
-    <label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all cursor-pointer">
-      <input type="checkbox" class="gm-ex-check w-4 h-4 accent-brand-500 flex-shrink-0" style="width:auto" data-id="${id}" ${selectedIds.has(id) ? 'checked' : ''}>
-      <div class="min-w-0">
-        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup}</p>
-      </div>
-    </label>
-  `).join('');
-  list.querySelectorAll('.gm-ex-check').forEach(cb => cb.addEventListener('change', () => {
-    if (cb.checked) {
-      const ex = exercises[cb.dataset.id];
-      groupModalDraft.exercises.push({ exerciseId: cb.dataset.id, defaultSets: ex.defaultSets || 3, minReps: ex.minReps ?? 8, maxReps: ex.maxReps ?? 12, notes: '' });
-      hide('gm-ex-error');
-    } else {
-      groupModalDraft.exercises = groupModalDraft.exercises.filter(ge => ge.exerciseId !== cb.dataset.id);
-    }
-  }));
-}
-document.getElementById('gm-ex-search').addEventListener('input', e => renderGmExPicklist(e.target.value));
-document.getElementById('gm-add-new-ex').addEventListener('click', () => openExerciseModal());
-
-function renderGmConfigList() {
+// Exercise list — text-led rows (drag handle, name, muted metadata, overflow
+// menu only). No thumbnails/muscle icons/checkboxes; per-exercise sets/reps
+// now live behind "Exercise settings" (openGmExerciseSettings) instead of
+// always-visible inline inputs.
+function renderGmExerciseList() {
   const list = document.getElementById('gm-config-list');
-  if (!groupModalDraft.exercises.length) {
-    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No exercises selected yet.</p>';
+  const count = groupModalDraft.exercises.length;
+  document.getElementById('gm-ex-count').textContent = `${count} exercise${count!==1?'s':''}`;
+  if (!count) {
+    list.className = '';
+    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No exercises yet — add one below.</p>';
     return;
   }
+  list.className = 'card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden';
   list.innerHTML = groupModalDraft.exercises.map((ge, i) => {
     const ex = exercises[ge.exerciseId];
     if (!ex) return '';
+    const meta = `${MG_LABEL[ex.muscleGroup] || ex.muscleGroup} · ${ge.defaultSets} set${ge.defaultSets!==1?'s':''}`;
     return `
-      <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2">
-        <div class="flex items-center justify-between gap-2">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 min-w-0 truncate">${esc(ex.name)}</p>
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <button class="gm-move-up p-1 text-slate-400 hover:text-brand-500 disabled:opacity-30" data-idx="${i}" ${i===0?'disabled':''}><span class="ms text-lg" aria-hidden="true">arrow_upward</span></button>
-            <button class="gm-move-down p-1 text-slate-400 hover:text-brand-500 disabled:opacity-30" data-idx="${i}" ${i===groupModalDraft.exercises.length-1?'disabled':''}><span class="ms text-lg" aria-hidden="true">arrow_downward</span></button>
-            <button class="gm-remove-ex p-1 text-slate-400 hover:text-red-400" data-idx="${i}"><span class="ms text-lg" aria-hidden="true">close</span></button>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <label class="text-xs text-slate-400">Sets</label>
-          <input type="number" class="gm-cfg-sets" data-idx="${i}" value="${ge.defaultSets}" min="1" max="10" style="width:56px">
-          <label class="text-xs text-slate-400 ml-1">Reps</label>
-          <input type="number" class="gm-cfg-min" data-idx="${i}" value="${ge.minReps}" min="1" max="50" style="width:52px">
-          <span class="text-slate-400 text-xs">–</span>
-          <input type="number" class="gm-cfg-max" data-idx="${i}" value="${ge.maxReps}" min="1" max="50" style="width:52px">
-        </div>
-      </div>`;
+    <div class="gm-ex-row flex items-center gap-1 px-2" data-idx="${i}">
+      <span class="gm-ex-drag-handle ms text-lg text-slate-300 dark:text-slate-500 flex-shrink-0 touch-none cursor-grab flex items-center justify-center" style="min-width:44px;min-height:44px" data-idx="${i}" role="img" aria-label="Drag to reorder ${esc(ex.name)}">drag_indicator</span>
+      <div class="min-w-0 flex-1 py-2">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400">${meta}</p>
+      </div>
+      <button class="gm-ex-menu-btn flex items-center justify-center text-slate-400 flex-shrink-0" style="min-width:44px;min-height:44px" data-idx="${i}" aria-label="Exercise actions for ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+    </div>`;
   }).join('');
-
-  list.querySelectorAll('.gm-move-up').forEach(b => b.addEventListener('click', () => {
-    const i = +b.dataset.idx;
-    [groupModalDraft.exercises[i-1], groupModalDraft.exercises[i]] = [groupModalDraft.exercises[i], groupModalDraft.exercises[i-1]];
-    renderGmConfigList();
-  }));
-  list.querySelectorAll('.gm-move-down').forEach(b => b.addEventListener('click', () => {
-    const i = +b.dataset.idx;
-    [groupModalDraft.exercises[i+1], groupModalDraft.exercises[i]] = [groupModalDraft.exercises[i], groupModalDraft.exercises[i+1]];
-    renderGmConfigList();
-  }));
-  list.querySelectorAll('.gm-remove-ex').forEach(b => b.addEventListener('click', () => {
-    groupModalDraft.exercises.splice(+b.dataset.idx, 1);
-    renderGmConfigList();
-  }));
-  list.querySelectorAll('.gm-cfg-sets').forEach(inp => inp.addEventListener('change', () => { groupModalDraft.exercises[+inp.dataset.idx].defaultSets = Math.max(1, +inp.value || 3); }));
-  list.querySelectorAll('.gm-cfg-min').forEach(inp => inp.addEventListener('change', () => { groupModalDraft.exercises[+inp.dataset.idx].minReps = +inp.value || 8; }));
-  list.querySelectorAll('.gm-cfg-max').forEach(inp => inp.addEventListener('change', () => { groupModalDraft.exercises[+inp.dataset.idx].maxReps = +inp.value || 12; }));
+  list.querySelectorAll('.gm-ex-menu-btn').forEach(b => b.addEventListener('click', () => openGmExerciseActions(+b.dataset.idx)));
 }
 
-document.getElementById('gm-back-btn').addEventListener('click', () => { groupModalStep--; renderGmStep(); });
-document.getElementById('gm-next-btn').addEventListener('click', async () => {
-  const nextBtn = document.getElementById('gm-next-btn');
-  if (nextBtn.disabled) return; // guard against double-submit (e.g. a double-tap on Save)
-
-  if (groupModalStep === 1) {
-    const name = document.getElementById('gm-name').value.trim();
-    if (!name) { show('gm-name-error'); document.getElementById('gm-name').focus(); return; }
-    hide('gm-name-error');
-    groupModalDraft.name = name;
-    groupModalDraft.description = document.getElementById('gm-desc').value.trim();
-    groupModalStep = 2;
-    renderGmStep();
-  } else if (groupModalStep === 2) {
-    if (!groupModalDraft.exercises.length) { show('gm-ex-error'); return; }
+document.getElementById('gm-add-new-ex').addEventListener('click', () => {
+  openPickExModal(exId => {
+    const ex = exercises[exId];
+    if (!ex) return;
+    groupModalDraft.exercises.push({ exerciseId: exId, defaultSets: ex.defaultSets || 3, minReps: ex.minReps ?? 8, maxReps: ex.maxReps ?? 12, notes: '' });
     hide('gm-ex-error');
-    groupModalStep = 3;
-    renderGmStep();
-  } else {
-    // Re-validate at the point of save too — the draft is long-lived and
-    // could in principle be left empty by a caller mutating it directly.
-    const name = (groupModalDraft.name || '').trim();
-    if (!name) { groupModalStep = 1; renderGmStep(); show('gm-name-error'); return; }
-    if (!groupModalDraft.exercises.length) { groupModalStep = 2; renderGmStep(); show('gm-ex-error'); return; }
+    renderGmExerciseList();
+  }, groupModalDraft.exercises.map(ge => ge.exerciseId));
+});
 
-    const data = {
-      name,
-      description: groupModalDraft.description || null,
-      color: groupModalDraft.color,
-      exercises: groupModalDraft.exercises,
-      updatedAt: Date.now()
-    };
+// ── Per-exercise overflow: Move up/down (the accessible, non-drag way to
+// reorder), Exercise settings (sets/reps defaults), Remove from group. ─────
+let gmExActionsIdx = null;
+function openGmExerciseActions(idx) {
+  const ge = groupModalDraft.exercises[idx];
+  const ex = ge && exercises[ge.exerciseId];
+  if (!ex) return;
+  gmExActionsIdx = idx;
+  document.getElementById('gmea-title').textContent = ex.name;
+  document.getElementById('gmea-move-up').disabled = idx === 0;
+  document.getElementById('gmea-move-down').disabled = idx === groupModalDraft.exercises.length - 1;
+  document.getElementById('gm-ex-actions-modal').style.display = '';
+}
+document.getElementById('gmea-close').addEventListener('click', () => rsHideModal('gm-ex-actions-modal'));
+document.getElementById('gm-ex-actions-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-actions-modal') rsHideModal('gm-ex-actions-modal'); });
+document.getElementById('gmea-move-up').addEventListener('click', () => {
+  const i = gmExActionsIdx;
+  if (i == null || i <= 0) return;
+  [groupModalDraft.exercises[i-1], groupModalDraft.exercises[i]] = [groupModalDraft.exercises[i], groupModalDraft.exercises[i-1]];
+  rsHideModal('gm-ex-actions-modal');
+  renderGmExerciseList();
+});
+document.getElementById('gmea-move-down').addEventListener('click', () => {
+  const i = gmExActionsIdx;
+  if (i == null || i >= groupModalDraft.exercises.length - 1) return;
+  [groupModalDraft.exercises[i+1], groupModalDraft.exercises[i]] = [groupModalDraft.exercises[i], groupModalDraft.exercises[i+1]];
+  rsHideModal('gm-ex-actions-modal');
+  renderGmExerciseList();
+});
+document.getElementById('gmea-settings').addEventListener('click', () => {
+  const i = gmExActionsIdx;
+  rsHideModal('gm-ex-actions-modal');
+  if (i != null) openGmExerciseSettings(i);
+});
+document.getElementById('gmea-remove').addEventListener('click', () => {
+  const i = gmExActionsIdx;
+  if (i == null) return;
+  groupModalDraft.exercises.splice(i, 1);
+  rsHideModal('gm-ex-actions-modal');
+  renderGmExerciseList();
+});
 
-    const prevLabel = nextBtn.textContent;
-    nextBtn.disabled = true;
-    nextBtn.textContent = 'Saving…';
-    document.getElementById('gm-back-btn').disabled = true;
-    hide('gm-save-error');
-    try {
-      if (groupModalId) {
-        await set(ref(db, `users/${uid()}/groups/${groupModalId}`), { ...groups[groupModalId], ...data });
-      } else {
-        await set(push(ref(db, `users/${uid()}/groups`)), { ...data, createdAt: Date.now() });
-      }
-      rsHideModal('group-modal');
-      switchWorkoutTab('groups');
-      showToast(groupModalId ? 'Workout group updated.' : 'Workout group created.');
-    } catch (err) {
-      // Surfaced, not swallowed: keep the modal open with everything the
-      // user entered still intact, log the real error, and let them retry.
-      console.error('Failed to save workout group:', err);
-      const errBox = document.getElementById('gm-save-error');
-      errBox.textContent = 'Could not save this group. Check your connection and try again.';
-      show('gm-save-error');
-    } finally {
-      nextBtn.disabled = false;
-      nextBtn.textContent = prevLabel;
-      document.getElementById('gm-back-btn').disabled = false;
+// ── Per-exercise sets/reps defaults — same fields the old inline inputs
+// edited, just moved behind "Exercise settings" so the list itself stays
+// text-led. ──────────────────────────────────────────────────────────────
+let gmExSettingsIdx = null;
+function openGmExerciseSettings(idx) {
+  const ge = groupModalDraft.exercises[idx];
+  const ex = ge && exercises[ge.exerciseId];
+  if (!ex) return;
+  gmExSettingsIdx = idx;
+  document.getElementById('gmes-title').textContent = ex.name;
+  document.getElementById('gmes-sets').value = ge.defaultSets;
+  document.getElementById('gmes-min').value = ge.minReps;
+  document.getElementById('gmes-max').value = ge.maxReps;
+  document.getElementById('gm-ex-settings-modal').style.display = '';
+}
+document.getElementById('gmes-close').addEventListener('click', () => rsHideModal('gm-ex-settings-modal'));
+document.getElementById('gm-ex-settings-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-settings-modal') rsHideModal('gm-ex-settings-modal'); });
+document.getElementById('gmes-save').addEventListener('click', () => {
+  const i = gmExSettingsIdx;
+  const ge = i != null ? groupModalDraft.exercises[i] : null;
+  if (!ge) return;
+  ge.defaultSets = Math.max(1, +document.getElementById('gmes-sets').value || 3);
+  ge.minReps = +document.getElementById('gmes-min').value || 8;
+  ge.maxReps = +document.getElementById('gmes-max').value || 12;
+  rsHideModal('gm-ex-settings-modal');
+  renderGmExerciseList();
+});
+
+// ── Drag-and-drop reordering ─────────────────────────────────────────────
+// Same long-press-to-arm + FLIP-with-anchor-shift technique as the Queue
+// drawer's own drag (see armQueueDrag()/endQueueDrag() etc.) — deliberately
+// a separate implementation rather than a refactor of that one, since Queue
+// behaviour is preserved untouched. The one real difference is pace: the
+// neighbor-ease below runs on the shared --rs-dur-quick/--rs-ease-settle
+// tokens (Calendar-sheet-style calm settle) instead of the queue's own
+// hardcoded .18s ease.
+const GM_EX_LONG_PRESS_MS = 150;
+let gmExDragPending = null, gmExDrag = null;
+function armGmExDrag() {
+  if (!gmExDragPending) return;
+  const { row, handle, pointerId, startY } = gmExDragPending;
+  gmExDrag = { row, handle, pointerId, startY };
+  row.classList.add('gm-ex-row-dragging');
+  if (navigator.vibrate) navigator.vibrate(8);
+  try { handle.setPointerCapture(pointerId); } catch (e) {}
+  gmExDragPending = null;
+}
+function clearGmExPending() {
+  if (gmExDragPending) { clearTimeout(gmExDragPending.timer); gmExDragPending = null; }
+}
+function endGmExDrag() {
+  if (!gmExDrag) return;
+  const { row } = gmExDrag;
+  row.classList.remove('gm-ex-row-dragging');
+  row.style.transform = '';
+  gmExDrag = null;
+  const newOrder = Array.from(document.getElementById('gm-config-list').querySelectorAll('.gm-ex-row')).map(r => +r.dataset.idx);
+  groupModalDraft.exercises = newOrder.map(i => groupModalDraft.exercises[i]);
+  renderGmExerciseList();
+}
+document.getElementById('gm-config-list').addEventListener('pointerdown', e => {
+  const handle = e.target.closest('.gm-ex-drag-handle');
+  if (!handle) return;
+  e.preventDefault();
+  const row = handle.closest('.gm-ex-row');
+  gmExDragPending = { row, handle, pointerId: e.pointerId, startY: e.clientY, timer: setTimeout(armGmExDrag, GM_EX_LONG_PRESS_MS) };
+});
+document.getElementById('gm-config-list').addEventListener('pointermove', e => {
+  if (gmExDragPending && e.pointerId === gmExDragPending.pointerId) {
+    if (Math.abs(e.clientY - gmExDragPending.startY) > 6) { clearTimeout(gmExDragPending.timer); armGmExDrag(); }
+    else return;
+  }
+  if (!gmExDrag || e.pointerId !== gmExDrag.pointerId) return;
+  const dy = e.clientY - gmExDrag.startY;
+  gmExDrag.row.style.transform = `translateY(${dy}px)`;
+
+  const list = document.getElementById('gm-config-list');
+  const rows = Array.from(list.children).filter(el => el.classList.contains('gm-ex-row'));
+  const draggedIndex = rows.indexOf(gmExDrag.row);
+  const draggedRect = gmExDrag.row.getBoundingClientRect();
+  const draggedMid = draggedRect.top + draggedRect.height / 2;
+
+  const beforeTops = new Map();
+  rows.forEach(r => { if (r !== gmExDrag.row) beforeTops.set(r, r.getBoundingClientRect().top); });
+
+  let anchorShift = 0;
+  rows.forEach((sib, i) => {
+    if (sib === gmExDrag.row) return;
+    const r = sib.getBoundingClientRect();
+    const sibMid = r.top + r.height / 2;
+    if (i < draggedIndex && draggedMid < sibMid) { list.insertBefore(gmExDrag.row, sib); anchorShift -= r.height; }
+    else if (i > draggedIndex && draggedMid > sibMid) { list.insertBefore(sib, gmExDrag.row); anchorShift += r.height; }
+  });
+  if (anchorShift) {
+    gmExDrag.startY += anchorShift;
+    gmExDrag.row.style.transform = `translateY(${e.clientY - gmExDrag.startY}px)`;
+  }
+
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  beforeTops.forEach((oldTop, r) => {
+    const delta = oldTop - r.getBoundingClientRect().top;
+    if (!delta || reducedMotion) return;
+    r.style.transition = 'none';
+    r.style.transform = `translateY(${delta}px)`;
+    requestAnimationFrame(() => {
+      r.style.transition = 'transform var(--rs-dur-quick) var(--rs-ease-settle)';
+      r.style.transform = '';
+    });
+  });
+});
+document.getElementById('gm-config-list').addEventListener('pointerup', e => {
+  clearGmExPending();
+  if (gmExDrag && e.pointerId === gmExDrag.pointerId) endGmExDrag();
+});
+document.getElementById('gm-config-list').addEventListener('pointercancel', e => {
+  clearGmExPending();
+  if (gmExDrag && e.pointerId === gmExDrag.pointerId) endGmExDrag();
+});
+
+// ── Save ─────────────────────────────────────────────────────────────────
+document.getElementById('gm-save-btn').addEventListener('click', async () => {
+  const saveBtn = document.getElementById('gm-save-btn');
+  if (saveBtn.disabled) return; // guard against double-submit (e.g. a double-tap on Save)
+
+  const name = document.getElementById('gm-name').value.trim();
+  if (!name) { show('gm-name-error'); document.getElementById('gm-name').focus(); return; }
+  hide('gm-name-error');
+  if (!groupModalDraft.exercises.length) { show('gm-ex-error'); return; }
+  hide('gm-ex-error');
+
+  const data = {
+    name,
+    description: document.getElementById('gm-desc').value.trim() || null,
+    color: groupModalDraft.color,
+    exercises: groupModalDraft.exercises,
+    updatedAt: Date.now()
+  };
+
+  const prevLabel = saveBtn.textContent;
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  hide('gm-save-error');
+  try {
+    if (groupModalId) {
+      await set(ref(db, `users/${uid()}/groups/${groupModalId}`), { ...groups[groupModalId], ...data });
+    } else {
+      await set(push(ref(db, `users/${uid()}/groups`)), { ...data, createdAt: Date.now() });
     }
+    hide('group-modal');
+    switchWorkoutTab('groups');
+    showToast(groupModalId ? 'Workout group updated.' : 'Workout group created.');
+  } catch (err) {
+    // Surfaced, not swallowed: keep the screen open with everything the
+    // user entered still intact, log the real error, and let them retry.
+    console.error('Failed to save workout group:', err);
+    const errBox = document.getElementById('gm-save-error');
+    errBox.textContent = 'Could not save this group. Check your connection and try again.';
+    show('gm-save-error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = prevLabel;
   }
 });
 
-document.getElementById('gm-duplicate-btn').addEventListener('click', async function() {
-  if (this.disabled) return;
-  this.disabled = true;
+// ── Duplicate / Delete — shared by the editor's own bottom rows and the
+// Workout Groups list's own "•••" overflow menu, so either entry point
+// runs the exact same write. ─────────────────────────────────────────────
+let workoutGroupActionBusy = false;
+async function duplicateWorkoutGroup(id) {
+  const g = groups[id];
+  if (!g || workoutGroupActionBusy) return;
+  workoutGroupActionBusy = true;
   try {
-    const copy = { ...groupModalDraft, name: `${groupModalDraft.name} copy`, exercises: groupModalDraft.exercises.map(ge => ({ ...ge })) };
-    await set(push(ref(db, `users/${uid()}/groups`)), { ...copy, description: copy.description || null, createdAt: Date.now(), updatedAt: Date.now() });
-    rsHideModal('group-modal');
+    const copy = { name: `${g.name} copy`, description: g.description || null, color: g.color || GROUP_COLORS[0], exercises: (g.exercises || []).map(ge => ({ ...ge })), createdAt: Date.now(), updatedAt: Date.now() };
+    await set(push(ref(db, `users/${uid()}/groups`)), copy);
+    hide('group-modal');
     switchWorkoutTab('groups');
     showToast('Workout group duplicated.');
   } catch (err) {
     console.error('Failed to duplicate workout group:', err);
     alert('Could not duplicate this group. Check your connection and try again.');
   } finally {
-    this.disabled = false;
+    workoutGroupActionBusy = false;
   }
-});
-document.getElementById('gm-delete-btn').addEventListener('click', async function() {
-  if (this.disabled || !groupModalId) return;
-  if (!confirm(`Delete "${groupModalDraft.name}"? Past workouts logged from it stay in your history.`)) return;
-  this.disabled = true;
+}
+async function deleteWorkoutGroup(id) {
+  const g = groups[id];
+  if (!g || workoutGroupActionBusy) return;
+  if (!confirm(`Delete "${g.name}"? Past workouts logged from it stay in your history.`)) return;
+  workoutGroupActionBusy = true;
   try {
-    await remove(ref(db, `users/${uid()}/groups/${groupModalId}`));
-    rsHideModal('group-modal');
+    await remove(ref(db, `users/${uid()}/groups/${id}`));
+    hide('group-modal');
     switchWorkoutTab('groups');
     showToast('Workout group deleted.');
   } catch (err) {
     console.error('Failed to delete workout group:', err);
     alert('Could not delete this group. Check your connection and try again.');
   } finally {
-    this.disabled = false;
+    workoutGroupActionBusy = false;
   }
-});
+}
+document.getElementById('gm-duplicate-btn').addEventListener('click', () => { if (groupModalId) duplicateWorkoutGroup(groupModalId); });
+document.getElementById('gm-delete-btn').addEventListener('click', () => { if (groupModalId) deleteWorkoutGroup(groupModalId); });
 
 // ── Group picker (Home's "Start Growing") ────────────────────────────────────
 const QUICK_WORKOUT_COLOR = '#22c55e';
