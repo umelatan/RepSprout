@@ -10705,6 +10705,27 @@ document.getElementById('mep-confirm-btn').addEventListener('click', async () =>
   }
 });
 
+// Home's "Log other activity" — goes straight to the activity library
+// instead of opening the full "Add to Calendar" chooser (Workout Group /
+// Quick Workout / Other Activity / Recovery Day) first, since this button
+// only ever means one of those four things. Same activity-library ->
+// activity-detail -> logOtherActivitySession() path Calendar's own
+// cap-activity-btn uses for "today", just entered directly.
+function openLogOtherActivityForToday() {
+  const today = todayStr();
+  openActivityLibrary(activityId => {
+    const act = getActivity(activityId);
+    openActivityDetailModal({
+      title: act?.name || 'Activity', subtitle: fmtDate(today), showCalories: true,
+      initialDuration: act?.defaultDuration, confirmLabel: 'Log Activity',
+      onConfirm: async details => {
+        const { previousGrowth, newGrowth } = await logOtherActivitySession(today, activityId, details);
+        finishActivityAdded(today, stageChangeMessage(previousGrowth, newGrowth));
+      }
+    });
+  });
+}
+
 // ── Dashboard quick actions ─────────────────────────────────────────────────
 document.getElementById('dash-mission-card').addEventListener('click', async e => {
   const btn = e.target.closest('[data-action]');
@@ -10751,7 +10772,8 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
     renderDashboard();
     openCalendarAddPicker(today);
   }
-  if (action === 'today-add-another' || action === 'today-log-activity') openCalendarAddPicker(today);
+  if (action === 'today-add-another') openCalendarAddPicker(today);
+  if (action === 'today-log-activity') openLogOtherActivityForToday();
 });
 document.getElementById('dash-view-garden').addEventListener('click', () => goView('profile'));
 
