@@ -6679,13 +6679,23 @@ function renderGmExerciseList() {
     return `
     <div class="gm-ex-row flex items-center gap-1 px-2" data-idx="${i}">
       <span class="gm-ex-drag-handle ms text-lg text-slate-300 dark:text-slate-500 flex-shrink-0 touch-none cursor-grab flex items-center justify-center" style="min-width:44px;min-height:44px" data-idx="${i}" role="img" aria-label="Drag to reorder ${esc(ex.name)}">drag_indicator</span>
-      <div class="min-w-0 flex-1 py-2">
+      <div class="gm-ex-open min-w-0 flex-1 py-2 cursor-pointer" data-idx="${i}" role="button" tabindex="0" aria-label="Configure ${esc(ex.name)}">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400">${meta}</p>
       </div>
       <button class="gm-ex-menu-btn flex items-center justify-center text-slate-400 flex-shrink-0" style="min-width:44px;min-height:44px" data-idx="${i}" aria-label="Exercise actions for ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
     </div>`;
   }).join('');
+  // Tapping the exercise itself jumps straight to Configure exercise — the
+  // overflow menu ("•••") stays for Remove from group, which needs its own
+  // deliberate step. Drag handle and overflow keep their own click handling
+  // untouched (this only wires the name/metadata area).
+  list.querySelectorAll('.gm-ex-open').forEach(el => {
+    el.addEventListener('click', () => openGmExerciseSettings(+el.dataset.idx));
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGmExerciseSettings(+el.dataset.idx); }
+    });
+  });
   list.querySelectorAll('.gm-ex-menu-btn').forEach(b => b.addEventListener('click', () => openGmExerciseActions(+b.dataset.idx)));
   refreshGmFormState();
 }
