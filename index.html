@@ -5632,15 +5632,15 @@ function resizeTargetReps(current, length, minReps, maxReps) {
 // never show a stage/leaf/readiness value out of sync with that page. No new
 // progression rule, threshold, or stage system is introduced here.
 let exgGroupFilter = '';     // '' (all muscle groups) or an MG_LABEL key — the page's only filter now
-let exgExpandedGroups = {};  // { [MG_LABEL key]: boolean } — collapse state while the user stays on this page; isExgGroupExpanded() defaults an unset key to expanded
+let exgExpandedGroups = {};  // { [MG_LABEL key]: boolean } — collapse state while the user stays on this page; isExgGroupExpanded() defaults an unset key to collapsed
 
 // Resets when the user (re-)enters the Exercises tab (see switchWorkoutTab())
-// — "remember state while on the page, reset to expanded next time it's
+// — "remember state while on the page, reset to collapsed next time it's
 // opened" means the reset belongs at the tab-entry point, not inside
 // renderExerciseLibrary() itself, which also re-runs for search/data
-// changes that should NOT collapse anything back open.
+// changes that should NOT re-collapse anything the user opened.
 function resetExgExpandedGroups() { exgExpandedGroups = {}; }
-function isExgGroupExpanded(key) { return exgExpandedGroups[key] !== false; }
+function isExgGroupExpanded(key) { return exgExpandedGroups[key] === true; }
 
 const EXG_ACCENT = {
   brand:  { chipBg: 'bg-brand-500 text-white border-brand-500',   text: 'text-brand-500',  soft: 'bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400', glow: 'rgba(34,197,94,.22)'  },
