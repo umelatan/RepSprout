@@ -276,6 +276,17 @@ body{font-family:'Inter',sans-serif}
 .dark .gm-stepper-btn-accent-outline{border-color:#a78bfa;color:#a78bfa!important}
 @keyframes gmStepperGlow{0%{box-shadow:0 0 0 0 rgba(139,92,246,.45)}100%{box-shadow:0 0 0 10px rgba(139,92,246,0)}}
 .gm-stepper-glow{animation:gmStepperGlow var(--rs-dur-quick) var(--rs-ease-standard)}
+/* Exercise Garden muscle-group sections — a CSS-only expand/collapse (grid
+   0fr/1fr trick) rather than measuring scrollHeight in JS, so the browser
+   animates the real height smoothly on the shared motion tokens with no
+   extra JS math. toggleExgGroupSection() only ever toggles these classes on
+   the existing DOM node, never re-renders it, so the transition always has
+   a real "before" state to animate from. */
+.exg-mg-body{display:grid;grid-template-rows:1fr;transition:grid-template-rows var(--rs-dur-standard) var(--rs-ease-standard);overflow:hidden}
+.exg-mg-body.collapsed{grid-template-rows:0fr}
+.exg-mg-body>div{overflow:hidden;min-height:0}
+.exg-mg-chevron{display:inline-block;transition:transform var(--rs-dur-quick) var(--rs-ease-settle)}
+.exg-mg-chevron.expanded{transform:rotate(90deg)}
 @keyframes gmValuePop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
 .gm-value-pop{animation:gmValuePop var(--rs-dur-quick) var(--rs-ease-settle)}
 /* Migrate the bespoke sheet/drawer transitions built earlier this session
@@ -726,22 +737,16 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
             <input id="ex-search" type="text" placeholder="Search exercises..." class="pl-9 py-2.5 rounded-xl" aria-label="Search exercises">
           </div>
           <button id="new-exercise-btn" type="button" class="btn btn-green px-3.5 py-2.5 text-sm rounded-xl flex-shrink-0 flex items-center gap-1 whitespace-nowrap"><span class="ms text-base" aria-hidden="true">add</span>Add exercise</button>
-          <button id="exg-filter-toggle" type="button" class="py-2.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More filters" aria-expanded="false" aria-controls="exg-group-filter-wrap"><span class="ms text-lg" aria-hidden="true">tune</span></button>
         </div>
 
         <!-- Summary — every number here is derived live from calculateExerciseDoubleProgression() over all non-archived exercises (see renderExerciseLibrary()), never hardcoded. -->
         <div id="exg-summary" class="card p-4"></div>
 
-        <div id="exg-group-filter-wrap" style="display:none">
-          <label for="exg-group-filter" class="text-xs font-semibold text-slate-400 block mb-1">Body area</label>
-          <select id="exg-group-filter" aria-label="Filter by body area"><option value="">All body areas</option></select>
-        </div>
+        <!-- Muscle-group filter — the page's only filter now; always visible,
+             no "more filters" toggle needed (see renderExgMuscleGroupFilters()). -->
+        <div id="exg-mg-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by muscle group" style="scrollbar-width:none"></div>
 
-        <!-- Status filter — single active filter, combined with the body-area
-             select above and the search box (see renderExerciseLibrary()). -->
-        <div id="exg-status-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by progression status" style="scrollbar-width:none"></div>
-
-        <div id="exercise-library-list" class="space-y-5"></div>
+        <div id="exercise-library-list" class="space-y-3"></div>
       </div>
 
       <!-- Targets — entirely optional habit tracking, kept visually and
@@ -4726,7 +4731,7 @@ function switchWorkoutTab(tab) {
   if (tab === 'hub')       renderWorkoutHub();
   if (tab === 'groups')    renderGroupsList();
   if (tab === 'history')   renderHistory();
-  if (tab === 'exercises') renderExerciseLibrary();
+  if (tab === 'exercises') { resetExgExpandedGroups(); renderExerciseLibrary(); }
   if (tab === 'targets')   renderTargetsTab();
 }
 
@@ -5626,27 +5631,42 @@ function resizeTargetReps(current, length, minReps, maxReps) {
 // same engine the Exercise Progress Detail page reads, so the Garden can
 // never show a stage/leaf/readiness value out of sync with that page. No new
 // progression rule, threshold, or stage system is introduced here.
-let exgStatusFilter = 'all'; // 'all' | 'ready' | 'growing' | 'bloomed'
-let exgGroupFilter = '';     // '' (all body areas) or an MG_LABEL key
+let exgGroupFilter = '';     // '' (all muscle groups) or an MG_LABEL key — the page's only filter now
+let exgExpandedGroups = {};  // { [MG_LABEL key]: boolean } — collapse state while the user stays on this page; isExgGroupExpanded() defaults an unset key to expanded
+
+// Resets when the user (re-)enters the Exercises tab (see switchWorkoutTab())
+// — "remember state while on the page, reset to expanded next time it's
+// opened" means the reset belongs at the tab-entry point, not inside
+// renderExerciseLibrary() itself, which also re-runs for search/data
+// changes that should NOT collapse anything back open.
+function resetExgExpandedGroups() { exgExpandedGroups = {}; }
+function isExgGroupExpanded(key) { return exgExpandedGroups[key] !== false; }
 
 const EXG_ACCENT = {
   brand:  { chipBg: 'bg-brand-500 text-white border-brand-500',   text: 'text-brand-500',  soft: 'bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400', glow: 'rgba(34,197,94,.22)'  },
   blue:   { chipBg: 'bg-blue-500 text-white border-blue-500',     text: 'text-blue-500',   soft: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400',   glow: 'rgba(59,130,246,.22)' },
   purple: { chipBg: 'bg-purple-500 text-white border-purple-500', text: 'text-purple-500', soft: 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400', glow: 'rgba(168,85,247,.22)' }
 };
-// Section order doubles as render order on the "All" filter.
+// Per-exercise progression classification only now — this no longer drives
+// page structure (that's muscle group, below), just each card's own accent
+// color/label via exgAccentFor()/classifyExerciseForGarden().
 const EXG_SECTIONS = [
   { key: 'ready',   title: 'Ready to progress', desc: 'These exercises can grow new leaves.',              icon: 'eco',           accent: 'brand'  },
   { key: 'growing', title: 'Growing',           desc: 'Keep going! One more progression to grow.',         icon: 'eco',           accent: 'blue'   },
   { key: 'sprout',  title: 'Sprouts',           desc: 'Your exercise plants are ready to begin growing.',  icon: 'spa',           accent: 'brand'  },
   { key: 'bloomed', title: 'Bloomed',           desc: 'Fully matured! Keep maintaining.',                   icon: 'local_florist', accent: 'purple' }
 ];
-const EXG_STATUS_FILTERS = [{ key: 'all', label: 'All' }, ...EXG_SECTIONS.map(s => ({ key: s.key, label: s.title }))];
-const EXG_SECTION_LIMIT = 3;
 
-// Resolves an EXG_SECTIONS accent color by section key — the one place both
-// exgSectionHtml() and renderExgCard() go through, so a card's accent can
-// never drift out of sync with its section header's accent.
+// Any exercise whose muscleGroup is missing or doesn't match a known
+// MG_LABEL key still needs a home — falls into "Other" rather than vanishing
+// from the page, so every exercise really does appear exactly once.
+function exgGroupKeyFor(ex) { return MG_LABEL[ex.muscleGroup] ? ex.muscleGroup : 'other'; }
+
+// Resolves an EXG_SECTIONS accent color by a card's own progression section
+// key (ready/growing/sprout/bloomed) — renderExgCard()'s one path to it, for
+// each card's own stage tinting. Unrelated to the page's muscle-group
+// sections; a card's accent is about its progression state, never which
+// muscle-group section it's rendered under.
 function exgAccentFor(sectionKey) {
   const section = EXG_SECTIONS.find(s => s.key === sectionKey);
   return EXG_ACCENT[section?.accent] || EXG_ACCENT.blue;
@@ -5754,52 +5774,60 @@ function renderExgSummary(entries) {
     </div>` : ''}`;
 }
 
-function renderExgStatusFilters() {
-  const wrap = document.getElementById('exg-status-filters');
-  wrap.innerHTML = EXG_STATUS_FILTERS.map(f => {
-    const on = f.key === exgStatusFilter;
-    const section = EXG_SECTIONS.find(s => s.key === f.key);
+// The page's only filter — "All" plus one chip per MG_LABEL key, always
+// visible (no toggle to reveal it). Selecting a specific group also force-
+// expands that section (see renderExerciseLibrary()), matching "the section
+// should automatically expand" when a group filter is chosen.
+function renderExgMuscleGroupFilters() {
+  const wrap = document.getElementById('exg-mg-filters');
+  const chips = [{ key: '', label: 'All' }, ...Object.entries(MG_LABEL).map(([key, label]) => ({ key, label }))];
+  wrap.innerHTML = chips.map(c => {
+    const on = c.key === exgGroupFilter;
     const activeClasses = on
-      ? (section ? EXG_ACCENT[section.accent].chipBg : 'bg-slate-700 text-white border-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200')
+      ? 'bg-slate-700 text-white border-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200'
       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800';
-    return `<button type="button" class="exg-status-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${activeClasses}" data-status="${f.key}" aria-pressed="${on}">${esc(f.label)}</button>`;
+    return `<button type="button" class="exg-mg-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${activeClasses}" data-key="${c.key}" aria-pressed="${on}">${esc(c.label)}</button>`;
   }).join('');
-  wrap.querySelectorAll('.exg-status-chip').forEach(b => b.addEventListener('click', () => { exgStatusFilter = b.dataset.status; renderExerciseLibrary(); }));
+  wrap.querySelectorAll('.exg-mg-chip').forEach(b => b.addEventListener('click', () => {
+    exgGroupFilter = b.dataset.key;
+    if (exgGroupFilter) exgExpandedGroups[exgGroupFilter] = true;
+    renderExerciseLibrary();
+  }));
 }
 
-function renderExgGroupFilterOptions() {
-  const sel = document.getElementById('exg-group-filter');
-  if (sel.dataset.built) { sel.value = exgGroupFilter; return; }
-  sel.innerHTML = '<option value="">All body areas</option>' + Object.entries(MG_LABEL).map(([k, label]) => `<option value="${k}">${esc(label)}</option>`).join('');
-  sel.dataset.built = '1';
-  sel.value = exgGroupFilter;
-}
-
-function exgSectionHtml(section, items, { expanded }) {
-  const accent = exgAccentFor(section.key);
-  if (!items.length) {
-    if (!expanded) return '';
-    return `
-      <div class="space-y-1.5">
-        <p class="text-sm font-bold ${accent.text} flex items-center gap-1.5"><span class="ms text-base" aria-hidden="true">${section.icon}</span>${section.title}</p>
-        <p class="text-xs text-slate-400 text-center py-6">No exercises match this filter yet.</p>
-      </div>`;
-  }
-  const shown = expanded ? items : items.slice(0, EXG_SECTION_LIMIT);
-  const viewAllBtn = (!expanded && items.length > EXG_SECTION_LIMIT)
-    ? `<button type="button" class="exg-view-all-btn text-xs font-semibold ${accent.text} hover:underline flex items-center gap-0.5 flex-shrink-0" data-status="${section.key}">View all<span class="ms text-sm" aria-hidden="true">chevron_right</span></button>`
-    : '';
+// One muscle-group section — a collapsible card, not a status-driven list.
+// Always renders every matching exercise (no view-all truncation); the
+// header toggle (see toggleExgGroupSection()) only ever flips classes on
+// this exact DOM node afterward, never re-renders it, so the CSS
+// grid-row/chevron transitions always have a real "before" state to
+// animate from.
+function exgGroupSectionHtml(key, label, items) {
+  const expanded = isExgGroupExpanded(key);
   return `
-    <div class="space-y-2.5">
-      <div class="flex items-center justify-between gap-2">
-        <div class="min-w-0">
-          <p class="text-sm font-bold ${accent.text} flex items-center gap-1.5"><span class="ms text-base" aria-hidden="true">${section.icon}</span>${esc(section.title)} <span class="text-slate-400 font-semibold">(${items.length})</span></p>
-          <p class="text-[11px] text-slate-400">${esc(section.desc)}</p>
-        </div>
-        ${viewAllBtn}
+    <div class="exg-mg-section card overflow-hidden" data-key="${key}">
+      <button type="button" class="exg-mg-header w-full flex items-center justify-between gap-2 p-3.5 text-left" style="min-height:44px" data-key="${key}" aria-expanded="${expanded}">
+        <span class="flex items-center gap-2 min-w-0">
+          <span class="ms exg-mg-chevron text-lg text-slate-400 flex-shrink-0 ${expanded ? 'expanded' : ''}" aria-hidden="true">chevron_right</span>
+          <span class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate">${esc(label)}</span>
+        </span>
+        <span class="text-xs text-slate-400 flex-shrink-0">${items.length} exercise${items.length !== 1 ? 's' : ''}</span>
+      </button>
+      <div class="exg-mg-body ${expanded ? '' : 'collapsed'}" data-key="${key}">
+        <div class="px-3.5 pb-3.5 space-y-2">${items.map(renderExgCard).join('')}</div>
       </div>
-      <div class="space-y-2">${shown.map(renderExgCard).join('')}</div>
     </div>`;
+}
+
+function toggleExgGroupSection(key) {
+  const nowExpanded = !isExgGroupExpanded(key);
+  exgExpandedGroups[key] = nowExpanded;
+  const header = document.querySelector(`.exg-mg-header[data-key="${key}"]`);
+  const body = document.querySelector(`.exg-mg-body[data-key="${key}"]`);
+  if (header) {
+    header.setAttribute('aria-expanded', String(nowExpanded));
+    header.querySelector('.exg-mg-chevron')?.classList.toggle('expanded', nowExpanded);
+  }
+  if (body) body.classList.toggle('collapsed', !nowExpanded);
 }
 
 // The Exercise Plant visual itself — DP_STAGE_EMOJI is the ONLY plant asset
@@ -5883,13 +5911,15 @@ function wireExgCardActions() {
   });
   list.querySelectorAll('.exg-edit-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseModal(b.dataset.id); }));
   list.querySelectorAll('.exg-more-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseActionsSheet(b.dataset.id); }));
-  list.querySelectorAll('.exg-view-all-btn').forEach(b => b.addEventListener('click', () => { exgStatusFilter = b.dataset.status; renderExerciseLibrary(); }));
+  list.querySelectorAll('.exg-mg-header').forEach(b => b.addEventListener('click', () => toggleExgGroupSection(b.dataset.key)));
   document.getElementById('exg-empty-add-btn')?.addEventListener('click', () => openExerciseModal());
 }
 
 // The one render function for the Exercise Garden — entry point name kept
 // unchanged so every existing caller (onValue listeners, switchWorkoutTab,
-// session-save flows) keeps working without modification.
+// session-save flows) keeps working without modification. Every non-
+// archived exercise is grouped by muscle group and shown directly on this
+// page — no status-driven sections, no per-section truncation/"View all".
 function renderExerciseLibrary() {
   const q = (document.getElementById('ex-search').value || '').trim().toLowerCase();
   const allEntries = Object.entries(exercises).filter(([, ex]) => !ex.archived).map(([id, ex]) => classifyExerciseForGarden(id, ex));
@@ -5897,40 +5927,31 @@ function renderExerciseLibrary() {
 
   if (!allEntries.length) {
     document.getElementById('exg-summary').style.display = 'none';
-    document.getElementById('exg-status-filters').style.display = 'none';
+    document.getElementById('exg-mg-filters').style.display = 'none';
     list.innerHTML = exgEmptyStateHtml();
     wireExgCardActions();
     return;
   }
 
   document.getElementById('exg-summary').style.display = '';
-  document.getElementById('exg-status-filters').style.display = '';
+  document.getElementById('exg-mg-filters').style.display = '';
   renderExgSummary(allEntries);
-  renderExgGroupFilterOptions();
-  renderExgStatusFilters();
+  renderExgMuscleGroupFilters();
 
-  let filtered = allEntries.filter(e => !q || e.ex.name?.toLowerCase().includes(q));
-  if (exgGroupFilter) filtered = filtered.filter(e => e.ex.muscleGroup === exgGroupFilter);
+  const filtered = allEntries.filter(e => !q || e.ex.name?.toLowerCase().includes(q));
+  const groupKeys = exgGroupFilter ? [exgGroupFilter] : Object.keys(MG_LABEL);
+  const sections = groupKeys
+    .map(key => ({ key, label: MG_LABEL[key], items: filtered.filter(e => exgGroupKeyFor(e.ex) === key) }))
+    .filter(s => s.items.length > 0);
 
-  if (exgStatusFilter !== 'all') {
-    const section = EXG_SECTIONS.find(s => s.key === exgStatusFilter);
-    list.innerHTML = exgSectionHtml(section, filtered.filter(e => e.section === section.key), { expanded: true });
-  } else {
-    const html = EXG_SECTIONS.map(section => exgSectionHtml(section, filtered.filter(e => e.section === section.key), { expanded: false })).join('');
-    list.innerHTML = html || `<p class="text-sm text-slate-400 text-center py-8">No exercises match your search.</p>`;
-  }
+  list.innerHTML = sections.length
+    ? sections.map(s => exgGroupSectionHtml(s.key, s.label, s.items)).join('')
+    : `<p class="text-sm text-slate-400 text-center py-8">No exercises match your search.</p>`;
   wireExgCardActions();
 }
 
 document.getElementById('ex-search').addEventListener('input', renderExerciseLibrary);
 document.getElementById('new-exercise-btn').addEventListener('click', () => openExerciseModal());
-document.getElementById('exg-filter-toggle').addEventListener('click', () => {
-  const wrap = document.getElementById('exg-group-filter-wrap');
-  const open = wrap.style.display === 'none';
-  wrap.style.display = open ? '' : 'none';
-  document.getElementById('exg-filter-toggle').setAttribute('aria-expanded', String(open));
-});
-document.getElementById('exg-group-filter').addEventListener('change', e => { exgGroupFilter = e.target.value; renderExerciseLibrary(); });
 
 // ── Exercise Garden card overflow (View details / Delete) ──────────────────
 let exgActionsExerciseId = null;
