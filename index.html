@@ -6680,19 +6680,34 @@ function renderGmExerciseList() {
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400">${meta}</p>
       </div>
+      <button class="gm-ex-remove-btn flex items-center justify-center text-slate-400 hover:text-red-500 flex-shrink-0" style="min-width:44px;min-height:44px" data-idx="${i}" aria-label="Remove ${esc(ex.name)} from group"><span class="ms text-lg" aria-hidden="true">close</span></button>
     </div>`;
   }).join('');
-  // Tapping the exercise itself opens Configure exercise directly — the
-  // "•••" overflow is gone; Remove from group now lives inside that sheet
-  // instead (see gmes-remove). Drag handle keeps its own pointer handling
-  // untouched (this only wires the name/metadata area).
+  // Tapping the exercise itself opens Configure exercise directly. The "X"
+  // is a separate sibling (not nested inside .gm-ex-open), so clicking it
+  // never also triggers that row-open handler. Drag handle keeps its own
+  // pointer handling untouched.
   list.querySelectorAll('.gm-ex-open').forEach(el => {
     el.addEventListener('click', () => openGmExerciseSettings(+el.dataset.idx));
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGmExerciseSettings(+el.dataset.idx); }
     });
   });
+  list.querySelectorAll('.gm-ex-remove-btn').forEach(b => b.addEventListener('click', () => removeGmExercise(+b.dataset.idx)));
   refreshGmFormState();
+}
+
+// A quick, one-tap way to remove an exercise right from the list (the
+// slower path — open Configure exercise, then its own Remove from group —
+// still exists too). Confirmed first since there's no undo and the "X"
+// sits right next to a tap target used constantly (Configure exercise).
+function removeGmExercise(idx) {
+  const ge = groupModalDraft.exercises[idx];
+  const ex = ge && exercises[ge.exerciseId];
+  if (!ex) return;
+  if (!confirm(`Remove ${ex.name} from this group?`)) return;
+  groupModalDraft.exercises.splice(idx, 1);
+  renderGmExerciseList();
 }
 
 document.getElementById('gm-add-new-ex').addEventListener('click', () => {
