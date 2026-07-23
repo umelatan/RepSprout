@@ -1849,20 +1849,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Group editor: per-exercise row overflow. Move up/down were removed —
-     drag-and-drop (gm-config-list's own pointer handlers) is the only
-     reordering path now that the list supports it directly. -->
-<div id="gm-ex-actions-modal" style="display:none" class="fixed inset-0 z-[66] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-1">
-    <div class="flex items-center justify-between pb-1">
-      <h3 id="gmea-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
-      <button id="gmea-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
-    <button id="gmea-settings" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">tune</span>Configure exercise</button>
-    <button id="gmea-remove" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from group</button>
-  </div>
-</div>
-
 <!-- Exercise Configuration — one editing sheet, everything adjustable inline
      (no drilling into sub-sheets, no Progression row, no preview card, no
      chevron rows). Sets/Rep range are the only interactions on the page, so
@@ -1921,6 +1907,17 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
            progression/Companion Plant moments elsewhere; this is a
            configuration action. Disabled until something actually changes. -->
       <button id="gmes-save" type="button" disabled class="w-full mt-6 py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white transition-opacity disabled:opacity-40">Save changes</button>
+
+      <!-- Moved here from the row's old "•••" overflow (now removed —
+           tapping a row opens this sheet directly instead). Separated from
+           Save Changes the same way Delete group is separated from the
+           color controls on the Edit Group screen. -->
+      <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+        <button id="gmes-remove" type="button" class="w-full flex items-center gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-red-500">
+          <span class="ms text-lg" aria-hidden="true">delete</span>Remove from group
+          <span class="ms text-red-300 dark:text-red-800 ml-auto" aria-hidden="true">chevron_right</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -6679,16 +6676,15 @@ function renderGmExerciseList() {
     return `
     <div class="gm-ex-row flex items-center gap-1 px-2" data-idx="${i}">
       <span class="gm-ex-drag-handle ms text-lg text-slate-300 dark:text-slate-500 flex-shrink-0 touch-none cursor-grab flex items-center justify-center" style="min-width:44px;min-height:44px" data-idx="${i}" role="img" aria-label="Drag to reorder ${esc(ex.name)}">drag_indicator</span>
-      <div class="gm-ex-open min-w-0 flex-1 py-2 cursor-pointer" data-idx="${i}" role="button" tabindex="0" aria-label="Configure ${esc(ex.name)}">
+      <div class="gm-ex-open min-w-0 flex-1 py-2.5 cursor-pointer" data-idx="${i}" role="button" tabindex="0" aria-label="Configure ${esc(ex.name)}">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400">${meta}</p>
       </div>
-      <button class="gm-ex-menu-btn flex items-center justify-center text-slate-400 flex-shrink-0" style="min-width:44px;min-height:44px" data-idx="${i}" aria-label="Exercise actions for ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
     </div>`;
   }).join('');
-  // Tapping the exercise itself jumps straight to Configure exercise — the
-  // overflow menu ("•••") stays for Remove from group, which needs its own
-  // deliberate step. Drag handle and overflow keep their own click handling
+  // Tapping the exercise itself opens Configure exercise directly — the
+  // "•••" overflow is gone; Remove from group now lives inside that sheet
+  // instead (see gmes-remove). Drag handle keeps its own pointer handling
   // untouched (this only wires the name/metadata area).
   list.querySelectorAll('.gm-ex-open').forEach(el => {
     el.addEventListener('click', () => openGmExerciseSettings(+el.dataset.idx));
@@ -6696,7 +6692,6 @@ function renderGmExerciseList() {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGmExerciseSettings(+el.dataset.idx); }
     });
   });
-  list.querySelectorAll('.gm-ex-menu-btn').forEach(b => b.addEventListener('click', () => openGmExerciseActions(+b.dataset.idx)));
   refreshGmFormState();
 }
 
@@ -6708,33 +6703,6 @@ document.getElementById('gm-add-new-ex').addEventListener('click', () => {
     hide('gm-ex-error');
     renderGmExerciseList();
   }, groupModalDraft.exercises.map(ge => ge.exerciseId));
-});
-
-// ── Per-exercise overflow: Configure exercise, Remove from group. Move
-// up/down were removed — drag-and-drop on gm-config-list is the only
-// reordering path now (see armGmExDrag()/endGmExDrag() etc. below). ────────
-let gmExActionsIdx = null;
-function openGmExerciseActions(idx) {
-  const ge = groupModalDraft.exercises[idx];
-  const ex = ge && exercises[ge.exerciseId];
-  if (!ex) return;
-  gmExActionsIdx = idx;
-  document.getElementById('gmea-title').textContent = ex.name;
-  document.getElementById('gm-ex-actions-modal').style.display = '';
-}
-document.getElementById('gmea-close').addEventListener('click', () => rsHideModal('gm-ex-actions-modal'));
-document.getElementById('gm-ex-actions-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-actions-modal') rsHideModal('gm-ex-actions-modal'); });
-document.getElementById('gmea-settings').addEventListener('click', () => {
-  const i = gmExActionsIdx;
-  rsHideModal('gm-ex-actions-modal');
-  if (i != null) openGmExerciseSettings(i);
-});
-document.getElementById('gmea-remove').addEventListener('click', () => {
-  const i = gmExActionsIdx;
-  if (i == null) return;
-  groupModalDraft.exercises.splice(i, 1);
-  rsHideModal('gm-ex-actions-modal');
-  renderGmExerciseList();
 });
 
 // ── Exercise Configuration — one sheet, everything editable inline. No
@@ -6788,6 +6756,16 @@ document.getElementById('gmes-save').addEventListener('click', () => {
   ge.defaultSets = gmesDraft.sets;
   ge.minReps = gmesDraft.min;
   ge.maxReps = gmesDraft.max;
+  rsHideModal('gm-ex-settings-modal');
+  renderGmExerciseList();
+});
+// Moved here from the row's old "•••" overflow (now removed — tapping a row
+// opens this sheet directly). Discards any unsaved Sets/Rep range edits in
+// gmesDraft along with the removal, same as closing without saving already did.
+document.getElementById('gmes-remove').addEventListener('click', () => {
+  const i = gmExSettingsIdx;
+  if (i == null) return;
+  groupModalDraft.exercises.splice(i, 1);
   rsHideModal('gm-ex-settings-modal');
   renderGmExerciseList();
 });
