@@ -322,6 +322,15 @@ body{font-family:'Inter',sans-serif}
 .gm-ex-placeholder{transition:transform var(--rs-dur-press) var(--rs-ease-settle),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .gm-ex-placeholder:active{transform:scale(.98);border-color:#c4b5fd}
 .dark .gm-ex-placeholder:active{border-color:#7c3aed}
+/* Add Exercise picker — cards fade/rise in with a short stagger (reuses
+   capCardIn), press brightens the surface slightly, and once added get a
+   subtle lavender tint. Selection icon/plant-icon animations reuse
+   .stage-pop/.mep-plant-pop rather than new keyframes. */
+.pick-ex-item{text-align:left;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both;transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.pick-ex-item:active:not(:disabled){transform:scale(.985);background-color:rgba(139,92,246,.04)}
+.dark .pick-ex-item:active:not(:disabled){background-color:rgba(139,92,246,.09)}
+.pick-ex-item-added{border-color:#c4b5fd;background:#f5f3ff}
+.dark .pick-ex-item-added{border-color:#7c3aed;background:rgba(124,58,237,.14)}
 #create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
 #log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
 #edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button,
@@ -2089,28 +2098,47 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Pick exercise for session -->
-<div id="pick-ex-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
-    <div class="flex items-center justify-between">
-      <h3 class="font-display font-bold text-slate-800 dark:text-white">Add Exercise</h3>
-      <button id="pick-ex-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+<!-- Pick exercise — a compact take on the Exercise Library in "selection
+     mode": same search/filter-chip/Recent language as Build Today's
+     Workout (build-workout-modal), same real Exercise Plant icon per row
+     as the Garden/Quick Workout picker (classifyExerciseForGarden()).
+     Selecting an exercise adds it immediately (see addPickExercise()) —
+     the sheet stays open so more than one can be added per visit; "Add to
+     Workout"/the close X both just dismiss it once done. See
+     openPickExModal(). -->
+<div id="pick-ex-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:92vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex-shrink-0">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 class="font-display font-bold text-xl text-slate-800 dark:text-white">Add Exercise</h3>
+          <p class="text-sm text-slate-400 mt-0.5">Search and add exercises from your library.</p>
+        </div>
+        <button id="pick-ex-close" class="p-2 -mt-1 -mr-1 text-slate-400 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+      </div>
+      <div class="relative mt-4">
+        <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" aria-hidden="true">search</span>
+        <input id="pick-ex-search" type="text" placeholder="Search exercises..." class="pl-10">
+      </div>
+      <div class="mt-3">
+        <div id="pick-ex-filter-chips" class="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filter by target"></div>
+      </div>
+      <div id="pick-ex-recent-wrap" class="mt-3">
+        <p class="text-xs font-semibold text-slate-400 mb-1.5">Recent</p>
+        <div id="pick-ex-recent-list" class="flex gap-2 overflow-x-auto pb-1"></div>
+      </div>
     </div>
-    <div class="flex gap-2">
-      <input id="pick-ex-search" type="text" placeholder="Search..." style="flex:2">
-      <select id="pick-ex-category" style="flex:1">
-        <option value="">All</option>
-        <option value="upper">Upper body</option>
-        <option value="lower">Lower body</option>
-        <option value="core">Core</option>
-        <option value="full">Full body</option>
-        <option value="cardio">Cardio</option>
-        <option value="mobility">Mobility</option>
-        <option value="other">Other</option>
-      </select>
+    <div class="px-5 pb-2 flex-shrink-0"><p class="text-xs font-semibold text-slate-400">All exercises</p></div>
+    <div id="pick-ex-list" class="flex-1 overflow-y-auto px-5 space-y-2 pb-3 min-h-0"></div>
+    <div class="flex-shrink-0 px-5 pt-1">
+      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 pb-2"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every exercise you add helps your plants grow.</p>
     </div>
-    <div id="pick-ex-list" class="space-y-2 max-h-72 overflow-y-auto"></div>
-    <p class="text-xs text-slate-400 text-center">Don't see it? <button id="pick-ex-new" class="text-brand-500 font-semibold">Create new</button></p>
+    <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 px-5 py-3 flex items-center gap-3">
+      <span class="ms text-2xl text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
+      <p id="pick-ex-count-label" class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1 min-w-0">0 exercises added</p>
+      <button id="pick-ex-done-btn" type="button" disabled class="btn text-sm flex-shrink-0 bg-lavender-500 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:opacity-90">Add to Workout</button>
+    </div>
   </div>
 </div>
 
@@ -5691,56 +5719,137 @@ document.getElementById('et-save-btn').addEventListener('click', async () => {
 // Used by the group builder (adding exercises to a group) and by the active
 // workout screen (adding an unscheduled exercise). Whoever opens it decides
 // what happens on selection — the modal itself has no built-in destination.
+// Tapping a card/Recent chip calls onSelect(id) immediately (never deferred
+// to a batch commit) and marks that row "added" — the sheet stays open so
+// more than one exercise can be added per visit; "Add to Workout"/the close
+// X are both just a plain dismiss once the user is done. pickExAddedIds is
+// purely this-open-session UI state (which rows show a checkmark); it never
+// affects pickExExclude, which still works exactly as before.
 let pickExOnSelect = null;
 let pickExExclude = [];
+let pickExAddedIds = new Set();
+let pickExFilter = '';
 
 function openPickExModal(onSelect, excludeIds = []) {
   pickExOnSelect = onSelect;
   pickExExclude = excludeIds;
+  pickExAddedIds = new Set();
+  pickExFilter = '';
   document.getElementById('pick-ex-search').value = '';
-  document.getElementById('pick-ex-category').value = '';
+  renderPickExFilterChips();
+  renderPickExRecent();
   renderPickExList();
+  updatePickExBottomBar();
   document.getElementById('pick-ex-modal').style.display = '';
 }
 document.getElementById('pick-ex-close').addEventListener('click', () => rsHideModal('pick-ex-modal'));
-document.getElementById('pick-ex-search').addEventListener('input', renderPickExList);
-document.getElementById('pick-ex-category').addEventListener('change', renderPickExList);
-document.getElementById('pick-ex-new').addEventListener('click', () => {
-  rsHideModal('pick-ex-modal');
-  openExerciseModal();
-});
+document.getElementById('pick-ex-done-btn').addEventListener('click', () => rsHideModal('pick-ex-modal'));
+document.getElementById('pick-ex-search').addEventListener('input', () => renderPickExList());
+
+// Reuses Build Today's Workout's own Target filter set (BW_FILTERS) — the
+// exact same six groups + "All", not a new taxonomy.
+function renderPickExFilterChips() {
+  const wrap = document.getElementById('pick-ex-filter-chips');
+  wrap.innerHTML = BW_FILTERS.map(f => `
+    <button type="button" class="pick-ex-filter-chip flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${f.key === pickExFilter ? 'bg-lavender-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}" data-key="${f.key}" aria-pressed="${f.key === pickExFilter}">${f.label}</button>`).join('');
+  wrap.querySelectorAll('.pick-ex-filter-chip').forEach(chip => chip.addEventListener('click', () => {
+    pickExFilter = chip.dataset.key;
+    renderPickExFilterChips();
+    renderPickExList();
+  }));
+}
+
+// Recent — reuses getRecentlyUsedExerciseIds() (Build Today's Workout's own
+// recency logic, unchanged) as a set of quick-add chips. Already-excluded
+// exercises never show here either.
+function renderPickExRecent() {
+  const wrap = document.getElementById('pick-ex-recent-wrap');
+  const ids = getRecentlyUsedExerciseIds(6).filter(id => !pickExExclude.includes(id));
+  if (!ids.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  document.getElementById('pick-ex-recent-list').innerHTML = ids.map(id => {
+    const ex = exercises[id];
+    const added = pickExAddedIds.has(id);
+    return `
+      <button type="button" class="pick-ex-recent-pill flex-shrink-0 px-3.5 py-2 rounded-xl border text-left transition-all ${added ? 'border-lavender-400 bg-lavender-50 dark:bg-lavender-950/20 text-lavender-600 dark:text-lavender-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}" data-id="${id}" ${added ? 'disabled' : ''}>
+        <p class="text-xs font-semibold">${esc(ex.name)}</p>
+        <p class="text-[10px] text-slate-400">${esc(ex.equipment || MG_LABEL[ex.muscleGroup] || '')}</p>
+      </button>`;
+  }).join('');
+  wrap.querySelectorAll('.pick-ex-recent-pill').forEach(b => b.addEventListener('click', () => addPickExercise(b.dataset.id)));
+}
+
+function pickExSelectionIconHtml(added) {
+  return added
+    ? `<span class="ms text-2xl text-lavender-500 stage-pop" aria-hidden="true">check_circle</span>`
+    : `<span class="ms text-2xl text-lavender-500" aria-hidden="true">add_circle</span>`;
+}
 
 function renderPickExList() {
   const q = document.getElementById('pick-ex-search').value.toLowerCase();
-  const cat = document.getElementById('pick-ex-category').value;
   const list = document.getElementById('pick-ex-list');
   const items = Object.entries(exercises).filter(([id,ex]) =>
     !ex.archived && !pickExExclude.includes(id) &&
     (!q || ex.name?.toLowerCase().includes(q)) &&
-    (!cat || ex.muscleGroup === cat));
-  if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No exercises match. Create one!</p>'; return; }
-  list.innerHTML = items.map(([id, ex]) => {
-    const sets = ex.defaultSets || (ex.targetReps||[8,8,8]).length;
-    const last = getLastLoggedSets(id);
-    const prevLine = last ? `Last: ${last.weight||0} ${last.unit||ex.unit||'kg'} · ${last.sets.map(s=>s.reps||0).join(', ')}` : 'Your previous sets will appear after your first session.';
-    const meta1 = [ex.equipment, MG_LABEL[ex.muscleGroup]||ex.muscleGroup].filter(Boolean).join(' · ');
-    return `
-    <button class="pick-ex-item w-full flex items-center justify-between gap-2 p-3 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all text-left" data-id="${id}">
-      <div class="min-w-0">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-400">${meta1}</p>
-        <p class="text-xs text-slate-400">${sets} sets · ${ex.minReps??8}–${ex.maxReps??12} reps</p>
-        <p class="text-[11px] text-brand-500 truncate">${prevLine}</p>
-      </div>
-      <span class="ms text-xl text-brand-500 flex-shrink-0" aria-hidden="true">add</span>
+    (!pickExFilter || ex.muscleGroup === pickExFilter));
+  const createCardHtml = `
+    <button id="pick-ex-create-btn" type="button" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-lavender-300 dark:border-lavender-700 text-lavender-600 dark:text-lavender-400 hover:bg-lavender-50 dark:hover:bg-lavender-950/20 transition-all text-sm font-semibold">
+      <span class="ms text-lg" aria-hidden="true">add_circle</span>Create exercise
     </button>`;
-  }).join('');
-  list.querySelectorAll('.pick-ex-item').forEach(b =>
-    b.addEventListener('click', () => {
-      rsHideModal('pick-ex-modal');
-      pickExOnSelect?.(b.dataset.id);
-    })
-  );
+  if (!items.length) {
+    const msg = Object.keys(exercises).length ? 'No exercises match your search.' : "You don't have any exercises yet.";
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-6">${msg}</p>` + createCardHtml;
+    document.getElementById('pick-ex-create-btn').addEventListener('click', () => { rsHideModal('pick-ex-modal'); openExerciseModal(); });
+    return;
+  }
+  list.innerHTML = items.map(([id, ex], i) => {
+    const entry = classifyExerciseForGarden(id, ex);
+    const emoji = entry.disabled ? DP_STAGE_EMOJI[0] : DP_STAGE_EMOJI[entry.stageIdx];
+    const meta = [MG_LABEL[ex.muscleGroup] || ex.muscleGroup, ex.equipment].filter(Boolean).join(' • ');
+    const last = bwLastPerformanceLine(id);
+    const added = pickExAddedIds.has(id);
+    return `
+    <button type="button" class="pick-ex-item card ${added ? 'pick-ex-item-added' : ''} w-full flex items-center gap-3 p-3.5 text-left" data-id="${id}" style="animation-delay:${i*30}ms" ${added ? 'disabled' : ''}>
+      <span class="pick-ex-plant-icon cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="text-2xl leading-none" aria-hidden="true">${emoji}</span></span>
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400 mt-0.5">${esc(meta)}</p>
+        ${last ? `<p class="text-xs text-lavender-600 dark:text-lavender-400 font-medium mt-0.5">${esc(last)}</p>` : ''}
+      </div>
+      <span class="pick-ex-selection-icon flex-shrink-0">${pickExSelectionIconHtml(added)}</span>
+    </button>`;
+  }).join('') + createCardHtml;
+  list.querySelectorAll('.pick-ex-item').forEach(b => b.addEventListener('click', () => addPickExercise(b.dataset.id, b)));
+  document.getElementById('pick-ex-create-btn').addEventListener('click', () => { rsHideModal('pick-ex-modal'); openExerciseModal(); });
+}
+
+// The core "immediately add" interaction. When a card element is passed
+// (main list), the DOM is updated in place — not via a full re-render — so
+// the checkmark pop (.stage-pop) and the plant icon's bounce (.mep-plant-pop,
+// reused from the Quick Workout picker) actually get to animate. Recent's
+// own chips are few enough that a full re-render there is fine.
+function addPickExercise(id, cardEl) {
+  if (pickExAddedIds.has(id) || !exercises[id]) return;
+  pickExAddedIds.add(id);
+  pickExOnSelect?.(id);
+  if (cardEl) {
+    cardEl.classList.add('pick-ex-item-added');
+    cardEl.disabled = true;
+    const iconWrap = cardEl.querySelector('.pick-ex-selection-icon');
+    if (iconWrap) iconWrap.innerHTML = pickExSelectionIconHtml(true);
+    const plantIcon = cardEl.querySelector('.pick-ex-plant-icon');
+    if (plantIcon) { plantIcon.classList.remove('mep-plant-pop'); requestAnimationFrame(() => plantIcon.classList.add('mep-plant-pop')); }
+  } else {
+    renderPickExList();
+  }
+  renderPickExRecent();
+  updatePickExBottomBar();
+}
+
+function updatePickExBottomBar() {
+  const n = pickExAddedIds.size;
+  document.getElementById('pick-ex-count-label').textContent = `${n} exercise${n!==1?'s':''} added`;
+  document.getElementById('pick-ex-done-btn').disabled = n === 0;
 }
 
 // Import calories from photo — used from the Finish Workout summary's
@@ -9473,7 +9582,12 @@ initAddSheetSwipeClose('atw-drag-handle', 'atw-sheet', closeAddToWorkoutSheet);
 initAddSheetSwipeClose('aep-drag-handle', 'aep-sheet', closeAddExercisePlacementSheet);
 
 document.getElementById('atw-exercise-btn').addEventListener('click', () => {
-  openPickExModal(id => openAddExercisePlacementSheet(id), []);
+  // This flow hands off to another sheet (aep-modal) on selection, which
+  // sits at a lower z-index — pick-ex-modal must be closed first or the
+  // placement sheet would render invisibly underneath it (pick-ex-modal no
+  // longer auto-closes itself now that it supports adding more than one
+  // exercise per visit).
+  openPickExModal(id => { rsHideModal('pick-ex-modal'); openAddExercisePlacementSheet(id); }, []);
 });
 document.getElementById('atw-activity-btn').addEventListener('click', () => {
   openActivityLibrary(activityId => {
@@ -10498,7 +10612,11 @@ document.getElementById('esm-duration').addEventListener('input', () => {
 document.getElementById('esm-add-ex-btn').addEventListener('click', () => {
   const excludeIds = esmDraft.exercises.map(ex => ex.exerciseId);
   rsHideModal('edit-session-modal');
+  // This flow re-shows edit-session-modal (a lower z-index) on selection —
+  // pick-ex-modal must be closed first, same reasoning as atw-exercise-btn
+  // above, since it no longer auto-closes itself.
   openPickExModal(id => {
+    rsHideModal('pick-ex-modal');
     const entry = newSessionExerciseFromLibrary(id);
     if (entry) esmDraft.exercises.push(entry);
     document.getElementById('edit-session-modal').style.display = '';
