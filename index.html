@@ -6779,7 +6779,7 @@ function renderGroupsList() {
     const lastLabel = lastDate ? `Last completed ${relativeDays(lastDate)}` : 'Not completed yet';
     const color = g.color || GROUP_COLORS[0];
     return `
-      <div class="group-card card p-4 space-y-2 cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="Edit ${esc(g.name)}">
+      <div class="group-card card p-3.5 space-y-1.5 cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="Edit ${esc(g.name)}">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
@@ -6790,7 +6790,7 @@ function renderGroupsList() {
         ${g.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 truncate">${esc(g.description)}</p>` : ''}
         <p class="text-xs text-slate-400 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">calendar_month</span>${exList.length} exercise${exList.length!==1?'s':''} · ${lastLabel}</p>
         ${preview ? `<p class="text-xs text-slate-400 truncate">${preview}</p>` : ''}
-        <button class="start-group-btn inline-flex items-center justify-center px-4 rounded-xl text-sm font-semibold transition-all" style="background:${color}1f;color:${color};min-height:44px" data-id="${id}">Start workout</button>
+        <button class="start-group-btn inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all" style="background:${color}1f;color:${color}" data-id="${id}">Start workout</button>
       </div>`;
   }).join('') + CREATE_GROUP_CTA;
 
