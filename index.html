@@ -9852,20 +9852,20 @@ function renderCdsActionArea(planned, relation) {
     : planned.type === 'group' ? 'Start workout' : 'Start quick workout';
 
   const primaryBtnHtml = !primaryLabel ? '' : isWorkoutType
-    ? `<button id="${isActive ? 'cds-resume-btn' : 'cds-primary-btn'}" class="w-full py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white flex items-center justify-center gap-2" data-entry-id="${planned.id}" data-type="${planned.type}"><span class="ms text-xl" aria-hidden="true">play_arrow</span>${esc(primaryLabel)}</button>`
-    : `<button id="cds-primary-btn" class="btn btn-green btn-pop w-full py-3 text-sm" data-entry-id="${planned.id}" data-type="${planned.type}">${esc(primaryLabel)}</button>`;
+    ? `<button id="${isActive ? 'cds-resume-btn' : 'cds-primary-btn'}" class="w-full py-3 rounded-2xl text-sm font-bold bg-lavender-500 text-white flex items-center justify-center gap-1.5" data-entry-id="${planned.id}" data-type="${planned.type}"><span class="ms text-lg" aria-hidden="true">play_arrow</span>${esc(primaryLabel)}</button>`
+    : `<button id="cds-primary-btn" class="btn btn-green btn-pop w-full py-2.5 text-sm" data-entry-id="${planned.id}" data-type="${planned.type}">${esc(primaryLabel)}</button>`;
 
   // Today: Change/Add sit secondary beneath the primary Start/Resume button.
   // Future: no primary button exists, so Add another activity takes over as
   // the prominent lavender action instead.
   const changeAddRow = isToday ? `
     <div class="grid grid-cols-2 gap-2 mt-2">
-      <button id="cds-change-btn" class="btn btn-outline py-3 text-sm truncate" data-entry-id="${planned.id}">Change workout</button>
-      <button id="cds-add-another-btn" class="py-3 text-sm font-semibold rounded-xl border-2 border-lavender-300 dark:border-lavender-700 text-lavender-600 dark:text-lavender-400 truncate flex items-center justify-center gap-1"><span class="ms text-base" aria-hidden="true">add</span>Add activity</button>
+      <button id="cds-change-btn" class="btn btn-outline py-2 text-xs truncate" data-entry-id="${planned.id}">Change workout</button>
+      <button id="cds-add-another-btn" class="py-2 text-xs font-semibold rounded-xl border-2 border-lavender-300 dark:border-lavender-700 text-lavender-600 dark:text-lavender-400 truncate flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Add activity</button>
     </div>` : `
     <div class="grid grid-cols-2 gap-2">
-      <button id="cds-change-btn" class="btn btn-outline py-3 text-sm truncate" data-entry-id="${planned.id}">Change workout</button>
-      <button id="cds-add-another-btn" class="py-3 text-sm font-bold rounded-xl bg-lavender-500 text-white truncate flex items-center justify-center gap-1"><span class="ms text-base" aria-hidden="true">add</span>Add another activity</button>
+      <button id="cds-change-btn" class="btn btn-outline py-2 text-xs truncate" data-entry-id="${planned.id}">Change workout</button>
+      <button id="cds-add-another-btn" class="py-2 text-xs font-bold rounded-xl bg-lavender-500 text-white truncate flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Add another activity</button>
     </div>`;
 
   return `
@@ -9873,8 +9873,8 @@ function renderCdsActionArea(planned, relation) {
       <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">${isToday ? 'Today' : 'Add to this day'}</p>
       ${primaryBtnHtml}
       ${changeAddRow}
-      <button id="cds-mark-recovery-btn" type="button" class="w-full flex items-center gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-slate-700 dark:text-slate-200">
-        <span class="ms text-lg text-brand-500" aria-hidden="true">eco</span>Mark as recovery day
+      <button id="cds-mark-recovery-btn" type="button" class="w-full flex items-center gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <span class="ms text-base text-brand-500" aria-hidden="true">eco</span>Mark as recovery day
         <span class="ms text-slate-300 dark:text-slate-600 ml-auto" aria-hidden="true">chevron_right</span>
       </button>
     </section>`;
