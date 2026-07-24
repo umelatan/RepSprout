@@ -307,6 +307,16 @@ body{font-family:'Inter',sans-serif}
    existing opacity/transform one (the two classes share equal specificity,
    so this has to restate them or they'd be dropped, not merged). */
 .ex-target-chip,.ex-equip-chip,.ex-rest-chip{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
+/* Start Workout picker — neutral tappable cards. Entrance reuses capCardIn
+   (staggered via inline animation-delay, since the list length varies);
+   press feedback is a slight scale + a touch of lavender brightening +
+   the chevron pod nudging right, all released with the same spring ease
+   the rest of the app's press states use. */
+.gp-workout-card{text-align:left;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both;transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.gp-workout-card:active{transform:scale(.985);background-color:rgba(139,92,246,.04)}
+.dark .gp-workout-card:active{background-color:rgba(139,92,246,.09)}
+.gp-chevron-pod{transition:transform var(--rs-dur-press) var(--rs-ease-settle)}
+.gp-workout-card:active .gp-chevron-pod{transform:translateX(2px)}
 #create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
 #log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
 #edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button,
@@ -1814,15 +1824,29 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Choose today's workout group (Start Growing) -->
-<div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 class="font-display font-bold text-slate-800 dark:text-white">Choose today's workout</h3>
-      <button id="group-picker-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+<!-- Choose today's workout group (Start Growing) — a calm, typography-first
+     browsing list rather than a wall of coloured Start buttons: neutral
+     tappable cards (see .gp-workout-card), lavender icon pods reusing the
+     same .cap-icon-pod language as Add to Calendar/Calendar/Exercise
+     Library, and real progression data per group via
+     classifyExerciseForGarden() — the same classifier the Garden page
+     itself uses. See openGroupPicker(). -->
+<div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:90vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-4 flex-shrink-0 flex items-start justify-between gap-2">
+      <div class="min-w-0">
+        <h3 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Start Workout</h3>
+        <p class="text-sm text-slate-400 mt-1">Choose a workout or build your own.</p>
+      </div>
+      <button id="group-picker-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <div id="group-picker-list" class="space-y-3"></div>
-    <button id="group-picker-rest-settings" type="button" class="text-[11px] font-semibold text-slate-400 hover:underline w-full text-center py-1">⏱ Rest timer settings</button>
+    <div class="flex-1 overflow-y-auto px-5 pb-2">
+      <div id="group-picker-list" class="space-y-3"></div>
+    </div>
+    <div class="flex-shrink-0 px-5 pt-2 pb-5">
+      <button id="group-picker-rest-settings" type="button" class="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-sm font-semibold text-slate-400"><span class="ms text-base" aria-hidden="true">settings</span>Rest timer settings</button>
+    </div>
   </div>
 </div>
 
@@ -7398,6 +7422,49 @@ function closeGroupPicker() {
   closeStartWorkoutChoice();
 }
 
+// A purely cosmetic heuristic — Workout Groups only ever store a name and
+// an accent colour (see group-modal's own comment: "no cover image, no
+// inferred icon"), so there's nothing stored to read here. Never persisted,
+// never read back — just picks the closest existing Material Symbol for
+// this card's icon pod.
+function groupIconFor(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('quick')) return 'bolt';
+  if (n.includes('full')) return 'auto_awesome';
+  if (n.includes('lower') || n.includes('leg')) return 'directions_run';
+  return 'fitness_center';
+}
+
+// "N ready to progress" when at least one of the group's exercises has a
+// leaf ready to advance, otherwise the Sprout/Growing/Bloomed breakdown —
+// both straight from classifyExerciseForGarden(), the exact classifier the
+// Garden page itself uses, so this never drifts from real progression
+// state. Exercises the group references that no longer exist are skipped,
+// never fabricated.
+function groupProgressionMetaHtml(groupExercises) {
+  const classified = (groupExercises || [])
+    .map(ge => exercises[ge.exerciseId] ? classifyExerciseForGarden(ge.exerciseId, exercises[ge.exerciseId]) : null)
+    .filter(Boolean);
+  if (!classified.length) return '';
+  const iconSpan = sectionKey => {
+    const sec = EXG_SECTIONS.find(s => s.key === sectionKey);
+    const accent = EXG_ACCENT[sec.accent];
+    return `<span class="ms text-sm ${accent.text}" aria-hidden="true">${sec.icon}</span>`;
+  };
+  const readyCount = classified.filter(e => !e.disabled && e.hasReadyLeaf).length;
+  if (readyCount > 0) {
+    return `<p class="text-xs text-slate-400 flex items-center gap-1.5">${iconSpan('ready')}${readyCount} ready to progress</p>`;
+  }
+  const sprouts = classified.filter(e => e.bucket === 'sprout').length;
+  const growing = classified.filter(e => e.bucket === 'growing').length;
+  const bloomed = classified.filter(e => e.bucket === 'bloomed').length;
+  const parts = [];
+  if (sprouts) parts.push(`<span class="inline-flex items-center gap-1">${iconSpan('sprout')}${sprouts} Sprout${sprouts===1?'':'s'}</span>`);
+  if (growing) parts.push(`<span class="inline-flex items-center gap-1">${iconSpan('growing')}${growing} Growing</span>`);
+  if (bloomed) parts.push(`<span class="inline-flex items-center gap-1">${iconSpan('bloomed')}${bloomed} Bloomed</span>`);
+  return parts.length ? `<p class="text-xs text-slate-400 flex items-center gap-2.5 flex-wrap">${parts.join('')}</p>` : '';
+}
+
 function openGroupPicker() {
   const list = document.getElementById('group-picker-list');
   const items = Object.entries(groups).filter(([,g]) => !g.archived);
@@ -7425,26 +7492,33 @@ function openGroupPicker() {
       openGroupModal();
     });
   } else {
-    list.innerHTML = items.map(([id, g]) => {
+    list.innerHTML = items.map(([id, g], i) => {
       const exCount = (g.exercises || []).length;
       const lastDate = lastCompletedDate(id);
-      const lastLabel = lastDate ? `Last done ${relativeDays(lastDate)}` : 'Not completed yet';
-      const color = g.color || GROUP_COLORS[0];
+      const lastLabel = lastDate ? `Last trained ${relativeDays(lastDate)}` : 'Not trained yet';
+      const icon = groupIconFor(g.name);
+      const metaHtml = groupProgressionMetaHtml(g.exercises);
       return `
-        <div class="card p-4 space-y-2" style="border:1px solid ${color}">
-          <p class="font-display font-bold text-sm text-slate-800 dark:text-white">${esc(g.name)}</p>
-          <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''} · ${lastLabel}</p>
-          <button class="gp-start-btn btn w-full py-2.5" style="background:${color};color:white" data-id="${id}">Start</button>
-        </div>`;
+        <button type="button" class="gp-workout-card card w-full flex items-start gap-3 p-3.5 text-left" data-id="${id}" style="animation-delay:${i*40}ms">
+          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-2xl text-white" aria-hidden="true">${icon}</span></span>
+          <div class="min-w-0 flex-1 space-y-1">
+            <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(g.name)}</p>
+            <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''}</p>
+            ${metaHtml}
+            <p class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800/60 text-xs text-slate-400 mt-1"><span class="ms text-sm" aria-hidden="true">schedule</span>${lastLabel}</p>
+          </div>
+          <span class="gp-chevron-pod w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 self-center" aria-hidden="true"><span class="ms text-lg text-slate-400" aria-hidden="true">chevron_right</span></span>
+        </button>`;
     }).join('') + `
-      <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-        <div>
-          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Quick Workout</p>
-          <p class="text-[11px] text-slate-400">Build today's workout as you go.</p>
-        </div>
-        <button id="gp-start-quick" class="btn btn-outline w-full py-2.5">Start Quick Workout</button>
-      </div>`;
-    list.querySelectorAll('.gp-start-btn').forEach(b => b.addEventListener('click', () => {
+        <button type="button" id="gp-start-quick" class="gp-workout-card card w-full flex items-center gap-3 p-3.5 text-left" style="animation-delay:${items.length*40}ms">
+          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-2xl text-white" aria-hidden="true">bolt</span></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-display font-bold text-base text-slate-800 dark:text-white">Quick Workout</p>
+            <p class="text-xs text-slate-400 mt-0.5">Build today's workout as you go.</p>
+          </div>
+          <span class="gp-chevron-pod w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-slate-400" aria-hidden="true">chevron_right</span></span>
+        </button>`;
+    list.querySelectorAll('.gp-workout-card[data-id]').forEach(b => b.addEventListener('click', () => {
       closeGroupPicker();
       startWorkoutSession(b.dataset.id);
     }));
