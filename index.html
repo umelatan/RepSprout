@@ -167,9 +167,6 @@ body{font-family:'Inter',sans-serif}
 .cap-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .cap-card-primary{background:#f8f5ff;border-color:#ede4fb}
 .dark .cap-card-primary{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
-.cap-card-icon{width:2.75rem;height:2.75rem;flex-shrink:0}
-.cap-card-icon svg{width:100%;height:100%;filter:drop-shadow(0 2px 4px rgba(15,23,42,.14))}
-.dark .cap-card-icon svg{filter:drop-shadow(0 2px 5px rgba(0,0,0,.35))}
 .hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
@@ -2177,19 +2174,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <div class="flex-1 overflow-y-auto px-5 pb-2 space-y-2.5">
       <button id="cap-group-btn" type="button" class="cap-card cap-card-primary w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Workout Group — start from one of your saved workout groups.">
-        <span class="cap-card-icon flex-shrink-0" aria-hidden="true">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="capgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d9c4"/><stop offset="1" stop-color="#e0b490"/></linearGradient>
-              <linearGradient id="capgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8ecd9"/><stop offset="1" stop-color="#eddcbd"/></linearGradient>
-              <linearGradient id="capgC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9b3ea"/><stop offset="1" stop-color="#a98be0"/></linearGradient>
-            </defs>
-            <rect x="12" y="30" width="38" height="23" rx="4" transform="rotate(-9 12 30)" fill="url(#capgA)"/>
-            <rect x="13" y="23" width="38" height="23" rx="4" transform="rotate(-3 13 23)" fill="url(#capgB)"/>
-            <rect x="13" y="17" width="38" height="23" rx="4" fill="url(#capgC)"/>
-            <rect x="16.5" y="17" width="3" height="23" rx="1.5" fill="#7c3aed" opacity=".4"/>
-          </svg>
-        </span>
         <div class="min-w-0 flex-1">
           <p id="cap-group-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Workout Group</p>
           <p class="text-xs text-slate-400 mt-0.5">Start from one of your saved workout groups.</p>
@@ -2198,15 +2182,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
 
       <button id="cap-quick-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Quick Workout — log a quick, one-off workout session.">
-        <span class="cap-card-icon flex-shrink-0" aria-hidden="true">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <defs><linearGradient id="capqA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#93c5fd"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
-            <rect x="9" y="26" width="9" height="16" rx="3.5" fill="url(#capqA)"/>
-            <rect x="46" y="26" width="9" height="16" rx="3.5" fill="url(#capqA)"/>
-            <rect x="16" y="30" width="32" height="8" rx="4" fill="url(#capqA)" opacity=".85"/>
-            <path d="M35 12l-9 13h6l-3 12 12-15h-6l4-10z" fill="#fbbf24"/>
-          </svg>
-        </span>
         <div class="min-w-0 flex-1">
           <p id="cap-quick-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Quick Workout</p>
           <p class="text-xs text-slate-400 mt-0.5">Log a quick, one-off workout session.</p>
@@ -2215,14 +2190,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
 
       <button id="cap-activity-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Other Activity — walks, runs, swims, sports and more.">
-        <span class="cap-card-icon flex-shrink-0" aria-hidden="true">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <defs><linearGradient id="capaA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdba74"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs>
-            <circle cx="40" cy="16" r="6" fill="url(#capaA)"/>
-            <path d="M17 50c3-9 10-9 14-15 3-5-2-9-7-11" stroke="url(#capaA)" stroke-width="5" stroke-linecap="round" fill="none"/>
-            <path d="M24 24c5 3 9 1 12-3l6 4-4 9-9-2" stroke="url(#capaA)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg>
-        </span>
         <div class="min-w-0 flex-1">
           <p id="cap-activity-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Other Activity</p>
           <p class="text-xs text-slate-400 mt-0.5">Walks, runs, swims, sports and more.</p>
@@ -2231,14 +2198,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
 
       <button id="cap-recovery-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Recovery Day — plan a rest day to help your plant recover.">
-        <span class="cap-card-icon flex-shrink-0" aria-hidden="true">
-          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <defs><linearGradient id="caprA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3c2e8"/><stop offset="1" stop-color="#b7a0d6"/></linearGradient></defs>
-            <path d="M20 40h24l-3 16a4 4 0 01-4 3H27a4 4 0 01-4-3l-3-16z" fill="url(#caprA)"/>
-            <path d="M32 40c0-8-6-9-6-15 4 1 6 5 6 8" fill="#8fcf82"/>
-            <path d="M44 14a8 8 0 100 11 6.2 6.2 0 010-11z" fill="#ede4fb"/>
-          </svg>
-        </span>
         <div class="min-w-0 flex-1">
           <p id="cap-recovery-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Recovery Day</p>
           <p id="cap-recovery-desc" class="text-xs text-slate-400 mt-0.5">Plan a rest day to help your plant recover.</p>
