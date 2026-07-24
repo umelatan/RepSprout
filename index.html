@@ -2202,7 +2202,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
     <div class="px-5 pt-1 pb-3 flex-shrink-0 flex items-start justify-between gap-2">
       <div class="min-w-0">
-        <p id="cds-date-label" class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide truncate"></p>
+        <p id="cds-date-label" class="text-[11px] font-semibold text-slate-400 truncate"></p>
         <h3 id="cds-title" class="font-display font-bold text-xl text-slate-800 dark:text-white mt-0.5"></h3>
       </div>
       <button id="cds-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
@@ -2211,21 +2211,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div id="cds-body" class="space-y-5"></div>
     </div>
     <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 px-5 pb-4 pt-3 flex-shrink-0"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="cds-footer-text">Every plan helps your plant grow.</span></p>
-  </div>
-</div>
-
-<!-- Calendar day sheet: planned-workout card overflow (Change workout /
-     Remove from calendar) — same idiom as every other "•••" menu in the
-     app. See openCdsPlannedActionsMenu()/cdspa-change-btn/cdspa-remove-btn
-     just below wireCalDaySheetActions() for the handlers. -->
-<div id="cds-planned-actions-modal" style="display:none" class="fixed inset-0 z-[79] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-1">
-    <div class="flex items-center justify-between pb-1">
-      <h3 id="cdspa-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
-      <button id="cdspa-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
-    <button id="cdspa-change-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Change workout</button>
-    <button id="cdspa-remove-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from calendar</button>
   </div>
 </div>
 
@@ -9808,7 +9793,7 @@ function renderPlannedEntryCard(planned) {
   const visual = PLANNED_TYPE_VISUAL[planned.type] || PLANNED_TYPE_VISUAL.activity;
   return `
     <section class="space-y-2">
-      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Planned workout</p>
+      <p class="text-xs font-semibold text-slate-400">Planned Workout</p>
       <div class="card overflow-hidden">
         <div class="flex items-start gap-3 p-3.5">
           <span class="cap-icon-pod ${visual.pod} flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl ${visual.text}">${visual.icon}</span></span>
@@ -9821,7 +9806,7 @@ function renderPlannedEntryCard(planned) {
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 text-xs font-semibold whitespace-nowrap">
               <span class="w-1.5 h-1.5 rounded-full bg-brand-500" aria-hidden="true"></span>Planned
             </span>
-            <button class="cds-planned-menu-btn flex items-center justify-center text-slate-400 flex-shrink-0" style="min-width:32px;min-height:32px" data-entry-id="${planned.id}" aria-label="Plan actions"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+            <button class="cds-remove-planned-btn flex items-center justify-center text-slate-300 hover:text-red-400 flex-shrink-0" style="min-width:32px;min-height:32px" data-entry-id="${planned.id}" aria-label="Remove planned workout"><span class="ms text-lg" aria-hidden="true">close</span></button>
           </div>
         </div>
       </div>
@@ -9870,7 +9855,7 @@ function renderCdsActionArea(planned, relation) {
 
   return `
     <section class="space-y-2">
-      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">${isToday ? 'Today' : 'Add to this day'}</p>
+      <p class="text-xs font-semibold text-slate-400">${isToday ? 'Today' : 'Add To This Day'}</p>
       ${primaryBtnHtml}
       ${changeAddRow}
       <button id="cds-mark-recovery-btn" type="button" class="w-full flex items-center gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -9941,51 +9926,20 @@ function openCalendarDaySheet(date) {
     }
   }));
   document.getElementById('cds-body').querySelectorAll('.cds-edit-session').forEach(b => b.addEventListener('click', () => openEditSessionModal(b.dataset.date, b.dataset.id)));
-  document.getElementById('cds-body').querySelectorAll('.cds-planned-menu-btn').forEach(b => b.addEventListener('click', () => openCdsPlannedActionsMenu(b.dataset.entryId)));
+  document.getElementById('cds-body').querySelectorAll('.cds-remove-planned-btn').forEach(b => b.addEventListener('click', () => removePlannedEntry(date, b.dataset.entryId)));
   document.getElementById('cds-add-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
   wireCalDaySheetActions(date);
   document.getElementById('calendar-day-sheet').style.display = '';
 }
 document.getElementById('cds-close').addEventListener('click', () => rsHideModal('calendar-day-sheet'));
 
-// ── Planned-workout card overflow (Change workout / Remove from calendar) ──
-// Reuses calendarSelectedDate (already tracked by openCalendarDaySheet)
-// rather than needing the date threaded through here — this modal's own
-// buttons are static, wired once, not regenerated per render like the
-// trigger button above is.
-let cdsPlannedActionsEntryId = null;
-function openCdsPlannedActionsMenu(entryId) {
-  const entry = entriesForDate(calendarSelectedDate)[entryId];
-  if (!entry) return;
-  cdsPlannedActionsEntryId = entryId;
-  const visual = PLANNED_TYPE_VISUAL[entry.type] || PLANNED_TYPE_VISUAL.activity;
-  const title = entry.type === 'group' ? (groups[entry.workoutGroupId]?.name || 'Workout Group')
-    : entry.type === 'quick' ? 'Quick Workout'
-    : entry.type === 'activity' ? (getActivity(entry.activityId)?.name || 'Activity')
-    : visual.tag;
-  document.getElementById('cdspa-title').textContent = title;
-  document.getElementById('cds-planned-actions-modal').style.display = '';
-}
-document.getElementById('cdspa-close').addEventListener('click', () => rsHideModal('cds-planned-actions-modal'));
-document.getElementById('cds-planned-actions-modal').addEventListener('click', e => { if (e.target.id === 'cds-planned-actions-modal') rsHideModal('cds-planned-actions-modal'); });
-document.getElementById('cdspa-change-btn').addEventListener('click', () => {
-  const entryId = cdsPlannedActionsEntryId;
-  const date = calendarSelectedDate;
-  rsHideModal('cds-planned-actions-modal');
-  if (!entryId) return;
-  // The old plan is only actually removed once a replacement is confirmed
-  // and saved — see finishActivityAdded(). Backing out of the picker
-  // (dismissCalendarAddModal) leaves the original plan untouched.
-  calendarChangeReplacingEntryId = entryId;
-  openCalendarAddPicker(date);
-});
-document.getElementById('cdspa-remove-btn').addEventListener('click', async () => {
-  const entryId = cdsPlannedActionsEntryId;
-  const date = calendarSelectedDate;
-  if (!entryId) return;
-  if (!confirm('Remove this planned activity?')) return;
+// The planned-workout card's "X" — a direct remove, matching the same
+// quick-remove-with-confirm idiom used for exercise rows in the group
+// editor. "Change workout" already exists as its own button in the action
+// area below, so no separate overflow menu is needed for this.
+async function removePlannedEntry(date, entryId) {
+  if (!confirm('Remove this planned workout?')) return;
   const snapshot = entriesForDate(date)[entryId];
-  rsHideModal('cds-planned-actions-modal');
   try {
     await deleteCalendarEntry(date, entryId);
     closeCalendarActivityWindows(date);
@@ -10003,7 +9957,7 @@ document.getElementById('cdspa-remove-btn').addEventListener('click', async () =
     console.error('Failed to delete planned activity:', e);
     alert('Could not delete this activity. Please try again.');
   }
-});
+}
 
 // ── Editing a completed workout's exercises/sets ─────────────────────────────
 // A history-correction tool, not a re-log: saving here only overwrites the
@@ -10345,8 +10299,8 @@ function closeCalendarActivityWindows(date) {
   renderDashboard(); renderCalendar();
 }
 
-// Set by the "Change workout" flow (see cds-change-btn/cdspa-change-btn)
-// right before opening the add picker — the old plan it's replacing is
+// Set by the "Change workout" flow (see cds-change-btn) right before
+// opening the add picker — the old plan it's replacing is
 // only actually deleted here, once a new one has really been saved.
 // Backing out of the picker without completing (dismissCalendarAddModal)
 // clears this instead, leaving the original plan untouched.
