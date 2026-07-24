@@ -202,6 +202,22 @@ body{font-family:'Inter',sans-serif}
 @keyframes capLeafPop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes capFadeIn{0%{opacity:0}100%{opacity:1}}
 #cap-footer-leaf{animation:capLeafPop var(--rs-dur-standard) var(--rs-ease-settle) both}
+
+/* Quick Workout picker (#multi-ex-picker-modal) — compact Exercise Library
+   cards. Selection uses lavender only (never green — green stays reserved
+   for growth/success/recovery elsewhere), toggled by adding/removing
+   .mep-selected on the card itself so every child's transition below can
+   react to one class change. */
+.mep-ex-card{border:1px solid #f1f5f9;background:#fff;border-radius:1rem;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.dark .mep-ex-card{border-color:#1e293b;background:rgba(30,41,59,.4)}
+.mep-ex-card.mep-selected{border-color:#c4b5fd;background:#f5f3ff}
+.dark .mep-ex-card.mep-selected{border-color:#7c3aed;background:rgba(124,58,237,.16)}
+.mep-checkbox{border:2px solid #cbd5e1;background:transparent;border-radius:.375rem;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.dark .mep-checkbox{border-color:#475569}
+.mep-checkbox .ms{opacity:0;transform:scale(.4);transition:opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-quick) var(--rs-ease-settle)}
+.mep-ex-card.mep-selected .mep-checkbox{background:#8b5cf6;border-color:#8b5cf6}
+.mep-ex-card.mep-selected .mep-checkbox .ms{opacity:1;transform:scale(1)}
+.mep-plant-pop{animation:capLeafPop var(--rs-dur-quick) var(--rs-ease-settle) 1}
 #cap-footer-text{animation:capFadeIn var(--rs-dur-standard) var(--rs-ease-standard) both}
 /* Stagger offsets only apply with motion allowed — under reduced motion
    every card/the footer already animates over 0ms (--rs-dur-standard),
@@ -270,7 +286,7 @@ body{font-family:'Inter',sans-serif}
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop{animation:none!important;transition:none!important}
 }
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
@@ -2340,19 +2356,40 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      scheduling a future one, logging a past one, and starting one today from
      the Calendar/Home, so all three link to the same saved exercise library
      (the Workout page's Exercises tab) through one consistent UI instead of
-     three different pickers. Checkbox-list pattern mirrors the workout-group
-     builder's own exercise picklist. See openMultiExercisePicker(). -->
-<div id="multi-ex-picker-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 id="mep-title" class="font-display font-bold text-slate-800 dark:text-white">Choose exercises</h3>
-      <button id="mep-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+     three different pickers. A compact take on the Exercise Library itself:
+     same search/Target-filter/grouping language, same real Exercise Plant
+     artwork per row (see classifyExerciseForGarden()/exgPlantVisual() on the
+     Garden page for the source of truth this reuses). See
+     openMultiExercisePicker(). -->
+<div id="multi-ex-picker-modal" style="display:none" class="fixed inset-0 z-[75] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:90vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex-shrink-0 flex items-start justify-between gap-2">
+      <div class="min-w-0">
+        <h3 id="mep-title" class="font-display font-bold text-xl text-slate-800 dark:text-white truncate">Choose exercises</h3>
+        <p id="mep-subtitle" class="text-xs text-slate-400 mt-1 leading-relaxed" style="white-space:pre-line"></p>
+      </div>
+      <button id="mep-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <p id="mep-subtitle" class="text-xs text-slate-400"></p>
-    <input id="mep-search" type="text" placeholder="Search exercises">
-    <div id="mep-list" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
-    <p id="mep-error" style="display:none" class="text-xs text-red-500 text-center" role="alert">Select at least one exercise.</p>
-    <button id="mep-confirm-btn" class="btn btn-green w-full py-3 text-sm" style="min-height:48px"></button>
+    <div class="px-5 pb-2 flex-shrink-0 space-y-2.5">
+      <div class="relative">
+        <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" aria-hidden="true">search</span>
+        <input id="mep-search" type="text" placeholder="Search your exercise library" class="pl-9 py-2.5 rounded-xl" aria-label="Search your exercise library">
+      </div>
+      <div id="mep-filters" class="flex items-center gap-2 overflow-x-auto" style="scrollbar-width:none"></div>
+      <div class="flex items-center justify-between">
+        <p id="mep-selected-count" class="text-xs font-semibold text-slate-400 flex items-center gap-1">0 selected</p>
+        <button id="mep-clear-btn" type="button" style="display:none" class="text-xs font-semibold text-lavender-500 hover:underline">Clear all</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 pb-2">
+      <div id="mep-list" class="space-y-4"></div>
+      <p id="mep-error" style="display:none" class="text-xs text-red-500 text-center pt-2" role="alert">Select at least one exercise.</p>
+    </div>
+    <div class="px-5 pt-3 flex-shrink-0">
+      <button id="mep-confirm-btn" class="btn btn-green btn-pop w-full py-3.5 text-base" style="min-height:48px" disabled><span class="ms text-lg" aria-hidden="true">fitness_center</span><span id="mep-confirm-label">Select exercises</span></button>
+    </div>
+    <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 px-5 pb-4 pt-3 flex-shrink-0"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="mep-footer-text">Every plan helps your plant grow.</span></p>
   </div>
 </div>
 
@@ -10528,8 +10565,8 @@ function openCalendarAddPicker(date) {
     // through one picker — see openMultiExercisePicker().
     if (relation === 'today') {
       openMultiExercisePicker({
-        title: 'Start Quick Workout', subtitle: 'Pick from your saved exercises — you can still add more once you start.',
-        confirmLabel: 'Start Quick Workout',
+        title: 'Start Quick Workout', subtitle: 'Choose exercises to begin.\nYou can add more once your workout starts.',
+        confirmLabel: 'Start Workout',
         // Starting a live workout isn't "adding an activity" yet (nothing is
         // logged until it's finished), so no "Activity added?" step here.
         // This path never reaches finishActivityAdded(), so it's the one
@@ -10770,58 +10807,179 @@ document.getElementById('actdetail-confirm-btn').addEventListener('click', async
 
 // ── Shared multi-select exercise picker for Quick Workout ───────────────────
 // One picker, backed by the same saved exercise library as the Workout page
-// (the `exercises` object) and styled like the group builder's own checkbox
-// picklist — used for scheduling a future Quick Workout, logging a past one,
-// and pre-loading exercises before starting one today, so all three link to
-// the same list instead of three different pickers.
+// (the `exercises` object) — used for scheduling a future Quick Workout,
+// logging a past one, and pre-loading exercises before starting one today,
+// so all three link to the same list instead of three different pickers.
+// Deliberately a compact version of the real Exercise Library/Garden: Target
+// filter chips and grouping reuse MG_LABEL/exgGroupKeyFor() exactly (no new
+// categorisation), and each row's plant icon/stage label comes straight from
+// classifyExerciseForGarden() — the exact same double-progression classifier
+// the Garden page itself uses, so a row here always matches that exercise's
+// real progression state.
 let mepSelectedIds = new Set();
 let mepOnConfirm = null;
-let mepRequireAtLeastOne = false;
-function renderMultiExercisePickerList(q) {
-  const list = document.getElementById('mep-list');
-  const items = Object.entries(exercises).filter(([,ex]) => !ex.archived && (!q || ex.name?.toLowerCase().includes(q.toLowerCase())));
-  if (!items.length) {
-    list.innerHTML = Object.keys(exercises).length
-      ? '<p class="text-xs text-slate-400 text-center py-3">No exercises match your search.</p>'
-      : '<p class="text-xs text-slate-400 text-center py-3">No exercises yet — create one from Workout → Exercises first.</p>';
-    return;
-  }
-  list.innerHTML = items.map(([id, ex]) => `
-    <label class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all cursor-pointer">
-      <input type="checkbox" class="mep-check w-4 h-4 accent-brand-500 flex-shrink-0" style="width:auto" data-id="${id}" ${mepSelectedIds.has(id) ? 'checked' : ''}>
-      <div class="min-w-0">
-        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-400">${MG_LABEL[ex.muscleGroup]||ex.muscleGroup}</p>
-      </div>
-    </label>`).join('');
-  list.querySelectorAll('.mep-check').forEach(cb => cb.addEventListener('change', () => {
-    if (cb.checked) { mepSelectedIds.add(cb.dataset.id); document.getElementById('mep-error').style.display = 'none'; }
-    else mepSelectedIds.delete(cb.dataset.id);
+let mepGroupFilter = '';
+let mepConfirmVerb = 'Confirm';
+const MEP_SECTION_LABEL = { ready: 'Ready to Progress', growing: 'Growing', sprout: 'Sprout', bloomed: 'Bloomed' };
+
+function renderMepFilters() {
+  const wrap = document.getElementById('mep-filters');
+  const chips = [{ key: '', label: 'All' }, ...Object.entries(MG_LABEL).map(([key, label]) => ({ key, label }))];
+  wrap.innerHTML = chips.map(c => {
+    const on = c.key === mepGroupFilter;
+    const cls = on ? 'bg-lavender-500 text-white border-lavender-500'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800';
+    return `<button type="button" class="mep-filter-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${cls}" data-key="${c.key}" aria-pressed="${on}">${esc(c.label)}</button>`;
+  }).join('');
+  wrap.querySelectorAll('.mep-filter-chip').forEach(b => b.addEventListener('click', () => {
+    mepGroupFilter = b.dataset.key;
+    renderMepFilters();
+    renderMultiExercisePickerList(document.getElementById('mep-search').value);
   }));
 }
-function openMultiExercisePicker({ title, subtitle, initialSelectedIds = [], confirmLabel, requireAtLeastOne = false, onConfirm }) {
+
+// One compact card — checkbox, this exercise's own real Exercise Plant
+// (never a generic icon), name, Target, and current progression stage.
+// Selection is purely a class toggle on the card (see mepSetCardSelected())
+// so the border/background/checkbox/icon can all transition instead of
+// snapping, per the shared motion system.
+function renderMepExerciseCard(id, ex) {
+  const entry = classifyExerciseForGarden(id, ex);
+  const accent = exgAccentFor(entry.section);
+  const emoji = entry.disabled ? DP_STAGE_EMOJI[0] : DP_STAGE_EMOJI[entry.stageIdx];
+  const stageLabel = MEP_SECTION_LABEL[entry.section] || 'Sprout';
+  const mgLabel = MG_LABEL[ex.muscleGroup] || 'Other';
+  const selected = mepSelectedIds.has(id);
+  return `
+    <label class="mep-ex-card ${selected ? 'mep-selected' : ''} flex items-center gap-3 p-3 cursor-pointer" data-id="${id}">
+      <input type="checkbox" class="mep-check sr-only" data-id="${id}" ${selected ? 'checked' : ''} aria-label="Select ${esc(ex.name)}">
+      <span class="mep-checkbox flex items-center justify-center flex-shrink-0" style="width:22px;height:22px" aria-hidden="true"><span class="ms text-sm text-white" aria-hidden="true">check</span></span>
+      <span class="mep-plant-pod cap-icon-pod flex items-center justify-center flex-shrink-0" style="width:2.75rem;height:2.75rem;border-radius:.875rem" aria-hidden="true"><span class="text-xl leading-none" aria-hidden="true">${emoji}</span></span>
+      <span class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400 mt-0.5">${esc(mgLabel)} <span aria-hidden="true">•</span> <span class="${accent.text} font-medium">${esc(stageLabel)}</span></p>
+      </span>
+      <button type="button" class="mep-info-btn p-1 text-slate-300 dark:text-slate-500 flex-shrink-0" data-id="${id}" aria-label="View ${esc(ex.name)} details" style="min-width:32px;min-height:32px"><span class="ms text-lg" aria-hidden="true">info</span></button>
+    </label>`;
+}
+
+// Toggling selection never re-renders the list — it only flips classes on
+// the one card that changed, so the border/background/checkbox fade and the
+// plant icon's brief pop (capLeafPop, reused from the Add to Calendar
+// footer) actually get to animate instead of snapping into place.
+function mepSetCardSelected(card, selected) {
+  card.classList.toggle('mep-selected', selected);
+  if (selected) {
+    const pod = card.querySelector('.mep-plant-pod');
+    pod.classList.remove('mep-plant-pop');
+    requestAnimationFrame(() => pod.classList.add('mep-plant-pop'));
+    pod.addEventListener('animationend', () => pod.classList.remove('mep-plant-pop'), { once: true });
+  }
+}
+
+function wireMepCardEvents() {
+  const list = document.getElementById('mep-list');
+  list.querySelectorAll('.mep-check').forEach(cb => cb.addEventListener('change', () => {
+    const id = cb.dataset.id;
+    if (cb.checked) { mepSelectedIds.add(id); document.getElementById('mep-error').style.display = 'none'; }
+    else mepSelectedIds.delete(id);
+    mepSetCardSelected(cb.closest('.mep-ex-card'), cb.checked);
+    updateMepSelectedCounter();
+    updateMepConfirmBtn();
+  }));
+  // The info glyph is decorative only here, not a navigation target: the
+  // real Exercise Detail view (exercise-detail-view, z-45) sits below this
+  // sheet's own z-index, so opening it would render invisibly underneath
+  // rather than on top. preventDefault/stopPropagation just keeps a tap on
+  // it from toggling the row's checkbox via the label's native behavior.
+  list.querySelectorAll('.mep-info-btn').forEach(b => b.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+  }));
+}
+
+// Grouped by Target (MG_LABEL/exgGroupKeyFor — the exercise's own stored
+// value, never re-derived) when "All" is selected, one section per Target
+// with matches; a specific filter narrows to just that Target's flat list.
+// Every non-archived exercise appears in exactly one section, same
+// "unknown Target falls into Other rather than vanishing" rule the real
+// Exercise Garden page uses.
+function renderMultiExercisePickerList(q) {
+  const list = document.getElementById('mep-list');
+  const query = (q || '').trim().toLowerCase();
+  const allActive = Object.entries(exercises).filter(([, ex]) => !ex.archived);
+  const items = allActive.filter(([, ex]) => !query || ex.name?.toLowerCase().includes(query));
+  if (!items.length) {
+    list.innerHTML = allActive.length
+      ? '<p class="text-xs text-slate-400 text-center py-6">No exercises match your search.</p>'
+      : '<p class="text-xs text-slate-400 text-center py-6">No exercises yet — create one from Workout → Exercises first.</p>';
+    return;
+  }
+  const groupKeys = mepGroupFilter ? [mepGroupFilter] : Object.keys(MG_LABEL);
+  const sections = groupKeys
+    .map(key => ({ key, label: MG_LABEL[key], items: items.filter(([, ex]) => exgGroupKeyFor(ex) === key) }))
+    .filter(s => s.items.length);
+  if (!sections.length) {
+    list.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No exercises match this filter.</p>';
+    return;
+  }
+  list.innerHTML = sections.map(s => `
+    <div class="space-y-2">
+      ${!mepGroupFilter ? `<p class="text-xs font-semibold text-slate-400 uppercase tracking-wide px-0.5">${esc(s.label)}</p>` : ''}
+      ${s.items.map(([id, ex]) => renderMepExerciseCard(id, ex)).join('')}
+    </div>`).join('');
+  wireMepCardEvents();
+}
+
+function updateMepSelectedCounter() {
+  const n = mepSelectedIds.size;
+  const el = document.getElementById('mep-selected-count');
+  const clearBtn = document.getElementById('mep-clear-btn');
+  el.innerHTML = n > 0 ? `<span class="ms text-sm" aria-hidden="true">check_circle</span>${n} selected` : `${n} selected`;
+  el.className = `text-xs font-semibold flex items-center gap-1 ${n > 0 ? 'text-lavender-500' : 'text-slate-400'}`;
+  clearBtn.style.display = n > 0 ? '' : 'none';
+}
+// The CTA is disabled with neutral "Select exercises" copy at zero — never
+// green-and-clickable with a "• 0 Exercises" count — and always reflects the
+// live selection size once at least one exercise is picked.
+function updateMepConfirmBtn() {
+  const n = mepSelectedIds.size;
+  document.getElementById('mep-confirm-btn').disabled = n === 0;
+  document.getElementById('mep-confirm-label').textContent = n === 0 ? 'Select exercises' : `${mepConfirmVerb} • ${n} Exercise${n === 1 ? '' : 's'}`;
+}
+
+function openMultiExercisePicker({ title, subtitle, initialSelectedIds = [], confirmLabel, onConfirm }) {
   document.getElementById('mep-title').textContent = title || 'Choose exercises';
   document.getElementById('mep-subtitle').textContent = subtitle || '';
   document.getElementById('mep-search').value = '';
   document.getElementById('mep-error').style.display = 'none';
-  document.getElementById('mep-confirm-btn').textContent = confirmLabel || 'Confirm';
+  mepConfirmVerb = confirmLabel || 'Confirm';
+  mepGroupFilter = '';
   mepSelectedIds = new Set(initialSelectedIds);
   mepOnConfirm = onConfirm;
-  mepRequireAtLeastOne = requireAtLeastOne;
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
+  document.getElementById('mep-footer-text').textContent = `Every plan helps ${plantName} grow.`;
+  renderMepFilters();
   renderMultiExercisePickerList('');
+  updateMepSelectedCounter();
+  updateMepConfirmBtn();
   document.getElementById('multi-ex-picker-modal').style.display = '';
 }
 document.getElementById('mep-close').addEventListener('click', () => rsHideModal('multi-ex-picker-modal'));
 document.getElementById('mep-search').addEventListener('input', e => renderMultiExercisePickerList(e.target.value));
+document.getElementById('mep-clear-btn').addEventListener('click', () => {
+  mepSelectedIds.clear();
+  renderMultiExercisePickerList(document.getElementById('mep-search').value);
+  updateMepSelectedCounter();
+  updateMepConfirmBtn();
+});
 document.getElementById('mep-confirm-btn').addEventListener('click', async () => {
   const btn = document.getElementById('mep-confirm-btn');
   if (btn.disabled) return;
   const ids = [...mepSelectedIds];
   const errEl = document.getElementById('mep-error');
-  if (mepRequireAtLeastOne && !ids.length) { errEl.textContent = 'Select at least one exercise.'; errEl.style.display = ''; return; }
+  const labelEl = document.getElementById('mep-confirm-label');
   const cb = mepOnConfirm;
-  const prevLabel = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Saving…';
+  btn.disabled = true; labelEl.textContent = 'Saving…';
   errEl.style.display = 'none';
   try {
     if (cb) await cb(ids);
@@ -10831,7 +10989,7 @@ document.getElementById('mep-confirm-btn').addEventListener('click', async () =>
     errEl.textContent = e.message || 'Something went wrong. Please try again.';
     errEl.style.display = '';
   } finally {
-    btn.disabled = false; btn.textContent = prevLabel;
+    updateMepConfirmBtn();
   }
 });
 
