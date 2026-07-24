@@ -301,16 +301,11 @@ body{font-family:'Inter',sans-serif}
 #exercise-modal input[type=number]::-webkit-outer-spin-button,#exercise-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #exercise-modal input[type=number]{-moz-appearance:textfield}
 #exercise-modal .ex-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
-/* Create Exercise sheet — Essentials/Defaults/Progression sections fade+
-   rise in with a short stagger (reusing capCardIn — same entrance the Add
-   to Calendar cards use). Target/Equipment/Rest chips get a soft colour
-   transition on top of .btn's existing opacity/transform one (the two
-   classes share equal specificity, so this has to restate them or they'd
-   be dropped, not merged). */
-#exercise-modal .ex-modal-section{animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both}
-#ex-sec-essentials{animation-delay:0ms}
-#ex-sec-defaults{animation-delay:60ms}
-#ex-sec-progression{animation-delay:120ms}
+/* Create Exercise sheet — a single linear flow now (no section cards), so
+   entrance motion is just the modal's own universal fade/slide-in. Target/
+   Equipment/Rest chips get a soft colour transition on top of .btn's
+   existing opacity/transform one (the two classes share equal specificity,
+   so this has to restate them or they'd be dropped, not merged). */
 .ex-target-chip,.ex-equip-chip,.ex-rest-chip{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
 #create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
 #log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
@@ -2021,7 +2016,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 <!-- New / edit exercise -->
 <div id="exercise-modal" style="display:none" class="fixed inset-0 z-[68] flex items-end justify-center bg-black/50 backdrop-blur-sm">
   <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:92vh">
-    <div class="flex-1 overflow-y-auto p-5 space-y-7">
+    <div class="flex-1 overflow-y-auto p-5 space-y-6">
       <div class="flex justify-center -mt-1" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
@@ -2031,101 +2026,74 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <button id="ex-modal-close" class="p-1.5 text-slate-400 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
       </div>
 
-      <!-- Essentials — identity only: name, Target, Equipment. -->
-      <section id="ex-sec-essentials" class="ex-modal-section space-y-3">
-        <div class="flex items-center gap-2">
-          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" style="width:2rem;height:2rem;border-radius:.625rem" aria-hidden="true"><span class="ms text-base text-lavender-500 dark:text-lavender-400" aria-hidden="true">eco</span></span>
-          <h4 class="font-display font-bold text-base text-slate-800 dark:text-white">Essentials</h4>
+      <!-- One continuous flow, no section cards — whitespace alone carries
+           the hierarchy (see task: "Do not introduce additional grouping
+           unless functionally necessary"). -->
+      <div>
+        <label for="ex-name" class="text-sm font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">Exercise name</label>
+        <div class="relative">
+          <input id="ex-name" type="text" placeholder="e.g. Lat Pulldown" class="pr-10 text-base font-semibold">
+          <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-lg leading-none" aria-hidden="true">🌱</span>
         </div>
-        <div class="card p-4 space-y-4">
-          <div>
-            <label for="ex-name" class="text-sm font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">Exercise name</label>
-            <div class="relative">
-              <input id="ex-name" type="text" placeholder="e.g. Lat Pulldown" class="pr-10 text-base font-semibold">
-              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-lg leading-none" aria-hidden="true">🌱</span>
-            </div>
-          </div>
-          <div class="space-y-2">
-            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">Targets<span class="ms text-sm text-slate-300 dark:text-slate-600" aria-hidden="true">info</span></p>
-            <div id="ex-group-chips" class="flex flex-wrap gap-2.5"></div>
-            <input type="hidden" id="ex-group-value">
-          </div>
-          <div class="space-y-2">
-            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">Equipment<span class="ms text-sm text-slate-300 dark:text-slate-600" aria-hidden="true">info</span></p>
-            <div id="ex-equipment-chips" class="flex flex-wrap gap-2.5"></div>
-            <input type="hidden" id="ex-equipment-value">
-          </div>
-        </div>
-      </section>
+      </div>
 
-      <!-- Defaults — Working weight + Sets side by side, Rest timer below. -->
-      <section id="ex-sec-defaults" class="ex-modal-section space-y-3">
-        <div class="flex items-center gap-2">
-          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" style="width:2rem;height:2rem;border-radius:.625rem" aria-hidden="true"><span class="ms text-base text-lavender-500 dark:text-lavender-400" aria-hidden="true">schedule</span></span>
-          <h4 class="font-display font-bold text-base text-slate-800 dark:text-white">Defaults</h4>
-        </div>
-        <div class="card p-4 space-y-4">
-          <div class="flex gap-4">
-            <div class="flex-1 min-w-0">
-              <label for="ex-weight" class="text-sm font-semibold text-slate-600 dark:text-slate-300 block">Working weight</label>
-              <p class="text-xs text-slate-400 mb-1.5">Optional</p>
-              <div class="flex gap-2">
-                <input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5" class="flex-1 min-w-0">
-                <select id="ex-unit" class="w-20 flex-shrink-0"><option value="kg">kg</option><option value="lbs">lbs</option></select>
-              </div>
-            </div>
-            <div class="flex-shrink-0 text-center">
-              <label class="text-sm font-semibold text-slate-600 dark:text-slate-300 block">Sets</label>
-              <p class="text-xs text-slate-400 mb-1.5">Number of working sets.</p>
-              <div class="flex items-center justify-center gap-3">
-                <button type="button" id="ex-sets-minus" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-lg" aria-hidden="true">remove</span></button>
-                <input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" class="ex-plain-input font-display font-extrabold text-3xl text-slate-800 dark:text-white text-center" style="width:2.75rem" aria-label="Number of sets">
-                <button type="button" id="ex-sets-plus" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-lg" aria-hidden="true">add</span></button>
-              </div>
-            </div>
-          </div>
-          <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
-            <div>
-              <label class="text-sm font-semibold text-slate-600 dark:text-slate-300 block">Rest timer</label>
-              <p class="text-xs text-slate-400 mb-1.5">Default rest time for this exercise.</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="">None</button>
-              <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="60">60 sec</button>
-              <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="90">90 sec</button>
-              <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="120">2 min</button>
-              <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="180">3 min</button>
-              <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="custom">Custom</button>
-            </div>
-            <input id="ex-rest-custom" type="number" inputmode="numeric" min="0" step="5" placeholder="Seconds" style="display:none" class="mt-1.5">
-            <input type="hidden" id="ex-rest-value">
-          </div>
-        </div>
-      </section>
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Target</p>
+        <div id="ex-group-chips" class="flex flex-wrap gap-2.5"></div>
+        <input type="hidden" id="ex-group-value">
+      </div>
 
-      <!-- Progression — optional Rep Range only. -->
-      <section id="ex-sec-progression" class="ex-modal-section space-y-3">
-        <div class="flex items-center gap-2">
-          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" style="width:2rem;height:2rem;border-radius:.625rem" aria-hidden="true"><span class="ms text-base text-lavender-500 dark:text-lavender-400" aria-hidden="true">trending_up</span></span>
-          <h4 class="font-display font-bold text-base text-slate-800 dark:text-white">Progression</h4>
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Equipment</p>
+        <div id="ex-equipment-chips" class="flex flex-wrap gap-2.5"></div>
+        <input type="hidden" id="ex-equipment-value">
+      </div>
+
+      <div>
+        <label for="ex-weight" class="text-sm font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">Working weight <span class="font-normal text-slate-400">(Optional)</span></label>
+        <div class="flex gap-2">
+          <input id="ex-weight" type="number" inputmode="decimal" placeholder="60" min="0" step="0.5" class="flex-1 min-w-0">
+          <select id="ex-unit" class="w-20 flex-shrink-0"><option value="kg">kg</option><option value="lbs">lbs</option></select>
         </div>
-        <div class="card p-4 space-y-3">
-          <div>
-            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Rep range</p>
-            <p class="text-xs text-slate-400">Optional</p>
+      </div>
+
+      <div class="text-center">
+        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300 block mb-2">Sets</label>
+        <div class="flex items-center justify-center gap-4">
+          <button type="button" id="ex-sets-minus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+          <input id="ex-sets" type="number" inputmode="numeric" min="1" max="10" class="ex-plain-input font-display font-extrabold text-3xl text-slate-800 dark:text-white text-center" style="width:2.75rem" aria-label="Number of sets">
+          <button type="button" id="ex-sets-plus" class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-lg" aria-hidden="true">add</span></button>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">Number of working sets.</p>
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Rest timer</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="">None</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="60">60s</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="90">90s</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="120">2m</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="180">3m</button>
+          <button type="button" class="ex-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="custom">Custom</button>
+        </div>
+        <input id="ex-rest-custom" type="number" inputmode="numeric" min="0" step="5" placeholder="Seconds" style="display:none" class="mt-1.5">
+        <input type="hidden" id="ex-rest-value">
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Rep Range <span class="font-normal text-slate-400">(Optional)</span></p>
+        <div class="flex gap-3">
+          <div class="flex-1">
+            <label for="ex-min-reps" class="text-xs font-semibold text-slate-400 block mb-1">Minimum reps</label>
+            <input id="ex-min-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 8">
           </div>
-          <div class="flex gap-3">
-            <div class="flex-1">
-              <label for="ex-min-reps" class="text-xs font-semibold text-slate-400 block mb-1">Minimum reps</label>
-              <input id="ex-min-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 8">
-            </div>
-            <div class="flex-1">
-              <label for="ex-max-reps" class="text-xs font-semibold text-slate-400 block mb-1">Maximum reps</label>
-              <input id="ex-max-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 12">
-            </div>
+          <div class="flex-1">
+            <label for="ex-max-reps" class="text-xs font-semibold text-slate-400 block mb-1">Maximum reps</label>
+            <input id="ex-max-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 12">
           </div>
         </div>
-      </section>
+      </div>
 
       <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
         <button id="ex-modal-more-toggle" type="button" class="w-full flex items-center gap-3 p-3.5 text-left" aria-expanded="false">
