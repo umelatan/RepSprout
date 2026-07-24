@@ -9847,7 +9847,7 @@ function openCalendarDaySheet(date) {
   // completed one above, just against calendarEntries instead of sessions.
   document.getElementById('cds-body').querySelectorAll('.cds-del-planned').forEach(b => b.addEventListener('click', async () => {
     if (b.disabled) return;
-    if (!confirm('Delete this planned activity?')) return;
+    if (!confirm('Remove this planned activity?')) return;
     const entryId = b.dataset.entryId;
     const snapshot = entriesForDate(date)[entryId];
     b.disabled = true;
