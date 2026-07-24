@@ -168,10 +168,14 @@ body{font-family:'Inter',sans-serif}
 .dark .cap-card:active{background-color:rgba(124,58,237,.16);border-color:rgba(124,58,237,.4)}
 .cap-card-primary{background:#f8f5ff;border-color:#ede4fb}
 .dark .cap-card-primary{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
-/* Leading icon + chevron share the same muted-to-lavender language: neutral
-   by default, lavender only while a card is pressed/just-chosen (see
-   .cap-card-selected, added briefly on tap in openCalendarAddPicker()'s
-   click handlers) — calm rather than loud, per the task's own framing. */
+/* Only two visual states on this menu: default and (browser-native, always
+   transient) :active press — no persistent "selected" class. Tapping a
+   card always navigates immediately, and this sheet is left open
+   underneath its sub-pickers (see openCalendarGroupPicker() etc.), so any
+   class-based "selected" state added on tap would still be sitting there
+   whenever the user comes back — there's no reliable moment to clear it
+   short of the browser's own :active, which clears itself on release
+   regardless of what happens next. */
 .cap-icon{transition:color var(--rs-dur-quick) var(--rs-ease-standard)}
 .cap-chevron{transition:color var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
 .cap-card:active .cap-chevron{transform:translateX(3px)}
@@ -180,12 +184,6 @@ body{font-family:'Inter',sans-serif}
    anchor rather than a boxy tile. */
 .cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#f1f5f9;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .cap-icon-pod{background:rgba(51,65,85,.5)}
-.cap-card-selected{border-color:#c4b5fd!important;background-color:#f3effc!important}
-.dark .cap-card-selected{border-color:rgba(167,139,250,.55)!important;background-color:rgba(124,58,237,.18)!important}
-.cap-card-selected .cap-icon,.cap-card-selected .cap-chevron{color:#8b5cf6!important}
-.dark .cap-card-selected .cap-icon,.dark .cap-card-selected .cap-chevron{color:#a78bfa!important}
-.cap-card-selected .cap-icon-pod{background:#ede4fb!important}
-.dark .cap-card-selected .cap-icon-pod{background:rgba(124,58,237,.28)!important}
 @keyframes capCardIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes capLeafPop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes capFadeIn{0%{opacity:0}100%{opacity:1}}
@@ -10299,10 +10297,6 @@ function closeCalendarAddModal() {
   const modal = document.getElementById('calendar-add-modal');
   modal.classList.add('opacity-0');
   document.getElementById('cap-sheet').classList.add('translate-y-full');
-  // Clears the brief "selected" highlight capActivate() adds on tap — without
-  // this it would still be sitting on whichever card was tapped last time
-  // the sheet opens again for a different day.
-  document.querySelectorAll('#calendar-add-modal .cap-card-selected').forEach(el => el.classList.remove('cap-card-selected'));
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   setTimeout(() => { modal.style.display = 'none'; }, reducedMotion ? 0 : 300);
 }
@@ -10317,15 +10311,13 @@ function dismissCalendarAddModal() {
   if (calendarAddPickerDate) openCalendarDaySheet(calendarAddPickerDate);
 }
 // A short pause between tapping a card and actually navigating, so the press
-// state is visible for a beat instead of the screen changing the instant a
-// finger lands — skipped entirely under prefers-reduced-motion. `el`, if
-// passed, gets the calm lavender "selected" treatment for that same beat
-// (see closeCalendarAddModal(), which clears it again on the way out so it
-// never lingers into the sheet's next presentation).
-function capActivate(fn, el) {
+// state (native :active — always self-clearing on release, never a class we
+// have to remember to reset) is visible for a beat instead of the screen
+// changing the instant a finger lands. Skipped entirely under
+// prefers-reduced-motion.
+function capActivate(fn) {
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (navigator.vibrate) navigator.vibrate(10);
-  el?.classList.add('cap-card-selected');
   setTimeout(fn, reducedMotion ? 0 : 120);
 }
 // Swipe the sheet down from its handle/header to dismiss — the vertical
@@ -10381,7 +10373,7 @@ function openCalendarAddPicker(date) {
   // Every card's onclick is wrapped in capActivate() so the press state gets
   // a brief beat on screen before the sub-flow actually opens (skipped under
   // prefers-reduced-motion) — none of the logic inside changed.
-  document.getElementById('cap-group-btn').onclick = e => capActivate(() => {
+  document.getElementById('cap-group-btn').onclick = () => capActivate(() => {
     openCalendarGroupPicker(relation === 'past' ? 'Which workout group did you do?' : 'Choose a workout group', groupId => {
       if (relation === 'past') {
         const g = groups[groupId];
@@ -10403,9 +10395,9 @@ function openCalendarAddPicker(date) {
           .catch(e => { console.error('Failed to plan workout group:', e); alert(e.message || 'Could not save this plan. Please try again.'); openCalendarAddPicker(date); });
       }
     });
-  }, e.currentTarget);
+  });
 
-  document.getElementById('cap-quick-btn').onclick = e => capActivate(() => {
+  document.getElementById('cap-quick-btn').onclick = () => capActivate(() => {
     // All three date relations link to the same saved exercise library
     // through one picker — see openMultiExercisePicker().
     if (relation === 'today') {
@@ -10446,9 +10438,9 @@ function openCalendarAddPicker(date) {
         }
       });
     }
-  }, e.currentTarget);
+  });
 
-  document.getElementById('cap-activity-btn').onclick = e => capActivate(() => {
+  document.getElementById('cap-activity-btn').onclick = () => capActivate(() => {
     openActivityLibrary(activityId => {
       const act = getActivity(activityId);
       openActivityDetailModal({
@@ -10466,9 +10458,9 @@ function openCalendarAddPicker(date) {
         }
       });
     });
-  }, e.currentTarget);
+  });
 
-  document.getElementById('cap-recovery-btn').onclick = e => capActivate(async () => {
+  document.getElementById('cap-recovery-btn').onclick = () => capActivate(async () => {
     const btn = document.getElementById('cap-recovery-btn');
     if (btn.disabled) return;
     // Swaps only the title text, never the button's own textContent — this
@@ -10494,7 +10486,7 @@ function openCalendarAddPicker(date) {
     } finally {
       btn.disabled = false; titleEl.textContent = prevLabel;
     }
-  }, e.currentTarget);
+  });
 }
 
 // ── Calendar's own workout-group picker (callback-based) ─────────────────────
