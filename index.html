@@ -7496,9 +7496,14 @@ function openGroupPicker() {
       const lastLabel = lastDate ? `Last trained ${relativeDays(lastDate)}` : 'Not trained yet';
       const icon = groupIconFor(g.name);
       const metaHtml = groupProgressionMetaHtml(g.exercises);
+      // Same soft-tint technique as the Workout Groups list's own colour
+      // dot/Start button (hex + "1f" alpha) — the group's own saved accent,
+      // never a new colour, and still just a tint on the pod, not a border
+      // or a big coloured button.
+      const color = g.color || GROUP_COLORS[0];
       return `
         <button type="button" class="gp-workout-card card w-full flex items-start gap-3 p-3.5 text-left" data-id="${id}" style="animation-delay:${i*40}ms">
-          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-2xl text-white" aria-hidden="true">${icon}</span></span>
+          <span class="cap-icon-pod flex items-center justify-center flex-shrink-0" style="background:${color}1f" aria-hidden="true"><span class="ms cap-icon text-2xl" style="color:${color}" aria-hidden="true">${icon}</span></span>
           <div class="min-w-0 flex-1 space-y-1">
             <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(g.name)}</p>
             <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''}</p>
