@@ -1991,6 +1991,21 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Exercise row overflow (Configure exercise / Remove from group) — same
+     small-sheet shell as exg-actions-modal. Tapping a row in the group
+     editor no longer opens Configure exercise directly; this menu is the
+     only way in (see gm-ex-menu-btn/renderGmExerciseList()). -->
+<div id="gm-ex-actions-modal" style="display:none" class="fixed inset-0 z-[79] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="gmea-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="gmea-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="gmea-configure-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">tune</span>Configure exercise</button>
+    <button id="gmea-remove-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Remove exercise from group</button>
+  </div>
+</div>
+
 <!-- Workout colour picker — reuses the exact same GROUP_COLORS list as
      before, just moved off the main page into its own sheet. -->
 <div id="gm-color-sheet" style="display:none" class="fixed inset-0 z-[69] flex items-end justify-center bg-black/50 backdrop-blur-sm">
@@ -7013,31 +7028,23 @@ function renderGmExerciseList() {
     return `
     <div class="gm-ex-row flex items-center gap-1 px-2" data-idx="${i}">
       <span class="gm-ex-drag-handle ms text-lg text-slate-300 dark:text-slate-500 flex-shrink-0 touch-none cursor-grab flex items-center justify-center" style="min-width:44px;min-height:44px" data-idx="${i}" role="img" aria-label="Drag to reorder ${esc(ex.name)}">drag_indicator</span>
-      <div class="gm-ex-open min-w-0 flex-1 py-2.5 cursor-pointer" data-idx="${i}" role="button" tabindex="0" aria-label="Configure ${esc(ex.name)}">
+      <div class="min-w-0 flex-1 py-2.5">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400">${meta}</p>
       </div>
-      <button class="gm-ex-remove-btn flex items-center justify-center text-slate-400 hover:text-red-500 flex-shrink-0" style="min-width:44px;min-height:44px" data-idx="${i}" aria-label="Remove ${esc(ex.name)} from group"><span class="ms text-lg" aria-hidden="true">close</span></button>
+      <button class="gm-ex-menu-btn flex items-center justify-center text-slate-400 flex-shrink-0" style="min-width:44px;min-height:44px" data-idx="${i}" aria-label="Options for ${esc(ex.name)}"><span class="ms text-lg" aria-hidden="true">more_vert</span></button>
     </div>`;
   }).join('');
-  // Tapping the exercise itself opens Configure exercise directly. The "X"
-  // is a separate sibling (not nested inside .gm-ex-open), so clicking it
-  // never also triggers that row-open handler. Drag handle keeps its own
-  // pointer handling untouched.
-  list.querySelectorAll('.gm-ex-open').forEach(el => {
-    el.addEventListener('click', () => openGmExerciseSettings(+el.dataset.idx));
-    el.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGmExerciseSettings(+el.dataset.idx); }
-    });
-  });
-  list.querySelectorAll('.gm-ex-remove-btn').forEach(b => b.addEventListener('click', () => removeGmExercise(+b.dataset.idx)));
+  // Tapping the row itself no longer opens anything — the "⋮" menu
+  // (Configure exercise / Remove from group) is the only way in now. Drag
+  // handle keeps its own pointer handling untouched.
+  list.querySelectorAll('.gm-ex-menu-btn').forEach(b => b.addEventListener('click', () => openGmExerciseActionsSheet(+b.dataset.idx)));
   refreshGmFormState();
 }
 
-// A quick, one-tap way to remove an exercise right from the list (the
-// slower path — open Configure exercise, then its own Remove from group —
-// still exists too). Confirmed first since there's no undo and the "X"
-// sits right next to a tap target used constantly (Configure exercise).
+// Removes an exercise from the group. Confirmed first since there's no
+// undo. Reachable from this row's own overflow menu (gm-ex-actions-modal)
+// and from inside Configure exercise's own "Remove from group" row.
 function removeGmExercise(idx) {
   const ge = groupModalDraft.exercises[idx];
   const ex = ge && exercises[ge.exerciseId];
@@ -7046,6 +7053,31 @@ function removeGmExercise(idx) {
   groupModalDraft.exercises.splice(idx, 1);
   renderGmExerciseList();
 }
+
+// Exercise row overflow — Configure exercise / Remove from group. Tapping
+// the row itself no longer opens anything (see renderGmExerciseList()); this
+// menu is the only entry point into either action now.
+let gmExActionsIdx = null;
+function openGmExerciseActionsSheet(idx) {
+  const ge = groupModalDraft.exercises[idx];
+  const ex = ge && exercises[ge.exerciseId];
+  if (!ex) return;
+  gmExActionsIdx = idx;
+  document.getElementById('gmea-title').textContent = ex.name;
+  document.getElementById('gm-ex-actions-modal').style.display = '';
+}
+document.getElementById('gmea-close').addEventListener('click', () => rsHideModal('gm-ex-actions-modal'));
+document.getElementById('gm-ex-actions-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-actions-modal') rsHideModal('gm-ex-actions-modal'); });
+document.getElementById('gmea-configure-btn').addEventListener('click', () => {
+  const idx = gmExActionsIdx;
+  rsHideModal('gm-ex-actions-modal');
+  if (idx != null) openGmExerciseSettings(idx);
+});
+document.getElementById('gmea-remove-btn').addEventListener('click', () => {
+  const idx = gmExActionsIdx;
+  rsHideModal('gm-ex-actions-modal');
+  if (idx != null) removeGmExercise(idx);
+});
 
 function openGmAddExerciseFlow() {
   openPickExModal(exId => {
