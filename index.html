@@ -9774,7 +9774,7 @@ function renderPlannedEntryCard(planned, relation) {
     <div class="card p-4 space-y-2">
       <div class="flex items-center justify-between gap-2">
         <p class="text-xs font-semibold text-brand-500">${relation === 'today' ? "Today's Plan" : 'Planned'}</p>
-        ${relation === 'future' ? `<button class="cds-del-planned p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-entry-id="${planned.id}" aria-label="Delete planned activity"><span class="ms text-base" aria-hidden="true">delete</span></button>` : ''}
+        <button class="cds-del-planned p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-entry-id="${planned.id}" aria-label="Remove this plan"><span class="ms text-base" aria-hidden="true">delete</span></button>
       </div>
       <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
       <p class="text-xs text-slate-400">${esc(meta)}</p>
