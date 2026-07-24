@@ -9968,13 +9968,15 @@ function openCdsPlannedActionsMenu(entryId) {
 }
 document.getElementById('cdspa-close').addEventListener('click', () => rsHideModal('cds-planned-actions-modal'));
 document.getElementById('cds-planned-actions-modal').addEventListener('click', e => { if (e.target.id === 'cds-planned-actions-modal') rsHideModal('cds-planned-actions-modal'); });
-document.getElementById('cdspa-change-btn').addEventListener('click', async () => {
+document.getElementById('cdspa-change-btn').addEventListener('click', () => {
   const entryId = cdsPlannedActionsEntryId;
   const date = calendarSelectedDate;
   rsHideModal('cds-planned-actions-modal');
   if (!entryId) return;
-  await deleteCalendarEntry(date, entryId);
-  renderCalendar();
+  // The old plan is only actually removed once a replacement is confirmed
+  // and saved — see finishActivityAdded(). Backing out of the picker
+  // (dismissCalendarAddModal) leaves the original plan untouched.
+  calendarChangeReplacingEntryId = entryId;
   openCalendarAddPicker(date);
 });
 document.getElementById('cdspa-remove-btn').addEventListener('click', async () => {
@@ -10343,11 +10345,24 @@ function closeCalendarActivityWindows(date) {
   renderDashboard(); renderCalendar();
 }
 
+// Set by the "Change workout" flow (see cds-change-btn/cdspa-change-btn)
+// right before opening the add picker — the old plan it's replacing is
+// only actually deleted here, once a new one has really been saved.
+// Backing out of the picker without completing (dismissCalendarAddModal)
+// clears this instead, leaving the original plan untouched.
+let calendarChangeReplacingEntryId = null;
+
 // Shown only after a save has actually succeeded. A stage-change message
 // (see stageChangeMessage()) takes priority over the generic confirmation
 // when one is worth showing — there's only one toast slot, and a stage
 // change is more noteworthy than "Activity added."
-function finishActivityAdded(date, message) {
+async function finishActivityAdded(date, message) {
+  const replacingId = calendarChangeReplacingEntryId;
+  calendarChangeReplacingEntryId = null;
+  if (replacingId) {
+    try { await deleteCalendarEntry(date, replacingId); }
+    catch (e) { console.error('Failed to remove the previous plan after changing it:', e); }
+  }
   closeCalendarActivityWindows(date);
   showToast(message || 'Activity added');
 }
@@ -10389,9 +10404,11 @@ function wireCalDaySheetActions(date) {
       }
     }
   });
-  document.getElementById('cds-change-btn')?.addEventListener('click', async e => {
-    await deleteCalendarEntry(date, e.currentTarget.dataset.entryId);
-    renderCalendar();
+  document.getElementById('cds-change-btn')?.addEventListener('click', e => {
+    // The old plan is only actually removed once a replacement is confirmed
+    // and saved — see finishActivityAdded(). Backing out of the picker
+    // (dismissCalendarAddModal) leaves the original plan untouched.
+    calendarChangeReplacingEntryId = e.currentTarget.dataset.entryId;
     openCalendarAddPicker(date);
   });
   document.getElementById('cds-add-another-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
@@ -10459,6 +10476,9 @@ function closeCalendarAddModal() {
 // that sheet, so this stays a separate function from the plain
 // closeCalendarAddModal() every card's own flow uses.
 function dismissCalendarAddModal() {
+  // Backing out without picking anything means any "Change workout" plan
+  // swap in progress is abandoned too — the original plan stays put.
+  calendarChangeReplacingEntryId = null;
   closeCalendarAddModal();
   if (calendarAddPickerDate) openCalendarDaySheet(calendarAddPickerDate);
 }
@@ -10559,8 +10579,11 @@ function openCalendarAddPicker(date) {
         // Starting a live workout isn't "adding an activity" yet (nothing is
         // logged until it's finished), so no "Activity added?" step here.
         // This path never reaches finishActivityAdded(), so it's the one
-        // place here that has to close calendar-add-modal itself.
+        // place here that has to close calendar-add-modal itself — and,
+        // since no plan was actually saved, any "Change workout" swap in
+        // progress is abandoned rather than completed.
         onConfirm: async ids => {
+          calendarChangeReplacingEntryId = null;
           rsHideModal('calendar-day-sheet');
           closeCalendarAddModal();
           startQuickWorkout(ids);
@@ -10920,9 +10943,11 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
     renderDashboard();
   }
   if (action === 'today-change-workout') {
+    // The old plan is only actually removed once a replacement is confirmed
+    // and saved — see finishActivityAdded(). Backing out of the picker
+    // (dismissCalendarAddModal) leaves the original plan untouched.
     const entry = firstIncompletePlannedEntry(today);
-    if (entry) await deleteCalendarEntry(today, entry.id);
-    renderDashboard();
+    if (entry) calendarChangeReplacingEntryId = entry.id;
     openCalendarAddPicker(today);
   }
   if (action === 'today-add-another') openCalendarAddPicker(today);
