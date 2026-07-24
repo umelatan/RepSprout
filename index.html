@@ -3406,7 +3406,7 @@ function stageChangeMessage(previousGrowth, newGrowth) {
   if (newGrowth.currentStage > previousGrowth.currentStage) {
     return newGrowth.isFinalStage ? `🌸 Your ${plantName} is in full bloom!` : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`;
   }
-  return 'Plant progress updated.';
+  return 'Plant progress updated';
 }
 
 function celebrateStageChangeIfNeeded(previousGrowth, newGrowth) {
@@ -4637,7 +4637,7 @@ function openChooseCompanionModal() {
   document.querySelectorAll('.choose-companion-opt').forEach(btn => btn.addEventListener('click', async () => {
     rsHideModal('choose-companion-modal');
     await selectNextCompanion(btn.dataset.species);
-    showToast('A new chapter is ready to grow.');
+    showToast('A new chapter is ready to grow');
   }));
   show('choose-companion-modal');
 }
@@ -5262,7 +5262,7 @@ document.getElementById('etl-save-btn').addEventListener('click', async () => {
   try {
     await updateTargetLog(etlLogId, amount);
     closeEditTargetLogModal();
-    showToast('Entry updated.');
+    showToast('Entry updated');
   } catch (e) {
     console.error('Failed to update target log:', e);
     errEl.textContent = 'Could not save this change. Please try again.';
@@ -5278,7 +5278,7 @@ document.getElementById('etl-delete-btn').addEventListener('click', async () => 
   closeEditTargetLogModal();
   try {
     await deleteTargetLog(logId);
-    showToast('Entry deleted.');
+    showToast('Entry deleted');
   } catch (e) {
     console.error('Failed to delete target log:', e);
     alert('Could not delete this entry. Please try again.');
@@ -5533,7 +5533,7 @@ document.getElementById('ct-create-btn').addEventListener('click', async () => {
     });
     rsHideModal('create-target-modal');
     closeStartWorkoutChoice(); // harmless no-op if this wasn't opened from there — see sw-target-btn
-    showToast('Target created.');
+    showToast('Target created');
   } catch (e) {
     console.error('Failed to create target:', e);
     errEl.textContent = 'Could not create this target. Please try again.';
@@ -5604,9 +5604,9 @@ document.getElementById('lt-save-btn').addEventListener('click', async () => {
     rsHideModal('log-target-modal');
     const nowCompleted = currentTargetProgress(targets[ltTargetId] || target, getTargetLogsFor(ltTargetId)).isCompleted;
     if (nowCompleted && !wasCompletedBefore) {
-      showToast(`Target completed! Amazing work — you completed ${esc(target.name)}. 🌿`);
+      showToast(`Target completed! Amazing work — you completed ${esc(target.name)} 🌿`);
     } else {
-      showToast('Logged.');
+      showToast('Logged');
     }
     celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
   } catch (e) {
@@ -5649,7 +5649,7 @@ document.getElementById('ta-archive-btn').addEventListener('click', async () => 
   if (!target) return;
   rsHideModal('target-actions-modal');
   await setTargetStatus(taTargetId, target.status === 'archived' ? 'active' : 'archived');
-  showToast(target.status === 'archived' ? 'Target restored.' : 'Target archived.');
+  showToast(target.status === 'archived' ? 'Target restored' : 'Target archived');
 });
 document.getElementById('ta-delete-btn').addEventListener('click', async () => {
   const target = targets[taTargetId];
@@ -5657,7 +5657,7 @@ document.getElementById('ta-delete-btn').addEventListener('click', async () => {
   if (!confirm(`Delete "${target.name}"? This removes its logged history too and cannot be undone.`)) return;
   rsHideModal('target-actions-modal');
   await deleteTarget(taTargetId);
-  showToast('Target deleted.');
+  showToast('Target deleted');
 });
 // Toggles one Frequency pill's selected look — purple border/tint + a
 // filled radio glyph when selected, neutral outline + an empty radio glyph
@@ -5716,7 +5716,7 @@ document.getElementById('et-save-btn').addEventListener('click', async () => {
     await updateTarget(taTargetId, { name, targetAmount: amount, frequency: freqBtn ? freqBtn.dataset.freq : targets[taTargetId].frequency });
     rsHideModal('edit-target-modal');
     await recalculateAndPersistPlantGrowth();
-    showToast('Target updated.');
+    showToast('Target updated');
   } catch (e) {
     console.error('Failed to update target:', e);
     errEl.textContent = 'Could not save changes. Please try again.';
@@ -6509,7 +6509,7 @@ function renderExerciseDetail(exerciseId) {
   if (howBtn) howBtn.addEventListener('click', () => show('dp-how-it-works-modal'));
   document.getElementById('exd-view-all-history').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('history'); };
   document.getElementById('exd-view-history-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('history'); };
-  document.getElementById('exd-add-to-group-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('groups'); showToast('Open a group\'s edit screen to add this exercise to it.'); };
+  document.getElementById('exd-add-to-group-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('groups'); showToast('Open a group\'s edit screen to add this exercise to it'); };
 }
 
 document.getElementById('exd-back-btn').addEventListener('click', closeExerciseDetail);
@@ -6696,12 +6696,12 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
       buildTodaySelectedIds.push(newId);
       renderBwFilterChips(); renderBwRecent(); renderBwList(document.getElementById('bw-search').value); updateBwBottomBar();
       if (document.getElementById('bw-step2').style.display !== 'none') renderBwReview();
-      showToast('Exercise created and added.');
+      showToast('Exercise created and added');
     } else if (wasFirstExercise) {
       goView('workout'); switchWorkoutTab('groups');
-      showToast('Your first exercise is ready — now create a workout group.');
+      showToast('Your first exercise is ready — now create a workout group');
     } else {
-      showToast(id ? 'Exercise updated.' : 'Exercise created.');
+      showToast(id ? 'Exercise updated' : 'Exercise created');
     }
   } catch (err) {
     console.error('Failed to save exercise:', err);
@@ -6848,7 +6848,7 @@ function openGroupModal(id = null) {
   // A group with nothing to add to it isn't a useful thing to create —
   // route to exercise creation first instead of opening an empty builder.
   if (!id && !hasAnyExercise()) {
-    showToast('Create your first exercise before building a workout group.');
+    showToast('Create your first exercise before building a workout group');
     openExerciseModal();
     return;
   }
@@ -7336,7 +7336,7 @@ document.getElementById('gm-save-btn').addEventListener('click', async () => {
     }
     hide('group-modal');
     switchWorkoutTab('groups');
-    showToast(groupModalId ? 'Workout group updated.' : 'Workout group created.');
+    showToast(groupModalId ? 'Workout group updated' : 'Workout group created');
   } catch (err) {
     // Surfaced, not swallowed: keep the screen open with everything the
     // user entered still intact, log the real error, and let them retry.
@@ -7363,7 +7363,7 @@ async function duplicateWorkoutGroup(id) {
     await set(push(ref(db, `users/${uid()}/groups`)), copy);
     hide('group-modal');
     switchWorkoutTab('groups');
-    showToast('Workout group duplicated.');
+    showToast('Workout group duplicated');
   } catch (err) {
     console.error('Failed to duplicate workout group:', err);
     alert('Could not duplicate this group. Check your connection and try again.');
@@ -7380,7 +7380,7 @@ async function deleteWorkoutGroup(id) {
     await remove(ref(db, `users/${uid()}/groups/${id}`));
     hide('group-modal');
     switchWorkoutTab('groups');
-    showToast('Workout group deleted.');
+    showToast('Workout group deleted');
   } catch (err) {
     console.error('Failed to delete workout group:', err);
     alert('Could not delete this group. Check your connection and try again.');
@@ -9846,7 +9846,7 @@ document.getElementById('sag-save-btn').addEventListener('click', async () => {
       exercises: groupExercises, createdAt: Date.now(), updatedAt: Date.now()
     });
     rsHideModal('save-as-group-modal');
-    showToast('Workout group created.');
+    showToast('Workout group created');
     goView('dashboard');
   } catch (err) {
     console.error('Failed to save workout as a group:', err);
@@ -11420,8 +11420,8 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
   if (action === 'today-mark-recovery-complete' || action === 'today-mark-recovery') {
     const plantName = (PLANTS[userProfile.plant] || {}).name || 'Your companion';
     const { previousGrowth, newGrowth, alreadyLogged } = await logRecoveryDaySession(today);
-    if (alreadyLogged) showToast(`${plantName} already rested with you today.`);
-    else { showToast(`${plantName} is resting with you.`); celebrateStageChangeIfNeeded(previousGrowth, newGrowth); }
+    if (alreadyLogged) showToast(`${plantName} already rested with you today`);
+    else { showToast(`${plantName} is resting with you`); celebrateStageChangeIfNeeded(previousGrowth, newGrowth); }
     renderDashboard();
   }
   if (action === 'today-change-workout') {
