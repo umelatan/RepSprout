@@ -1845,8 +1845,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div id="group-picker-list" class="space-y-3"></div>
     </div>
     <div class="flex-shrink-0 px-5 pt-2 pb-5">
-      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 pb-3"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every workout helps your plants grow.</p>
-      <button id="group-picker-rest-settings" type="button" class="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-sm font-semibold text-slate-400"><span class="ms text-base" aria-hidden="true">settings</span>Rest timer settings</button>
+      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every workout helps your plants grow.</p>
     </div>
   </div>
 </div>
@@ -4778,11 +4777,6 @@ document.getElementById('save-rest-settings-btn').addEventListener('click', asyn
   await saveRestTimerMode(settingsRestMode);
   if (secs) await saveGlobalRestSeconds(secs);
   alert('Rest settings saved!');
-});
-
-document.getElementById('group-picker-rest-settings').addEventListener('click', () => {
-  closeGroupPicker();
-  goView('profile');
 });
 
 document.getElementById('save-goals-btn').addEventListener('click', async () => {
