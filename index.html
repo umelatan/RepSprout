@@ -175,10 +175,17 @@ body{font-family:'Inter',sans-serif}
 .cap-icon{transition:color var(--rs-dur-quick) var(--rs-ease-standard)}
 .cap-chevron{transition:color var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
 .cap-card:active .cap-chevron{transform:translateX(3px)}
+/* Soft rounded "pod" the icon sits in — no shadow/gradient, just a flat
+   tinted surface a shade lighter than the card so it reads as a gentle
+   anchor rather than a boxy tile. */
+.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#f1f5f9;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.dark .cap-icon-pod{background:rgba(51,65,85,.5)}
 .cap-card-selected{border-color:#c4b5fd!important;background-color:#f3effc!important}
 .dark .cap-card-selected{border-color:rgba(167,139,250,.55)!important;background-color:rgba(124,58,237,.18)!important}
 .cap-card-selected .cap-icon,.cap-card-selected .cap-chevron{color:#8b5cf6!important}
 .dark .cap-card-selected .cap-icon,.dark .cap-card-selected .cap-chevron{color:#a78bfa!important}
+.cap-card-selected .cap-icon-pod{background:#ede4fb!important}
+.dark .cap-card-selected .cap-icon-pod{background:rgba(124,58,237,.28)!important}
 @keyframes capCardIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes capLeafPop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes capFadeIn{0%{opacity:0}100%{opacity:1}}
@@ -2202,7 +2209,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <div class="flex-1 overflow-y-auto px-5 pb-2 space-y-2.5">
       <button id="cap-group-btn" type="button" class="cap-card cap-card-primary w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Workout Group — start from one of your saved workout groups.">
-        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">fitness_center</span>
+        <span class="cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500">fitness_center</span></span>
         <div class="min-w-0 flex-1">
           <p id="cap-group-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Workout Group</p>
           <p class="text-xs text-slate-400 mt-0.5">Start from one of your saved workout groups.</p>
@@ -2211,7 +2218,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
 
       <button id="cap-quick-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Quick Workout — log a quick, one-off workout session.">
-        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">bolt</span>
+        <span class="cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500">bolt</span></span>
         <div class="min-w-0 flex-1">
           <p id="cap-quick-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Quick Workout</p>
           <p class="text-xs text-slate-400 mt-0.5">Log a quick, one-off workout session.</p>
@@ -2220,7 +2227,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
 
       <button id="cap-activity-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Other Activity — walks, runs, swims, sports and more.">
-        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">directions_walk</span>
+        <span class="cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500">directions_walk</span></span>
         <div class="min-w-0 flex-1">
           <p id="cap-activity-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Other Activity</p>
           <p class="text-xs text-slate-400 mt-0.5">Walks, runs, swims, sports and more.</p>
@@ -2229,7 +2236,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
 
       <button id="cap-recovery-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Recovery Day — plan a rest day to help your plant recover.">
-        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">eco</span>
+        <span class="cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500">eco</span></span>
         <div class="min-w-0 flex-1">
           <p id="cap-recovery-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Recovery Day</p>
           <p id="cap-recovery-desc" class="text-xs text-slate-400 mt-0.5">Plan a rest day to help your plant recover.</p>
