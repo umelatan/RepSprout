@@ -162,11 +162,39 @@ body{font-family:'Inter',sans-serif}
    language as .wt-hub-card, min-height 44px+ touch target already satisfied
    by the icon + padding. Workout Group gets a subtle purple-tinted surface
    (never a heavier fill) for its "most common option" emphasis. */
-.cap-card{background:#fdfcfa;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px}
+.cap-card{background:#fdfcfa;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-standard) both}
 .dark .cap-card{background:rgba(30,41,59,.6);border-color:rgba(51,65,85,.5)}
-.cap-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.cap-card:active{transform:scale(.985);background-color:#f6f4fb;border-color:#ded6f0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.dark .cap-card:active{background-color:rgba(124,58,237,.16);border-color:rgba(124,58,237,.4)}
 .cap-card-primary{background:#f8f5ff;border-color:#ede4fb}
 .dark .cap-card-primary{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
+/* Leading icon + chevron share the same muted-to-lavender language: neutral
+   by default, lavender only while a card is pressed/just-chosen (see
+   .cap-card-selected, added briefly on tap in openCalendarAddPicker()'s
+   click handlers) — calm rather than loud, per the task's own framing. */
+.cap-icon{transition:color var(--rs-dur-quick) var(--rs-ease-standard)}
+.cap-chevron{transition:color var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
+.cap-card:active .cap-chevron{transform:translateX(3px)}
+.cap-card-selected{border-color:#c4b5fd!important;background-color:#f3effc!important}
+.dark .cap-card-selected{border-color:rgba(167,139,250,.55)!important;background-color:rgba(124,58,237,.18)!important}
+.cap-card-selected .cap-icon,.cap-card-selected .cap-chevron{color:#8b5cf6!important}
+.dark .cap-card-selected .cap-icon,.dark .cap-card-selected .cap-chevron{color:#a78bfa!important}
+@keyframes capCardIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes capLeafPop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes capFadeIn{0%{opacity:0}100%{opacity:1}}
+#cap-footer-leaf{animation:capLeafPop var(--rs-dur-standard) var(--rs-ease-settle) both}
+#cap-footer-text{animation:capFadeIn var(--rs-dur-standard) var(--rs-ease-standard) both}
+/* Stagger offsets only apply with motion allowed — under reduced motion
+   every card/the footer already animates over 0ms (--rs-dur-standard),
+   but a hardcoded animation-delay isn't token-driven, so it's scoped here
+   rather than left to apply unconditionally and leave things invisible
+   for the delay window with no visible motion to justify it. */
+@media (prefers-reduced-motion:no-preference){
+  #cap-quick-btn{animation-delay:40ms}
+  #cap-activity-btn{animation-delay:80ms}
+  #cap-recovery-btn{animation-delay:120ms}
+  #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
+}
 .hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
@@ -2174,38 +2202,42 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <div class="flex-1 overflow-y-auto px-5 pb-2 space-y-2.5">
       <button id="cap-group-btn" type="button" class="cap-card cap-card-primary w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Workout Group — start from one of your saved workout groups.">
+        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">fitness_center</span>
         <div class="min-w-0 flex-1">
           <p id="cap-group-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Workout Group</p>
           <p class="text-xs text-slate-400 mt-0.5">Start from one of your saved workout groups.</p>
         </div>
-        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+        <span class="ms cap-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
       </button>
 
       <button id="cap-quick-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Quick Workout — log a quick, one-off workout session.">
+        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">bolt</span>
         <div class="min-w-0 flex-1">
           <p id="cap-quick-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Quick Workout</p>
           <p class="text-xs text-slate-400 mt-0.5">Log a quick, one-off workout session.</p>
         </div>
-        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+        <span class="ms cap-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
       </button>
 
       <button id="cap-activity-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Other Activity — walks, runs, swims, sports and more.">
+        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">directions_walk</span>
         <div class="min-w-0 flex-1">
           <p id="cap-activity-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Other Activity</p>
           <p class="text-xs text-slate-400 mt-0.5">Walks, runs, swims, sports and more.</p>
         </div>
-        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+        <span class="ms cap-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
       </button>
 
       <button id="cap-recovery-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Recovery Day — plan a rest day to help your plant recover.">
+        <span class="ms cap-icon text-xl text-slate-400 dark:text-slate-500 flex-shrink-0" aria-hidden="true">eco</span>
         <div class="min-w-0 flex-1">
           <p id="cap-recovery-title" class="font-display font-bold text-sm text-slate-800 dark:text-white">Recovery Day</p>
           <p id="cap-recovery-desc" class="text-xs text-slate-400 mt-0.5">Plan a rest day to help your plant recover.</p>
         </div>
-        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+        <span class="ms cap-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
       </button>
     </div>
-    <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 px-5 pb-4 pt-1 flex-shrink-0"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="cap-footer-text">Every plan helps your plant grow.</span></p>
+    <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 px-5 pb-4 pt-1 flex-shrink-0"><span id="cap-footer-leaf" class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="cap-footer-text">Every plan helps your plant grow.</span></p>
   </div>
 </div>
 
@@ -10260,6 +10292,10 @@ function closeCalendarAddModal() {
   const modal = document.getElementById('calendar-add-modal');
   modal.classList.add('opacity-0');
   document.getElementById('cap-sheet').classList.add('translate-y-full');
+  // Clears the brief "selected" highlight capActivate() adds on tap — without
+  // this it would still be sitting on whichever card was tapped last time
+  // the sheet opens again for a different day.
+  document.querySelectorAll('#calendar-add-modal .cap-card-selected').forEach(el => el.classList.remove('cap-card-selected'));
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   setTimeout(() => { modal.style.display = 'none'; }, reducedMotion ? 0 : 300);
 }
@@ -10275,10 +10311,14 @@ function dismissCalendarAddModal() {
 }
 // A short pause between tapping a card and actually navigating, so the press
 // state is visible for a beat instead of the screen changing the instant a
-// finger lands — skipped entirely under prefers-reduced-motion.
-function capActivate(fn) {
+// finger lands — skipped entirely under prefers-reduced-motion. `el`, if
+// passed, gets the calm lavender "selected" treatment for that same beat
+// (see closeCalendarAddModal(), which clears it again on the way out so it
+// never lingers into the sheet's next presentation).
+function capActivate(fn, el) {
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (navigator.vibrate) navigator.vibrate(10);
+  el?.classList.add('cap-card-selected');
   setTimeout(fn, reducedMotion ? 0 : 120);
 }
 // Swipe the sheet down from its handle/header to dismiss — the vertical
@@ -10334,7 +10374,7 @@ function openCalendarAddPicker(date) {
   // Every card's onclick is wrapped in capActivate() so the press state gets
   // a brief beat on screen before the sub-flow actually opens (skipped under
   // prefers-reduced-motion) — none of the logic inside changed.
-  document.getElementById('cap-group-btn').onclick = () => capActivate(() => {
+  document.getElementById('cap-group-btn').onclick = e => capActivate(() => {
     openCalendarGroupPicker(relation === 'past' ? 'Which workout group did you do?' : 'Choose a workout group', groupId => {
       if (relation === 'past') {
         const g = groups[groupId];
@@ -10356,9 +10396,9 @@ function openCalendarAddPicker(date) {
           .catch(e => { console.error('Failed to plan workout group:', e); alert(e.message || 'Could not save this plan. Please try again.'); openCalendarAddPicker(date); });
       }
     });
-  });
+  }, e.currentTarget);
 
-  document.getElementById('cap-quick-btn').onclick = () => capActivate(() => {
+  document.getElementById('cap-quick-btn').onclick = e => capActivate(() => {
     // All three date relations link to the same saved exercise library
     // through one picker — see openMultiExercisePicker().
     if (relation === 'today') {
@@ -10399,9 +10439,9 @@ function openCalendarAddPicker(date) {
         }
       });
     }
-  });
+  }, e.currentTarget);
 
-  document.getElementById('cap-activity-btn').onclick = () => capActivate(() => {
+  document.getElementById('cap-activity-btn').onclick = e => capActivate(() => {
     openActivityLibrary(activityId => {
       const act = getActivity(activityId);
       openActivityDetailModal({
@@ -10419,9 +10459,9 @@ function openCalendarAddPicker(date) {
         }
       });
     });
-  });
+  }, e.currentTarget);
 
-  document.getElementById('cap-recovery-btn').onclick = () => capActivate(async () => {
+  document.getElementById('cap-recovery-btn').onclick = e => capActivate(async () => {
     const btn = document.getElementById('cap-recovery-btn');
     if (btn.disabled) return;
     // Swaps only the title text, never the button's own textContent — this
@@ -10447,7 +10487,7 @@ function openCalendarAddPicker(date) {
     } finally {
       btn.disabled = false; titleEl.textContent = prevLabel;
     }
-  });
+  }, e.currentTarget);
 }
 
 // ── Calendar's own workout-group picker (callback-based) ─────────────────────
