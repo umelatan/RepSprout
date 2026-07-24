@@ -196,6 +196,8 @@ body{font-family:'Inter',sans-serif}
 .dark .cap-icon-pod-orange{background:rgba(249,115,22,.18)}
 .cap-icon-pod-green{background:#f0fdf4}
 .dark .cap-icon-pod-green{background:rgba(34,197,94,.18)}
+.cap-icon-pod-lavender{background:#f3effc}
+.dark .cap-icon-pod-lavender{background:rgba(124,58,237,.22)}
 @keyframes capCardIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes capLeafPop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
 @keyframes capFadeIn{0%{opacity:0}100%{opacity:1}}
@@ -2190,16 +2192,40 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
 <!-- Calendar day sheet — bottom sheet (modal on desktop) opened by tapping any
      calendar date. Content varies by past/today/future — see openCalendarDaySheet(). -->
-<div id="calendar-day-sheet" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <div>
-        <p id="cds-date-label" class="text-xs text-slate-400"></p>
-        <h3 id="cds-title" class="font-display font-bold text-base text-slate-800 dark:text-white"></h3>
+<!-- Calendar day sheet — bottom-sheet shell (drag handle + rounded-t-3xl)
+     matching the "Add to Calendar" sheet's own language, so it inherits the
+     same entrance/exit motion automatically. Title is context-aware (see
+     openCalendarDaySheet()): "Your plan" once a plan exists, "Plan this
+     day" otherwise; past dates keep their own existing title untouched. -->
+<div id="calendar-day-sheet" style="display:none" class="fixed inset-0 z-[72] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:88vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex-shrink-0 flex items-start justify-between gap-2">
+      <div class="min-w-0">
+        <p id="cds-date-label" class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide truncate"></p>
+        <h3 id="cds-title" class="font-display font-bold text-xl text-slate-800 dark:text-white mt-0.5"></h3>
       </div>
-      <button id="cds-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+      <button id="cds-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <div id="cds-body" class="space-y-3"></div>
+    <div class="flex-1 overflow-y-auto px-5 pb-2">
+      <div id="cds-body" class="space-y-5"></div>
+    </div>
+    <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 px-5 pb-4 pt-3 flex-shrink-0"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="cds-footer-text">Every plan helps your plant grow.</span></p>
+  </div>
+</div>
+
+<!-- Calendar day sheet: planned-workout card overflow (Change workout /
+     Remove from calendar) — same idiom as every other "•••" menu in the
+     app. See openCdsPlannedActionsMenu()/cdspa-change-btn/cdspa-remove-btn
+     just below wireCalDaySheetActions() for the handlers. -->
+<div id="cds-planned-actions-modal" style="display:none" class="fixed inset-0 z-[69] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-1">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="cdspa-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="cdspa-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="cdspa-change-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Change workout</button>
+    <button id="cdspa-remove-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from calendar</button>
   </div>
 </div>
 
@@ -2511,6 +2537,9 @@ function getActivity(id) { return allActivities()[id] || null; }
 // ── Helpers ────────────────────────────────────────────────────────────────
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const fmtDate  = ds => { const d = new Date(ds+'T12:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); };
+// Weekday + date for the Calendar day sheet's small header label — the CSS
+// "uppercase" class handles the display casing, this stays normal-case text.
+const fmtDateWithWeekday = ds => { const d = new Date(ds+'T12:00:00'); return d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}); };
 const initials = n => n ? n.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2) : '?';
 const esc      = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const uid      = () => me?.uid;
@@ -9747,44 +9776,112 @@ function renderCalDaySessionCard(date, sessionId, s) {
     </div>`;
 }
 
-// Shown when today/future has a planned (not-yet-completed) entry — the
-// exact "Today's Plan" / planned-activity layout from the task spec, reused
-// for future dates too (minus the immediately-actionable primary button,
-// since a future plan can't be started yet).
-function renderPlannedEntryCard(planned, relation) {
-  let label, meta, primaryLabel;
+// Per-type icon/pod/tag — the same colour language as "Add to Calendar"'s
+// own cards (blue/amber/orange/green), just lavender for "group" here since
+// that's this sheet's primary action colour.
+const PLANNED_TYPE_VISUAL = {
+  group:    { icon: 'fitness_center',  pod: 'cap-icon-pod-lavender', text: 'text-lavender-500 dark:text-lavender-400', tag: 'Workout Group' },
+  quick:    { icon: 'bolt',            pod: 'cap-icon-pod-amber',    text: 'text-amber-500 dark:text-amber-400',       tag: 'Quick Workout' },
+  activity: { icon: 'directions_walk', pod: 'cap-icon-pod-orange',   text: 'text-orange-500 dark:text-orange-400',     tag: 'Activity' },
+  recovery: { icon: 'eco',             pod: 'cap-icon-pod-green',    text: 'text-brand-500 dark:text-brand-400',       tag: 'Recovery Day' }
+};
+
+// The "Planned workout" card — identity/metadata only (icon pod, name,
+// exercise count/duration, type tag, status pill, overflow menu, scheduled
+// date). No action buttons live here anymore; those are renderCdsActionArea()
+// below, so this card is the same shape for today/future alike.
+function renderPlannedEntryCard(planned) {
+  let label, meta;
   if (planned.type === 'group') {
     const g = groups[planned.workoutGroupId];
     label = g?.name || 'Workout Group';
     meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''}`;
-    primaryLabel = relation === 'today' ? 'Start Workout' : null;
   } else if (planned.type === 'quick') {
     label = 'Quick Workout'; meta = describePlannedQuickWorkout(planned.plannedExerciseIds);
-    primaryLabel = relation === 'today' ? 'Start Quick Workout' : null;
   } else if (planned.type === 'activity') {
     const act = getActivity(planned.activityId);
-    label = `${act?.icon ? act.icon + ' ' : ''}${act?.name || 'Activity'}`;
+    label = act?.name || 'Activity';
     meta = `${planned.plannedDuration || act?.defaultDuration || 30} min planned`;
-    primaryLabel = relation === 'today' ? 'Mark Complete' : null;
   } else {
-    label = '🍃 Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
-    primaryLabel = relation === 'today' ? 'Mark Complete' : null;
+    label = 'Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
   }
+  const visual = PLANNED_TYPE_VISUAL[planned.type] || PLANNED_TYPE_VISUAL.activity;
   return `
-    <div class="card p-4 space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <p class="text-xs font-semibold text-brand-500">${relation === 'today' ? "Today's Plan" : 'Planned'}</p>
-        <button class="cds-del-planned p-1 text-slate-300 hover:text-red-400 flex-shrink-0" data-entry-id="${planned.id}" aria-label="Remove this plan"><span class="ms text-base" aria-hidden="true">delete</span></button>
+    <section class="space-y-2">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Planned workout</p>
+      <div class="card overflow-hidden">
+        <div class="flex items-start gap-3 p-3.5">
+          <span class="cap-icon-pod ${visual.pod} flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl ${visual.text}">${visual.icon}</span></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(label)}</p>
+            <p class="text-xs text-slate-400 mt-0.5">${esc(meta)}</p>
+            <p class="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><span class="ms text-xs" aria-hidden="true">sell</span>${esc(visual.tag)}</p>
+          </div>
+          <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 text-xs font-semibold whitespace-nowrap">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-500" aria-hidden="true"></span>Planned
+            </span>
+            <button class="cds-planned-menu-btn flex items-center justify-center text-slate-400 flex-shrink-0" style="min-width:32px;min-height:32px" data-entry-id="${planned.id}" aria-label="Plan actions"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 px-3.5 py-2.5 border-t border-slate-100 dark:border-slate-800">
+          <span class="ms text-base text-slate-400" aria-hidden="true">calendar_month</span>
+          <span class="text-sm text-slate-500 dark:text-slate-400">${fmtDate(planned.date)}</span>
+        </div>
       </div>
-      <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
-      <p class="text-xs text-slate-400">${esc(meta)}</p>
-      ${primaryLabel ? `<button id="cds-primary-btn" class="btn btn-green btn-pop w-full py-3 text-sm" data-entry-id="${planned.id}" data-type="${planned.type}">${esc(primaryLabel)}</button>` : ''}
-      <div class="flex items-center justify-center gap-3 text-xs font-semibold pt-1 flex-wrap">
-        <button id="cds-change-btn" class="text-brand-500 hover:underline py-1.5" data-entry-id="${planned.id}">Change Workout</button>
-        <button id="cds-add-another-btn" class="text-slate-400 hover:underline py-1.5">Add Another Activity</button>
-        <button id="cds-mark-recovery-btn" class="text-slate-400 hover:underline py-1.5">Mark Recovery Day</button>
-      </div>
+    </section>`;
+}
+
+// The action area below the planned-workout card. Today gets a stronger
+// hierarchy (Start/Resume workout as the full-width primary, Change/Add as
+// secondary pair below it); future dates never show a start action, so
+// "Add another activity" takes the primary spot instead. Whether "Resume
+// workout" shows instead of "Start workout" depends on plannedEntryIsActive()
+// below — the exact same activeSession this app already tracks, just
+// checked here rather than always calling startWorkoutSession() and letting
+// its own "finish your current workout first" guard fire.
+function plannedEntryIsActive(planned, relation) {
+  if (relation !== 'today' || !activeSession) return false;
+  if (planned.type === 'group') return activeSession.sessionType === 'group' && activeSession.groupId === planned.workoutGroupId;
+  if (planned.type === 'quick') return activeSession.sessionType === 'quick';
+  return false;
+}
+function renderCdsActionArea(planned, relation) {
+  const isToday = relation === 'today';
+  const isWorkoutType = planned.type === 'group' || planned.type === 'quick';
+  const isActive = plannedEntryIsActive(planned, relation);
+  const primaryLabel = !isToday ? null
+    : !isWorkoutType ? 'Mark Complete'
+    : isActive ? 'Resume workout'
+    : planned.type === 'group' ? 'Start workout' : 'Start quick workout';
+
+  const primaryBtnHtml = !primaryLabel ? '' : isWorkoutType
+    ? `<button id="${isActive ? 'cds-resume-btn' : 'cds-primary-btn'}" class="w-full py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white flex items-center justify-center gap-2" data-entry-id="${planned.id}" data-type="${planned.type}"><span class="ms text-xl" aria-hidden="true">play_arrow</span>${esc(primaryLabel)}</button>`
+    : `<button id="cds-primary-btn" class="btn btn-green btn-pop w-full py-3 text-sm" data-entry-id="${planned.id}" data-type="${planned.type}">${esc(primaryLabel)}</button>`;
+
+  // Today: Change/Add sit secondary beneath the primary Start/Resume button.
+  // Future: no primary button exists, so Add another activity takes over as
+  // the prominent lavender action instead.
+  const changeAddRow = isToday ? `
+    <div class="grid grid-cols-2 gap-2 mt-2">
+      <button id="cds-change-btn" class="btn btn-outline py-3 text-sm truncate" data-entry-id="${planned.id}">Change workout</button>
+      <button id="cds-add-another-btn" class="py-3 text-sm font-semibold rounded-xl border-2 border-lavender-300 dark:border-lavender-700 text-lavender-600 dark:text-lavender-400 truncate flex items-center justify-center gap-1"><span class="ms text-base" aria-hidden="true">add</span>Add activity</button>
+    </div>` : `
+    <div class="grid grid-cols-2 gap-2">
+      <button id="cds-change-btn" class="btn btn-outline py-3 text-sm truncate" data-entry-id="${planned.id}">Change workout</button>
+      <button id="cds-add-another-btn" class="py-3 text-sm font-bold rounded-xl bg-lavender-500 text-white truncate flex items-center justify-center gap-1"><span class="ms text-base" aria-hidden="true">add</span>Add another activity</button>
     </div>`;
+
+  return `
+    <section class="space-y-2">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">${isToday ? 'Today' : 'Add to this day'}</p>
+      ${primaryBtnHtml}
+      ${changeAddRow}
+      <button id="cds-mark-recovery-btn" type="button" class="w-full flex items-center gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <span class="ms text-lg text-brand-500" aria-hidden="true">eco</span>Mark as recovery day
+        <span class="ms text-slate-300 dark:text-slate-600 ml-auto" aria-hidden="true">chevron_right</span>
+      </button>
+    </section>`;
 }
 
 function openCalendarDaySheet(date) {
@@ -9792,16 +9889,20 @@ function openCalendarDaySheet(date) {
   const relation = dateRelation(date);
   const completedList = Object.entries(sessions[date] || {});
   const planned = firstIncompletePlannedEntry(date);
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
 
-  document.getElementById('cds-date-label').textContent = fmtDate(date);
+  document.getElementById('cds-date-label').textContent = fmtDateWithWeekday(date);
+  document.getElementById('cds-footer-text').textContent = `Every plan helps ${plantName} grow.`;
   let html = '';
   if (completedList.length) html += `<div class="space-y-2">${completedList.map(([id, s]) => renderCalDaySessionCard(date, id, s)).join('')}</div>`;
 
   if (planned && relation !== 'past') {
-    document.getElementById('cds-title').textContent = relation === 'today' ? "What are you doing today?" : 'Plan this day';
-    html += renderPlannedEntryCard(planned, relation);
+    // Context-aware title (task spec) — past dates keep their own existing
+    // title untouched, since this redesign is scoped to planned activities.
+    document.getElementById('cds-title').textContent = 'Your plan';
+    html += renderPlannedEntryCard(planned) + renderCdsActionArea(planned, relation);
   } else {
-    document.getElementById('cds-title').textContent = relation === 'past' ? 'What did you do on this day?' : relation === 'today' ? 'What are you doing today?' : 'Plan this day';
+    document.getElementById('cds-title').textContent = relation === 'past' ? 'What did you do on this day?' : 'Plan this day';
     html += `<button id="cds-add-btn" class="btn btn-green btn-pop w-full py-3 text-sm">Add To This Day</button>`;
   }
 
@@ -9843,39 +9944,68 @@ function openCalendarDaySheet(date) {
       b.disabled = false;
     }
   }));
-  // Deleting a still-planned (future) activity — same pattern as deleting a
-  // completed one above, just against calendarEntries instead of sessions.
-  document.getElementById('cds-body').querySelectorAll('.cds-del-planned').forEach(b => b.addEventListener('click', async () => {
-    if (b.disabled) return;
-    if (!confirm('Remove this planned activity?')) return;
-    const entryId = b.dataset.entryId;
-    const snapshot = entriesForDate(date)[entryId];
-    b.disabled = true;
-    try {
-      await deleteCalendarEntry(date, entryId);
-      closeCalendarActivityWindows(date);
-      showToast('Activity deleted', snapshot ? async () => {
-        try {
-          await set(ref(db, `users/${uid()}/calendarEntries/${date}/${entryId}`), snapshot);
-          renderDashboard(); renderCalendar();
-          showToast('Activity restored');
-        } catch (err) {
-          console.error('Failed to restore planned activity:', err);
-          alert('Could not restore this activity. Please try again.');
-        }
-      } : null);
-    } catch (e) {
-      console.error('Failed to delete planned activity:', e);
-      alert('Could not delete this activity. Please try again.');
-      b.disabled = false;
-    }
-  }));
   document.getElementById('cds-body').querySelectorAll('.cds-edit-session').forEach(b => b.addEventListener('click', () => openEditSessionModal(b.dataset.date, b.dataset.id)));
+  document.getElementById('cds-body').querySelectorAll('.cds-planned-menu-btn').forEach(b => b.addEventListener('click', () => openCdsPlannedActionsMenu(b.dataset.entryId)));
   document.getElementById('cds-add-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
   wireCalDaySheetActions(date);
   document.getElementById('calendar-day-sheet').style.display = '';
 }
 document.getElementById('cds-close').addEventListener('click', () => rsHideModal('calendar-day-sheet'));
+
+// ── Planned-workout card overflow (Change workout / Remove from calendar) ──
+// Reuses calendarSelectedDate (already tracked by openCalendarDaySheet)
+// rather than needing the date threaded through here — this modal's own
+// buttons are static, wired once, not regenerated per render like the
+// trigger button above is.
+let cdsPlannedActionsEntryId = null;
+function openCdsPlannedActionsMenu(entryId) {
+  const entry = entriesForDate(calendarSelectedDate)[entryId];
+  if (!entry) return;
+  cdsPlannedActionsEntryId = entryId;
+  const visual = PLANNED_TYPE_VISUAL[entry.type] || PLANNED_TYPE_VISUAL.activity;
+  const title = entry.type === 'group' ? (groups[entry.workoutGroupId]?.name || 'Workout Group')
+    : entry.type === 'quick' ? 'Quick Workout'
+    : entry.type === 'activity' ? (getActivity(entry.activityId)?.name || 'Activity')
+    : visual.tag;
+  document.getElementById('cdspa-title').textContent = title;
+  document.getElementById('cds-planned-actions-modal').style.display = '';
+}
+document.getElementById('cdspa-close').addEventListener('click', () => rsHideModal('cds-planned-actions-modal'));
+document.getElementById('cds-planned-actions-modal').addEventListener('click', e => { if (e.target.id === 'cds-planned-actions-modal') rsHideModal('cds-planned-actions-modal'); });
+document.getElementById('cdspa-change-btn').addEventListener('click', async () => {
+  const entryId = cdsPlannedActionsEntryId;
+  const date = calendarSelectedDate;
+  rsHideModal('cds-planned-actions-modal');
+  if (!entryId) return;
+  await deleteCalendarEntry(date, entryId);
+  renderCalendar();
+  openCalendarAddPicker(date);
+});
+document.getElementById('cdspa-remove-btn').addEventListener('click', async () => {
+  const entryId = cdsPlannedActionsEntryId;
+  const date = calendarSelectedDate;
+  if (!entryId) return;
+  if (!confirm('Remove this planned activity?')) return;
+  const snapshot = entriesForDate(date)[entryId];
+  rsHideModal('cds-planned-actions-modal');
+  try {
+    await deleteCalendarEntry(date, entryId);
+    closeCalendarActivityWindows(date);
+    showToast('Activity deleted', snapshot ? async () => {
+      try {
+        await set(ref(db, `users/${uid()}/calendarEntries/${date}/${entryId}`), snapshot);
+        renderDashboard(); renderCalendar();
+        showToast('Activity restored');
+      } catch (err) {
+        console.error('Failed to restore planned activity:', err);
+        alert('Could not restore this activity. Please try again.');
+      }
+    } : null);
+  } catch (e) {
+    console.error('Failed to delete planned activity:', e);
+    alert('Could not delete this activity. Please try again.');
+  }
+});
 
 // ── Editing a completed workout's exercises/sets ─────────────────────────────
 // A history-correction tool, not a re-log: saving here only overwrites the
@@ -10269,12 +10399,27 @@ function wireCalDaySheetActions(date) {
     openCalendarAddPicker(date);
   });
   document.getElementById('cds-add-another-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
+  // Resuming bypasses startWorkoutSession() entirely — activeSession is
+  // already the live, correct object (this branch only renders when
+  // plannedEntryIsActive() confirmed it), so re-entering the guided view is
+  // all that's needed. startAwTimer() is deliberately NOT called again: the
+  // interval from the original start is still running.
+  document.getElementById('cds-resume-btn')?.addEventListener('click', () => {
+    rsHideModal('calendar-day-sheet');
+    goView('workout');
+    show('active-workout-view'); hide('app-view');
+    renderGuidedWorkout();
+  });
   document.getElementById('cds-mark-recovery-btn')?.addEventListener('click', async e => {
     const btn = e.currentTarget;
     if (btn.disabled) return;
-    const prevLabel = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Saving…';
+    // Never silently retain both a planned workout and a recovery day for
+    // the same date — confirm and replace the existing plan first.
+    const existing = firstIncompletePlannedEntry(date);
+    if (existing && existing.type !== 'recovery' && !confirm('This day already has a planned workout. Replace it with a recovery day?')) return;
+    btn.disabled = true;
     try {
+      if (existing) await deleteCalendarEntry(date, existing.id);
       let message = null;
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
@@ -10286,8 +10431,7 @@ function wireCalDaySheetActions(date) {
     } catch (err) {
       console.error('Failed to save Recovery Day:', err);
       alert(err.message || 'Could not save Recovery Day. Please try again.');
-    } finally {
-      btn.disabled = false; btn.textContent = prevLabel;
+      btn.disabled = false;
     }
   });
 }
