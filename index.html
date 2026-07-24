@@ -317,6 +317,11 @@ body{font-family:'Inter',sans-serif}
 .dark .gp-workout-card:active{background-color:rgba(139,92,246,.09)}
 .gp-chevron-pod{transition:transform var(--rs-dur-press) var(--rs-ease-settle)}
 .gp-workout-card:active .gp-chevron-pod{transform:translateX(2px)}
+/* Create Workout — the empty-Exercises placeholder gets the same gentle
+   press scale as every other tappable card/row in the app. */
+.gm-ex-placeholder{transition:transform var(--rs-dur-press) var(--rs-ease-settle),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.gm-ex-placeholder:active{transform:scale(.98);border-color:#c4b5fd}
+.dark .gm-ex-placeholder:active{border-color:#7c3aed}
 #create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
 #log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
 #edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button,
@@ -1853,49 +1858,105 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 <!-- Create / edit workout group -->
 <!-- Edit/New Workout Group — one scrollable screen (no wizard steps). Same
      shell pattern as exercise-detail-view/target-detail-view: sticky header,
-     scrollable main, plain show()/hide(). Group identity is name + gm-color-picker
-     only — no cover image, no inferred icon. -->
+     scrollable main, plain show()/hide(). Group identity is name + a chosen
+     colour (see gm-color-row/gm-color-sheet) only — no cover image, no
+     inferred icon (the preview card's icon is a cosmetic heuristic only,
+     see groupIconFor()). -->
 <div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-slate-50 dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
-    <button id="group-modal-close" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
-    <h2 id="group-modal-title" class="font-display font-bold text-base text-slate-800 dark:text-white flex-1 truncate">Edit group</h2>
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-start gap-3 flex-shrink-0">
+    <button id="group-modal-close" class="p-1.5 -ml-1.5 text-slate-400 hover:text-brand-500 flex-shrink-0 mt-0.5" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+    <div class="min-w-0 flex-1">
+      <h2 id="group-modal-title" class="font-display font-extrabold text-xl text-slate-800 dark:text-white truncate">Create Workout</h2>
+      <p id="group-modal-subtitle" class="text-sm text-slate-400 mt-0.5"></p>
+    </div>
   </header>
   <main class="flex-1 overflow-y-auto">
-    <div class="max-w-2xl w-full mx-auto p-4 space-y-6">
-      <!-- No "Group details" heading — the page is short enough that
-           whitespace alone separates Name/Accent colour/Description. -->
+    <div class="max-w-2xl w-full mx-auto p-4 space-y-7">
+      <!-- Workout name — first and most prominent field; everything below
+           follows the same top-to-bottom order a user would naturally build
+           a workout in (name -> exercises -> customise -> preview). -->
       <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-1">Name</label>
+        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">Workout name</label>
         <input id="gm-name" type="text" placeholder="e.g. Upper Body A" class="!bg-slate-100 dark:!bg-slate-800 !border-transparent text-lg font-display font-semibold">
-        <p id="gm-name-error" style="display:none" class="text-xs text-red-500 mt-1">Enter a group name.</p>
+        <p id="gm-name-error" style="display:none" class="text-xs text-red-500 mt-1">Enter a workout name.</p>
       </div>
 
-      <div>
-        <label class="text-xs font-semibold text-slate-400 block mb-2">Accent colour</label>
-        <div id="gm-color-picker" class="flex gap-3"></div>
-        <p class="text-[11px] text-slate-400 mt-1.5">Choose a colour to identify this workout.</p>
-      </div>
-
-      <div>
-        <div class="flex items-center justify-between mb-1">
-          <label class="text-xs font-semibold text-slate-400">Description (optional)</label>
-          <span id="gm-desc-count" class="text-[11px] text-slate-400"></span>
-        </div>
-        <textarea id="gm-desc" rows="1" maxlength="100" placeholder="Push-focused, heavier days." class="!bg-slate-100 dark:!bg-slate-800 !border-transparent resize-none"></textarea>
-        <p class="text-[11px] text-slate-400 mt-1.5">Add notes to remember what this group is about.</p>
-      </div>
-
+      <!-- Exercises — the primary focus of the page once it's named. Empty
+           state is one large tappable placeholder (see .gm-ex-placeholder);
+           renderGmExerciseList() swaps it for the existing draggable list
+           the moment there's at least one exercise, and swaps it back if
+           the list is ever emptied out again. -->
       <section class="space-y-2">
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-display font-bold text-slate-800 dark:text-white">Exercises</h3>
-          <span id="gm-ex-count" class="text-xs text-slate-400"></span>
+          <h3 class="text-base font-display font-bold text-slate-800 dark:text-white">Exercises</h3>
+          <span id="gm-ex-count" class="text-sm font-semibold text-lavender-500 dark:text-lavender-400"></span>
         </div>
-        <p class="text-xs text-slate-400">Hold and drag to reorder your workout.</p>
-        <div id="gm-config-list" class="card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden"></div>
+        <p class="text-xs text-slate-400">Add exercises to build this workout.</p>
+        <button id="gm-ex-placeholder" type="button" class="gm-ex-placeholder w-full flex flex-col items-center justify-center gap-3 py-9 px-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
+          <span class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500" aria-hidden="true"><span class="ms text-2xl" aria-hidden="true">add</span></span>
+          <span>
+            <span class="block text-base font-display font-bold text-slate-800 dark:text-white">Add an exercise</span>
+            <span class="block text-xs text-slate-400 mt-1">Search or browse your exercise library<br>to get started.</span>
+          </span>
+        </button>
+        <div id="gm-config-list" class="card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden" style="display:none"></div>
         <p id="gm-ex-error" style="display:none" class="text-xs text-red-500">Add at least one exercise.</p>
-        <button id="gm-add-new-ex" type="button" class="w-full py-2.5 text-sm font-semibold text-brand-500 hover:underline flex items-center justify-center gap-1">
+        <button id="gm-add-new-ex" type="button" style="display:none" class="w-full py-2.5 text-sm font-semibold text-brand-500 hover:underline flex items-center justify-center gap-1">
           <span class="ms text-base" aria-hidden="true">add</span>Add exercise
         </button>
+      </section>
+
+      <!-- Workout colour — a single row instead of six always-visible
+           swatches; the actual picker moves into gm-color-sheet below. -->
+      <div>
+        <label class="text-sm font-semibold text-slate-600 dark:text-slate-300 block mb-2">Workout colour</label>
+        <button id="gm-color-row" type="button" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-left">
+          <span id="gm-color-row-swatch" class="w-7 h-7 rounded-lg flex-shrink-0" aria-hidden="true"></span>
+          <span id="gm-color-row-name" class="flex-1 text-sm font-semibold text-slate-700 dark:text-slate-200"></span>
+          <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+        </button>
+      </div>
+
+      <!-- Description — collapsed behind a row by default; expands in place
+           (grid-rows collapse, same technique as Create Exercise's Advanced
+           section) rather than always showing the textarea. -->
+      <div>
+        <button id="gm-desc-toggle" type="button" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-left" aria-expanded="false">
+          <span class="flex-1 min-w-0">
+            <span id="gm-desc-row-label" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Add description (optional)</span>
+            <span class="block text-xs text-slate-400 mt-0.5">Add notes to remember what this group is about.</span>
+          </span>
+          <span class="ms exg-mg-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" id="gm-desc-chevron" aria-hidden="true">chevron_right</span>
+        </button>
+        <div id="gm-desc-body" class="exg-mg-body collapsed">
+          <div>
+            <div class="pt-3">
+              <div class="flex items-center justify-between mb-1">
+                <label for="gm-desc" class="text-xs font-semibold text-slate-400">Description</label>
+                <span id="gm-desc-count" class="text-[11px] text-slate-400"></span>
+              </div>
+              <textarea id="gm-desc" rows="2" maxlength="100" placeholder="Push-focused, heavier days." class="!bg-slate-100 dark:!bg-slate-800 !border-transparent resize-none"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workout preview — read-only, updates live from the draft above
+           (see renderGmPreview()); same card language as the Start Workout
+           picker's own workout cards (icon pod tinted with the chosen
+           colour, name, exercise count, last-trained). -->
+      <section class="space-y-2">
+        <h3 class="text-base font-display font-bold text-slate-800 dark:text-white">Workout preview</h3>
+        <p class="text-xs text-slate-400">A preview of how your workout will look.</p>
+        <div class="card p-3.5 flex items-center gap-3">
+          <span id="gm-preview-icon-pod" class="cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span id="gm-preview-icon" class="ms cap-icon text-2xl" aria-hidden="true">fitness_center</span></span>
+          <div class="min-w-0 flex-1">
+            <p id="gm-preview-name" class="font-display font-bold text-base text-slate-800 dark:text-white truncate">Workout name</p>
+            <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+              <span id="gm-preview-count">0 exercises</span><span aria-hidden="true">·</span><span id="gm-preview-last">Not trained yet</span>
+            </p>
+          </div>
+        </div>
       </section>
 
       <p id="gm-save-error" style="display:none" class="text-xs text-red-500 text-center"></p>
@@ -1913,11 +1974,27 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
   </main>
   <!-- Same muted-lavender Save style as Exercise Configuration, disabled
-       until the form actually differs from what it opened with (see
-       refreshGmFormState()/groupModalOriginalSnapshot). No backdrop bar —
-       the button sits directly on the page background. -->
-  <div class="flex-shrink-0 p-4">
-    <button id="gm-save-btn" type="button" disabled class="w-full py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white transition-opacity disabled:opacity-40">Save changes</button>
+       until the form actually differs from what it opened with AND a name
+       has been entered (see refreshGmFormState()/groupModalOriginalSnapshot).
+       No backdrop bar — the button sits directly on the page background. -->
+  <div class="flex-shrink-0 px-4 pt-1 pb-4">
+    <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 pb-3"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every workout you create helps your plants grow.</p>
+    <button id="gm-save-btn" type="button" disabled class="w-full py-3.5 rounded-2xl text-base font-bold bg-lavender-500 text-white transition-opacity disabled:opacity-40">Create Workout</button>
+  </div>
+</div>
+
+<!-- Workout colour picker — reuses the exact same GROUP_COLORS list as
+     before, just moved off the main page into its own sheet. -->
+<div id="gm-color-sheet" style="display:none" class="fixed inset-0 z-[69] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:80vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex-shrink-0 flex items-center justify-between gap-2">
+      <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Workout colour</h3>
+      <button id="gm-color-sheet-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 pb-5">
+      <div id="gm-color-sheet-list" class="space-y-1.5"></div>
+    </div>
   </div>
 </div>
 
@@ -2548,6 +2625,9 @@ let groupModalDraft = null; // { name, description, color, exercises:[{exerciseI
 // Small preset palette for workout-group accents — same denormalize-once
 // pattern as PLANT_THEME, so colors live in one place, not scattered.
 const GROUP_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#ec4899', '#14b8a6'];
+// Display names only, for the Workout colour row/sheet — never a new
+// colour, just a label for each existing GROUP_COLORS hex.
+const GROUP_COLOR_NAMES = { '#22c55e': 'Green', '#3b82f6': 'Blue', '#a855f7': 'Purple', '#f97316': 'Orange', '#ec4899': 'Pink', '#14b8a6': 'Teal' };
 
 // ── Activity Library ─────────────────────────────────────────────────────────
 // "Other activities" (non-strength) — Calendar and Home both log/plan these
@@ -6657,15 +6737,18 @@ function openGroupModal(id = null) {
   groupModalDraft = g
     ? { name: g.name, description: g.description || '', color: g.color || GROUP_COLORS[0], exercises: (g.exercises || []).map(ge => ({ ...ge })) }
     : { name: '', description: '', color: GROUP_COLORS[0], exercises: [] };
-  document.getElementById('group-modal-title').textContent = id ? 'Edit group' : 'New workout group';
+  document.getElementById('group-modal-title').textContent = id ? 'Edit group' : 'Create Workout';
+  document.getElementById('group-modal-subtitle').textContent = id ? 'Update your workout group.' : 'Build a new workout group.';
   document.getElementById('gm-duplicate-btn').style.display = id ? '' : 'none';
   document.getElementById('gm-delete-btn').style.display = id ? '' : 'none';
   hide('gm-name-error'); hide('gm-ex-error'); hide('gm-save-error');
-  document.getElementById('gm-save-btn').textContent = 'Save changes';
+  document.getElementById('gm-save-btn').textContent = id ? 'Save Changes' : 'Create Workout';
   document.getElementById('gm-name').value = groupModalDraft.name;
   document.getElementById('gm-desc').value = groupModalDraft.description;
   document.getElementById('gm-desc-count').textContent = `${groupModalDraft.description.length}/100`;
-  renderGmColorPicker();
+  updateGmDescRowLabel();
+  setGmDescOpen(false);
+  renderGmColorRow();
   renderGmExerciseList();
   // Snapshot after the initial render so refreshGmFormState() has a stable
   // baseline — everything the user does from here either matches it
@@ -6697,15 +6780,17 @@ document.getElementById('discard-changes-confirm').addEventListener('click', () 
 document.getElementById('gm-name').addEventListener('input', () => { hide('gm-name-error'); refreshGmFormState(); });
 document.getElementById('gm-desc').addEventListener('input', () => {
   document.getElementById('gm-desc-count').textContent = `${document.getElementById('gm-desc').value.length}/100`;
+  updateGmDescRowLabel();
   refreshGmFormState();
 });
 
 // ── Dirty-check for the whole form (name/description/color/exercises) —
 // Save Changes stays disabled until something actually differs from the
-// snapshot taken when the sheet opened. One JSON-string comparison instead
-// of hooking every individual mutation site (add/remove/reorder/exercise
-// settings already all funnel through renderGmExerciseList(), which calls
-// this too).
+// snapshot taken when the sheet opened, AND (new workouts only, in
+// practice — an existing one always already has a name) a workout name has
+// been entered. One JSON-string comparison instead of hooking every
+// individual mutation site (add/remove/reorder/exercise settings already
+// all funnel through renderGmExerciseList(), which calls this too).
 let groupModalOriginalSnapshot = '';
 function gmFormSnapshot() {
   return JSON.stringify({
@@ -6716,29 +6801,83 @@ function gmFormSnapshot() {
   });
 }
 function refreshGmFormState() {
-  document.getElementById('gm-save-btn').disabled = (gmFormSnapshot() === groupModalOriginalSnapshot);
+  const nameEmpty = !document.getElementById('gm-name').value.trim();
+  document.getElementById('gm-save-btn').disabled = nameEmpty || (gmFormSnapshot() === groupModalOriginalSnapshot);
+  renderGmPreview();
 }
 
-// Selected swatch grows slightly and gets a checkmark — color is never the
-// only signal for the selection. The scale/box-shadow transition is the
-// shared [aria-pressed] motion rule already applied app-wide, not a
-// one-off animation.
-function renderGmColorPicker() {
-  const wrap = document.getElementById('gm-color-picker');
+// Description — collapsed behind its own row by default (grid-rows
+// collapse, same technique as Create Exercise's Advanced section). The
+// row's own label/subtitle double as a live preview of whatever's typed,
+// so it never just says "(optional)" once something real is there.
+function updateGmDescRowLabel() {
+  const val = document.getElementById('gm-desc').value.trim();
+  const labelEl = document.getElementById('gm-desc-row-label');
+  const subEl = labelEl.nextElementSibling;
+  if (val) { labelEl.textContent = 'Description'; subEl.textContent = val; }
+  else { labelEl.textContent = 'Add description (optional)'; subEl.textContent = 'Add notes to remember what this group is about.'; }
+}
+function setGmDescOpen(open) {
+  document.getElementById('gm-desc-body').classList.toggle('collapsed', !open);
+  document.getElementById('gm-desc-chevron').classList.toggle('expanded', open);
+  document.getElementById('gm-desc-toggle').setAttribute('aria-expanded', String(open));
+}
+document.getElementById('gm-desc-toggle').addEventListener('click', () => {
+  setGmDescOpen(document.getElementById('gm-desc-body').classList.contains('collapsed'));
+});
+
+// Workout colour — a single row (swatch + name) instead of six always-
+// visible swatches; picking one happens in gm-color-sheet, reusing the
+// exact same GROUP_COLORS list.
+function renderGmColorRow() {
+  const c = groupModalDraft.color;
+  document.getElementById('gm-color-row-swatch').style.background = c;
+  document.getElementById('gm-color-row-name').textContent = GROUP_COLOR_NAMES[c] || 'Custom';
+}
+function renderGmColorSheetList() {
+  const wrap = document.getElementById('gm-color-sheet-list');
   wrap.innerHTML = GROUP_COLORS.map(c => {
     const selected = groupModalDraft.color === c;
     return `
-    <button type="button" class="gm-color-swatch w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center" data-color="${c}"
-      style="background:${c};transform:${selected ? 'scale(1.1)' : 'scale(1)'};box-shadow:${selected ? `0 0 0 2px white, 0 0 0 3px ${c}` : 'none'}"
-      aria-label="${esc(c)}" aria-pressed="${selected}">
-      ${selected ? '<span class="ms text-white text-lg" aria-hidden="true">check</span>' : ''}
+    <button type="button" class="gm-color-option w-full flex items-center gap-3 p-3 rounded-2xl text-left ${selected ? 'bg-slate-100 dark:bg-slate-800' : ''}" data-color="${c}" aria-pressed="${selected}">
+      <span class="w-7 h-7 rounded-lg flex-shrink-0" style="background:${c}" aria-hidden="true"></span>
+      <span class="flex-1 text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(GROUP_COLOR_NAMES[c] || c)}</span>
+      ${selected ? '<span class="ms text-lavender-500" aria-hidden="true">check</span>' : ''}
     </button>`;
   }).join('');
-  wrap.querySelectorAll('.gm-color-swatch').forEach(b => b.addEventListener('click', () => {
+  wrap.querySelectorAll('.gm-color-option').forEach(b => b.addEventListener('click', () => {
     groupModalDraft.color = b.dataset.color;
-    renderGmColorPicker();
+    renderGmColorRow();
+    renderGmColorSheetList();
     refreshGmFormState();
+    rsHideModal('gm-color-sheet');
   }));
+}
+document.getElementById('gm-color-row').addEventListener('click', () => {
+  renderGmColorSheetList();
+  document.getElementById('gm-color-sheet').style.display = '';
+});
+document.getElementById('gm-color-sheet-close').addEventListener('click', () => rsHideModal('gm-color-sheet'));
+document.getElementById('gm-color-sheet').addEventListener('click', e => { if (e.target.id === 'gm-color-sheet') rsHideModal('gm-color-sheet'); });
+
+// Workout preview — read-only, mirrors the same card language the Start
+// Workout picker's own workout cards use (icon pod tinted with the chosen
+// colour via groupIconFor()/the "hex + 1f alpha" technique, name, exercise
+// count, last-trained). Called from refreshGmFormState() so it updates live
+// with every relevant change (name/description/colour/exercise list).
+function renderGmPreview() {
+  const rawName = document.getElementById('gm-name').value.trim();
+  const count = groupModalDraft.exercises.length;
+  const color = groupModalDraft.color;
+  const lastDate = groupModalId ? lastCompletedDate(groupModalId) : null;
+  const lastLabel = lastDate ? `Last trained ${relativeDays(lastDate)}` : 'Not trained yet';
+  document.getElementById('gm-preview-name').textContent = rawName || 'Workout name';
+  document.getElementById('gm-preview-count').textContent = `${count} exercise${count!==1?'s':''}`;
+  document.getElementById('gm-preview-last').textContent = lastLabel;
+  document.getElementById('gm-preview-icon-pod').style.background = `${color}1f`;
+  const iconEl = document.getElementById('gm-preview-icon');
+  iconEl.style.color = color;
+  iconEl.textContent = groupIconFor(rawName);
 }
 
 // Exercise list — text-led rows (drag handle, name, muted metadata, overflow
@@ -6747,15 +6886,21 @@ function renderGmColorPicker() {
 // always-visible inline inputs.
 function renderGmExerciseList() {
   const list = document.getElementById('gm-config-list');
+  const placeholder = document.getElementById('gm-ex-placeholder');
+  const addBtn = document.getElementById('gm-add-new-ex');
   const count = groupModalDraft.exercises.length;
   document.getElementById('gm-ex-count').textContent = `${count} exercise${count!==1?'s':''}`;
   if (!count) {
-    list.className = '';
-    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No exercises yet — add one below.</p>';
+    placeholder.style.display = '';
+    list.style.display = 'none';
+    list.innerHTML = '';
+    addBtn.style.display = 'none';
     refreshGmFormState();
     return;
   }
-  list.className = 'card divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden';
+  placeholder.style.display = 'none';
+  list.style.display = '';
+  addBtn.style.display = '';
   list.innerHTML = groupModalDraft.exercises.map((ge, i) => {
     const ex = exercises[ge.exerciseId];
     if (!ex) return '';
@@ -6797,7 +6942,7 @@ function removeGmExercise(idx) {
   renderGmExerciseList();
 }
 
-document.getElementById('gm-add-new-ex').addEventListener('click', () => {
+function openGmAddExerciseFlow() {
   openPickExModal(exId => {
     const ex = exercises[exId];
     if (!ex) return;
@@ -6805,7 +6950,9 @@ document.getElementById('gm-add-new-ex').addEventListener('click', () => {
     hide('gm-ex-error');
     renderGmExerciseList();
   }, groupModalDraft.exercises.map(ge => ge.exerciseId));
-});
+}
+document.getElementById('gm-add-new-ex').addEventListener('click', openGmAddExerciseFlow);
+document.getElementById('gm-ex-placeholder').addEventListener('click', openGmAddExerciseFlow);
 
 // ── Exercise Configuration — one sheet, everything editable inline. No
 // sub-sheets, no Progression row, no preview card — Sets and Rep range are
