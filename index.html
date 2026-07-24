@@ -7493,6 +7493,9 @@ function openGroupPicker() {
       openGroupModal();
     });
   } else {
+    // No Quick Workout card here — it's already offered a step back, as
+    // "Build a Workout" in start-workout-modal (sw-build-btn), so this list
+    // only ever shows saved groups.
     list.innerHTML = items.map(([id, g], i) => {
       const exCount = (g.exercises || []).length;
       const lastDate = lastCompletedDate(id);
@@ -7510,20 +7513,11 @@ function openGroupPicker() {
           </div>
           <span class="gp-chevron-pod w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 self-center" aria-hidden="true"><span class="ms text-lg text-slate-400" aria-hidden="true">chevron_right</span></span>
         </button>`;
-    }).join('') + `
-        <button type="button" id="gp-start-quick" class="gp-workout-card card w-full flex items-center gap-3 p-3.5 text-left" style="animation-delay:${items.length*40}ms">
-          <span class="cap-icon-pod cap-icon-pod-lavender flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-2xl text-white" aria-hidden="true">bolt</span></span>
-          <div class="min-w-0 flex-1">
-            <p class="font-display font-bold text-base text-slate-800 dark:text-white">Quick Workout</p>
-            <p class="text-xs text-slate-400 mt-0.5">Build today's workout as you go.</p>
-          </div>
-          <span class="gp-chevron-pod w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-slate-400" aria-hidden="true">chevron_right</span></span>
-        </button>`;
+    }).join('');
     list.querySelectorAll('.gp-workout-card[data-id]').forEach(b => b.addEventListener('click', () => {
       closeGroupPicker();
       startWorkoutSession(b.dataset.id);
     }));
-    document.getElementById('gp-start-quick').addEventListener('click', () => { closeGroupPicker(); startQuickWorkout(); });
   }
   document.getElementById('group-picker-modal').style.display = '';
 }
