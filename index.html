@@ -1972,23 +1972,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
       </div>
 
-      <!-- Workout preview — read-only, updates live from the draft above
-           (see renderGmPreview()); same card language as the Start Workout
-           picker's own workout cards (icon pod tinted with the chosen
-           colour, name, exercise count, last-trained). -->
-      <section class="space-y-2">
-        <h3 class="text-base font-display font-bold text-slate-800 dark:text-white">Workout preview</h3>
-        <p class="text-xs text-slate-400">A preview of how your workout will look.</p>
-        <div class="card p-3.5 flex items-center gap-3">
-          <span id="gm-preview-icon-pod" class="cap-icon-pod flex items-center justify-center flex-shrink-0" aria-hidden="true"><span id="gm-preview-icon" class="ms cap-icon text-2xl" aria-hidden="true">fitness_center</span></span>
-          <div class="min-w-0 flex-1">
-            <p id="gm-preview-name" class="font-display font-bold text-base text-slate-800 dark:text-white truncate">Workout name</p>
-            <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-              <span id="gm-preview-count">0 exercises</span><span aria-hidden="true">·</span><span id="gm-preview-last">Not trained yet</span>
-            </p>
-          </div>
-        </div>
-      </section>
 
       <p id="gm-save-error" style="display:none" class="text-xs text-red-500 text-center"></p>
 
@@ -7138,7 +7121,6 @@ function gmFormSnapshot() {
 function refreshGmFormState() {
   const nameEmpty = !document.getElementById('gm-name').value.trim();
   document.getElementById('gm-save-btn').disabled = nameEmpty || (gmFormSnapshot() === groupModalOriginalSnapshot);
-  renderGmPreview();
 }
 
 // Description — collapsed behind its own row by default (grid-rows
@@ -7194,26 +7176,6 @@ document.getElementById('gm-color-row').addEventListener('click', () => {
 });
 document.getElementById('gm-color-sheet-close').addEventListener('click', () => rsHideModal('gm-color-sheet'));
 document.getElementById('gm-color-sheet').addEventListener('click', e => { if (e.target.id === 'gm-color-sheet') rsHideModal('gm-color-sheet'); });
-
-// Workout preview — read-only, mirrors the same card language the Start
-// Workout picker's own workout cards use (icon pod tinted with the chosen
-// colour via groupIconFor()/the "hex + 1f alpha" technique, name, exercise
-// count, last-trained). Called from refreshGmFormState() so it updates live
-// with every relevant change (name/description/colour/exercise list).
-function renderGmPreview() {
-  const rawName = document.getElementById('gm-name').value.trim();
-  const count = groupModalDraft.exercises.length;
-  const color = groupModalDraft.color;
-  const lastDate = groupModalId ? lastCompletedDate(groupModalId) : null;
-  const lastLabel = lastDate ? `Last trained ${relativeDays(lastDate)}` : 'Not trained yet';
-  document.getElementById('gm-preview-name').textContent = rawName || 'Workout name';
-  document.getElementById('gm-preview-count').textContent = `${count} exercise${count!==1?'s':''}`;
-  document.getElementById('gm-preview-last').textContent = lastLabel;
-  document.getElementById('gm-preview-icon-pod').style.background = `${color}1f`;
-  const iconEl = document.getElementById('gm-preview-icon');
-  iconEl.style.color = color;
-  iconEl.textContent = groupIconFor(rawName);
-}
 
 // Exercise list — text-led rows (drag handle, name, muted metadata, overflow
 // menu only). No thumbnails/muscle icons/checkboxes; per-exercise sets/reps
