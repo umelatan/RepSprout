@@ -299,8 +299,9 @@ body{font-family:'Inter',sans-serif}
 #edit-session-modal .esm-underline-input{background:transparent!important;border:none!important;padding:0!important;font-weight:600}
 #edit-session-modal .esm-underline-input::placeholder{font-weight:400}
 #exercise-modal input[type=number]::-webkit-outer-spin-button,#exercise-modal input[type=number]::-webkit-inner-spin-button,
-#gm-ex-settings-modal input[type=number]::-webkit-outer-spin-button,#gm-ex-settings-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-#exercise-modal input[type=number],#gm-ex-settings-modal input[type=number]{-moz-appearance:textfield}
+#gm-ex-settings-modal input[type=number]::-webkit-outer-spin-button,#gm-ex-settings-modal input[type=number]::-webkit-inner-spin-button,
+#activity-detail-modal input[type=number]::-webkit-outer-spin-button,#activity-detail-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#exercise-modal input[type=number],#gm-ex-settings-modal input[type=number],#activity-detail-modal input[type=number]{-moz-appearance:textfield}
 /* Shared by Create Exercise's Sets stepper and Configure Exercise's typable
    Sets/Rep range steppers — a bare, borderless number input that looks like
    plain bold text until focused. */
@@ -335,6 +336,11 @@ body{font-family:'Inter',sans-serif}
 .dark .pick-ex-item:active:not(:disabled){background-color:rgba(139,92,246,.09)}
 .pick-ex-item-added{border-color:#c4b5fd;background:#f5f3ff}
 .dark .pick-ex-item-added{border-color:#7c3aed;background:rgba(124,58,237,.14)}
+/* Choose Activity — simple flat rows, same fade/rise entrance + soft press
+   as the Add Exercise picker's own cards, just without the card border. */
+.actlib-item{text-align:left;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both;transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.actlib-item:active{transform:scale(.985);background-color:rgba(34,197,94,.06)}
+.dark .actlib-item:active{background-color:rgba(34,197,94,.12)}
 #create-target-modal input[type=number]::-webkit-outer-spin-button,#create-target-modal input[type=number]::-webkit-inner-spin-button,
 #log-target-modal input[type=number]::-webkit-outer-spin-button,#log-target-modal input[type=number]::-webkit-inner-spin-button,
 #edit-target-modal input[type=number]::-webkit-outer-spin-button,#edit-target-modal input[type=number]::-webkit-inner-spin-button,
@@ -2474,18 +2480,33 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Activity Library — built-in activities plus this user's custom ones. -->
-<div id="activity-library-modal" style="display:none" class="fixed inset-0 z-[74] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 id="actlib-title" class="font-display font-bold text-slate-800 dark:text-white">Choose an activity</h3>
-      <button id="actlib-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
+<!-- Activity Library — built-in activities plus this user's custom ones. A
+     simple flat list, deliberately never grouped into categories (see
+     renderActivityLibraryList()) — Recently used and Create Custom Activity
+     (moved to the end of the scrollable list, see actlibCreateCardHtml())
+     reuse the exact same recency/dashed-card idioms Build Today's Workout
+     and Add Exercise already use. See openActivityLibrary(). -->
+<div id="activity-library-modal" style="display:none" class="fixed inset-0 z-[74] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:92vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="px-5 pt-1 pb-3 flex-shrink-0">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 class="font-display font-bold text-xl text-slate-800 dark:text-white">Choose Activity</h3>
+          <p class="text-sm text-slate-400 mt-0.5">What activity would you like to log?</p>
+        </div>
+        <button id="actlib-close" class="p-2 -mt-1 -mr-1 text-slate-400 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+      </div>
+      <div class="relative mt-4">
+        <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" aria-hidden="true">search</span>
+        <input id="actlib-search" type="text" placeholder="Search activities..." class="pl-10">
+      </div>
+      <div id="actlib-recent-wrap" class="mt-3">
+        <p class="text-xs font-semibold text-slate-400 mb-1.5">Recently used</p>
+        <div id="actlib-recent-list" class="flex gap-2 overflow-x-auto pb-1"></div>
+      </div>
     </div>
-    <input id="actlib-search" type="text" placeholder="Search activities">
-    <div id="actlib-list" class="space-y-1.5"></div>
-    <button id="actlib-create-btn" type="button" class="w-full py-3 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-2xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
-      <span class="ms text-base" aria-hidden="true">add</span>Create Custom Activity
-    </button>
+    <div id="actlib-list" class="flex-1 overflow-y-auto px-5 pb-3 space-y-0.5 min-h-0 border-t border-slate-100 dark:border-slate-800 pt-2"></div>
   </div>
 </div>
 
@@ -2512,19 +2533,71 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
 <!-- Generic duration/calories/notes step — reused for logging OR planning an
      activity/recovery day/past strength workout. Title, whether calories
-     shows, and what happens on confirm are all supplied by the opener. -->
-<div id="activity-detail-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
-    <h3 id="actdetail-title" class="font-display font-bold text-base text-slate-800 dark:text-white text-center"></h3>
-    <p id="actdetail-subtitle" class="text-xs text-slate-400 text-center"></p>
-    <div class="flex gap-3">
-      <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label><input id="actdetail-duration" type="number" inputmode="numeric" min="0" step="5"></div>
-      <div id="actdetail-calories-wrap" class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Calories (optional)</label><input id="actdetail-calories" type="number" inputmode="numeric" min="0" placeholder="—"></div>
+     shows, and what happens on confirm are all supplied by the opener.
+     Duration reuses the exact Sets-stepper visual language
+     (.gm-stepper-btn/.gm-stepper-btn-accent, popGmValue()/gmStepperTap())
+     from Configure Exercise; Calories/Notes collapse behind rows using the
+     same grid-rows accordion (.exg-mg-body) as Create Exercise's Advanced
+     section. -->
+<div id="activity-detail-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:92vh">
+    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
+    <div class="flex-1 overflow-y-auto px-5 pb-5">
+      <div class="relative pt-1 pb-5 text-center">
+        <button id="actdetail-back-btn" type="button" class="absolute left-0 top-1 p-1.5 text-slate-400" aria-label="Cancel"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+        <h3 id="actdetail-title" class="font-display font-bold text-2xl text-slate-800 dark:text-white truncate px-9"></h3>
+        <p id="actdetail-subtitle" class="text-sm text-slate-400 mt-1"></p>
+      </div>
+
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Duration</p>
+      <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
+        <button id="actdetail-duration-minus" type="button" class="gm-stepper-btn w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease duration"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
+        <span class="flex items-end justify-center gap-1 flex-1 min-w-0">
+          <input id="actdetail-duration" type="number" inputmode="numeric" min="0" step="5" class="ex-plain-input font-display font-bold text-slate-800 dark:text-white tabular-nums leading-none text-center" style="font-size:2.5rem;width:4rem" aria-label="Duration in minutes">
+          <span class="text-base text-slate-400 pb-1.5">min</span>
+        </span>
+        <button id="actdetail-duration-plus" type="button" class="gm-stepper-btn gm-stepper-btn-accent w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" aria-label="Increase duration"><span class="ms text-2xl" aria-hidden="true">add</span></button>
+      </div>
+      <p id="actdetail-default-pill-wrap" class="text-center mt-2">
+        <span id="actdetail-default-pill" class="inline-block px-3 py-1 rounded-full bg-lavender-50 dark:bg-lavender-950/30 text-xs font-semibold text-lavender-600 dark:text-lavender-400"></span>
+      </p>
+
+      <div class="mt-5 space-y-2">
+        <div id="actdetail-calories-wrap">
+          <button id="actdetail-calories-toggle" type="button" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-left" aria-expanded="false">
+            <span class="ms text-lg text-lavender-500 flex-shrink-0" aria-hidden="true">local_fire_department</span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Add calories <span class="font-normal text-slate-400">(optional)</span></span>
+              <span class="block text-xs text-slate-400 mt-0.5">Estimate the calories you burned.</span>
+            </span>
+            <span class="ms text-slate-400 flex-shrink-0" id="actdetail-calories-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <div id="actdetail-calories-body" class="exg-mg-body collapsed">
+            <div><div class="pt-3"><input id="actdetail-calories" type="number" inputmode="numeric" min="0" placeholder="Calories burned"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <button id="actdetail-notes-toggle" type="button" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-left" aria-expanded="false">
+            <span class="ms text-lg text-lavender-500 flex-shrink-0" aria-hidden="true">description</span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Add notes <span class="font-normal text-slate-400">(optional)</span></span>
+              <span class="block text-xs text-slate-400 mt-0.5">How did it go? Anything to remember?</span>
+            </span>
+            <span class="ms text-slate-400 flex-shrink-0" id="actdetail-notes-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <div id="actdetail-notes-body" class="exg-mg-body collapsed">
+            <div><div class="pt-3"><input id="actdetail-notes" type="text" placeholder="Optional notes..."></div></div>
+          </div>
+        </div>
+      </div>
+
+      <p id="actdetail-error" style="display:none" class="text-xs text-red-500 text-center mt-3" role="alert"></p>
+
+      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 mt-5 mb-3"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every activity helps your plants grow.</p>
+      <button id="actdetail-confirm-btn" class="btn btn-green w-full py-3.5 text-base" style="min-height:48px"></button>
+      <button id="actdetail-cancel-btn" type="button" class="text-sm font-semibold text-slate-400 hover:underline w-full text-center py-3">Cancel</button>
     </div>
-    <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes (optional)</label><input id="actdetail-notes" type="text" placeholder="Optional notes..."></div>
-    <p id="actdetail-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
-    <button id="actdetail-confirm-btn" class="btn btn-green w-full py-3 text-sm" style="min-height:48px"></button>
-    <button id="actdetail-cancel-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Cancel</button>
   </div>
 </div>
 
@@ -11277,34 +11350,83 @@ function openCalendarGroupPicker(title, onSelect) {
 document.getElementById('cgp-close').addEventListener('click', () => rsHideModal('calendar-group-picker-modal'));
 
 // ── Activity Library ─────────────────────────────────────────────────────────
+// Most recently logged activities, newest first, deduplicated — same recency
+// pattern as getRecentlyUsedExerciseIds(), just scanning sessions for
+// sessionType==='other' entries instead of exercise sets.
+function getRecentlyUsedActivityIds(limit = 6) {
+  const seen = new Set(); const ids = [];
+  Object.keys(sessions).sort().reverse().forEach(date => {
+    Object.values(sessions[date] || {}).forEach(s => {
+      if (s.sessionType !== 'other' || !s.activityId || seen.has(s.activityId) || !getActivity(s.activityId)) return;
+      seen.add(s.activityId); ids.push(s.activityId);
+    });
+  });
+  return ids.slice(0, limit);
+}
+function actlibCreateCardHtml() {
+  return `
+    <button id="actlib-create-btn" type="button" class="w-full flex items-center gap-3 p-3 rounded-2xl border-2 border-dashed border-brand-300 dark:border-brand-700 text-left hover:bg-brand-50 dark:hover:bg-brand-950/20 transition-all mt-1">
+      <span class="w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500" aria-hidden="true">add</span></span>
+      <span class="min-w-0 flex-1">
+        <span class="block text-sm font-bold text-brand-500">Create Custom Activity</span>
+        <span class="block text-xs text-slate-400 mt-0.5">Log an activity that's not on this list.</span>
+      </span>
+      <span class="ms text-brand-300 dark:text-brand-700 flex-shrink-0" aria-hidden="true">chevron_right</span>
+    </button>`;
+}
+function wireActlibCreateBtn() {
+  document.getElementById('actlib-create-btn')?.addEventListener('click', () => {
+    rsHideModal('activity-library-modal');
+    openCustomActivityForm();
+  });
+}
 let activityLibraryOnSelect = null;
+function selectActivity(id) {
+  rsHideModal('activity-library-modal');
+  activityLibraryOnSelect?.(id);
+}
+function renderActlibRecent() {
+  const wrap = document.getElementById('actlib-recent-wrap');
+  const ids = getRecentlyUsedActivityIds(6);
+  if (!ids.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  document.getElementById('actlib-recent-list').innerHTML = ids.map(id => {
+    const a = getActivity(id);
+    return `<button type="button" class="actlib-recent-pill flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200" data-id="${id}"><span aria-hidden="true">${a.icon || '🏃'}</span>${esc(a.name)}</button>`;
+  }).join('');
+  document.querySelectorAll('#actlib-recent-list .actlib-recent-pill').forEach(b => b.addEventListener('click', () => selectActivity(b.dataset.id)));
+}
+// A simple flat list, deliberately never grouped into categories — each row
+// is a compact tappable button (icon, name, "Category • Default N min",
+// trailing chevron), fading/rising in with a short stagger. Create Custom
+// Activity always sits at the very end, scrolling with the list.
 function renderActivityLibraryList() {
   const q = document.getElementById('actlib-search').value.trim().toLowerCase();
   const list = document.getElementById('actlib-list');
   const items = Object.entries(allActivities()).filter(([, a]) => !q || a.name.toLowerCase().includes(q));
-  if (!items.length) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No activities match.</p>'; return; }
-  list.innerHTML = items.map(([id, a]) => `
-    <button class="actlib-item w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all text-left" data-id="${id}">
+  if (!items.length) {
+    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">No activities match your search.</p>' + actlibCreateCardHtml();
+    wireActlibCreateBtn();
+    return;
+  }
+  list.innerHTML = items.map(([id, a], i) => `
+    <button class="actlib-item w-full flex items-center gap-3 p-3 rounded-xl text-left" data-id="${id}" style="animation-delay:${i*25}ms">
       <span class="text-xl flex-shrink-0" aria-hidden="true">${a.icon || '🏃'}</span>
-      <span class="min-w-0"><span class="block text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(a.name)}</span><span class="block text-xs text-slate-400">${esc(a.category)}${a.defaultDuration ? ' · ' + a.defaultDuration + ' min' : ''}</span></span>
-    </button>`).join('');
-  list.querySelectorAll('.actlib-item').forEach(b => b.addEventListener('click', () => {
-    rsHideModal('activity-library-modal');
-    activityLibraryOnSelect?.(b.dataset.id);
-  }));
+      <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(a.name)}</span><span class="block text-xs text-slate-400">${esc(a.category)}${a.defaultDuration ? ' • Default ' + a.defaultDuration + ' min' : ''}</span></span>
+      <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+    </button>`).join('') + actlibCreateCardHtml();
+  list.querySelectorAll('.actlib-item').forEach(b => b.addEventListener('click', () => selectActivity(b.dataset.id)));
+  wireActlibCreateBtn();
 }
 function openActivityLibrary(onSelect) {
   activityLibraryOnSelect = onSelect;
   document.getElementById('actlib-search').value = '';
+  renderActlibRecent();
   renderActivityLibraryList();
   document.getElementById('activity-library-modal').style.display = '';
 }
 document.getElementById('actlib-close').addEventListener('click', () => rsHideModal('activity-library-modal'));
 document.getElementById('actlib-search').addEventListener('input', renderActivityLibraryList);
-document.getElementById('actlib-create-btn').addEventListener('click', () => {
-  rsHideModal('activity-library-modal');
-  openCustomActivityForm();
-});
 
 // ── Create Custom Activity ────────────────────────────────────────────────────
 function openCustomActivityForm() {
@@ -11363,18 +11485,61 @@ function openActivityDetailModal({ title, subtitle, showCalories = true, initial
   document.getElementById('actdetail-title').textContent = title || 'Details';
   document.getElementById('actdetail-subtitle').textContent = subtitle || '';
   document.getElementById('actdetail-duration').value = initialDuration || '';
+  const pillWrap = document.getElementById('actdetail-default-pill-wrap');
+  if (initialDuration) {
+    pillWrap.style.display = '';
+    document.getElementById('actdetail-default-pill').textContent = `Default ${initialDuration} min`;
+  } else {
+    pillWrap.style.display = 'none';
+  }
   document.getElementById('actdetail-calories').value = '';
   document.getElementById('actdetail-notes').value = '';
   document.getElementById('actdetail-error').style.display = 'none';
   document.getElementById('actdetail-calories-wrap').style.display = showCalories ? '' : 'none';
+  setActdetailSectionOpen('calories', false);
+  setActdetailSectionOpen('notes', false);
   document.getElementById('actdetail-confirm-btn').textContent = confirmLabel || 'Save';
   document.getElementById('actdetail-confirm-btn').disabled = false;
   activityDetailOnConfirm = onConfirm;
   document.getElementById('activity-detail-modal').style.display = '';
 }
-document.getElementById('actdetail-cancel-btn').addEventListener('click', () => {
+function closeActivityDetailModal() {
   rsHideModal('activity-detail-modal');
   activityDetailOnConfirm = null;
+}
+document.getElementById('actdetail-back-btn').addEventListener('click', closeActivityDetailModal);
+document.getElementById('actdetail-cancel-btn').addEventListener('click', closeActivityDetailModal);
+
+// Duration — the exact Sets-stepper visual language (gm-stepper-btn/
+// gm-stepper-btn-accent, popGmValue()/gmStepperTap()), and still typable
+// directly (matching Configure Exercise's own typable Sets/Rep range).
+document.getElementById('actdetail-duration-minus').addEventListener('click', e => {
+  const el = document.getElementById('actdetail-duration');
+  el.value = Math.max(0, (+el.value || 0) - 5);
+  gmStepperTap(e.currentTarget, el);
+});
+document.getElementById('actdetail-duration-plus').addEventListener('click', e => {
+  const el = document.getElementById('actdetail-duration');
+  el.value = (+el.value || 0) + 5;
+  gmStepperTap(e.currentTarget, el);
+});
+document.getElementById('actdetail-duration').addEventListener('change', e => {
+  const n = parseInt(e.target.value, 10);
+  e.target.value = isNaN(n) ? 0 : Math.max(0, n);
+});
+
+// Calories/Notes — collapsed behind a row by default, same grid-rows
+// accordion (.exg-mg-body) as Create Exercise's Advanced section.
+function setActdetailSectionOpen(section, open) {
+  document.getElementById(`actdetail-${section}-body`).classList.toggle('collapsed', !open);
+  document.getElementById(`actdetail-${section}-chevron`).textContent = open ? 'expand_less' : 'expand_more';
+  document.getElementById(`actdetail-${section}-toggle`).setAttribute('aria-expanded', String(open));
+}
+document.getElementById('actdetail-calories-toggle').addEventListener('click', () => {
+  setActdetailSectionOpen('calories', document.getElementById('actdetail-calories-body').classList.contains('collapsed'));
+});
+document.getElementById('actdetail-notes-toggle').addEventListener('click', () => {
+  setActdetailSectionOpen('notes', document.getElementById('actdetail-notes-body').classList.contains('collapsed'));
 });
 document.getElementById('actdetail-confirm-btn').addEventListener('click', async () => {
   const btn = document.getElementById('actdetail-confirm-btn');
@@ -11601,7 +11766,7 @@ function openLogOtherActivityForToday() {
   openActivityLibrary(activityId => {
     const act = getActivity(activityId);
     openActivityDetailModal({
-      title: act?.name || 'Activity', subtitle: fmtDate(today), showCalories: true,
+      title: `Log ${act?.name || 'Activity'}`, subtitle: fmtDate(today), showCalories: true,
       initialDuration: act?.defaultDuration, confirmLabel: 'Log Activity',
       onConfirm: async details => {
         const { previousGrowth, newGrowth } = await logOtherActivitySession(today, activityId, details);
