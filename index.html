@@ -1876,10 +1876,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      (also z-79) since the two are never open at the same time. -->
 <div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[79] flex items-end justify-center bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:90vh">
-    <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
-    <div class="px-5 pt-3 pb-2 flex-shrink-0 flex items-center justify-end">
-      <button id="group-picker-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
+    <div class="flex justify-center pt-2.5 pb-3 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
     <div class="flex-1 overflow-y-auto px-5 pb-2">
       <div id="group-picker-list" class="space-y-3"></div>
     </div>
@@ -7934,10 +7931,13 @@ document.getElementById('bw-start-btn').addEventListener('click', () => {
 // Terminal exit from the group picker — a workout is starting, or the user
 // is being routed to a completely different screen (create exercise/group),
 // so the "Start a workout" choice underneath is closed along with it too
-// (openGroupPicker() is only ever reached from there — see sw-group-btn).
-// The picker's own X (group-picker-close, below) deliberately does NOT call
-// this: it only hides group-picker-modal, revealing start-workout-modal
-// again, so backing out one level doesn't skip past it to Home.
+// (only relevant when reached from there — see sw-group-btn; Calendar's own
+// "Workout Group" option never has start-workout-modal open, so this is a
+// harmless no-op for that path).
+// Backing out via the backdrop tap (below) deliberately does NOT call this:
+// it only hides group-picker-modal, revealing whatever sub-picker is still
+// open underneath (start-workout-modal, or calendar-add-modal), so backing
+// out one level doesn't skip past it.
 function closeGroupPicker() {
   rsHideModal('group-picker-modal');
   closeStartWorkoutChoice();
@@ -8038,7 +8038,7 @@ function openGroupPicker(onSelect = startWorkoutSession) {
   }
   document.getElementById('group-picker-modal').style.display = '';
 }
-document.getElementById('group-picker-close').addEventListener('click', () => rsHideModal('group-picker-modal'));
+document.getElementById('group-picker-modal').addEventListener('click', e => { if (e.target.id === 'group-picker-modal') rsHideModal('group-picker-modal'); });
 
 // ── Active workout draft persistence (resume after refresh) ────────────────
 // Deliberately localStorage, not Firebase — an in-progress workout is
