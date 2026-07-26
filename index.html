@@ -2550,14 +2550,26 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </div>
 
       <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Duration</p>
-      <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
-        <button id="actdetail-duration-minus" type="button" class="gm-stepper-btn w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease duration"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
-        <span class="flex items-end justify-center gap-1 flex-1 min-w-0">
-          <input id="actdetail-duration" type="number" inputmode="numeric" min="0" step="5" class="ex-plain-input font-display font-bold text-slate-800 dark:text-white tabular-nums leading-none text-center" style="font-size:2.5rem;width:4rem" aria-label="Duration in minutes">
-          <span class="text-base text-slate-400 pb-1.5">min</span>
-        </span>
-        <button id="actdetail-duration-plus" type="button" class="gm-stepper-btn gm-stepper-btn-accent w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" aria-label="Increase duration"><span class="ms text-2xl" aria-hidden="true">add</span></button>
+      <!-- Hours/minutes/seconds instead of a single minutes figure — no more
+           converting "1 hour 30" into 90 by hand. actdetail-duration stays a
+           hidden field holding the same total-minutes value every other part
+           of this modal (and logOtherActivitySession()) already reads, kept
+           in sync live by recomputeActdetailDuration(). -->
+      <div class="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
+        <div class="text-center">
+          <input id="actdetail-duration-h" type="number" inputmode="numeric" min="0" max="99" class="ex-plain-input font-display font-bold text-slate-800 dark:text-white tabular-nums text-center w-full" style="font-size:1.875rem" value="0" aria-label="Hours">
+          <p class="text-xs text-slate-400 mt-0.5">hr</p>
+        </div>
+        <div class="text-center border-l border-r border-slate-200 dark:border-slate-700">
+          <input id="actdetail-duration-m" type="number" inputmode="numeric" min="0" max="59" class="ex-plain-input font-display font-bold text-slate-800 dark:text-white tabular-nums text-center w-full" style="font-size:1.875rem" value="0" aria-label="Minutes">
+          <p class="text-xs text-slate-400 mt-0.5">min</p>
+        </div>
+        <div class="text-center">
+          <input id="actdetail-duration-s" type="number" inputmode="numeric" min="0" max="59" step="5" class="ex-plain-input font-display font-bold text-slate-800 dark:text-white tabular-nums text-center w-full" style="font-size:1.875rem" value="0" aria-label="Seconds">
+          <p class="text-xs text-slate-400 mt-0.5">sec</p>
+        </div>
       </div>
+      <input type="hidden" id="actdetail-duration">
       <p id="actdetail-default-pill-wrap" class="text-center mt-2">
         <span id="actdetail-default-pill" class="inline-block px-3 py-1 rounded-full bg-lavender-50 dark:bg-lavender-950/30 text-xs font-semibold text-lavender-600 dark:text-lavender-400"></span>
       </p>
@@ -11490,7 +11502,10 @@ function openActivityDetailModal({ title, subtitle, showCalories = true, initial
   document.getElementById('actdetail-subtitle').textContent = subtitle || '';
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plants';
   document.getElementById('actdetail-footer-text').textContent = `Every activity helps ${plantName} grow.`;
-  document.getElementById('actdetail-duration').value = initialDuration || '';
+  document.getElementById('actdetail-duration-h').value = initialDuration ? Math.floor(initialDuration / 60) : 0;
+  document.getElementById('actdetail-duration-m').value = initialDuration ? initialDuration % 60 : 0;
+  document.getElementById('actdetail-duration-s').value = 0;
+  recomputeActdetailDuration();
   const pillWrap = document.getElementById('actdetail-default-pill-wrap');
   if (initialDuration) {
     pillWrap.style.display = '';
@@ -11516,22 +11531,21 @@ function closeActivityDetailModal() {
 document.getElementById('actdetail-back-btn').addEventListener('click', closeActivityDetailModal);
 document.getElementById('actdetail-cancel-btn').addEventListener('click', closeActivityDetailModal);
 
-// Duration — the exact Sets-stepper visual language (gm-stepper-btn/
-// gm-stepper-btn-accent, popGmValue()/gmStepperTap()), and still typable
-// directly (matching Configure Exercise's own typable Sets/Rep range).
-document.getElementById('actdetail-duration-minus').addEventListener('click', e => {
-  const el = document.getElementById('actdetail-duration');
-  el.value = Math.max(0, (+el.value || 0) - 5);
-  gmStepperTap(e.currentTarget, el);
-});
-document.getElementById('actdetail-duration-plus').addEventListener('click', e => {
-  const el = document.getElementById('actdetail-duration');
-  el.value = (+el.value || 0) + 5;
-  gmStepperTap(e.currentTarget, el);
-});
-document.getElementById('actdetail-duration').addEventListener('change', e => {
-  const n = parseInt(e.target.value, 10);
-  e.target.value = isNaN(n) ? 0 : Math.max(0, n);
+// Duration — typed directly as hours/minutes/seconds instead of a single
+// minutes figure that has to be calculated by hand. actdetail-duration (now
+// hidden) still ends up holding the same total-minutes value it always did
+// — every reader downstream (the confirm handler, logOtherActivitySession())
+// is unchanged. Seconds round to the nearest minute rather than being
+// dropped, so "1h 30m 45s" still nudges the saved total up to 91 instead of
+// silently losing that last 45 seconds.
+function recomputeActdetailDuration() {
+  const h = Math.max(0, +document.getElementById('actdetail-duration-h').value || 0);
+  const m = Math.max(0, +document.getElementById('actdetail-duration-m').value || 0);
+  const s = Math.max(0, +document.getElementById('actdetail-duration-s').value || 0);
+  document.getElementById('actdetail-duration').value = h * 60 + m + Math.round(s / 60);
+}
+['actdetail-duration-h', 'actdetail-duration-m', 'actdetail-duration-s'].forEach(id => {
+  document.getElementById(id).addEventListener('input', recomputeActdetailDuration);
 });
 
 // Calories/Notes — collapsed behind a row by default, same grid-rows
