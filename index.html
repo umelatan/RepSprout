@@ -11889,6 +11889,45 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   if (cb) await cb();
 });
 
+// Tap-above-the-sheet-to-dismiss, for every remaining backdrop modal that
+// didn't already have it wired at its own call site. Each one reuses the
+// exact same function its existing close/cancel control calls — so backdrop
+// tap is never more destructive than the button already sitting in the
+// sheet. Deliberately excluded: resume-session-modal (no neutral escape —
+// Resume actively re-enters the guided workout, so a stray backdrop tap
+// shouldn't do that) and queue-modal (its own queue-backdrop already does this).
+[
+  ['dp-how-it-works-modal', () => rsHideModal('dp-how-it-works-modal')],
+  ['choose-companion-modal', () => rsHideModal('choose-companion-modal')],
+  ['log-set-modal', () => { closeLogSetSheet(); handleAwAction('cancel-set'); }],
+  ['duration-picker-modal', closeDurationPicker],
+  ['rest-scope-modal', closeRestScopeModal],
+  ['change-rest-modal', closeChangeRestModal],
+  ['end-review-modal', () => { rsHideModal('end-review-modal'); renderGuidedWorkout(); }],
+  ['start-workout-modal', closeStartWorkoutChoice],
+  ['build-workout-modal', closeBuildWorkout],
+  ['create-target-modal', () => rsHideModal('create-target-modal')],
+  ['log-target-modal', () => rsHideModal('log-target-modal')],
+  ['target-actions-modal', () => rsHideModal('target-actions-modal')],
+  ['exg-actions-modal', () => rsHideModal('exg-actions-modal')],
+  ['edit-target-modal', () => rsHideModal('edit-target-modal')],
+  ['edit-target-log-modal', closeEditTargetLogModal],
+  ['target-full-history-modal', () => rsHideModal('target-full-history-modal')],
+  ['pick-ex-modal', () => rsHideModal('pick-ex-modal')],
+  ['exercise-modal', () => rsHideModal('exercise-modal')],
+  ['finish-modal', () => rsHideModal('finish-modal')],
+  ['save-as-group-modal', () => { rsHideModal('save-as-group-modal'); goView('dashboard'); }],
+  ['cal-photo-modal', () => rsHideModal('cal-photo-modal')],
+  ['calendar-day-sheet', () => rsHideModal('calendar-day-sheet')],
+  ['activity-library-modal', () => rsHideModal('activity-library-modal')],
+  ['custom-activity-form-modal', () => { rsHideModal('custom-activity-form-modal'); document.getElementById('activity-library-modal').style.display = ''; }],
+  ['activity-detail-modal', closeActivityDetailModal],
+  ['multi-ex-picker-modal', () => rsHideModal('multi-ex-picker-modal')],
+  ['edit-session-modal', closeEditSessionModal]
+].forEach(([id, close]) => {
+  document.getElementById(id).addEventListener('click', e => { if (e.target.id === id) close(); });
+});
+
 // Apply dark mode on load
 applyTheme('dark');
 </script>
