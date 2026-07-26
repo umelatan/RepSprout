@@ -9921,7 +9921,7 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
   openActivityLibrary(activityId => {
     const act = getActivity(activityId);
     openActivityDetailModal({
-      title: act?.name || 'Activity', subtitle: fmtDate(todayStr()), showCalories: true,
+      title: `Log ${act?.name || 'Activity'}`, subtitle: fmtDate(todayStr()), showCalories: true,
       initialDuration: act?.defaultDuration, confirmLabel: 'Log Activity',
       onConfirm: async details => {
         // Same session-logging path Calendar's "today" Other Activity option
@@ -11280,7 +11280,7 @@ function openCalendarAddPicker(date) {
     openActivityLibrary(activityId => {
       const act = getActivity(activityId);
       openActivityDetailModal({
-        title: act?.name || 'Activity', subtitle: fmtDate(date), showCalories: relation !== 'future',
+        title: `${relation === 'future' ? 'Schedule' : 'Log'} ${act?.name || 'Activity'}`, subtitle: fmtDate(date), showCalories: relation !== 'future',
         initialDuration: act?.defaultDuration, confirmLabel: relation === 'future' ? 'Schedule Activity' : 'Log Activity',
         onConfirm: async details => {
           let message = null;
