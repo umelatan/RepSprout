@@ -11100,7 +11100,16 @@ function dismissCalendarAddModal() {
   // swap in progress is abandoned too — the original plan stays put.
   calendarChangeReplacingEntryId = null;
   closeCalendarAddModal();
-  if (calendarAddPickerDate) openCalendarDaySheet(calendarAddPickerDate);
+  // Same shortcut as openCalendarDayEntry(): an empty future date's day
+  // sheet has nothing on it but a single "Add To This Day" button, so
+  // backing out of the picker for one just closes everything instead of
+  // reopening that button-only sheet.
+  const date = calendarAddPickerDate;
+  if (date && dateRelation(date) === 'future' && !firstIncompletePlannedEntry(date)) {
+    closeCalendarActivityWindows(date);
+  } else if (date) {
+    openCalendarDaySheet(date);
+  }
 }
 // A short pause between tapping a card and actually navigating, so the press
 // state (native :active — always self-clearing on release, never a class we
