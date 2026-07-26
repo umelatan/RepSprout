@@ -810,7 +810,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
         <p id="wt-groups-summary" class="text-xs text-slate-400 flex flex-wrap items-center gap-1.5"></p>
         <div id="groups-list" class="space-y-3"></div>
-        <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 pt-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every workout you build helps your plants grow.</p>
       </div>
 
       <!-- Exercises — "Exercise Garden". Same underlying data/progression
@@ -6889,7 +6888,6 @@ function renderGroupsList() {
           ${groupCardMetaHtml(id, g.exercises)}
           ${preview ? `<p class="text-xs text-slate-400 truncate">${preview}</p>` : ''}
         </div>
-        <span class="ms gp-chevron-pod text-slate-300 dark:text-slate-600 flex-shrink-0 self-center" aria-hidden="true">chevron_right</span>
       </div>`;
   }).join('');
 
