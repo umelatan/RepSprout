@@ -322,6 +322,9 @@ body{font-family:'Inter',sans-serif}
 .dark .gp-workout-card:active{background-color:rgba(139,92,246,.09)}
 .gp-chevron-pod{transition:transform var(--rs-dur-press) var(--rs-ease-settle)}
 .gp-workout-card:active .gp-chevron-pod{transform:translateX(2px)}
+/* Workout Groups list — cards are informational only (no tap action), so
+   they get just the fade/rise entrance, never the press/active styling. */
+.gp-card-fade-in{animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both}
 /* Create Workout — the empty-Exercises placeholder gets the same gentle
    press scale as every other tappable card/row in the app. */
 .gm-ex-placeholder{transition:transform var(--rs-dur-press) var(--rs-ease-settle),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
@@ -6953,15 +6956,15 @@ function renderGroupsList() {
 
   // Identity comes only from name + this restrained colour dot — never an
   // inferred icon/illustration, and never a saturated border wrapping the
-  // whole card. Tapping the card starts the workout directly; Edit moved
-  // into the overflow menu (see group-actions-modal) since it's no longer
-  // reachable via the card itself.
+  // whole card. The card itself is purely informational now — Edit/
+  // Duplicate/Archive/Delete all live behind the "⋯" overflow menu only
+  // (see group-actions-modal); there is no tap-to-start or tap-to-edit.
   list.innerHTML = filteredItems.map(([id, g], i) => {
     const exList = (g.exercises || []).map(ge => exercises[ge.exerciseId]).filter(Boolean);
     const preview = exList.slice(0,3).map(e => esc(e.name)).join(' • ') + (exList.length > 3 ? ` +${exList.length - 3}` : '');
     const color = g.color || GROUP_COLORS[0];
     return `
-      <div class="group-card gp-workout-card card p-3 flex items-start gap-2 cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="Start ${esc(g.name)}" style="animation-delay:${i*40}ms">
+      <div class="group-card gp-card-fade-in card p-3 flex items-start gap-2" data-id="${id}" style="animation-delay:${i*40}ms">
         <div class="min-w-0 flex-1 space-y-1">
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0 flex items-center gap-2">
@@ -6977,21 +6980,7 @@ function renderGroupsList() {
       </div>`;
   }).join('');
 
-  // Tapping the card now starts the workout directly — the overflow menu
-  // (Edit/Duplicate/Archive/Delete) stays its own distinct action, so this
-  // only fires when that wasn't the actual target (and is skipped from the
-  // keyboard Enter/Space path when focus is already on it).
-  list.querySelectorAll('.group-card').forEach(card => {
-    const start = e => {
-      if (e.target.closest('.group-actions-btn')) return;
-      startWorkoutSession(card.dataset.id);
-    };
-    card.addEventListener('click', start);
-    card.addEventListener('keydown', e => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); start(e); }
-    });
-  });
-  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupActionsSheet(b.dataset.id); }));
+  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', () => openGroupActionsSheet(b.dataset.id)));
 }
 
 let groupActionsId = null;
