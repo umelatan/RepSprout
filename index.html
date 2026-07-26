@@ -384,8 +384,9 @@ body{font-family:'Inter',sans-serif}
    the existing DOM node, never re-renders it, so the transition always has
    a real "before" state to animate from. */
 .exg-mg-body{display:grid;grid-template-rows:1fr;transition:grid-template-rows var(--rs-dur-standard) var(--rs-ease-standard);overflow:hidden}
-.exg-mg-body.collapsed{grid-template-rows:0fr}
+.exg-mg-body.collapsed{grid-template-rows:0fr;max-height:0}
 .exg-mg-body>div{overflow:hidden;min-height:0}
+.exg-mg-body.collapsed>div{max-height:0}
 .exg-mg-chevron{display:inline-block;transition:transform var(--rs-dur-quick) var(--rs-ease-settle)}
 .exg-mg-chevron.expanded{transform:rotate(90deg)}
 @keyframes gmValuePop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
