@@ -2376,16 +2376,15 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      calendar date. Content varies by past/today/future — see openCalendarDaySheet(). -->
 <!-- Calendar day sheet — bottom-sheet shell (drag handle + rounded-t-3xl)
      matching the "Add to Calendar" sheet's own language, so it inherits the
-     same entrance/exit motion automatically. Title is context-aware (see
-     openCalendarDaySheet()): "Your plan" once a plan exists, "Plan this
-     day" otherwise; past dates keep their own existing title untouched. -->
+     same entrance/exit motion automatically. The date itself (see
+     fmtDateWithWeekday()) is the only header text — no separate
+     "Plan this day"/"What did you do on this day?" title. -->
 <div id="calendar-day-sheet" style="display:none" class="fixed inset-0 z-[72] flex items-end justify-center bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:88vh">
     <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
     <div class="px-5 pt-1 pb-3 flex-shrink-0 flex items-start justify-between gap-2">
       <div class="min-w-0">
-        <p id="cds-date-label" class="text-[11px] font-semibold text-slate-400 truncate"></p>
-        <h3 id="cds-title" class="font-display font-bold text-xl text-slate-800 dark:text-white mt-0.5"></h3>
+        <p id="cds-date-label" class="font-display font-bold text-xl text-slate-800 dark:text-white truncate"></p>
       </div>
       <button id="cds-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
@@ -10545,12 +10544,8 @@ function openCalendarDaySheet(date) {
   if (completedList.length) html += `<div class="space-y-2">${completedList.map(([id, s]) => renderCalDaySessionCard(date, id, s)).join('')}</div>`;
 
   if (planned && relation !== 'past') {
-    // Context-aware title (task spec) — past dates keep their own existing
-    // title untouched, since this redesign is scoped to planned activities.
-    document.getElementById('cds-title').textContent = 'Your plan';
     html += renderPlannedEntryCard(planned) + renderCdsActionArea(planned, relation);
   } else {
-    document.getElementById('cds-title').textContent = relation === 'past' ? 'What did you do on this day?' : 'Plan this day';
     html += `<button id="cds-add-btn" class="btn btn-green btn-pop w-full py-3 text-sm">Add To This Day</button>`;
   }
 
