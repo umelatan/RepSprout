@@ -804,6 +804,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           </div>
           <button id="wt-groups-create-icon-btn" type="button" class="rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex-shrink-0 flex items-center justify-center" style="min-width:44px;min-height:44px" aria-label="Create workout group"><span class="ms text-xl" aria-hidden="true">add</span></button>
         </div>
+        <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-fit" role="group" aria-label="Filter workout groups">
+          <button class="grp-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="active">Active</button>
+          <button class="grp-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="archived">Archived</button>
+        </div>
         <p id="wt-groups-summary" class="text-xs text-slate-400 flex items-center gap-1"></p>
         <div id="groups-list" class="space-y-3"></div>
       </div>
@@ -1715,10 +1719,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Workout Group card overflow — Duplicate/Delete only; tapping the card
-     itself already opens the editor, same idiom as exg-actions-modal
-     above. Duplicate/Delete call the exact same code the editor's own
-     Duplicate/Delete rows use (see wga-duplicate-btn/wga-delete-btn). -->
+<!-- Workout Group card overflow — Duplicate/Archive-or-Restore/Delete;
+     tapping the card itself already opens the editor, same idiom as
+     exg-actions-modal above. Reused for both the active and archived tab
+     (see openGroupActionsSheet()) — Archive/Restore's label/icon swap the
+     same way ta-archive-btn does on the Targets page. -->
 <div id="group-actions-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
     <div class="flex items-center justify-between pb-1">
@@ -1726,6 +1731,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <button id="wga-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
     <button id="wga-duplicate-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">content_copy</span>Duplicate group</button>
+    <button id="wga-archive-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">archive</span></button>
     <button id="wga-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete group</button>
   </div>
 </div>
@@ -6757,10 +6763,48 @@ const CREATE_GROUP_CTA = `
     <span class="ms text-base" aria-hidden="true">add</span>Create workout group
   </button>`;
 
+let groupsStatusFilter = 'active';
+
+function renderGroupsTabs() {
+  document.querySelectorAll('.grp-status-tab').forEach(b => {
+    const on = b.dataset.status === groupsStatusFilter;
+    b.style.background = on ? (document.documentElement.classList.contains('dark') ? '#1e293b' : 'white') : 'transparent';
+    b.style.color = on ? '#8b5cf6' : '';
+  });
+}
+
+// Archived groups get a dimmed, read-only-ish card (no Start button, no
+// colour dot) — same idiom as targetArchivedCardHtml(). The same
+// group-actions-btn/openGroupActionsSheet() is reused, which shows
+// "Restore group" instead of "Archive group" once g.archived is true.
+function archivedGroupCardHtml(id, g) {
+  const exCount = (g.exercises || []).length;
+  return `
+    <div class="card p-3.5 flex items-center justify-between gap-3 opacity-70" data-id="${id}">
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(g.name)}</p>
+        <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''} · Archived</p>
+      </div>
+      <button class="group-actions-btn p-1 text-slate-300 hover:text-slate-500 flex-shrink-0" style="min-width:44px;min-height:44px" data-id="${id}" aria-label="Group actions for ${esc(g.name)}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+    </div>`;
+}
+
 function renderGroupsList() {
+  renderGroupsTabs();
   const list = document.getElementById('groups-list');
-  const items = Object.entries(groups).filter(([,g]) => !g.archived);
   const summaryEl = document.getElementById('wt-groups-summary');
+
+  if (groupsStatusFilter === 'archived') {
+    const archived = Object.entries(groups).filter(([,g]) => g.archived);
+    summaryEl.textContent = '';
+    list.innerHTML = archived.length
+      ? archived.map(([id, g]) => archivedGroupCardHtml(id, g)).join('')
+      : `<p class="text-sm text-slate-400 text-center py-8">No archived workout groups.</p>`;
+    list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupActionsSheet(b.dataset.id); }));
+    return;
+  }
+
+  const items = Object.entries(groups).filter(([,g]) => !g.archived);
 
   // Exercises must exist before a group is worth creating — never lead a
   // user into building an empty group.
@@ -6839,6 +6883,10 @@ function openGroupActionsSheet(id) {
   if (!g) return;
   groupActionsId = id;
   document.getElementById('wga-title').textContent = g.name;
+  const archiveBtn = document.getElementById('wga-archive-btn');
+  archiveBtn.innerHTML = g.archived
+    ? `<span class="ms text-lg text-slate-400" aria-hidden="true">unarchive</span>Restore group`
+    : `<span class="ms text-lg text-slate-400" aria-hidden="true">archive</span>Archive group`;
   document.getElementById('group-actions-modal').style.display = '';
 }
 document.getElementById('wga-close').addEventListener('click', () => rsHideModal('group-actions-modal'));
@@ -6847,11 +6895,17 @@ document.getElementById('wga-duplicate-btn').addEventListener('click', () => {
   rsHideModal('group-actions-modal');
   if (groupActionsId) duplicateWorkoutGroup(groupActionsId);
 });
+document.getElementById('wga-archive-btn').addEventListener('click', () => {
+  const g = groupActionsId ? groups[groupActionsId] : null;
+  rsHideModal('group-actions-modal');
+  if (g) setGroupArchived(groupActionsId, !g.archived);
+});
 document.getElementById('wga-delete-btn').addEventListener('click', () => {
   rsHideModal('group-actions-modal');
   if (groupActionsId) deleteWorkoutGroup(groupActionsId);
 });
 document.getElementById('wt-groups-create-icon-btn').addEventListener('click', () => openGroupModal());
+document.querySelectorAll('.grp-status-tab').forEach(b => b.addEventListener('click', () => { groupsStatusFilter = b.dataset.status; renderGroupsList(); }));
 
 // Delegated so the dynamically-rendered empty-state / trailing CTA buttons
 // (which change identity on every re-render) don't need per-render rebinding.
@@ -7473,6 +7527,28 @@ async function deleteWorkoutGroup(id) {
   } catch (err) {
     console.error('Failed to delete workout group:', err);
     alert('Could not delete this group. Check your connection and try again.');
+  } finally {
+    workoutGroupActionBusy = false;
+  }
+}
+// Reversible, so — unlike Delete — no confirm(). Archiving only sets a flag;
+// every existing `!g.archived` filter throughout the app (group picker,
+// Start Workout, dashboard counts, "used in" lookups) already excludes it
+// for free. Past workouts logged from this group are untouched — sessions
+// denormalize groupName/groupColor at log time, so they never re-read the
+// live group record.
+async function setGroupArchived(id, archived) {
+  const g = groups[id];
+  if (!g || workoutGroupActionBusy) return;
+  workoutGroupActionBusy = true;
+  try {
+    await set(ref(db, `users/${uid()}/groups/${id}/archived`), archived);
+    hide('group-modal');
+    switchWorkoutTab('groups');
+    showToast(archived ? 'Workout group archived' : 'Workout group restored');
+  } catch (err) {
+    console.error('Failed to update workout group archive state:', err);
+    alert('Could not update this group. Check your connection and try again.');
   } finally {
     workoutGroupActionBusy = false;
   }
