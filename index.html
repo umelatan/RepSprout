@@ -306,7 +306,7 @@ body{font-family:'Inter',sans-serif}
    Equipment/Rest chips get a soft colour transition on top of .btn's
    existing opacity/transform one (the two classes share equal specificity,
    so this has to restate them or they'd be dropped, not merged). */
-.ex-target-chip,.ex-equip-chip,.ex-rest-chip{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
+.ex-target-chip,.ex-equip-chip,.ex-rest-chip,.gmes-rest-chip{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
 /* Start Workout picker — neutral tappable cards. Entrance reuses capCardIn
    (staggered via inline animation-delay, since the list length varies);
    press feedback is a slight scale + a touch of lavender brightening +
@@ -2092,6 +2092,23 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
       </div>
       <p class="text-xs text-slate-400 text-center mt-2">Recommended: 6–15 reps</p>
+
+      <div class="border-t border-slate-100 dark:border-slate-800 my-5"></div>
+
+      <!-- Rest timer — a per-group override on top of this exercise's own
+           default (see resolveRestDuration()'s priority chain). "None" here
+           means "no override" — it falls back to the exercise's own default,
+           then the global default, exactly as if this were never set. -->
+      <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Rest timer</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="gmes-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="">None</button>
+        <button type="button" class="gmes-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="60">60s</button>
+        <button type="button" class="gmes-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="90">90s</button>
+        <button type="button" class="gmes-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="120">2m</button>
+        <button type="button" class="gmes-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="180">3m</button>
+        <button type="button" class="gmes-rest-chip btn btn-outline text-xs px-3 py-1.5" data-secs="custom">Custom</button>
+      </div>
+      <input id="gmes-rest-custom" type="number" inputmode="numeric" min="0" step="5" placeholder="Seconds" style="display:none" class="mt-1.5">
 
       <!-- Lavender, not green — green stays reserved for growth/completion/
            progression/Companion Plant moments elsewhere; this is a
@@ -7098,8 +7115,9 @@ document.getElementById('gm-ex-placeholder').addEventListener('click', openGmAdd
 // gmesDraft actually differs from gmesOriginal. ────────────────────────────
 const GM_SETS_MIN = 1, GM_SETS_MAX = 10;
 const GM_REPS_MIN = 1, GM_REPS_MAX = 50;
+const GM_REST_PRESETS = [60, 90, 120, 180];
 let gmExSettingsIdx = null;
-let gmesDraft = null;     // { sets, min, max } — local scratch, committed on gmes-save
+let gmesDraft = null;     // { sets, min, max, rest } — local scratch, committed on gmes-save
 let gmesOriginal = null;  // same shape, captured at open time, for the dirty check
 
 function openGmExerciseSettings(idx) {
@@ -7107,7 +7125,7 @@ function openGmExerciseSettings(idx) {
   const ex = ge && exercises[ge.exerciseId];
   if (!ex) return;
   gmExSettingsIdx = idx;
-  gmesDraft = { sets: ge.defaultSets, min: ge.minReps, max: ge.maxReps };
+  gmesDraft = { sets: ge.defaultSets, min: ge.minReps, max: ge.maxReps, rest: ge.restSeconds ?? null };
   gmesOriginal = { ...gmesDraft };
   document.getElementById('gmes-title').textContent = ex.name;
   document.getElementById('gmes-group').textContent = groupModalDraft.name || '';
@@ -7127,10 +7145,47 @@ function renderGmesSheet() {
   document.getElementById('gmes-max-minus').disabled = gmesDraft.max <= GM_REPS_MIN;
   document.getElementById('gmes-max-plus').disabled = gmesDraft.max >= GM_REPS_MAX;
 
+  renderGmesRestChips();
   updateGmesSaveEnabled();
 }
+// Mirrors setExRestChip() from Create Exercise — same preset list, same
+// "custom" detection — just writing into gmesDraft.rest instead of a form
+// field.
+function renderGmesRestChips() {
+  const secs = gmesDraft.rest;
+  const isCustom = secs != null && !GM_REST_PRESETS.includes(secs);
+  document.querySelectorAll('.gmes-rest-chip').forEach(chip => {
+    const selected = chip.dataset.secs === 'custom' ? isCustom
+      : chip.dataset.secs === '' ? secs == null
+      : +chip.dataset.secs === secs;
+    chip.classList.toggle('btn-green', selected);
+    chip.classList.toggle('btn-outline', !selected);
+  });
+  document.getElementById('gmes-rest-custom').style.display = isCustom ? '' : 'none';
+  if (isCustom) document.getElementById('gmes-rest-custom').value = secs;
+}
+document.querySelectorAll('.gmes-rest-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (chip.dataset.secs === 'custom') {
+      gmesDraft.rest = +document.getElementById('gmes-rest-custom').value || 90;
+      renderGmesRestChips();
+      updateGmesSaveEnabled();
+      document.getElementById('gmes-rest-custom').style.display = '';
+      document.getElementById('gmes-rest-custom').focus();
+    } else {
+      gmesDraft.rest = chip.dataset.secs === '' ? null : +chip.dataset.secs;
+      renderGmesRestChips();
+      updateGmesSaveEnabled();
+    }
+  });
+});
+document.getElementById('gmes-rest-custom').addEventListener('input', () => {
+  const v = +document.getElementById('gmes-rest-custom').value;
+  gmesDraft.rest = v > 0 ? v : null;
+  updateGmesSaveEnabled();
+});
 function updateGmesSaveEnabled() {
-  const dirty = gmesDraft.sets !== gmesOriginal.sets || gmesDraft.min !== gmesOriginal.min || gmesDraft.max !== gmesOriginal.max;
+  const dirty = gmesDraft.sets !== gmesOriginal.sets || gmesDraft.min !== gmesOriginal.min || gmesDraft.max !== gmesOriginal.max || gmesDraft.rest !== gmesOriginal.rest;
   document.getElementById('gmes-save').disabled = !dirty;
 }
 document.getElementById('gm-ex-settings-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-settings-modal') rsHideModal('gm-ex-settings-modal'); });
@@ -7142,6 +7197,7 @@ document.getElementById('gmes-save').addEventListener('click', () => {
   ge.defaultSets = gmesDraft.sets;
   ge.minReps = gmesDraft.min;
   ge.maxReps = gmesDraft.max;
+  ge.restSeconds = gmesDraft.rest;
   rsHideModal('gm-ex-settings-modal');
   renderGmExerciseList();
 });
@@ -7877,7 +7933,16 @@ function buildSessionExercise(exerciseId, overrides = {}) {
     progressionEnabled: ex.progressionEnabled !== false,
     targetReps,
     sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps: '', rir: '', completed: false, warmup: false, completedAt: null })),
-    skipped: false, notes: '', entered: false
+    skipped: false, notes: '', entered: false,
+    // A workout-group-level rest override (see Configure Exercise's own
+    // Rest timer chips) seeds restSecondsOverride, the same field the
+    // in-session "Change rest" UI writes to — resolveRestDuration() already
+    // treats it as the top-priority source, so this "just works" without
+    // touching that resolver. overrides.restSeconds is only ever present
+    // when a real per-group-exercise value was passed (see the two
+    // (g.exercises||[]).map(ge => buildSessionExercise(ge.exerciseId, ge))
+    // call sites) — undefined everywhere else, so this is a no-op there.
+    ...(overrides.restSeconds != null ? { restSecondsOverride: overrides.restSeconds } : {})
   };
 }
 
