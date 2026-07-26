@@ -10487,11 +10487,12 @@ const PLANNED_TYPE_VISUAL = {
 // date). No action buttons live here anymore; those are renderCdsActionArea()
 // below, so this card is the same shape for today/future alike.
 function renderPlannedEntryCard(planned) {
-  let label, meta;
+  let label, meta, groupColor;
   if (planned.type === 'group') {
     const g = groups[planned.workoutGroupId];
     label = g?.name || 'Workout Group';
     meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''}`;
+    groupColor = g?.color || GROUP_COLORS[0];
   } else if (planned.type === 'quick') {
     label = 'Quick Workout'; meta = describePlannedQuickWorkout(planned.plannedExerciseIds);
   } else if (planned.type === 'activity') {
@@ -10502,23 +10503,27 @@ function renderPlannedEntryCard(planned) {
     label = 'Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
   }
   const visual = PLANNED_TYPE_VISUAL[planned.type] || PLANNED_TYPE_VISUAL.activity;
+  // Workout Group entries drop the icon pod for the same small colour dot
+  // the Workout Groups list and group-picker cards use, so a planned group
+  // reads as the same identity everywhere it shows up. Other planned types
+  // (quick/activity/recovery) have no group colour to align to, so they
+  // keep their icon pod.
+  const titleRowHtml = planned.type === 'group'
+    ? `<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${groupColor}" aria-hidden="true"></span><p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(label)}</p></div>`
+    : `<p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(label)}</p>`;
+  const iconPodHtml = planned.type === 'group' ? '' : `<span class="cap-icon-pod ${visual.pod} flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl ${visual.text}">${visual.icon}</span></span>`;
   return `
     <section class="space-y-2">
       <p class="text-xs font-semibold text-slate-400">Planned Workout</p>
       <div class="card overflow-hidden">
         <div class="flex items-start gap-3 p-3.5">
-          <span class="cap-icon-pod ${visual.pod} flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl ${visual.text}">${visual.icon}</span></span>
+          ${iconPodHtml}
           <div class="min-w-0 flex-1">
-            <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(label)}</p>
+            ${titleRowHtml}
             <p class="text-xs text-slate-400 mt-0.5">${esc(meta)}</p>
             <p class="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><span class="ms text-xs" aria-hidden="true">sell</span>${esc(visual.tag)}</p>
           </div>
-          <div class="flex flex-col items-end gap-2 flex-shrink-0">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 text-xs font-semibold whitespace-nowrap">
-              <span class="w-1.5 h-1.5 rounded-full bg-brand-500" aria-hidden="true"></span>Planned
-            </span>
-            <button class="cds-remove-planned-btn flex items-center justify-center text-slate-300 hover:text-red-400 flex-shrink-0" style="min-width:32px;min-height:32px" data-entry-id="${planned.id}" aria-label="Remove planned workout"><span class="ms text-lg" aria-hidden="true">close</span></button>
-          </div>
+          <button class="cds-remove-planned-btn flex items-center justify-center text-slate-300 hover:text-red-400 flex-shrink-0" style="min-width:32px;min-height:32px" data-entry-id="${planned.id}" aria-label="Remove planned workout"><span class="ms text-lg" aria-hidden="true">close</span></button>
         </div>
       </div>
     </section>`;
@@ -11044,7 +11049,7 @@ async function finishActivityAdded(date, message) {
     catch (e) { console.error('Failed to remove the previous plan after changing it:', e); }
   }
   closeCalendarActivityWindows(date);
-  showToast(message || 'Activity added');
+  showToast(message || (replacingId ? 'Workout changed' : 'Activity added'));
 }
 
 function wireCalDaySheetActions(date) {
