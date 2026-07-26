@@ -298,9 +298,13 @@ body{font-family:'Inter',sans-serif}
 .dark #edit-session-modal .esm-rep-box{background:#0f172a}
 #edit-session-modal .esm-underline-input{background:transparent!important;border:none!important;padding:0!important;font-weight:600}
 #edit-session-modal .esm-underline-input::placeholder{font-weight:400}
-#exercise-modal input[type=number]::-webkit-outer-spin-button,#exercise-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-#exercise-modal input[type=number]{-moz-appearance:textfield}
-#exercise-modal .ex-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
+#exercise-modal input[type=number]::-webkit-outer-spin-button,#exercise-modal input[type=number]::-webkit-inner-spin-button,
+#gm-ex-settings-modal input[type=number]::-webkit-outer-spin-button,#gm-ex-settings-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#exercise-modal input[type=number],#gm-ex-settings-modal input[type=number]{-moz-appearance:textfield}
+/* Shared by Create Exercise's Sets stepper and Configure Exercise's typable
+   Sets/Rep range steppers — a bare, borderless number input that looks like
+   plain bold text until focused. */
+.ex-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 /* Create Exercise sheet — a single linear flow now (no section cards), so
    entrance motion is just the modal's own universal fade/slide-in. Target/
    Equipment/Rest chips get a soft colour transition on top of .btn's
@@ -2059,7 +2063,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
         <button id="gmes-sets-minus" type="button" class="gm-stepper-btn w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease sets"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
         <span class="flex flex-col items-center flex-1 min-w-0">
-          <span id="gmes-sets-value" class="font-display font-bold text-slate-800 dark:text-white tabular-nums leading-none" style="font-size:2.75rem" aria-live="polite">3</span>
+          <input id="gmes-sets-value" type="number" inputmode="numeric" min="1" max="10" class="ex-plain-input font-display font-bold text-slate-800 dark:text-white tabular-nums leading-none text-center" style="font-size:2.75rem" value="3" aria-label="Number of sets">
           <span class="text-xs text-slate-400 mt-0.5">sets</span>
         </span>
         <button id="gmes-sets-plus" type="button" class="gm-stepper-btn gm-stepper-btn-accent w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0" aria-label="Increase sets"><span class="ms text-2xl" aria-hidden="true">add</span></button>
@@ -2078,7 +2082,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <p class="text-xs font-semibold text-slate-400 text-center mb-1.5">Minimum</p>
           <div class="flex items-center justify-between p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
             <button id="gmes-min-minus" type="button" class="gm-stepper-btn w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease minimum reps"><span class="ms text-xl" aria-hidden="true">remove</span></button>
-            <span id="gmes-min-value" class="font-display font-bold text-xl text-slate-800 dark:text-white tabular-nums flex-1 text-center" aria-live="polite">8</span>
+            <input id="gmes-min-value" type="number" inputmode="numeric" min="1" max="50" class="ex-plain-input font-display font-bold text-xl text-slate-800 dark:text-white tabular-nums flex-1 text-center" value="8" aria-label="Minimum reps">
             <button id="gmes-min-plus" type="button" class="gm-stepper-btn gm-stepper-btn-accent-outline w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-label="Increase minimum reps"><span class="ms text-xl" aria-hidden="true">add</span></button>
           </div>
         </div>
@@ -2086,7 +2090,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <p class="text-xs font-semibold text-slate-400 text-center mb-1.5">Maximum</p>
           <div class="flex items-center justify-between p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/60">
             <button id="gmes-max-minus" type="button" class="gm-stepper-btn w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease maximum reps"><span class="ms text-xl" aria-hidden="true">remove</span></button>
-            <span id="gmes-max-value" class="font-display font-bold text-xl text-slate-800 dark:text-white tabular-nums flex-1 text-center" aria-live="polite">12</span>
+            <input id="gmes-max-value" type="number" inputmode="numeric" min="1" max="50" class="ex-plain-input font-display font-bold text-xl text-slate-800 dark:text-white tabular-nums flex-1 text-center" value="12" aria-label="Maximum reps">
             <button id="gmes-max-plus" type="button" class="gm-stepper-btn gm-stepper-btn-accent-outline w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-label="Increase maximum reps"><span class="ms text-xl" aria-hidden="true">add</span></button>
           </div>
         </div>
@@ -7133,13 +7137,13 @@ function openGmExerciseSettings(idx) {
   document.getElementById('gm-ex-settings-modal').style.display = '';
 }
 function renderGmesSheet() {
-  document.getElementById('gmes-sets-value').textContent = gmesDraft.sets;
+  document.getElementById('gmes-sets-value').value = gmesDraft.sets;
   document.getElementById('gmes-sets-minus').disabled = gmesDraft.sets <= GM_SETS_MIN;
   document.getElementById('gmes-sets-plus').disabled = gmesDraft.sets >= GM_SETS_MAX;
 
   document.getElementById('gmes-reps-value').textContent = `${gmesDraft.min}–${gmesDraft.max}`;
-  document.getElementById('gmes-min-value').textContent = gmesDraft.min;
-  document.getElementById('gmes-max-value').textContent = gmesDraft.max;
+  document.getElementById('gmes-min-value').value = gmesDraft.min;
+  document.getElementById('gmes-max-value').value = gmesDraft.max;
   document.getElementById('gmes-min-minus').disabled = gmesDraft.min <= GM_REPS_MIN;
   document.getElementById('gmes-min-plus').disabled = gmesDraft.min >= GM_REPS_MAX;
   document.getElementById('gmes-max-minus').disabled = gmesDraft.max <= GM_REPS_MIN;
@@ -7268,6 +7272,35 @@ document.getElementById('gmes-max-plus').addEventListener('click', e => {
   if (gmesDraft.max >= GM_REPS_MAX) return;
   gmesDraft.max++; renderGmesSheet(); gmStepperTap(e.currentTarget, document.getElementById('gmes-max-value'));
   popGmValue(document.getElementById('gmes-reps-value'));
+});
+
+// Sets/Rep range can also be typed directly, not just stepped. Committed on
+// "change" (blur or Enter) rather than every keystroke, so typing "15" does
+// not get clamped/reformatted mid-digit — renderGmesSheet() then normalizes
+// the field back to the clamped value once editing is done, same min/max
+// cross-clamp rule the stepper buttons already enforce.
+const clampGmSets = n => Math.min(GM_SETS_MAX, Math.max(GM_SETS_MIN, n));
+const clampGmReps = n => Math.min(GM_REPS_MAX, Math.max(GM_REPS_MIN, n));
+document.getElementById('gmes-sets-value').addEventListener('change', e => {
+  const n = parseInt(e.target.value, 10);
+  if (!isNaN(n)) gmesDraft.sets = clampGmSets(n);
+  renderGmesSheet();
+});
+document.getElementById('gmes-min-value').addEventListener('change', e => {
+  const n = parseInt(e.target.value, 10);
+  if (!isNaN(n)) {
+    gmesDraft.min = clampGmReps(n);
+    if (gmesDraft.min > gmesDraft.max) gmesDraft.max = gmesDraft.min;
+  }
+  renderGmesSheet();
+});
+document.getElementById('gmes-max-value').addEventListener('change', e => {
+  const n = parseInt(e.target.value, 10);
+  if (!isNaN(n)) {
+    gmesDraft.max = clampGmReps(n);
+    if (gmesDraft.max < gmesDraft.min) gmesDraft.min = gmesDraft.max;
+  }
+  renderGmesSheet();
 });
 
 // ── Drag-and-drop reordering ─────────────────────────────────────────────
