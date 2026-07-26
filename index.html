@@ -314,14 +314,12 @@ body{font-family:'Inter',sans-serif}
 .ex-target-chip,.ex-equip-chip,.ex-rest-chip,.gmes-rest-chip{transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle)}
 /* Start Workout picker — neutral tappable cards. Entrance reuses capCardIn
    (staggered via inline animation-delay, since the list length varies);
-   press feedback is a slight scale + a touch of lavender brightening +
-   the chevron pod nudging right, all released with the same spring ease
-   the rest of the app's press states use. */
+   press feedback is a slight scale + a touch of lavender brightening,
+   released with the same spring ease the rest of the app's press states
+   use. */
 .gp-workout-card{text-align:left;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both;transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .gp-workout-card:active{transform:scale(.985);background-color:rgba(139,92,246,.04)}
 .dark .gp-workout-card:active{background-color:rgba(139,92,246,.09)}
-.gp-chevron-pod{transition:transform var(--rs-dur-press) var(--rs-ease-settle)}
-.gp-workout-card:active .gp-chevron-pod{transform:translateX(2px)}
 /* Workout Groups list — cards are informational only (no tap action), so
    they get just the fade/rise entrance, never the press/active styling. */
 .gp-card-fade-in{animation:capCardIn var(--rs-dur-standard) var(--rs-ease-settle) both}
@@ -8037,7 +8035,6 @@ function openGroupPicker() {
             ${metaHtml}
             <p class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800/60 text-xs text-slate-400 mt-1"><span class="ms text-sm" aria-hidden="true">schedule</span>${lastLabel}</p>
           </div>
-          <span class="gp-chevron-pod w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 self-center" aria-hidden="true"><span class="ms text-lg text-slate-400" aria-hidden="true">chevron_right</span></span>
         </button>`;
     }).join('');
     list.querySelectorAll('.gp-workout-card[data-id]').forEach(b => b.addEventListener('click', () => {
