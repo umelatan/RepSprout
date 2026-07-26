@@ -796,9 +796,16 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
       <!-- Groups -->
       <div id="wt-groups" style="display:none" class="rs-view space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
-          <button id="wt-groups-create-icon-btn" type="button" class="rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex-shrink-0 flex items-center justify-center" style="min-width:44px;min-height:44px" aria-label="Create workout group"><span class="ms text-xl" aria-hidden="true">add</span></button>
+        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
+        <!-- Same Search/Add component family as the Exercises tab (see
+             #ex-search/#new-exercise-btn above) — same height, radius,
+             border treatment, only the Add action filled. -->
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1 min-w-0">
+            <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
+            <input id="grp-search" type="text" placeholder="Search groups..." class="pl-9 py-2.5 rounded-xl" aria-label="Search workout groups">
+          </div>
+          <button id="wt-groups-create-icon-btn" type="button" class="btn btn-green px-3.5 py-2.5 text-sm rounded-xl flex-shrink-0 flex items-center gap-1 whitespace-nowrap"><span class="ms text-base" aria-hidden="true">add</span>Add group</button>
         </div>
         <div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg w-fit" role="group" aria-label="Filter workout groups">
           <button class="grp-status-tab text-xs font-semibold px-3 py-1.5 rounded-md transition-all text-slate-500 dark:text-slate-400" data-status="active">Active</button>
@@ -6754,6 +6761,7 @@ function relativeDays(dateStr) {
 }
 
 let groupsStatusFilter = 'active';
+let groupsSearchQuery = '';
 
 // "N ready to progress" when at least one exercise in the group has a leaf
 // ready to advance, else "N exercise(s) bloomed" when at least one has
@@ -6821,12 +6829,14 @@ function renderGroupsList() {
   const list = document.getElementById('groups-list');
   const summaryEl = document.getElementById('wt-groups-summary');
 
+  const query = groupsSearchQuery.trim().toLowerCase();
+
   if (groupsStatusFilter === 'archived') {
-    const archived = Object.entries(groups).filter(([,g]) => g.archived);
+    const archived = Object.entries(groups).filter(([,g]) => g.archived && (!query || g.name?.toLowerCase().includes(query)));
     summaryEl.textContent = '';
     list.innerHTML = archived.length
       ? archived.map(([id, g]) => archivedGroupCardHtml(id, g)).join('')
-      : `<p class="text-sm text-slate-400 text-center py-8">No archived workout groups.</p>`;
+      : `<p class="text-sm text-slate-400 text-center py-8">${query ? 'No archived groups match your search.' : 'No archived workout groups.'}</p>`;
     list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupActionsSheet(b.dataset.id); }));
     return;
   }
@@ -6856,17 +6866,27 @@ function renderGroupsList() {
     return;
   }
 
+  // Search never affects the summary stats — same "overview of everything,
+  // not just the current filtered view" convention the Exercise Garden
+  // page's own summary already follows.
+  const filteredItems = query ? items.filter(([,g]) => g.name?.toLowerCase().includes(query)) : items;
+
   const totalExercises = items.reduce((sum, [,g]) => sum + (g.exercises || []).length, 0);
   const readyCount = activeGroupsReadyCount(items);
   summaryEl.innerHTML = `<span class="inline-flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${items.length} workout group${items.length!==1?'s':''}</span><span aria-hidden="true">•</span><span>${totalExercises} exercise${totalExercises!==1?'s':''}</span>` +
     (readyCount > 0 ? `<span aria-hidden="true">•</span><span class="inline-flex items-center gap-1 text-brand-500"><span class="ms text-sm" aria-hidden="true">eco</span>${readyCount} ready to progress</span>` : '');
+
+  if (!filteredItems.length) {
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">No groups match your search.</p>`;
+    return;
+  }
 
   // Identity comes only from name + this restrained colour dot — never an
   // inferred icon/illustration, and never a saturated border wrapping the
   // whole card. Tapping the card starts the workout directly; Edit moved
   // into the overflow menu (see group-actions-modal) since it's no longer
   // reachable via the card itself.
-  list.innerHTML = items.map(([id, g], i) => {
+  list.innerHTML = filteredItems.map(([id, g], i) => {
     const exList = (g.exercises || []).map(ge => exercises[ge.exerciseId]).filter(Boolean);
     const preview = exList.slice(0,3).map(e => esc(e.name)).join(' • ') + (exList.length > 3 ? ` +${exList.length - 3}` : '');
     const color = g.color || GROUP_COLORS[0];
@@ -6937,6 +6957,7 @@ document.getElementById('wga-delete-btn').addEventListener('click', () => {
 });
 document.getElementById('wt-groups-create-icon-btn').addEventListener('click', () => openGroupModal());
 document.querySelectorAll('.grp-status-tab').forEach(b => b.addEventListener('click', () => { groupsStatusFilter = b.dataset.status; renderGroupsList(); }));
+document.getElementById('grp-search').addEventListener('input', e => { groupsSearchQuery = e.target.value; renderGroupsList(); });
 
 // Delegated so the dynamically-rendered empty-state CTA (which changes
 // identity on every re-render) doesn't need per-render rebinding. The header
