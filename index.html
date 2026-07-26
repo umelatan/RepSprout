@@ -171,7 +171,7 @@ body{font-family:'Inter',sans-serif}
 /* Only two visual states on this menu: default and (browser-native, always
    transient) :active press — no persistent "selected" class. Tapping a
    card always navigates immediately, and this sheet is left open
-   underneath its sub-pickers (see openCalendarGroupPicker() etc.), so any
+   underneath its sub-pickers (see openGroupPicker() etc.), so any
    class-based "selected" state added on tap would still be sitting there
    whenever the user comes back — there's no reliable moment to clear it
    short of the browser's own :active, which clears itself on release
@@ -1861,21 +1861,23 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Choose today's workout group (Start Growing) — a calm, typography-first
-     browsing list rather than a wall of coloured Start buttons: neutral
-     tappable cards (see .gp-workout-card), lavender icon pods reusing the
-     same .cap-icon-pod language as Add to Calendar/Calendar/Exercise
-     Library, and real progression data per group via
-     classifyExerciseForGarden() — the same classifier the Garden page
-     itself uses. See openGroupPicker(). -->
-<div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[65] flex items-end justify-center bg-black/50 backdrop-blur-sm">
+<!-- Choose a workout group — a calm, typography-first browsing list rather
+     than a wall of coloured Start buttons: neutral tappable cards (see
+     .gp-workout-card), a small colour dot for identity, and real
+     progression data per group via classifyExerciseForGarden() — the same
+     classifier the Garden page itself uses. No title/subtitle — shared by
+     Start Growing (openGroupPicker(), default onSelect starts the workout
+     immediately) and Calendar's "Add to Calendar" -> Workout Group option
+     (which passes its own per-date onSelect instead), so no single
+     "Start Workout"-style heading fits every context it's opened from.
+     z-[79] deliberately sits above calendar-add-modal (z-73), matching the
+     "sub-picker stays open underneath" pattern every other Add to Calendar
+     sub-flow already uses; it doesn't collide with gm-ex-actions-modal
+     (also z-79) since the two are never open at the same time. -->
+<div id="group-picker-modal" style="display:none" class="fixed inset-0 z-[79] flex items-end justify-center bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-900 rounded-t-3xl w-full max-w-sm flex flex-col" style="max-height:90vh">
     <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
-    <div class="px-5 pt-1 pb-4 flex-shrink-0 flex items-start justify-between gap-2">
-      <div class="min-w-0">
-        <h3 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Start Workout</h3>
-        <p class="text-sm text-slate-400 mt-1">Choose a workout or build your own.</p>
-      </div>
+    <div class="px-5 pt-3 pb-2 flex-shrink-0 flex items-center justify-end">
       <button id="group-picker-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
     <div class="flex-1 overflow-y-auto px-5 pb-2">
@@ -2447,18 +2449,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </button>
     </div>
     <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 px-5 pb-4 pt-1 flex-shrink-0"><span id="cap-footer-leaf" class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="cap-footer-text">Every plan helps your plant grow.</span></p>
-  </div>
-</div>
-
-<!-- Calendar's own workout-group picker — callback-based (openCalendarGroupPicker),
-     independent from Home's group-picker-modal so the two never interfere. -->
-<div id="calendar-group-picker-modal" style="display:none" class="fixed inset-0 z-[74] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[80vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 id="cgp-title" class="font-display font-bold text-slate-800 dark:text-white">Choose a workout group</h3>
-      <button id="cgp-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
-    </div>
-    <div id="cgp-list" class="space-y-2"></div>
   </div>
 </div>
 
@@ -4235,7 +4225,7 @@ function closeAllOpenWindows() {
     'create-target-modal', 'log-target-modal', 'target-actions-modal', 'exg-actions-modal',
     'edit-target-modal', 'target-full-history-modal',
     'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal', 'cal-photo-modal',
-    'calendar-day-sheet', 'calendar-group-picker-modal',
+    'calendar-day-sheet', 'group-picker-modal',
     'activity-library-modal', 'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal'
   ].forEach(hide);
 }
@@ -7983,7 +7973,12 @@ function groupProgressionMetaHtml(groupExercises) {
   return parts.length ? `<p class="text-xs text-slate-400 flex items-center gap-2.5 flex-wrap">${parts.join('')}</p>` : '';
 }
 
-function openGroupPicker() {
+// onSelect defaults to starting the workout immediately (Start Growing's
+// own original behaviour, unchanged) — Calendar's "Add to Calendar" ->
+// Workout Group option instead passes its own per-date callback (plan for
+// today/future, or open the log-with-details form for a past date), reusing
+// this exact same browsing list rather than its own separate picker.
+function openGroupPicker(onSelect = startWorkoutSession) {
   const list = document.getElementById('group-picker-list');
   const items = Object.entries(groups).filter(([,g]) => !g.archived);
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plants';
@@ -8038,7 +8033,7 @@ function openGroupPicker() {
     }).join('');
     list.querySelectorAll('.gp-workout-card[data-id]').forEach(b => b.addEventListener('click', () => {
       closeGroupPicker();
-      startWorkoutSession(b.dataset.id);
+      onSelect(b.dataset.id);
     }));
   }
   document.getElementById('group-picker-modal').style.display = '';
@@ -10957,7 +10952,7 @@ function closeCalendarActivityWindows(date) {
   // that function rather than the plain display:none the others use — a raw
   // hide here would leave it in the wrong class state for its next open.
   closeCalendarAddModal();
-  ['calendar-group-picker-modal', 'activity-library-modal',
+  ['group-picker-modal', 'activity-library-modal',
    'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal',
    'calendar-day-sheet'
   ].forEach(id => { document.getElementById(id).style.display = 'none'; });
@@ -11175,7 +11170,10 @@ function openCalendarAddPicker(date) {
   // a brief beat on screen before the sub-flow actually opens (skipped under
   // prefers-reduced-motion) — none of the logic inside changed.
   document.getElementById('cap-group-btn').onclick = () => capActivate(() => {
-    openCalendarGroupPicker(relation === 'past' ? 'Which workout group did you do?' : 'Choose a workout group', groupId => {
+    // Reuses the exact same browsing list Start Growing's own "Workout
+    // Group" option opens (openGroupPicker()) instead of a separate
+    // calendar-only picker — only the per-date onSelect differs.
+    openGroupPicker(groupId => {
       if (relation === 'past') {
         const g = groups[groupId];
         openActivityDetailModal({
@@ -11292,30 +11290,6 @@ function openCalendarAddPicker(date) {
     }
   });
 }
-
-// ── Calendar's own workout-group picker (callback-based) ─────────────────────
-function openCalendarGroupPicker(title, onSelect) {
-  document.getElementById('cgp-title').textContent = title;
-  const list = document.getElementById('cgp-list');
-  const items = Object.entries(groups).filter(([, g]) => !g.archived);
-  if (!items.length) {
-    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-2">No workout groups yet. Create one from Workout → Groups first.</p>';
-  } else {
-    list.innerHTML = items.map(([id, g]) => {
-      const exCount = (g.exercises || []).length;
-      return `<button class="cgp-item w-full text-left card p-3" style="border:1px solid ${g.color || GROUP_COLORS[0]}" data-id="${id}">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(g.name)}</p>
-        <p class="text-xs text-slate-400">${exCount} exercise${exCount!==1?'s':''}</p>
-      </button>`;
-    }).join('');
-    list.querySelectorAll('.cgp-item').forEach(b => b.addEventListener('click', () => {
-      rsHideModal('calendar-group-picker-modal');
-      onSelect(b.dataset.id);
-    }));
-  }
-  document.getElementById('calendar-group-picker-modal').style.display = '';
-}
-document.getElementById('cgp-close').addEventListener('click', () => rsHideModal('calendar-group-picker-modal'));
 
 // ── Activity Library ─────────────────────────────────────────────────────────
 // Most recently logged activities, newest first, deduplicated — same recency
