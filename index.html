@@ -580,7 +580,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           </div>
 
           <div id="dash-hero-progress" class="text-left max-w-xs mx-auto px-2 pt-1">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Plant Progress</p>
+            <p class="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500">Plant Progress</p>
             <p id="growth-pct-label" class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"></p>
             <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Plant Progress toward next stage">
               <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
@@ -2254,6 +2254,20 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
             <label for="ex-max-reps" class="text-xs font-semibold text-slate-400 block mb-1">Maximum reps</label>
             <input id="ex-max-reps" type="number" inputmode="numeric" min="1" max="50" placeholder="e.g. 12">
           </div>
+        </div>
+      </div>
+
+      <div>
+        <button id="ex-addgroup-toggle" type="button" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-left" aria-expanded="false">
+          <span class="ms text-lg text-lavender-500 flex-shrink-0" aria-hidden="true">playlist_add</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Add to group <span class="font-normal text-slate-400">(optional)</span></span>
+            <span class="block text-xs text-slate-400 mt-0.5">Add this exercise to one or more workout groups.</span>
+          </span>
+          <span class="ms text-slate-400 flex-shrink-0" id="ex-addgroup-chevron" aria-hidden="true">expand_more</span>
+        </button>
+        <div id="ex-addgroup-body" class="exg-mg-body collapsed">
+          <div><div id="ex-addgroup-list" class="pt-3 space-y-1"></div></div>
         </div>
       </div>
 
@@ -6614,6 +6628,52 @@ document.getElementById('ex-modal-more-toggle').addEventListener('click', () => 
   setExerciseModalMore(document.getElementById('ex-modal-more').classList.contains('collapsed'));
 });
 
+// "Add to group" — same collapsed-by-default row/accordion as Advanced
+// above, but its body is a plain checkbox list instead of form fields.
+// Groups already containing this exercise (via groupsUsingExercise()) come
+// pre-checked when editing, so unchecking one is how you'd notice it's
+// already there — nothing removes group membership from here, only adds.
+function setExAddGroupOpen(open) {
+  document.getElementById('ex-addgroup-body').classList.toggle('collapsed', !open);
+  document.getElementById('ex-addgroup-chevron').textContent = open ? 'expand_less' : 'expand_more';
+  document.getElementById('ex-addgroup-toggle').setAttribute('aria-expanded', String(open));
+}
+document.getElementById('ex-addgroup-toggle').addEventListener('click', () => {
+  setExAddGroupOpen(document.getElementById('ex-addgroup-body').classList.contains('collapsed'));
+});
+
+function renderExAddGroupList(exerciseId) {
+  const list = document.getElementById('ex-addgroup-list');
+  const items = Object.entries(groups).filter(([,g]) => !g.archived);
+  if (!items.length) {
+    list.innerHTML = '<p class="text-xs text-slate-400 text-center py-1">No workout groups yet — create one from the Workout tab.</p>';
+    return;
+  }
+  const memberIds = new Set(exerciseId ? groupsUsingExercise(exerciseId).map(([gid]) => gid) : []);
+  list.innerHTML = items.map(([gid, g]) => {
+    const color = g.color || GROUP_COLORS[0];
+    return `
+      <label class="flex items-center gap-2.5 py-2 px-1 cursor-pointer">
+        <input type="checkbox" class="ex-addgroup-check w-4 h-4 accent-brand-500 flex-shrink-0" style="width:auto" data-id="${gid}" ${memberIds.has(gid) ? 'checked' : ''}>
+        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
+        <span class="text-sm text-slate-700 dark:text-slate-200 truncate">${esc(g.name)}</span>
+      </label>`;
+  }).join('');
+}
+
+// Pushes a freshly saved exercise into every newly-checked group's exercises
+// array (same shape openGmAddExerciseFlow() uses), skipping any group that
+// already has it — checked-but-already-a-member groups are simply no-ops.
+async function addExerciseToGroups(exerciseId, ex, groupIds) {
+  const memberIds = new Set(groupsUsingExercise(exerciseId).map(([gid]) => gid));
+  for (const groupId of groupIds) {
+    const g = groups[groupId];
+    if (!g || memberIds.has(groupId)) continue;
+    const exList = [...(g.exercises || []), { exerciseId, defaultSets: ex.defaultSets || 3, minReps: ex.minReps ?? 8, maxReps: ex.maxReps ?? 12, notes: '' }];
+    await set(ref(db, `users/${uid()}/groups/${groupId}/exercises`), exList);
+  }
+}
+
 // Exercise-creation "Rest duration" chip row — secs is null for "No default"
 // (exercise.restSeconds stays null, so resolveRestDuration() falls through to
 // the user's global default), a preset, or a custom value.
@@ -6720,6 +6780,8 @@ function openExerciseModal(id = null) {
   document.getElementById('ex-progression-enabled').checked = ex?.progressionEnabled !== false;
   document.getElementById('ex-modal-id').value = id || '';
   setExerciseModalMore(false);
+  renderExAddGroupList(id);
+  setExAddGroupOpen(false);
   document.getElementById('exercise-modal').style.display = '';
 }
 document.getElementById('ex-modal-close').addEventListener('click', () => rsHideModal('exercise-modal'));
@@ -6775,6 +6837,8 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
       newId = newRef.key;
       await set(newRef, data);
     }
+    const checkedGroupIds = Array.from(document.querySelectorAll('.ex-addgroup-check:checked')).map(cb => cb.dataset.id);
+    if (checkedGroupIds.length) await addExerciseToGroups(newId, data, checkedGroupIds);
     rsHideModal('exercise-modal');
 
     const buildWorkoutOpen = document.getElementById('build-workout-modal').style.display !== 'none';
