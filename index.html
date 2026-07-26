@@ -10229,7 +10229,7 @@ function renderCalendar() {
     if (ds === today) cell.classList.add('ring-2', 'ring-brand-500');
     else if (ds === calendarSelectedDate) cell.classList.add('ring-2', 'ring-slate-400', 'dark:ring-slate-500');
     cell.innerHTML = `<span>${d}</span>${renderDayIndicators(ds)}`;
-    cell.addEventListener('click', () => openCalendarDaySheet(ds));
+    cell.addEventListener('click', () => openCalendarDayEntry(ds));
     grid.appendChild(cell);
   }
 }
@@ -10515,6 +10515,21 @@ function renderCdsActionArea(planned, relation) {
         <span class="ms text-slate-300 dark:text-slate-600 ml-auto" aria-hidden="true">chevron_right</span>
       </button>
     </section>`;
+}
+
+// Tapping an empty future date on the calendar grid — nothing planned yet —
+// skips the "Plan this day" intermediate sheet (which only ever showed one
+// "Add To This Day" button) and opens the Add to Calendar picker directly.
+// Only the initial grid tap takes this shortcut; openCalendarDaySheet()
+// itself is unchanged, so backing out of the picker (dismissCalendarAddModal)
+// still lands on the real day sheet rather than looping straight back here.
+function openCalendarDayEntry(date) {
+  if (dateRelation(date) === 'future' && !firstIncompletePlannedEntry(date)) {
+    calendarSelectedDate = date;
+    openCalendarAddPicker(date);
+    return;
+  }
+  openCalendarDaySheet(date);
 }
 
 function openCalendarDaySheet(date) {
