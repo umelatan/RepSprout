@@ -1881,7 +1881,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div id="group-picker-list" class="space-y-3"></div>
     </div>
     <div class="flex-shrink-0 px-5 pt-2 pb-5">
-      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every workout helps your plants grow.</p>
+      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="gp-footer-text">Every workout helps your plants grow.</span></p>
     </div>
   </div>
 </div>
@@ -2300,7 +2300,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <input type="hidden" id="ex-modal-id">
     </div>
     <div class="flex-shrink-0 p-4 border-t border-slate-100 dark:border-slate-800">
-      <p class="text-center text-[11px] text-slate-400 mb-2.5">🌱 Every exercise you create can help your plant grow.</p>
+      <p class="text-center text-[11px] text-slate-400 mb-2.5">🌱 <span id="ex-modal-footer-text">Every exercise you create can help your plant grow.</span></p>
       <button id="ex-modal-save" class="btn btn-green w-full text-sm" style="min-height:48px">Create Exercise</button>
     </div>
   </div>
@@ -2594,7 +2594,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
       <p id="actdetail-error" style="display:none" class="text-xs text-red-500 text-center mt-3" role="alert"></p>
 
-      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 mt-5 mb-3"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Every activity helps your plants grow.</p>
+      <p class="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1 mt-5 mb-3"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span><span id="actdetail-footer-text">Every activity helps your plants grow.</span></p>
       <button id="actdetail-confirm-btn" class="btn btn-green w-full py-3.5 text-base" style="min-height:48px"></button>
       <button id="actdetail-cancel-btn" type="button" class="text-sm font-semibold text-slate-400 hover:underline w-full text-center py-3">Cancel</button>
     </div>
@@ -6720,6 +6720,8 @@ function openExerciseModal(id = null) {
   document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'Create Exercise';
   document.getElementById('ex-modal-subtitle').textContent = id ? "Update this exercise's details." : 'Build your exercise library.';
   document.getElementById('ex-modal-save').textContent = id ? 'Save changes' : 'Create Exercise';
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
+  document.getElementById('ex-modal-footer-text').textContent = `Every exercise you create can help ${plantName} grow.`;
   document.getElementById('ex-name').value    = ex?.name || '';
   renderExTargetChips(ex?.muscleGroup || 'upper');
   renderExEquipmentChips(ex?.equipment || '');
@@ -8038,6 +8040,8 @@ function groupProgressionMetaHtml(groupExercises) {
 function openGroupPicker() {
   const list = document.getElementById('group-picker-list');
   const items = Object.entries(groups).filter(([,g]) => !g.archived);
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plants';
+  document.getElementById('gp-footer-text').textContent = `Every workout helps ${plantName} grow.`;
 
   if (!hasAnyExercise()) {
     list.innerHTML = `
@@ -11484,6 +11488,8 @@ let activityDetailOnConfirm = null;
 function openActivityDetailModal({ title, subtitle, showCalories = true, initialDuration, confirmLabel, onConfirm }) {
   document.getElementById('actdetail-title').textContent = title || 'Details';
   document.getElementById('actdetail-subtitle').textContent = subtitle || '';
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plants';
+  document.getElementById('actdetail-footer-text').textContent = `Every activity helps ${plantName} grow.`;
   document.getElementById('actdetail-duration').value = initialDuration || '';
   const pillWrap = document.getElementById('actdetail-default-pill-wrap');
   if (initialDuration) {
