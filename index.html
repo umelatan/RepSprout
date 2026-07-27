@@ -1730,11 +1730,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Workout Group card overflow — Edit/Duplicate/Archive-or-Restore/Delete.
-     Tapping the card itself now starts the workout directly (see
-     renderGroupsList()), so Edit moved here rather than being removed —
-     everything else about this menu (Duplicate/Archive/Delete) is
-     unchanged. Reused for both the active and archived tab (see
+<!-- Workout Group card overflow — Duplicate/Archive-or-Restore/Delete. Edit
+     lives on the card itself now (tapping a group opens Edit Group
+     directly — see renderGroupsList()), so it's deliberately not repeated
+     here. Reused for both the active and archived tab (see
      openGroupActionsSheet()) — Archive/Restore's label/icon swap the same
      way ta-archive-btn does on the Targets page. -->
 <div id="group-actions-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -1743,7 +1742,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <h3 id="wga-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
       <button id="wga-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <button id="wga-edit-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit group</button>
     <button id="wga-duplicate-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">content_copy</span>Duplicate group</button>
     <button id="wga-archive-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">archive</span></button>
     <button id="wga-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete group</button>
@@ -7004,15 +7002,15 @@ function renderGroupsList() {
 
   // Identity comes only from name + this restrained colour dot — never an
   // inferred icon/illustration, and never a saturated border wrapping the
-  // whole card. The card itself is purely informational now — Edit/
-  // Duplicate/Archive/Delete all live behind the "⋯" overflow menu only
-  // (see group-actions-modal); there is no tap-to-start or tap-to-edit.
+  // whole card. Tapping the card opens Edit Group directly; Duplicate/
+  // Archive/Delete still live behind the "⋯" overflow menu only (see
+  // group-actions-modal) — there is no tap-to-start.
   list.innerHTML = filteredItems.map(([id, g], i) => {
     const exList = (g.exercises || []).map(ge => exercises[ge.exerciseId]).filter(Boolean);
     const preview = exList.slice(0,3).map(e => esc(e.name)).join(' • ') + (exList.length > 3 ? ` +${exList.length - 3}` : '');
     const color = g.color || GROUP_COLORS[0];
     return `
-      <div class="group-card gp-card-fade-in card p-3 flex items-start gap-2" data-id="${id}" style="animation-delay:${i*40}ms">
+      <div class="group-card gp-card-fade-in card p-3 flex items-start gap-2 cursor-pointer" data-id="${id}" style="animation-delay:${i*40}ms">
         <div class="min-w-0 flex-1 space-y-1">
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0 flex items-center gap-2">
@@ -7028,7 +7026,8 @@ function renderGroupsList() {
       </div>`;
   }).join('');
 
-  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', () => openGroupActionsSheet(b.dataset.id)));
+  list.querySelectorAll('.group-card').forEach(card => card.addEventListener('click', () => openGroupModal(card.dataset.id)));
+  list.querySelectorAll('.group-actions-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupActionsSheet(b.dataset.id); }));
 }
 
 let groupActionsId = null;
@@ -7045,10 +7044,6 @@ function openGroupActionsSheet(id) {
 }
 document.getElementById('wga-close').addEventListener('click', () => rsHideModal('group-actions-modal'));
 document.getElementById('group-actions-modal').addEventListener('click', e => { if (e.target.id === 'group-actions-modal') rsHideModal('group-actions-modal'); });
-document.getElementById('wga-edit-btn').addEventListener('click', () => {
-  rsHideModal('group-actions-modal');
-  if (groupActionsId) openGroupModal(groupActionsId);
-});
 document.getElementById('wga-duplicate-btn').addEventListener('click', () => {
   rsHideModal('group-actions-modal');
   if (groupActionsId) duplicateWorkoutGroup(groupActionsId);
