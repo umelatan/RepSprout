@@ -382,10 +382,19 @@ body{font-family:'Inter',sans-serif}
    animates the real height smoothly on the shared motion tokens with no
    extra JS math. toggleExgGroupSection() only ever toggles these classes on
    the existing DOM node, never re-renders it, so the transition always has
-   a real "before" state to animate from. */
-.exg-mg-body{display:grid;grid-template-rows:1fr;transition:grid-template-rows var(--rs-dur-standard) var(--rs-ease-standard);overflow:hidden}
+   a real "before" state to animate from. max-height also transitions
+   (0 <-> a generous fixed ceiling, never the real measured content height)
+   in lockstep with grid-template-rows on the same duration/easing — as
+   long as real content stays under the ceiling, max-height is never the
+   binding constraint mid-animation (grid-template-rows always drives the
+   visible height), so it only ever matters once both hit exactly 0 at
+   rest. That gives collapsed sections a guaranteed true-zero settled
+   height (no sub-pixel sliver of the first item peeking through) without
+   the earlier untransitioned max-height:0 snap, which was hiding the
+   collapse animation entirely and fighting the expand animation. */
+.exg-mg-body{display:grid;grid-template-rows:1fr;max-height:5000px;transition:grid-template-rows var(--rs-dur-standard) var(--rs-ease-standard),max-height var(--rs-dur-standard) var(--rs-ease-standard);overflow:hidden}
 .exg-mg-body.collapsed{grid-template-rows:0fr;max-height:0}
-.exg-mg-body>div{overflow:hidden;min-height:0}
+.exg-mg-body>div{overflow:hidden;min-height:0;max-height:5000px;transition:max-height var(--rs-dur-standard) var(--rs-ease-standard)}
 .exg-mg-body.collapsed>div{max-height:0}
 .exg-mg-chevron{display:inline-block;transition:transform var(--rs-dur-quick) var(--rs-ease-settle)}
 .exg-mg-chevron.expanded{transform:rotate(90deg)}
