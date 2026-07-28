@@ -1184,6 +1184,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </div>
     </div>
 
+    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+      <div class="flex items-center gap-3">
+        <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">speed</span>
+        <label for="ls-rir" class="flex-1 min-w-0 text-sm font-semibold text-slate-600 dark:text-slate-300">RIR <span class="font-normal text-slate-400">(reps in reserve)</span></label>
+        <input id="ls-rir" type="number" inputmode="numeric" placeholder="—" class="text-right font-display font-extrabold text-xl text-slate-800 dark:text-white flex-shrink-0" style="width:3.5rem">
+      </div>
+    </div>
+
     <div id="ls-prev-workout-block">
       <p class="text-xs font-semibold text-slate-400 mb-1.5 px-0.5">Last workout</p>
       <div id="ls-prev-workout-row" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex items-center gap-3">
@@ -1199,16 +1207,12 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-purple-500 dark:text-purple-400">tune</span></div>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Advanced</p>
-          <p class="text-xs text-slate-400">RIR, warm-up, notes</p>
+          <p class="text-xs text-slate-400">Warm-up, notes</p>
         </div>
         <span id="ls-advanced-chevron" class="ms text-slate-400 flex-shrink-0 transition-transform" aria-hidden="true">expand_more</span>
       </button>
       <div id="ls-advanced-panel" style="display:none" class="px-3.5 pb-3.5 space-y-3.5">
         <div class="border-t border-slate-200 dark:border-slate-700 pt-3.5">
-          <label id="ls-rir-label" for="ls-rir" class="text-xs font-semibold text-slate-400 block mb-1">RIR — reps in reserve (optional)</label>
-          <input id="ls-rir" type="number" inputmode="numeric" placeholder="—">
-        </div>
-        <div>
           <p class="text-xs font-semibold text-slate-400 mb-1.5" id="ls-set-type-label">Set type</p>
           <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/50" role="group" aria-labelledby="ls-set-type-label">
             <button id="ls-mark-working" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="true">Working set</button>
@@ -9369,7 +9373,6 @@ document.getElementById('ls-advanced-toggle').addEventListener('click', () => {
   panel.style.display = opening ? '' : 'none';
   toggle.setAttribute('aria-expanded', String(opening));
   chevron.style.transform = opening ? 'rotate(180deg)' : '';
-  if (opening) document.getElementById('ls-rir').focus();
 });
 
 function openLogSetSheet() {
