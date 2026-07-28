@@ -2424,7 +2424,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 text-center">
         <div><span class="ms text-lg text-brand-500" aria-hidden="true">timer</span><p id="finish-ov-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Duration</p></div>
         <div><span class="ms text-lg text-lavender-500" aria-hidden="true">fitness_center</span><p id="finish-ov-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Working sets</p></div>
-        <div><span class="ms text-lg text-orange-500" aria-hidden="true">fitness_center</span><p id="finish-ov-volume" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Total Volume</p></div>
+        <div><span class="ms text-lg text-orange-500" aria-hidden="true">trending_up</span><p id="finish-ov-progressions" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Progressions</p></div>
       </div>
     </div>
 
@@ -2443,7 +2443,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <p class="text-xs text-slate-400">You lifted</p>
         <p id="finish-volume-value" class="font-display font-extrabold text-3xl text-brand-500 mt-0.5"></p>
         <div id="finish-comparison-row" class="mt-3">
-          <p class="text-xs text-slate-400">Equivalent to</p>
+          <p class="text-xs text-slate-400">Equivalent to lifting</p>
           <p id="finish-comparison-text" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
         </div>
       </div>
@@ -10570,35 +10570,34 @@ function openFinishSummary() {
 
   document.getElementById('finish-group-name').textContent = `${activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName} completed`;
   const mins = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
-  const { volume, unit } = computeSessionVolume(activeSession.exercises);
+  const { totalLeaves } = computeSessionPlantProgress(activeSession.exercises);
 
-  // Duration, then working sets, then volume — staggered so they visibly
-  // count up "one after another" (see task) rather than all at once,
-  // landing inside the same ~1.5s entrance sequence the CSS reveal classes
-  // above already target (the overview card itself fades in at 320ms).
-  // Under reduced motion the whole page already reveals instantly (see the
-  // .finish-reveal override), so these are real numbers people read, not
-  // decorative motion — skip the stagger entirely rather than making
-  // someone who asked for less motion wait through it anyway.
+  // Duration, then working sets, then progressions — staggered so they
+  // visibly count up "one after another" (see task) rather than all at
+  // once, landing inside the same ~1.5s entrance sequence the CSS reveal
+  // classes above already target (the overview card itself fades in at
+  // 320ms). Under reduced motion the whole page already reveals instantly
+  // (see the .finish-reveal override), so these are real numbers people
+  // read, not decorative motion — skip the stagger entirely rather than
+  // making someone who asked for less motion wait through it anyway.
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const durationEl = document.getElementById('finish-ov-duration');
   const setsEl = document.getElementById('finish-ov-sets');
-  const volumeEl = document.getElementById('finish-ov-volume');
+  const progressionsEl = document.getElementById('finish-ov-progressions');
   if (reducedMotion) {
     durationEl.textContent = `${mins} min`;
     setsEl.textContent = totalSets;
-    volumeEl.textContent = volume > 0 ? `${volume.toLocaleString()} ${unit}` : '—';
+    progressionsEl.textContent = totalLeaves;
   } else {
-    durationEl.textContent = '0 min'; setsEl.textContent = '0'; volumeEl.textContent = volume > 0 ? `0 ${unit}` : '—';
+    durationEl.textContent = '0 min'; setsEl.textContent = '0'; progressionsEl.textContent = '0';
     setTimeout(() => animateCountUp(durationEl, 0, mins, 450, v => `${Math.round(v)} min`), 380);
     setTimeout(() => animateCountUp(setsEl, 0, totalSets, 400, v => `${Math.round(v)}`), 550);
-    if (volume > 0) setTimeout(() => animateCountUp(volumeEl, 0, volume, 550, v => `${Math.round(v).toLocaleString()} ${unit}`), 700);
+    setTimeout(() => animateCountUp(progressionsEl, 0, totalLeaves, 400, v => `${Math.round(v)}`), 700);
   }
 
   renderFinishPlantProgress(activeSession.exercises);
   renderFinishHighlight(activeSession.exercises);
 
-  const { totalLeaves } = computeSessionPlantProgress(activeSession.exercises);
   document.getElementById('finish-exercise-summary-subtitle').textContent = `${eligibleExercises.length} exercise${eligibleExercises.length !== 1 ? 's' : ''} • ${totalLeaves} progression${totalLeaves !== 1 ? 's' : ''}`;
 
   const exBox = document.getElementById('finish-exercise-summary');
