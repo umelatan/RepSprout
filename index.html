@@ -3726,7 +3726,14 @@ function calculateExerciseDoubleProgression(exerciseId, pendingSession = null) {
       pos.currentWeight = weight;
       pos.currentReps = set.reps || 0;
       pos.currentRir = set.rir === '' ? null : (set.rir ?? null);
-      pos.targetMinReps = target.minReps; pos.targetMaxReps = target.maxReps;
+      // NOT pos.targetMinReps/targetMaxReps here — those stay seeded at
+      // today's exercise target (set once above, from exDef) for the whole
+      // function. `target` above is deliberately the historical snapshot,
+      // used only to score what happened in that past session; the
+      // recommendation text (buildDoubleProgressionRecommendations()) reads
+      // pos.targetMaxReps expecting "what should I hit next," which must
+      // track a live edit to the exercise's rep range immediately, not
+      // whatever range was active when the last set happened to be logged.
       pos.progressedAt = date; pos.sourceWorkoutSessionId = sessionId;
     }
 
