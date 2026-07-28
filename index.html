@@ -3814,6 +3814,29 @@ function calculateExerciseDoubleProgression(exerciseId, pendingSession = null) {
     }
   }
 
+  // Every historical evalResult above was deliberately scored against
+  // whatever target was active AT THE TIME (so past events/cycles never
+  // get rewritten just because the target changed later — see the note in
+  // the loop above). But the STATUS/recommendation actually shown to the
+  // user right now is forward-looking, not a history record — if they
+  // just lowered maxReps to 12 and their last logged set was 12 reps at a
+  // high RIR, evaluating that against a stale, higher, no-longer-relevant
+  // historical max (still "not there yet") produces exactly the confusing
+  // "12 of 12, 0 to go, but status says keep building reps" the task
+  // reported. So each still-building/below-range position gets one final
+  // re-check here against today's live target (pos.targetMinReps/Max,
+  // already pinned to exDef above) using the real reps/RIR it actually
+  // logged — never fabricated data, just re-scored against the target
+  // that's actually on screen. A position that already matured this cycle
+  // (a genuine weight increase) is left alone; nothing here touches the
+  // events/cycle math already recorded above.
+  positions.forEach(pos => {
+    if (pos.matured || pos.currentWeight == null) return;
+    if (pos.status !== DP_STATUS.BUILDING_REPS && pos.status !== DP_STATUS.BELOW_RANGE) return;
+    const liveEval = evaluateSetStatus({ set: { completed: true, warmup: false, reps: pos.currentReps || 0, rir: pos.currentRir }, minReps: pos.targetMinReps, maxReps: pos.targetMaxReps });
+    pos.status = liveEval.status;
+  });
+
   const leavesMatured = positions.filter(p => p.matured).length;
   return {
     exerciseId, configured, minReps, maxReps, workingSetCount, cycleIndex,
