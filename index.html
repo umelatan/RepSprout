@@ -895,11 +895,22 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <p class="text-sm text-slate-400 flex items-center gap-1 mt-0.5"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Growing stronger, one workout at a time.</p>
         </div>
 
-        <div id="hist-filters" class="flex items-center gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter history" style="scrollbar-width:none"></div>
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1 min-w-0">
+            <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
+            <input id="hist-search" type="text" placeholder="Search exercises or activities..." class="pl-9 py-2.5 rounded-xl" aria-label="Search history">
+          </div>
+          <button id="hist-filter-btn" type="button" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex-shrink-0" aria-label="Filter history"><span class="ms text-lg" aria-hidden="true">tune</span></button>
+        </div>
+
+        <div id="hist-milestones"></div>
 
         <div id="hist-month-summary"></div>
 
-        <div id="session-history-list" class="space-y-4"></div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Activity Journal</p>
+          <div id="session-history-list"></div>
+        </div>
       </div>
     </section>
 
@@ -1734,6 +1745,20 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <button id="ha-edit-btn" type="button" style="display:none" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit entry</button>
     <button id="ha-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete entry</button>
+  </div>
+</div>
+
+<!-- Workout History filter sheet — opened from the search bar's "tune" icon
+     (see openHistFilterSheet()). The always-visible All/Workouts/Activities/
+     Recovery pill row was moved in here so filtering stays secondary to the
+     search field, not a permanent fixture above the journal. -->
+<div id="hist-filter-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <div class="flex items-center justify-between pb-1">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Filter history</h3>
+      <button id="hfm-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <div id="hfm-options" class="space-y-1"></div>
   </div>
 </div>
 
@@ -3957,63 +3982,6 @@ function shortSetProgressionCue(p, exDef) {
   }
 }
 
-// Pure, real-data-only rollup for the Exercise Progress Detail "Exercise
-// summary" section — every number here is derived directly from stored
-// session history, never estimated or invented, per the task's explicit
-// "do not calculate unreliable metrics merely for decoration" instruction.
-function computeExerciseSummary(exerciseId) {
-  let totalReps = 0, volume = 0, rirSum = 0, rirCount = 0, sessionCount = 0;
-  const perSession = []; // chronological — only real, completed sets contribute
-  Object.keys(sessions).sort().forEach(date => {
-    Object.values(sessions[date] || {}).forEach(s => {
-      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
-      if (!ex || ex.skipped) return;
-      sessionCount++;
-      let sessionReps = 0, sessionVolume = 0;
-      (ex.sets || []).forEach(set => {
-        if (!set.completed) return;
-        const reps = set.reps || 0;
-        totalReps += reps; sessionReps += reps;
-        volume += (set.weight || 0) * reps; sessionVolume += (set.weight || 0) * reps;
-        if (set.rir !== '' && set.rir != null && !isNaN(+set.rir)) { rirSum += +set.rir; rirCount++; }
-      });
-      perSession.push({ reps: sessionReps, volume: sessionVolume });
-    });
-  });
-  // Deltas compare the two most recent REAL sessions only — never a fabricated
-  // trend line. null (not 0) when there isn't a prior session to compare to.
-  const n = perSession.length;
-  const volumeDelta = n >= 2 ? round1(perSession[n-1].volume - perSession[n-2].volume) : null;
-  const repsDelta = n >= 2 ? perSession[n-1].reps - perSession[n-2].reps : null;
-  return {
-    sessionCount, totalReps, volume: round1(volume),
-    avgRir: rirCount ? round1(rirSum / rirCount) : null,
-    volumeDelta, repsDelta
-  };
-}
-
-// Last `limit` sessions that included this exercise, newest first — a
-// compact preview only (see the "View all" link, which opens the real
-// History tab instead of duplicating it here).
-function getExerciseRecentHistory(exerciseId, limit = 5) {
-  const rows = [];
-  Object.keys(sessions).sort().reverse().forEach(date => {
-    Object.values(sessions[date] || {}).forEach(s => {
-      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
-      if (!ex || ex.skipped) return;
-      const working = (ex.sets || []).filter(st => !st.warmup);
-      if (!working.length) return;
-      rows.push({
-        date,
-        weights: working.map(st => st.weight || 0),
-        reps: working.map(st => st.reps || 0),
-        rirs: working.map(st => st.rir === '' ? null : (st.rir ?? null))
-      });
-    });
-  });
-  return rows.slice(0, limit);
-}
-
 // Most recent logged sets for an exercise, scanning session history newest
 // first. Shared by the active-workout "previous" preview and the Home
 // dashboard's Closest Progress card, so history is only ever scanned once.
@@ -4026,6 +3994,207 @@ function getLastLoggedSets(exerciseId) {
     }
   }
   return null;
+}
+
+// ── Exercise Progression Detail helpers ─────────────────────────────────────
+// All four functions below only ever read existing sessions/DP state —
+// nothing here is a second progression engine; calculateExerciseDouble
+// Progression() stays the one place that decides what counts as a real
+// weight increase (see histSessionHighlight()/dedupedWeightIncreaseEvents()
+// in the Workout History section, which read the exact same event trail).
+
+// The earliest session that logged a real completed, non-warmup set for
+// this exercise — the anchor for "Since first session" and "First session"
+// in the summary surface. Returns null (not a guess) when nothing exists.
+function exerciseFirstSession(exerciseId) {
+  const dates = Object.keys(sessions).sort();
+  for (const date of dates) {
+    for (const s of Object.values(sessions[date] || {})) {
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) continue;
+      const working = (ex.sets || []).find(st => st.completed && !st.warmup);
+      if (working) return { date, weight: working.weight || 0 };
+    }
+  }
+  return null;
+}
+
+// Chronological "unlocked a new working weight" timeline — a monotonic
+// personal-best-weight ladder (20kg -> 25kg -> 30kg -> 35kg), distinct from
+// dedupedWeightIncreaseEvents()'s per-session activity feed: a deload week
+// never counts as a new milestone here, only the first time a weight
+// higher than every prior one is actually completed on a real working set.
+// Newest first; each entry also carries every session date logged at that
+// weight tier, for the timeline's own "sessions at this weight" expand.
+function exerciseWeightMilestones(exerciseId) {
+  const dates = Object.keys(sessions).sort();
+  const tiers = []; // { weight, date, sessionDates: [] }
+  let runningMax = -Infinity;
+  dates.forEach(date => {
+    Object.values(sessions[date] || {}).forEach(s => {
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) return;
+      const working = (ex.sets || []).filter(st => st.completed && !st.warmup);
+      if (!working.length) return;
+      const sessionWeight = Math.max(...working.map(st => st.weight || 0));
+      if (sessionWeight > runningMax) {
+        tiers.push({ weight: sessionWeight, date, sessionDates: [date] });
+        runningMax = sessionWeight;
+      } else {
+        const tier = [...tiers].reverse().find(t => t.weight === runningMax);
+        if (tier && !tier.sessionDates.includes(date)) tier.sessionDates.push(date);
+      }
+    });
+  });
+  return tiers.reverse().map((t, i) => ({ ...t, isFirst: i === tiers.length - 1 }));
+}
+
+// Recent sessions, newest first, with each row's own sessionId (so the
+// journal-style table below can open the real Edit Workout view — see
+// exerciseRecentSessionsHtml()) and the weight increase versus the
+// chronologically PRECEDING session, when it's a genuine increase.
+function exerciseRecentSessionsTable(exerciseId, limit = 8) {
+  const rows = [];
+  Object.keys(sessions).sort().reverse().forEach(date => {
+    Object.entries(sessions[date] || {}).forEach(([sessionId, s]) => {
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) return;
+      const working = (ex.sets || []).filter(st => !st.warmup);
+      if (!working.length) return;
+      rows.push({
+        date, sessionId,
+        weight: Math.max(...working.map(st => st.weight || 0)),
+        reps: working.map(st => st.reps || 0)
+      });
+    });
+  });
+  const limited = rows.slice(0, limit);
+  limited.forEach((r, i) => {
+    const prev = limited[i + 1];
+    r.increase = prev && r.weight > prev.weight ? round1(r.weight - prev.weight) : null;
+  });
+  return limited;
+}
+
+// Only ever real, already-logged values — no invented "consistency" metric
+// (see task: omit anything not already a clearly-defined, existing stat).
+function exercisePersonalBests(exerciseId) {
+  let bestWeight = 0, bestReps = 0, totalSessions = 0;
+  Object.values(sessions).forEach(daySessions => {
+    Object.values(daySessions || {}).forEach(s => {
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) return;
+      const working = (ex.sets || []).filter(st => st.completed && !st.warmup);
+      if (!working.length) return;
+      totalSessions++;
+      working.forEach(st => {
+        const w = st.weight || 0;
+        if (w > bestWeight || (w === bestWeight && (st.reps || 0) > bestReps)) { bestWeight = w; bestReps = st.reps || 0; }
+      });
+    });
+  });
+  return totalSessions ? { bestWeight, bestReps, totalSessions } : null;
+}
+
+function exerciseProgressionSummaryHtml(exerciseId, ex, unit) {
+  const first = exerciseFirstSession(exerciseId);
+  if (!first) return '';
+  const current = ex.currentWeight || 0;
+  const gain = round1(current - first.weight);
+  const totalSessions = exercisePersonalBests(exerciseId)?.totalSessions || 0;
+  return `
+    <div class="card p-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${current}<span class="text-sm font-semibold text-slate-400 ml-0.5">${unit}</span></p><p class="text-xs text-slate-400 mt-0.5">Current Working Weight</p></div>
+        <div class="text-right"><p class="font-display font-extrabold text-2xl ${gain > 0 ? 'text-brand-500' : 'text-slate-800 dark:text-white'}">${gain > 0 ? '+' : ''}${gain}<span class="text-sm font-semibold ${gain > 0 ? 'text-brand-400' : 'text-slate-400'} ml-0.5">${unit}</span></p><p class="text-xs text-slate-400 mt-0.5">Since first session</p></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <div><p class="text-xs text-slate-400">First session</p><p class="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-0.5">${fmtDate(first.date)}</p></div>
+        <div class="text-right"><p class="text-xs text-slate-400">Sessions</p><p class="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-0.5">${totalSessions}</p></div>
+      </div>
+    </div>`;
+}
+
+// Newest milestone gets a soft lavender-tinted row + the "New Personal
+// Weight" tag (see task: never a recurring badge — this only ever tags the
+// single newest tier, not every row). Older tiers share the same plain
+// grouped surface, separated by dividers, per the task's "simpler grouped
+// rows" guidance. Each row expands in place (reusing the .exg-mg-body
+// accordion already used across the app) to list every session logged at
+// that weight.
+function exerciseTimelineHtml(exerciseId, unit) {
+  const tiers = exerciseWeightMilestones(exerciseId);
+  if (!tiers.length) return '';
+  const rows = tiers.map((t, i) => {
+    const isNewest = i === 0;
+    const key = `${exerciseId}-${t.weight}`;
+    return `
+      <div>
+        <button type="button" class="hist-milestone-toggle w-full flex items-start gap-3 p-3.5 text-left ${isNewest ? 'bg-lavender-50/70 dark:bg-lavender-950/20' : ''}" data-milestone-key="${key}" aria-expanded="false">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${isNewest ? 'bg-lavender-500' : 'bg-slate-300 dark:bg-slate-600'}" aria-hidden="true"></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-display font-extrabold ${isNewest ? 'text-xl' : 'text-base'} text-slate-800 dark:text-white">${t.weight}${unit}</p>
+            <p class="text-xs text-slate-400 mt-0.5">${t.isFirst ? 'Started' : 'Reached'} ${fmtDate(t.date)}</p>
+            ${isNewest ? `<span class="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-lavender-100 dark:bg-lavender-900/40 text-[10px] font-bold text-lavender-600 dark:text-lavender-400 tracking-wide">NEW PERSONAL WEIGHT</span>` : ''}
+          </div>
+          <span class="ms exg-mg-chevron text-slate-400 flex-shrink-0 mt-1" aria-hidden="true">expand_more</span>
+        </button>
+        <div class="exg-mg-body collapsed" data-milestone-body="${key}">
+          <div><div class="px-3.5 pb-3.5 pl-11">
+            <p class="text-[11px] font-semibold text-slate-400 mb-1">Sessions at this weight</p>
+            <div class="space-y-1">${t.sessionDates.slice().reverse().map(d => `<p class="text-xs text-slate-500 dark:text-slate-400">${fmtDate(d)}</p>`).join('')}</div>
+          </div></div>
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Progress Timeline</p>
+      <div class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">${rows}</div>
+    </div>`;
+}
+
+// A compact table, not a card-per-session — date / weight / one rep number
+// per completed working set / a weight-increase delta when relevant /
+// chevron. Reps render as a wrapping row of plain numbers (not a fixed grid)
+// so 2 sets and 5 sets both lay out cleanly. Tapping a row opens that
+// session's real Edit Workout view (openEditSessionModal()) — the same
+// "detail" screen Workout History's own journal rows already reuse, so a
+// session's full exercise/set breakdown is never duplicated into a second
+// read-only view.
+function exerciseRecentSessionsHtml(exerciseId, unit) {
+  const rows = exerciseRecentSessionsTable(exerciseId, 8);
+  if (!rows.length) return '';
+  return `
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Recent Sessions</p>
+      <div class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+        ${rows.map(r => `
+          <button type="button" class="exd-session-row w-full flex items-center gap-2.5 p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/40" data-date="${r.date}" data-session-id="${r.sessionId}">
+            <span class="text-xs font-semibold text-slate-400 flex-shrink-0" style="width:2.75rem">${fmtDate(r.date)}</span>
+            <span class="text-sm font-bold text-slate-700 dark:text-slate-200 flex-shrink-0" style="width:3.25rem">${r.weight}${unit}</span>
+            <span class="flex-1 min-w-0 flex items-center gap-2 flex-wrap">${r.reps.map(rep => `<span class="text-sm font-semibold text-slate-600 dark:text-slate-300">${rep}</span>`).join('')}</span>
+            ${r.increase ? `<span class="text-xs font-bold text-brand-500 flex-shrink-0">+${r.increase}${unit}</span>` : ''}
+            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function exercisePersonalBestsHtml(exerciseId, unit) {
+  const pb = exercisePersonalBests(exerciseId);
+  if (!pb) return '';
+  return `
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Personal Bests</p>
+      <div class="card p-4">
+        <div class="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 text-center">
+          <div><p class="font-display font-extrabold text-lg text-lavender-500">${pb.bestWeight}${unit}</p><p class="text-[10px] text-slate-400 mt-0.5">Best Weight</p></div>
+          <div><p class="font-display font-extrabold text-lg text-blue-500">${pb.bestWeight}×${pb.bestReps}</p><p class="text-[10px] text-slate-400 mt-0.5">Best Set</p></div>
+          <div><p class="font-display font-extrabold text-lg text-slate-800 dark:text-white">${pb.totalSessions}</p><p class="text-[10px] text-slate-400 mt-0.5">Total Sessions</p></div>
+        </div>
+      </div>
+    </div>`;
 }
 
 // Pure — computes this workout's Plant Progress contribution (participation
@@ -4287,7 +4456,7 @@ function closeAllOpenWindows() {
     'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal', 'cal-photo-modal',
     'calendar-day-sheet', 'group-picker-modal',
     'activity-library-modal', 'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal',
-    'hist-actions-modal'
+    'hist-actions-modal', 'hist-filter-modal'
   ].forEach(hide);
 }
 
@@ -6589,41 +6758,17 @@ function renderExerciseDetail(exerciseId) {
       </div>`;
   }
 
-  // ── Exercise summary — only real, stored-data metrics ────────────────────
-  const summary = computeExerciseSummary(exerciseId);
-  const rirNote = summary.avgRir == null ? '' : summary.avgRir <= 0.5 ? 'Pushing hard' : summary.avgRir <= 2.5 ? 'Great control' : 'Room to push';
-  const deltaLine = (v, isKg) => v == null ? '' : v === 0 ? '' : `<p class="text-[10px] font-semibold ${v > 0 ? 'text-brand-500' : 'text-amber-500'} mt-0.5">${v > 0 ? '+' : ''}${v}${isKg ? ` ${unit}` : ' reps'} ${v > 0 ? '↑' : '↓'}</p>`;
-  const summaryHtml = summary.sessionCount ? `
-    <div class="card p-3.5">
-      <p class="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5"><span class="ms text-sm" aria-hidden="true">auto_awesome</span>Exercise summary</p>
-      <div class="grid grid-cols-3 gap-2 text-center">
-        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.volume}</p><p class="text-[10px] text-slate-400">Volume (${unit})</p>${deltaLine(summary.volumeDelta, true)}</div>
-        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.totalReps}</p><p class="text-[10px] text-slate-400">Total reps</p>${deltaLine(summary.repsDelta, false)}</div>
-        <div><p class="font-display font-bold text-base text-slate-800 dark:text-white">${summary.avgRir ?? '—'}</p><p class="text-[10px] text-slate-400">Avg RIR</p>${rirNote ? `<p class="text-[10px] font-semibold text-brand-500 mt-0.5">${rirNote}</p>` : ''}</div>
-      </div>
-    </div>` : '';
-
-  // ── Recent history (compact) — most recent entry highlighted ─────────────
-  const recent = getExerciseRecentHistory(exerciseId, 5);
-  const historyHtml = `
-    <div class="space-y-2">
-      <div class="flex items-center justify-between px-1">
-        <p class="text-xs font-semibold text-slate-400">Recent history</p>
-        <button id="exd-view-all-history" class="text-xs font-semibold text-brand-500 hover:underline">View all</button>
-      </div>
-      ${recent.length ? `
-        <div class="flex gap-2 overflow-x-auto pb-1">
-          ${recent.map((r, i) => {
-            const uniformWeight = r.weights.every(w => w === r.weights[0]) ? `${r.weights[0]} ${unit}` : r.weights.map(w => `${w}${unit}`).join('/');
-            return `
-              <div class="card p-2.5 flex-shrink-0 ${i === 0 ? 'border-brand-400 dark:border-brand-600' : ''}" style="min-width:88px">
-                <p class="text-[10px] font-bold text-slate-400">${fmtDate(r.date)}</p>
-                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 mt-0.5">${uniformWeight}</p>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400">${r.reps.join(' · ')}</p>
-              </div>`;
-          }).join('')}
-        </div>` : `<p class="text-xs text-slate-400 px-1">No logged sessions yet.</p>`}
-    </div>`;
+  // ── Progression summary / timeline / recent sessions / personal bests —
+  // the "how am I progressing on this exercise" surfaces (see task: Workout
+  // History Latest Milestones and this page share the same underlying
+  // exerciseWeightMilestones()/exerciseRecentSessionsTable() family of pure
+  // readers, never a second progression engine). Replaces the old Volume/
+  // Total reps/Avg RIR panel and the horizontal recent-history strip —
+  // consolidated rather than duplicated, per "avoid dense analytics."
+  const progressionSummaryHtml = exerciseProgressionSummaryHtml(exerciseId, ex, unit);
+  const timelineHtml = exerciseTimelineHtml(exerciseId, unit);
+  const recentSessionsHtml = exerciseRecentSessionsHtml(exerciseId, unit);
+  const personalBestsHtml = exercisePersonalBestsHtml(exerciseId, unit);
 
   // ── Secondary actions ─────────────────────────────────────────────────────
   const actionsHtml = `
@@ -6634,14 +6779,31 @@ function renderExerciseDetail(exerciseId) {
 
   document.getElementById('exd-main').innerHTML = `
     <div class="p-4 max-w-2xl w-full mx-auto space-y-4">
+      ${progressionSummaryHtml}
       ${heroHtml}
       ${leavesHtml}
       ${setsHtml}
       ${recHtml}
-      ${summaryHtml}
-      ${historyHtml}
+      ${timelineHtml}
+      ${recentSessionsHtml}
+      ${personalBestsHtml}
       ${actionsHtml}
     </div>`;
+
+  document.getElementById('exd-main').querySelectorAll('.hist-milestone-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.milestoneKey;
+      const body = document.querySelector(`[data-milestone-body="${key}"]`);
+      if (!body) return;
+      const open = body.classList.contains('collapsed');
+      body.classList.toggle('collapsed', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.querySelector('.exg-mg-chevron').textContent = open ? 'expand_less' : 'expand_more';
+    });
+  });
+  document.getElementById('exd-main').querySelectorAll('.exd-session-row').forEach(btn => {
+    btn.addEventListener('click', () => { closeExerciseDetail(); openEditSessionModal(btn.dataset.date, btn.dataset.sessionId); });
+  });
 
   // Context-aware primary action: only offer to start this exercise as its
   // own Quick Workout when nothing is already active — never a generic
@@ -6658,7 +6820,6 @@ function renderExerciseDetail(exerciseId) {
   document.getElementById('exd-edit-btn').onclick = () => openExerciseModal(exerciseId);
   const howBtn = document.getElementById('exd-how-btn');
   if (howBtn) howBtn.addEventListener('click', () => show('dp-how-it-works-modal'));
-  document.getElementById('exd-view-all-history').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('history'); };
   document.getElementById('exd-view-history-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('history'); };
   document.getElementById('exd-add-to-group-btn').onclick = () => { closeExerciseDetail(); goView('workout'); switchWorkoutTab('groups'); showToast('Open a group\'s edit screen to add this exercise to it'); };
 }
@@ -10242,13 +10403,17 @@ function exerciseHistoryLine(ex) {
   return `<p class="text-sm text-slate-600 dark:text-slate-300">${line}</p>`;
 }
 
-// ── Workout History — a chronological growth journal ────────────────────────
-// Calendar answers "what happened on this date?"; History answers "how am I
-// growing?" — so this deliberately never lets users jump to an arbitrary
-// date (no strip, no picker). Everything below is presentation only: no
+// ── Workout History — a progression-focused training journal ───────────────
+// Calendar answers "when did I train?"; History answers "how am I
+// progressing?" — so this never lets users jump to an arbitrary date (no
+// strip, no picker); Latest Milestones and the monthly summary lead with
+// progression, and the chronological feed underneath reads as a lightweight
+// journal, not a stack of calendar-day cards. Everything below is
+// presentation + read-only aggregation over existing data — no
 // session/activity/recovery data shape changes, no changes to Calendar or
-// the Double Progression engine — see histSessionHighlight()/
-// histMonthlyMetrics(), which only ever read existing sessions/growth state.
+// the Double Progression engine (calculateExerciseDoubleProgression() stays
+// the one place that computes progression; every function here only reads
+// its output).
 
 const HIST_FILTERS = [
   { key: 'all', label: 'All' },
@@ -10258,13 +10423,7 @@ const HIST_FILTERS = [
 ];
 const HIST_FILTER_TO_KIND = { workouts: 'workout', activities: 'activity', recovery: 'recovery' };
 let histFilter = 'all';
-// Which workout cards are expanded, and how many exercises each one is
-// currently showing — both persist across re-renders (triggered by any
-// sessions/exercises Firebase update) so an in-progress read isn't
-// collapsed out from under the user by an unrelated background refresh.
-let histExpandedSessions = new Set();
-let histExercisesShown = {}; // sessionId -> count (Infinity once "Show more" is tapped)
-const HIST_EX_INITIAL_SHOWN = 4;
+let histSearchQuery = '';
 
 function histSessionKind(s) {
   if (s.sessionType === 'recovery') return 'recovery';
@@ -10278,16 +10437,38 @@ function histSessionsFlat() {
     .flatMap(([date, daySessions]) => Object.entries(daySessions || {}).map(([sessionId, s]) => ({ date, sessionId, s })));
 }
 
-// TODAY / YESTERDAY / weekday name for the last week / "Jul 24" beyond
-// that — matches the journal-style labels a Photos-app-like history feed
-// uses; displayed upper-case via CSS (text stays normal-case here) so the
-// same string also reads fine anywhere else it might be reused.
+// A real logged time-of-day, straight from this session's own stored
+// completedAt/startedAt (Date.now() at save time) — never invented. Omitted
+// entirely for legacy records that predate either field.
+function histSessionTime(s) {
+  const ts = s.completedAt || s.startedAt;
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// TODAY / YESTERDAY / weekday name for the last week / "Sun, Jul 27" beyond
+// that — upper-cased via CSS, text itself stays normal-case so it reads fine
+// anywhere else it might be reused.
 function histDateLabel(date) {
   const today = todayStr();
   if (date === today) return 'Today';
   const diffDays = Math.round((new Date(today + 'T12:00:00') - new Date(date + 'T12:00:00')) / 86400000);
   if (diffDays === 1) return 'Yesterday';
   if (diffDays > 1 && diffDays <= 6) return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+  return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// "2 days ago" / "1 week ago" — used only by Latest Milestones, whose rows
+// need a coarser, more casual relative label than the journal's date
+// headers (which stay exact/weekday-based).
+function histRelativeDate(date) {
+  const diffDays = Math.round((new Date(todayStr() + 'T12:00:00') - new Date(date + 'T12:00:00')) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  const weeks = Math.round(diffDays / 7);
+  if (weeks <= 1) return '1 week ago';
+  if (weeks < 5) return `${weeks} weeks ago`;
   return fmtDate(date);
 }
 
@@ -10311,26 +10492,56 @@ function histAllTimeMaxWeight(exerciseId, excludeDate, excludeSessionId) {
   return max;
 }
 
-// One collapsed-state highlight line per workout — never more than one (see
-// task: "only show one supporting highlight"). Priority: a real Double
-// Progression weight-increase tied to THIS session (calculateExercise
-// DoubleProgression() — the exact same engine the Exercise Garden and
-// Home already use, not a second one), then a genuine all-time PR, then
-// simply the heaviest completed working set in the session. Never
-// fabricated — every branch reads directly from this session's own logged
-// sets or the existing DP event trail.
+// One real Double Progression weight-increase event per (exercise, session)
+// — deduped across set positions (a session that moves 3 sets up together
+// fires 3 raw events with the same newValue; this collapses them to the one
+// that matters for a human-readable "X progressed this session" line).
+function dedupedWeightIncreaseEvents(exerciseId) {
+  if (!exercises[exerciseId]) return [];
+  const dp = calculateExerciseDoubleProgression(exerciseId);
+  const bySession = {};
+  dp.events.forEach(e => {
+    if (e.eventType !== 'set_weight_increased') return;
+    const key = e.workoutSessionId;
+    if (!bySession[key] || e.newValue > bySession[key].newValue) bySession[key] = e;
+  });
+  return Object.values(bySession);
+}
+
+// Most recent weight-increase events across every non-archived exercise —
+// the app-wide "Latest Milestones" feed. Every field here traces back to a
+// real, already-recorded Double Progression event; nothing is estimated.
+function latestMilestonesAcrossExercises(limit = 3) {
+  const all = [];
+  Object.keys(exercises).forEach(exerciseId => {
+    if (exercises[exerciseId].archived) return;
+    dedupedWeightIncreaseEvents(exerciseId).forEach(e => {
+      const date = String(e.createdAt).split('_')[0];
+      all.push({ exerciseId, date, previousWeight: e.previousValue, newWeight: e.newValue });
+    });
+  });
+  all.sort((a, b) => b.date.localeCompare(a.date));
+  return all.slice(0, limit);
+}
+
+// One collapsed-state / journal-row highlight per workout — never more than
+// one. Priority: a real Double Progression weight-increase tied to THIS
+// session (naming the exercise + new weight when exactly one progressed,
+// otherwise a plain count), then a genuine all-time PR, then simply the
+// heaviest completed working set in the session. Every branch reads
+// directly from this session's own logged sets or the existing DP event
+// trail — never fabricated.
 function histSessionHighlight(date, sessionId, s) {
   const exList = (s.exercises || []).filter(ex => !ex.skipped);
   if (!exList.length) return null;
-  const progressedNames = [];
+  const progressed = []; // { name, weight, unit }
   let pr = null; // { name, weight, unit }
   let bestSet = null; // { weight, reps, unit }
   exList.forEach(ex => {
     if (ex.exerciseId && exercises[ex.exerciseId]) {
       const dp = calculateExerciseDoubleProgression(ex.exerciseId);
-      if (dp.events.some(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased')) {
-        progressedNames.push(ex.name);
-      }
+      const evt = dp.events.find(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased');
+      if (evt) progressed.push({ name: ex.name, weight: evt.newValue, unit: ex.unit || 'kg' });
     }
     (ex.sets || []).forEach(set => {
       if (!set.completed || set.warmup) return;
@@ -10344,16 +10555,17 @@ function histSessionHighlight(date, sessionId, s) {
       }
     });
   });
-  if (progressedNames.length) return { text: `${progressedNames.length} exercise${progressedNames.length !== 1 ? 's' : ''} progressed` };
+  if (progressed.length === 1) return { text: `${progressed[0].name} reached ${progressed[0].weight}${progressed[0].unit}` };
+  if (progressed.length > 1) return { text: `${progressed.length} exercises progressed` };
   if (pr) return { text: `First time lifting ${pr.weight}${pr.unit} on ${pr.name}` };
   if (bestSet) return { text: `Best set: ${bestSet.weight}${bestSet.unit} × ${bestSet.reps}` };
   return null;
 }
 
 // Every metric here is a live count over this month's real sessions/DP
-// events — nothing hardcoded, nothing estimated (see task: "do not
-// fabricate values"). "Exercises progressed" counts distinct exercises,
-// not raw events, matching the per-card highlight's own wording above.
+// events — nothing hardcoded, nothing estimated. "Exercises progressed"
+// counts distinct exercises, not raw events, matching the per-row
+// highlight's own wording above.
 function histMonthlyMetrics(year, month) {
   let workouts = 0, activities = 0, recovery = 0;
   const progressed = new Set();
@@ -10379,9 +10591,8 @@ function histMonthlyMetrics(year, month) {
 // collectedCompanions' own bloomedAt, or the active companion's own
 // startedAt (see completeCompanionBloom()/selectNextCompanion()). There is
 // no persisted "reached Stage N on date X" record anywhere in the app, so
-// (per task: "do not fabricate values") stage-reached milestones are
-// deliberately not attempted here — only bloom/new-plant events, which
-// genuinely have a date to check against.
+// stage-reached milestones are deliberately not attempted here — only
+// bloom/new-plant events, which genuinely have a date to check against.
 function histGardenMilestone(year, month) {
   const inMonth = ds => { if (!ds) return false; const d = new Date(ds + 'T12:00:00'); return d.getFullYear() === year && d.getMonth() === month; };
   const collected = Object.values(collectedCompanions || {}).sort((a, b) => (a.bloomedAt || '').localeCompare(b.bloomedAt || ''));
@@ -10400,26 +10611,43 @@ function histGardenMilestone(year, month) {
   return null;
 }
 
-function renderHistFilters() {
-  const wrap = document.getElementById('hist-filters');
-  wrap.innerHTML = HIST_FILTERS.map(f => {
-    const on = f.key === histFilter;
-    const cls = on ? 'bg-lavender-500 text-white border-lavender-500'
-      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800';
-    return `<button type="button" class="hist-filter-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${cls}" data-filter="${f.key}" aria-pressed="${on}">${esc(f.label)}</button>`;
-  }).join('');
-  wrap.querySelectorAll('.hist-filter-chip').forEach(b => b.addEventListener('click', () => {
-    if (histFilter === b.dataset.filter) return;
-    histFilter = b.dataset.filter;
-    renderHistory();
-  }));
+function histMonthFooterHtml(year, month) {
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
+  return `<p class="text-xs text-slate-400 text-center py-3">Every completed activity helped ${esc(plantName)} grow this month.</p>`;
 }
 
-// Stable overview for the real current calendar month — deliberately not
-// re-scoped by the filter chips below it (see task: "filtering should
-// update the history feed", not this panel), and hidden entirely for a
-// brand-new account with no history at all, so it never sits above the
-// "Your growth starts here" empty state repeating "0 workouts" back at them.
+// ── Latest Milestones ────────────────────────────────────────────────────────
+function renderHistMilestones() {
+  const el = document.getElementById('hist-milestones');
+  const milestones = latestMilestonesAcrossExercises(3);
+  const label = `<p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Latest Milestones</p>`;
+  if (!milestones.length) {
+    el.innerHTML = `${label}<div class="card p-4"><p class="text-sm text-slate-400 text-center">Your first progression milestone will appear here.</p></div>`;
+    return;
+  }
+  // The dot cycles through the app's existing group-colour palette purely
+  // for visual rhythm between rows — see task note: "should not carry
+  // essential meaning." Exercises have no colour of their own to reuse.
+  const rows = milestones.map((m, i) => {
+    const ex = exercises[m.exerciseId];
+    const unit = ex?.unit || 'kg';
+    const color = GROUP_COLORS[i % GROUP_COLORS.length];
+    return `
+      <button type="button" class="hist-milestone-row w-full flex items-center gap-3 p-3.5 text-left" data-exercise-id="${m.exerciseId}">
+        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex?.name || 'Exercise')}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${m.previousWeight}${unit} <span class="text-slate-300 dark:text-slate-600" aria-hidden="true">→</span> <span class="font-semibold text-brand-500">${m.newWeight}${unit}</span></p>
+        </div>
+        <span class="text-xs text-slate-400 flex-shrink-0">${histRelativeDate(m.date)}</span>
+        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>`;
+  }).join('');
+  el.innerHTML = `${label}<div class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">${rows}</div>`;
+  el.querySelectorAll('.hist-milestone-row').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
+}
+
+// ── Monthly summary — a compact 4-column stat row + optional Garden note ───
 function renderHistMonthSummary() {
   const el = document.getElementById('hist-month-summary');
   const totalSessions = Object.values(sessions).reduce((sum, day) => sum + Object.keys(day || {}).length, 0);
@@ -10428,152 +10656,102 @@ function renderHistMonthSummary() {
   const year = now.getFullYear(), month = now.getMonth();
   const m = histMonthlyMetrics(year, month);
   const milestone = histGardenMilestone(year, month);
-  const rows = [
-    `${m.workouts} workout${m.workouts !== 1 ? 's' : ''}`,
-    `${m.activities} activit${m.activities !== 1 ? 'ies' : 'y'}`,
-    `${m.recovery} recovery day${m.recovery !== 1 ? 's' : ''}`,
-    `${m.exercisesProgressed} exercise${m.exercisesProgressed !== 1 ? 's' : ''} progressed`
-  ];
+  const monthName = now.toLocaleDateString('en-US', { month: 'long' });
+  const col = (value, label, accent) => `<div><p class="font-display font-extrabold text-xl ${accent ? 'text-brand-500' : 'text-slate-800 dark:text-white'}">${value}</p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">${label}</p></div>`;
   el.innerHTML = `
-    <div class="px-1">
-      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">${esc(now.toLocaleDateString('en-US', { month: 'long' }))}</p>
-      <div class="flex flex-wrap gap-x-4 gap-y-1">${rows.map(r => `<p class="text-sm text-slate-600 dark:text-slate-300">${r}</p>`).join('')}</div>
-      ${milestone ? `<p class="text-xs font-semibold text-brand-500 mt-2 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${esc(milestone)}</p>` : ''}
-    </div>`;
-}
-
-function histMonthFooterHtml(year, month) {
-  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
-  return `<p class="text-xs text-slate-400 text-center py-3">Every completed activity helped ${esc(plantName)} grow this month.</p>`;
-}
-
-// One exercise row inside an expanded workout card — name, weight, and a
-// rep chip per completed working set. Deliberately excludes RIR, rest
-// time, notes, and target rep ranges (see task); those stay in Exercise
-// Detail/Edit Workout, which already show them.
-function histExerciseRowHtml(ex) {
-  const canLink = ex.exerciseId && exercises[ex.exerciseId];
-  const nameHtml = canLink
-    ? `<button type="button" class="hist-ex-name-link text-left min-w-0" data-exercise-id="${ex.exerciseId}"><span class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-brand-500 transition-colors">${esc(ex.name)}</span></button>`
-    : `<span class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</span>`;
-  if (ex.skipped) {
-    return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">${nameHtml}<span class="text-xs text-slate-400 flex-shrink-0">Skipped</span></div>`;
-  }
-  const unit = ex.unit || 'kg';
-  const chips = (ex.sets || []).filter(s => s.completed && !s.warmup)
-    .map(s => `<span class="inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1 rounded-lg bg-lavender-50 dark:bg-lavender-950/30 text-xs font-bold text-lavender-600 dark:text-lavender-400">${s.reps || 0}</span>`)
-    .join('');
-  return `
-    <div class="py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
-      <div class="flex items-center justify-between gap-2 mb-1.5">
-        ${nameHtml}
-        <span class="text-xs font-semibold text-slate-400 flex-shrink-0">${ex.weight != null ? `${ex.weight}${unit}` : '—'}</span>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">${esc(monthName)} Summary</p>
+      <div class="card p-4">
+        <div class="grid grid-cols-4 divide-x divide-slate-100 dark:divide-slate-800 text-center">
+          ${col(m.workouts, 'Workouts')}
+          ${col(m.activities, 'Activities')}
+          ${col(m.recovery, 'Recovery')}
+          ${col(m.exercisesProgressed, 'Exercises Progressed', true)}
+        </div>
+        ${milestone ? `<p class="text-xs font-semibold text-brand-500 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${esc(milestone)}</p>` : ''}
       </div>
-      ${chips ? `<div class="flex items-center gap-1.5 flex-wrap">${chips}</div>` : '<p class="text-xs text-slate-400">No completed sets.</p>'}
     </div>`;
 }
 
-function histExerciseListBodyHtml(sessionId, s) {
-  const exList = s.exercises || [];
-  const shownCount = histExercisesShown[sessionId] || HIST_EX_INITIAL_SHOWN;
-  const shown = exList.slice(0, shownCount);
-  const remaining = exList.length - shown.length;
-  return `${shown.map(histExerciseRowHtml).join('')}${remaining > 0 ? `<button type="button" class="hist-show-more-btn text-xs font-semibold text-brand-500 hover:underline mt-2" data-session-id="${sessionId}">Show ${remaining} more exercise${remaining !== 1 ? 's' : ''}</button>` : ''}`;
-}
-
-function wireHistExerciseListBody(container) {
-  container.querySelectorAll('.hist-ex-name-link').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseDetail(b.dataset.exerciseId); }));
-  container.querySelectorAll('.hist-show-more-btn').forEach(b => b.addEventListener('click', e => {
-    e.stopPropagation();
-    histExercisesShown[b.dataset.sessionId] = Infinity;
-    histRefreshExerciseList(b.dataset.sessionId);
+// ── Filter sheet (opened from the search bar's tune icon) ──────────────────
+function renderHistFilterSheet() {
+  const wrap = document.getElementById('hfm-options');
+  wrap.innerHTML = HIST_FILTERS.map(f => {
+    const on = f.key === histFilter;
+    return `<button type="button" class="hist-filter-opt w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold ${on ? 'text-lavender-600 dark:text-lavender-400' : 'text-slate-700 dark:text-slate-200'} flex items-center justify-between gap-2" data-filter="${f.key}" aria-pressed="${on}">${esc(f.label)}${on ? '<span class="ms text-lg" aria-hidden="true">check</span>' : ''}</button>`;
+  }).join('');
+  wrap.querySelectorAll('.hist-filter-opt').forEach(b => b.addEventListener('click', () => {
+    histFilter = b.dataset.filter;
+    rsHideModal('hist-filter-modal');
+    renderHistory();
   }));
 }
+function openHistFilterSheet() {
+  renderHistFilterSheet();
+  document.getElementById('hist-filter-modal').style.display = '';
+}
+document.getElementById('hist-filter-btn').addEventListener('click', openHistFilterSheet);
+document.getElementById('hfm-close').addEventListener('click', () => rsHideModal('hist-filter-modal'));
 
-function histRefreshExerciseList(sessionId) {
-  const container = document.querySelector(`[data-exlist="${sessionId}"]`);
-  if (!container) return;
-  const date = container.dataset.date;
-  const s = sessions[date]?.[sessionId];
-  if (!s) return;
-  container.innerHTML = histExerciseListBodyHtml(sessionId, s);
-  wireHistExerciseListBody(container);
+document.getElementById('hist-search').addEventListener('input', e => {
+  histSearchQuery = e.target.value;
+  renderHistory();
+});
+
+// Matches the workout/activity/recovery title itself, or (for a strength
+// workout) any exercise logged inside it — so searching "Lat Pulldown"
+// surfaces every workout that included it, not just entries literally
+// named that.
+function histMatchesSearch(query, s) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  if (sessionLabel(s).toLowerCase().includes(q)) return true;
+  return (s.exercises || []).some(ex => (ex.name || '').toLowerCase().includes(q));
 }
 
-// Toggles classes on the existing DOM node rather than re-rendering the
-// list — same reasoning as toggleExgGroupSection(): the .exg-mg-body
-// grid-rows transition needs a real "before" state to animate from, which
-// a fresh re-render would never have.
-function histToggleSession(sessionId) {
-  const willExpand = !histExpandedSessions.has(sessionId);
-  if (willExpand) histExpandedSessions.add(sessionId); else histExpandedSessions.delete(sessionId);
-  const header = document.querySelector(`[data-toggle-session="${sessionId}"]`);
-  const body = document.querySelector(`[data-session-body="${sessionId}"]`);
-  if (!header || !body) { renderHistory(); return; }
-  body.classList.toggle('collapsed', !willExpand);
-  header.setAttribute('aria-expanded', String(willExpand));
-  header.querySelector('.exg-mg-chevron')?.classList.toggle('expanded', willExpand);
-}
-
-function renderHistWorkoutCard(date, sessionId, s) {
-  const color = sessionColor(s);
-  const exCount = (s.exercises || []).length;
-  const highlight = histSessionHighlight(date, sessionId, s);
-  const expanded = histExpandedSessions.has(sessionId);
+// ── Activity Journal rows — lightweight, no per-entry card ─────────────────
+// Tapping any row opens the same overflow-style actions sheet
+// (openHistActionsSheet()) rather than a separate detail page per kind:
+// strength workouts already get a real "detail" view for free via that
+// sheet's Edit entry -> openEditSessionModal(), which shows every exercise/
+// set; Activity/Recovery entries have no edit screen elsewhere in the app
+// to route to, so the same sheet (Delete only) is the only meaningful
+// action surface for them either way.
+function histJournalRowHtml(date, sessionId, s) {
+  const kind = histSessionKind(s);
+  const timeStr = histSessionTime(s);
+  const title = esc(sessionLabel(s));
+  let metaLine, progressLine = '';
+  if (kind === 'workout') {
+    const exCount = (s.exercises || []).length;
+    metaLine = `${s.duration || 0} min <span aria-hidden="true">•</span> ${exCount} exercise${exCount !== 1 ? 's' : ''}`;
+    const highlight = histSessionHighlight(date, sessionId, s);
+    if (highlight) progressLine = `<p class="text-xs font-semibold text-brand-500 mt-1">${esc(highlight.text)}</p>`;
+  } else if (kind === 'activity') {
+    metaLine = `${s.duration || 0} min${s.caloriesBurned ? ` <span aria-hidden="true">•</span> ${s.caloriesBurned.toLocaleString()} kcal` : ''}`;
+    if (s.notes) progressLine = `<p class="text-xs text-slate-400 mt-1 truncate">${esc(s.notes)}</p>`;
+  } else {
+    // Recovery: show the actual logged note (e.g. "Steam Room • Spa Pool")
+    // when one exists; otherwise a calm default line — never "0 min", since
+    // Recovery Day was never a timed workout.
+    metaLine = s.notes ? esc(s.notes) : 'Rest and reset';
+  }
   return `
-    <div class="card overflow-hidden">
-      <div class="hist-card-header flex items-start gap-2 p-3.5 cursor-pointer" role="button" tabindex="0" aria-expanded="${expanded}" aria-label="${esc(sessionLabel(s))} — ${expanded ? 'collapse' : 'expand'} exercise details" data-toggle-session="${sessionId}">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
-            <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${esc(sessionLabel(s))}</p>
-          </div>
-          <p class="text-xs text-slate-400 mt-0.5">${s.duration || 0} min <span aria-hidden="true">•</span> ${exCount} exercise${exCount !== 1 ? 's' : ''}</p>
-          ${highlight ? `<p class="text-xs font-semibold text-brand-500 mt-1">${esc(highlight.text)}</p>` : ''}
-        </div>
-        <button type="button" class="hist-more-btn p-1.5 -mr-1 text-slate-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}" aria-label="More actions for ${esc(sessionLabel(s))}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
-        <span class="ms exg-mg-chevron text-slate-400 flex-shrink-0 mt-1 ${expanded ? 'expanded' : ''}" aria-hidden="true">chevron_right</span>
-      </div>
-      <div class="exg-mg-body ${expanded ? '' : 'collapsed'}" data-session-body="${sessionId}">
-        <div>
-          <div class="px-3.5 pb-3.5 pt-1 border-t border-slate-100 dark:border-slate-800" data-exlist="${sessionId}" data-date="${date}">
-            ${histExerciseListBodyHtml(sessionId, s)}
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function renderHistActivityCard(date, sessionId, s) {
-  const color = sessionColor(s);
-  return `
-    <div class="card p-3.5 flex items-start gap-2">
+    <button type="button" class="hist-journal-row w-full flex items-start gap-3 py-3 text-left" data-date="${date}" data-id="${sessionId}">
       <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
-          <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${esc(sessionLabel(s))}</p>
+        <div class="flex items-baseline justify-between gap-2">
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${title}</p>
+          ${timeStr ? `<span class="text-xs text-slate-400 flex-shrink-0">${esc(timeStr)}</span>` : ''}
         </div>
-        <p class="text-xs text-slate-400 mt-0.5">${s.duration || 0} min${s.caloriesBurned ? ` <span aria-hidden="true">•</span> ${s.caloriesBurned.toLocaleString()} kcal` : ''}</p>
-        ${s.notes ? `<p class="text-xs text-slate-400 mt-1 truncate">${esc(s.notes)}</p>` : ''}
+        <p class="text-xs text-slate-400 mt-0.5">${metaLine}</p>
+        ${progressLine}
       </div>
-      <button type="button" class="hist-more-btn p-1.5 -mr-1 text-slate-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}" aria-label="More actions for ${esc(sessionLabel(s))}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
-    </div>`;
-}
-
-function renderHistRecoveryCard(date, sessionId, s) {
-  return `
-    <div class="card p-3.5 flex items-center gap-3">
-      <span class="ms text-lg text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
-      <div class="min-w-0 flex-1">
-        <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Recovery Day</p>
-        <p class="text-xs text-slate-400 mt-0.5">Rest and reset</p>
-      </div>
-      <button type="button" class="hist-more-btn p-1.5 -mr-1 text-slate-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}" aria-label="More actions for Recovery Day"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
-    </div>`;
+      <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0 mt-0.5" aria-hidden="true">chevron_right</span>
+    </button>`;
 }
 
 function renderHistory() {
-  renderHistFilters();
+  renderHistMilestones();
   renderHistMonthSummary();
 
   const list = document.getElementById('session-history-list');
@@ -10588,16 +10766,22 @@ function renderHistory() {
     return;
   }
 
-  const flat = histSessionsFlat().filter(({ s }) => histFilter === 'all' || histSessionKind(s) === HIST_FILTER_TO_KIND[histFilter]);
+  const flat = histSessionsFlat().filter(({ s }) =>
+    (histFilter === 'all' || histSessionKind(s) === HIST_FILTER_TO_KIND[histFilter]) && histMatchesSearch(histSearchQuery, s)
+  );
   if (!flat.length) {
-    const label = histFilter === 'workouts' ? 'workouts' : histFilter === 'activities' ? 'activities' : 'recovery days';
-    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">No ${label} found</p>`;
+    let label = 'No history found';
+    if (histSearchQuery.trim()) label = 'No results found';
+    else if (histFilter === 'workouts') label = 'No workouts found';
+    else if (histFilter === 'activities') label = 'No activities found';
+    else if (histFilter === 'recovery') label = 'No recovery days found';
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">${label}</p>`;
     return;
   }
 
   // Group by date first (flat is already newest-first), then walk those
-  // date-groups noting whenever the calendar month changes so a "JULY"/
-  // "JUNE" header and the previous month's reflective footer can be
+  // date-groups noting whenever the calendar month changes so a "June"/
+  // "July" header and the previous month's reflective footer can be
   // inserted — but only for months OTHER than the real current one, which
   // the summary panel above already establishes.
   const byDate = [];
@@ -10624,13 +10808,8 @@ function renderHistory() {
         html += `<p class="text-sm font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-300 pt-2">${esc(d.toLocaleDateString('en-US', { month: 'long' }))}</p>`;
       }
     }
-    const cardsHtml = group.items.map(({ date, sessionId, s }) => {
-      const kind = histSessionKind(s);
-      if (kind === 'workout') return renderHistWorkoutCard(date, sessionId, s);
-      if (kind === 'activity') return renderHistActivityCard(date, sessionId, s);
-      return renderHistRecoveryCard(date, sessionId, s);
-    }).join('');
-    html += `<div class="space-y-2"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">${esc(histDateLabel(group.date))}</p><div class="space-y-2">${cardsHtml}</div></div>`;
+    const rowsHtml = group.items.map(({ date, sessionId, s }) => histJournalRowHtml(date, sessionId, s)).join('');
+    html += `<div><p class="text-xs font-bold uppercase tracking-wide text-slate-400 pt-1">${esc(histDateLabel(group.date))}</p><div class="divide-y divide-slate-100 dark:divide-slate-800">${rowsHtml}</div></div>`;
   });
   if (openMonthKey !== null) {
     const [py, pm] = openMonthKey.split('-').map(Number);
@@ -10638,13 +10817,7 @@ function renderHistory() {
   }
   list.innerHTML = html;
 
-  list.querySelectorAll('.hist-card-header[data-toggle-session]').forEach(el => {
-    const toggle = () => histToggleSession(el.dataset.toggleSession);
-    el.addEventListener('click', toggle);
-    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
-  });
-  list.querySelectorAll('.hist-more-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openHistActionsSheet(b.dataset.date, b.dataset.id); }));
-  wireHistExerciseListBody(list);
+  list.querySelectorAll('.hist-journal-row').forEach(b => b.addEventListener('click', () => openHistActionsSheet(b.dataset.date, b.dataset.id)));
 }
 
 // ── Workout History overflow menu (Edit/Delete) ─────────────────────────────
@@ -12400,6 +12573,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['log-target-modal', () => rsHideModal('log-target-modal')],
   ['target-actions-modal', () => rsHideModal('target-actions-modal')],
   ['hist-actions-modal', () => rsHideModal('hist-actions-modal')],
+  ['hist-filter-modal', () => rsHideModal('hist-filter-modal')],
   ['exg-actions-modal', () => rsHideModal('exg-actions-modal')],
   ['edit-target-modal', () => rsHideModal('edit-target-modal')],
   ['edit-target-log-modal', closeEditTargetLogModal],
