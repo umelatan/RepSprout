@@ -6647,7 +6647,7 @@ function renderExAddGroupList(exerciseId) {
     list.innerHTML = '<p class="text-xs text-slate-400 text-center py-1">No workout groups yet — create one from the Workout tab.</p>';
     return;
   }
-  const memberIds = new Set(exerciseId ? groupsUsingExercise(exerciseId).map(([gid]) => gid) : []);
+  const memberIds = new Set(exerciseId ? groupsUsingExercise(exerciseId).map(g => g.id) : []);
   list.innerHTML = items.map(([gid, g]) => {
     const color = g.color || GROUP_COLORS[0];
     return `
@@ -6663,7 +6663,7 @@ function renderExAddGroupList(exerciseId) {
 // array (same shape openGmAddExerciseFlow() uses), skipping any group that
 // already has it — checked-but-already-a-member groups are simply no-ops.
 async function addExerciseToGroups(exerciseId, ex, groupIds) {
-  const memberIds = new Set(groupsUsingExercise(exerciseId).map(([gid]) => gid));
+  const memberIds = new Set(groupsUsingExercise(exerciseId).map(g => g.id));
   for (const groupId of groupIds) {
     const g = groups[groupId];
     if (!g || memberIds.has(groupId)) continue;
