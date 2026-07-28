@@ -883,10 +883,23 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div id="wt-targets-body" class="space-y-4"></div>
       </div>
 
-      <!-- History -->
-      <div id="wt-history" style="display:none" class="rs-view space-y-3">
+      <!-- History — a chronological growth journal ("how am I growing?"),
+           deliberately not a second Calendar ("what happened on this
+           date?"). No date strip/picker here on purpose: browsing by a
+           specific date is Calendar's job — see renderHistory(). -->
+      <div id="wt-history" style="display:none" class="rs-view space-y-4">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
-        <div id="session-history-list" class="space-y-3"></div>
+
+        <div>
+          <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Workout History</h2>
+          <p class="text-sm text-slate-400 flex items-center gap-1 mt-0.5"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Growing stronger, one workout at a time.</p>
+        </div>
+
+        <div id="hist-filters" class="flex items-center gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter history" style="scrollbar-width:none"></div>
+
+        <div id="hist-month-summary"></div>
+
+        <div id="session-history-list" class="space-y-4"></div>
       </div>
     </section>
 
@@ -1705,6 +1718,22 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <p id="lt-error" style="display:none" class="text-xs text-red-500 text-center" role="alert"></p>
     <button id="lt-save-btn" class="btn w-full py-3 text-base bg-lavender-500 hover:bg-lavender-600 text-white"></button>
+  </div>
+</div>
+
+<!-- Workout History overflow — Edit/Delete for the one entry it was opened
+     for (see openHistActionsSheet()). Edit only shows for entries that
+     already have a real edit path (openEditSessionModal — strength
+     workouts only); Activity/Recovery entries have no edit screen
+     elsewhere in the app, so this sheet never invents one for them. -->
+<div id="hist-actions-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-2">
+    <div class="flex items-center justify-between pb-1">
+      <h3 id="ha-title" class="font-display font-bold text-slate-800 dark:text-white truncate"></h3>
+      <button id="ha-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <button id="ha-edit-btn" type="button" style="display:none" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit entry</button>
+    <button id="ha-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete entry</button>
   </div>
 </div>
 
@@ -4257,7 +4286,8 @@ function closeAllOpenWindows() {
     'edit-target-modal', 'target-full-history-modal',
     'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal', 'cal-photo-modal',
     'calendar-day-sheet', 'group-picker-modal',
-    'activity-library-modal', 'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal'
+    'activity-library-modal', 'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal',
+    'hist-actions-modal'
   ].forEach(hide);
 }
 
@@ -10212,32 +10242,462 @@ function exerciseHistoryLine(ex) {
   return `<p class="text-sm text-slate-600 dark:text-slate-300">${line}</p>`;
 }
 
-function renderHistory() {
-  const list = document.getElementById('session-history-list');
-  const allDays = Object.entries(sessions).sort((a,b) => b[0].localeCompare(a[0]));
-  if (!allDays.length) { list.innerHTML = '<p class="text-sm text-slate-400 text-center py-6">Your completed workouts will appear here.</p>'; return; }
-  list.innerHTML = allDays.flatMap(([date, daySessions]) =>
-    Object.entries(daySessions).map(([sessionId, s]) => `
-      <div class="card p-4 space-y-2" style="border:1px solid ${sessionColor(s)}">
-        <div class="flex items-center justify-between gap-2">
-          <div class="min-w-0">
-            <p class="text-xs font-bold text-slate-400">${fmtDate(date)}</p>
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${s.sessionType === 'recovery' ? '🍃 ' : (s.activityIcon ? s.activityIcon + ' ' : '')}${esc(sessionLabel(s))}</p>
-          </div>
-          <button class="del-session p-1.5 text-slate-300 hover:text-red-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}"><span class="ms text-lg" aria-hidden="true">delete</span></button>
-        </div>
-        <div class="space-y-1">
-          ${(s.exercises||[]).map(exerciseHistoryLine).join('')}
-        </div>
-        <p class="text-xs text-slate-400">${s.duration||0} min${s.caloriesBurned ? ` · 🔥 ${s.caloriesBurned} kcal` : ''}${s.notes ? ` · ${esc(s.notes)}` : ''}</p>
-      </div>`)
-  ).join('');
+// ── Workout History — a chronological growth journal ────────────────────────
+// Calendar answers "what happened on this date?"; History answers "how am I
+// growing?" — so this deliberately never lets users jump to an arbitrary
+// date (no strip, no picker). Everything below is presentation only: no
+// session/activity/recovery data shape changes, no changes to Calendar or
+// the Double Progression engine — see histSessionHighlight()/
+// histMonthlyMetrics(), which only ever read existing sessions/growth state.
 
-  list.querySelectorAll('.del-session').forEach(b => b.addEventListener('click', async () => {
-    if (!confirm('Delete this workout from your history?')) return;
-    await remove(ref(db, `sessions/${uid()}/${b.dataset.date}/${b.dataset.id}`));
+const HIST_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'workouts', label: 'Workouts' },
+  { key: 'activities', label: 'Activities' },
+  { key: 'recovery', label: 'Recovery' }
+];
+const HIST_FILTER_TO_KIND = { workouts: 'workout', activities: 'activity', recovery: 'recovery' };
+let histFilter = 'all';
+// Which workout cards are expanded, and how many exercises each one is
+// currently showing — both persist across re-renders (triggered by any
+// sessions/exercises Firebase update) so an in-progress read isn't
+// collapsed out from under the user by an unrelated background refresh.
+let histExpandedSessions = new Set();
+let histExercisesShown = {}; // sessionId -> count (Infinity once "Show more" is tapped)
+const HIST_EX_INITIAL_SHOWN = 4;
+
+function histSessionKind(s) {
+  if (s.sessionType === 'recovery') return 'recovery';
+  if (s.sessionType === 'other') return 'activity';
+  return 'workout'; // group/quick, or any legacy record with a real exercises array
+}
+
+function histSessionsFlat() {
+  return Object.entries(sessions)
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .flatMap(([date, daySessions]) => Object.entries(daySessions || {}).map(([sessionId, s]) => ({ date, sessionId, s })));
+}
+
+// TODAY / YESTERDAY / weekday name for the last week / "Jul 24" beyond
+// that — matches the journal-style labels a Photos-app-like history feed
+// uses; displayed upper-case via CSS (text stays normal-case here) so the
+// same string also reads fine anywhere else it might be reused.
+function histDateLabel(date) {
+  const today = todayStr();
+  if (date === today) return 'Today';
+  const diffDays = Math.round((new Date(today + 'T12:00:00') - new Date(date + 'T12:00:00')) / 86400000);
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays > 1 && diffDays <= 6) return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+  return fmtDate(date);
+}
+
+// Highest weight ever logged for this exercise, across every OTHER session
+// (any date) — the real signal behind "first time lifting X" (see
+// histSessionHighlight()). Deliberately excludes only the one session being
+// evaluated, not the whole day, since two sessions can share a date.
+function histAllTimeMaxWeight(exerciseId, excludeDate, excludeSessionId) {
+  let max = 0;
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    Object.entries(daySessions || {}).forEach(([sessionId, sess]) => {
+      if (date === excludeDate && sessionId === excludeSessionId) return;
+      (sess.exercises || []).forEach(ex => {
+        if (ex.exerciseId !== exerciseId || ex.skipped) return;
+        (ex.sets || []).forEach(set => {
+          if (set.completed && !set.warmup && (set.weight || 0) > max) max = set.weight || 0;
+        });
+      });
+    });
+  });
+  return max;
+}
+
+// One collapsed-state highlight line per workout — never more than one (see
+// task: "only show one supporting highlight"). Priority: a real Double
+// Progression weight-increase tied to THIS session (calculateExercise
+// DoubleProgression() — the exact same engine the Exercise Garden and
+// Home already use, not a second one), then a genuine all-time PR, then
+// simply the heaviest completed working set in the session. Never
+// fabricated — every branch reads directly from this session's own logged
+// sets or the existing DP event trail.
+function histSessionHighlight(date, sessionId, s) {
+  const exList = (s.exercises || []).filter(ex => !ex.skipped);
+  if (!exList.length) return null;
+  const progressedNames = [];
+  let pr = null; // { name, weight, unit }
+  let bestSet = null; // { weight, reps, unit }
+  exList.forEach(ex => {
+    if (ex.exerciseId && exercises[ex.exerciseId]) {
+      const dp = calculateExerciseDoubleProgression(ex.exerciseId);
+      if (dp.events.some(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased')) {
+        progressedNames.push(ex.name);
+      }
+    }
+    (ex.sets || []).forEach(set => {
+      if (!set.completed || set.warmup) return;
+      const weight = set.weight || 0;
+      const unit = ex.unit || 'kg';
+      if (!bestSet || weight > bestSet.weight || (weight === bestSet.weight && (set.reps || 0) > bestSet.reps)) {
+        bestSet = { weight, reps: set.reps || 0, unit };
+      }
+      if (!pr && ex.exerciseId && weight > histAllTimeMaxWeight(ex.exerciseId, date, sessionId)) {
+        pr = { name: ex.name, weight, unit };
+      }
+    });
+  });
+  if (progressedNames.length) return { text: `${progressedNames.length} exercise${progressedNames.length !== 1 ? 's' : ''} progressed` };
+  if (pr) return { text: `First time lifting ${pr.weight}${pr.unit} on ${pr.name}` };
+  if (bestSet) return { text: `Best set: ${bestSet.weight}${bestSet.unit} × ${bestSet.reps}` };
+  return null;
+}
+
+// Every metric here is a live count over this month's real sessions/DP
+// events — nothing hardcoded, nothing estimated (see task: "do not
+// fabricate values"). "Exercises progressed" counts distinct exercises,
+// not raw events, matching the per-card highlight's own wording above.
+function histMonthlyMetrics(year, month) {
+  let workouts = 0, activities = 0, recovery = 0;
+  const progressed = new Set();
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    const d = new Date(date + 'T12:00:00');
+    if (d.getFullYear() !== year || d.getMonth() !== month) return;
+    Object.entries(daySessions || {}).forEach(([sessionId, s]) => {
+      const kind = histSessionKind(s);
+      if (kind === 'workout') workouts++;
+      else if (kind === 'activity') activities++;
+      else recovery++;
+      (s.exercises || []).forEach(ex => {
+        if (!ex.exerciseId || ex.skipped || !exercises[ex.exerciseId]) return;
+        const dp = calculateExerciseDoubleProgression(ex.exerciseId);
+        if (dp.events.some(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased')) progressed.add(ex.exerciseId);
+      });
+    });
+  });
+  return { workouts, activities, recovery, exercisesProgressed: progressed.size };
+}
+
+// Only ever surfaces a milestone with a real stored date behind it —
+// collectedCompanions' own bloomedAt, or the active companion's own
+// startedAt (see completeCompanionBloom()/selectNextCompanion()). There is
+// no persisted "reached Stage N on date X" record anywhere in the app, so
+// (per task: "do not fabricate values") stage-reached milestones are
+// deliberately not attempted here — only bloom/new-plant events, which
+// genuinely have a date to check against.
+function histGardenMilestone(year, month) {
+  const inMonth = ds => { if (!ds) return false; const d = new Date(ds + 'T12:00:00'); return d.getFullYear() === year && d.getMonth() === month; };
+  const collected = Object.values(collectedCompanions || {}).sort((a, b) => (a.bloomedAt || '').localeCompare(b.bloomedAt || ''));
+  const bloomedThisMonth = collected.filter(c => inMonth(c.bloomedAt));
+  if (bloomedThisMonth.length) {
+    const isFirstBloomEver = collected[0] === bloomedThisMonth[0];
+    if (isFirstBloomEver) return 'First bloom 🌸';
+    const plantName = (PLANTS[bloomedThisMonth[0].speciesId] || {}).name || 'Your plant';
+    return `${plantName} reached full bloom 🌸`;
+  }
+  const active = userProfile.companion;
+  if (active && active.status !== 'bloomed' && inMonth(active.startedAt) && collected.length > 0) {
+    const plantName = (PLANTS[active.speciesId] || {}).name || 'A new plant';
+    return `New plant unlocked — ${plantName}`;
+  }
+  return null;
+}
+
+function renderHistFilters() {
+  const wrap = document.getElementById('hist-filters');
+  wrap.innerHTML = HIST_FILTERS.map(f => {
+    const on = f.key === histFilter;
+    const cls = on ? 'bg-lavender-500 text-white border-lavender-500'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800';
+    return `<button type="button" class="hist-filter-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${cls}" data-filter="${f.key}" aria-pressed="${on}">${esc(f.label)}</button>`;
+  }).join('');
+  wrap.querySelectorAll('.hist-filter-chip').forEach(b => b.addEventListener('click', () => {
+    if (histFilter === b.dataset.filter) return;
+    histFilter = b.dataset.filter;
+    renderHistory();
   }));
-  list.querySelectorAll('.hist-ex-line').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
+}
+
+// Stable overview for the real current calendar month — deliberately not
+// re-scoped by the filter chips below it (see task: "filtering should
+// update the history feed", not this panel), and hidden entirely for a
+// brand-new account with no history at all, so it never sits above the
+// "Your growth starts here" empty state repeating "0 workouts" back at them.
+function renderHistMonthSummary() {
+  const el = document.getElementById('hist-month-summary');
+  const totalSessions = Object.values(sessions).reduce((sum, day) => sum + Object.keys(day || {}).length, 0);
+  if (!totalSessions) { el.innerHTML = ''; return; }
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const m = histMonthlyMetrics(year, month);
+  const milestone = histGardenMilestone(year, month);
+  const rows = [
+    `${m.workouts} workout${m.workouts !== 1 ? 's' : ''}`,
+    `${m.activities} activit${m.activities !== 1 ? 'ies' : 'y'}`,
+    `${m.recovery} recovery day${m.recovery !== 1 ? 's' : ''}`,
+    `${m.exercisesProgressed} exercise${m.exercisesProgressed !== 1 ? 's' : ''} progressed`
+  ];
+  el.innerHTML = `
+    <div class="px-1">
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">${esc(now.toLocaleDateString('en-US', { month: 'long' }))}</p>
+      <div class="flex flex-wrap gap-x-4 gap-y-1">${rows.map(r => `<p class="text-sm text-slate-600 dark:text-slate-300">${r}</p>`).join('')}</div>
+      ${milestone ? `<p class="text-xs font-semibold text-brand-500 mt-2 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${esc(milestone)}</p>` : ''}
+    </div>`;
+}
+
+function histMonthFooterHtml(year, month) {
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
+  return `<p class="text-xs text-slate-400 text-center py-3">Every completed activity helped ${esc(plantName)} grow this month.</p>`;
+}
+
+// One exercise row inside an expanded workout card — name, weight, and a
+// rep chip per completed working set. Deliberately excludes RIR, rest
+// time, notes, and target rep ranges (see task); those stay in Exercise
+// Detail/Edit Workout, which already show them.
+function histExerciseRowHtml(ex) {
+  const canLink = ex.exerciseId && exercises[ex.exerciseId];
+  const nameHtml = canLink
+    ? `<button type="button" class="hist-ex-name-link text-left min-w-0" data-exercise-id="${ex.exerciseId}"><span class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-brand-500 transition-colors">${esc(ex.name)}</span></button>`
+    : `<span class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</span>`;
+  if (ex.skipped) {
+    return `<div class="flex items-center justify-between gap-2 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">${nameHtml}<span class="text-xs text-slate-400 flex-shrink-0">Skipped</span></div>`;
+  }
+  const unit = ex.unit || 'kg';
+  const chips = (ex.sets || []).filter(s => s.completed && !s.warmup)
+    .map(s => `<span class="inline-flex items-center justify-center min-w-[2.25rem] px-2 py-1 rounded-lg bg-lavender-50 dark:bg-lavender-950/30 text-xs font-bold text-lavender-600 dark:text-lavender-400">${s.reps || 0}</span>`)
+    .join('');
+  return `
+    <div class="py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+      <div class="flex items-center justify-between gap-2 mb-1.5">
+        ${nameHtml}
+        <span class="text-xs font-semibold text-slate-400 flex-shrink-0">${ex.weight != null ? `${ex.weight}${unit}` : '—'}</span>
+      </div>
+      ${chips ? `<div class="flex items-center gap-1.5 flex-wrap">${chips}</div>` : '<p class="text-xs text-slate-400">No completed sets.</p>'}
+    </div>`;
+}
+
+function histExerciseListBodyHtml(sessionId, s) {
+  const exList = s.exercises || [];
+  const shownCount = histExercisesShown[sessionId] || HIST_EX_INITIAL_SHOWN;
+  const shown = exList.slice(0, shownCount);
+  const remaining = exList.length - shown.length;
+  return `${shown.map(histExerciseRowHtml).join('')}${remaining > 0 ? `<button type="button" class="hist-show-more-btn text-xs font-semibold text-brand-500 hover:underline mt-2" data-session-id="${sessionId}">Show ${remaining} more exercise${remaining !== 1 ? 's' : ''}</button>` : ''}`;
+}
+
+function wireHistExerciseListBody(container) {
+  container.querySelectorAll('.hist-ex-name-link').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openExerciseDetail(b.dataset.exerciseId); }));
+  container.querySelectorAll('.hist-show-more-btn').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    histExercisesShown[b.dataset.sessionId] = Infinity;
+    histRefreshExerciseList(b.dataset.sessionId);
+  }));
+}
+
+function histRefreshExerciseList(sessionId) {
+  const container = document.querySelector(`[data-exlist="${sessionId}"]`);
+  if (!container) return;
+  const date = container.dataset.date;
+  const s = sessions[date]?.[sessionId];
+  if (!s) return;
+  container.innerHTML = histExerciseListBodyHtml(sessionId, s);
+  wireHistExerciseListBody(container);
+}
+
+// Toggles classes on the existing DOM node rather than re-rendering the
+// list — same reasoning as toggleExgGroupSection(): the .exg-mg-body
+// grid-rows transition needs a real "before" state to animate from, which
+// a fresh re-render would never have.
+function histToggleSession(sessionId) {
+  const willExpand = !histExpandedSessions.has(sessionId);
+  if (willExpand) histExpandedSessions.add(sessionId); else histExpandedSessions.delete(sessionId);
+  const header = document.querySelector(`[data-toggle-session="${sessionId}"]`);
+  const body = document.querySelector(`[data-session-body="${sessionId}"]`);
+  if (!header || !body) { renderHistory(); return; }
+  body.classList.toggle('collapsed', !willExpand);
+  header.setAttribute('aria-expanded', String(willExpand));
+  header.querySelector('.exg-mg-chevron')?.classList.toggle('expanded', willExpand);
+}
+
+function renderHistWorkoutCard(date, sessionId, s) {
+  const color = sessionColor(s);
+  const exCount = (s.exercises || []).length;
+  const highlight = histSessionHighlight(date, sessionId, s);
+  const expanded = histExpandedSessions.has(sessionId);
+  return `
+    <div class="card overflow-hidden">
+      <div class="hist-card-header flex items-start gap-2 p-3.5 cursor-pointer" role="button" tabindex="0" aria-expanded="${expanded}" aria-label="${esc(sessionLabel(s))} — ${expanded ? 'collapse' : 'expand'} exercise details" data-toggle-session="${sessionId}">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
+            <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${esc(sessionLabel(s))}</p>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">${s.duration || 0} min <span aria-hidden="true">•</span> ${exCount} exercise${exCount !== 1 ? 's' : ''}</p>
+          ${highlight ? `<p class="text-xs font-semibold text-brand-500 mt-1">${esc(highlight.text)}</p>` : ''}
+        </div>
+        <button type="button" class="hist-more-btn p-1.5 -mr-1 text-slate-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}" aria-label="More actions for ${esc(sessionLabel(s))}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+        <span class="ms exg-mg-chevron text-slate-400 flex-shrink-0 mt-1 ${expanded ? 'expanded' : ''}" aria-hidden="true">chevron_right</span>
+      </div>
+      <div class="exg-mg-body ${expanded ? '' : 'collapsed'}" data-session-body="${sessionId}">
+        <div>
+          <div class="px-3.5 pb-3.5 pt-1 border-t border-slate-100 dark:border-slate-800" data-exlist="${sessionId}" data-date="${date}">
+            ${histExerciseListBodyHtml(sessionId, s)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderHistActivityCard(date, sessionId, s) {
+  const color = sessionColor(s);
+  return `
+    <div class="card p-3.5 flex items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}" aria-hidden="true"></span>
+          <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${esc(sessionLabel(s))}</p>
+        </div>
+        <p class="text-xs text-slate-400 mt-0.5">${s.duration || 0} min${s.caloriesBurned ? ` <span aria-hidden="true">•</span> ${s.caloriesBurned.toLocaleString()} kcal` : ''}</p>
+        ${s.notes ? `<p class="text-xs text-slate-400 mt-1 truncate">${esc(s.notes)}</p>` : ''}
+      </div>
+      <button type="button" class="hist-more-btn p-1.5 -mr-1 text-slate-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}" aria-label="More actions for ${esc(sessionLabel(s))}"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+    </div>`;
+}
+
+function renderHistRecoveryCard(date, sessionId, s) {
+  return `
+    <div class="card p-3.5 flex items-center gap-3">
+      <span class="ms text-lg text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
+      <div class="min-w-0 flex-1">
+        <p class="font-display font-bold text-sm text-slate-800 dark:text-white">Recovery Day</p>
+        <p class="text-xs text-slate-400 mt-0.5">Rest and reset</p>
+      </div>
+      <button type="button" class="hist-more-btn p-1.5 -mr-1 text-slate-400 flex-shrink-0" data-date="${date}" data-id="${sessionId}" aria-label="More actions for Recovery Day"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+    </div>`;
+}
+
+function renderHistory() {
+  renderHistFilters();
+  renderHistMonthSummary();
+
+  const list = document.getElementById('session-history-list');
+  const totalSessions = Object.values(sessions).reduce((sum, day) => sum + Object.keys(day || {}).length, 0);
+  if (!totalSessions) {
+    list.innerHTML = `
+      <div class="text-center py-10 space-y-2">
+        <p class="text-2xl" aria-hidden="true">🌱</p>
+        <p class="font-display font-bold text-slate-700 dark:text-slate-200">Your growth starts here</p>
+        <p class="text-sm text-slate-400">Complete a workout or log an activity to begin your history.</p>
+      </div>`;
+    return;
+  }
+
+  const flat = histSessionsFlat().filter(({ s }) => histFilter === 'all' || histSessionKind(s) === HIST_FILTER_TO_KIND[histFilter]);
+  if (!flat.length) {
+    const label = histFilter === 'workouts' ? 'workouts' : histFilter === 'activities' ? 'activities' : 'recovery days';
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">No ${label} found</p>`;
+    return;
+  }
+
+  // Group by date first (flat is already newest-first), then walk those
+  // date-groups noting whenever the calendar month changes so a "JULY"/
+  // "JUNE" header and the previous month's reflective footer can be
+  // inserted — but only for months OTHER than the real current one, which
+  // the summary panel above already establishes.
+  const byDate = [];
+  flat.forEach(entry => {
+    const bucket = byDate[byDate.length - 1];
+    if (bucket && bucket.date === entry.date) bucket.items.push(entry);
+    else byDate.push({ date: entry.date, items: [entry] });
+  });
+
+  const now = new Date();
+  const currentRealMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+  let html = '';
+  let openMonthKey = null;
+  byDate.forEach(group => {
+    const d = new Date(group.date + 'T12:00:00');
+    const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+    if (monthKey !== openMonthKey) {
+      if (openMonthKey !== null) {
+        const [py, pm] = openMonthKey.split('-').map(Number);
+        html += histMonthFooterHtml(py, pm);
+      }
+      openMonthKey = monthKey;
+      if (monthKey !== currentRealMonthKey) {
+        html += `<p class="text-sm font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-300 pt-2">${esc(d.toLocaleDateString('en-US', { month: 'long' }))}</p>`;
+      }
+    }
+    const cardsHtml = group.items.map(({ date, sessionId, s }) => {
+      const kind = histSessionKind(s);
+      if (kind === 'workout') return renderHistWorkoutCard(date, sessionId, s);
+      if (kind === 'activity') return renderHistActivityCard(date, sessionId, s);
+      return renderHistRecoveryCard(date, sessionId, s);
+    }).join('');
+    html += `<div class="space-y-2"><p class="text-xs font-bold uppercase tracking-wide text-slate-400">${esc(histDateLabel(group.date))}</p><div class="space-y-2">${cardsHtml}</div></div>`;
+  });
+  if (openMonthKey !== null) {
+    const [py, pm] = openMonthKey.split('-').map(Number);
+    html += histMonthFooterHtml(py, pm);
+  }
+  list.innerHTML = html;
+
+  list.querySelectorAll('.hist-card-header[data-toggle-session]').forEach(el => {
+    const toggle = () => histToggleSession(el.dataset.toggleSession);
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  });
+  list.querySelectorAll('.hist-more-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openHistActionsSheet(b.dataset.date, b.dataset.id); }));
+  wireHistExerciseListBody(list);
+}
+
+// ── Workout History overflow menu (Edit/Delete) ─────────────────────────────
+let histActionsCtx = null;
+function openHistActionsSheet(date, sessionId) {
+  const s = sessions[date]?.[sessionId];
+  if (!s) return;
+  histActionsCtx = { date, sessionId };
+  document.getElementById('ha-title').textContent = sessionLabel(s);
+  const editable = s.sessionType === 'group' || s.sessionType === 'quick' || Array.isArray(s.exercises);
+  document.getElementById('ha-edit-btn').style.display = editable ? '' : 'none';
+  document.getElementById('hist-actions-modal').style.display = '';
+}
+document.getElementById('ha-close').addEventListener('click', () => rsHideModal('hist-actions-modal'));
+document.getElementById('ha-edit-btn').addEventListener('click', () => {
+  const ctx = histActionsCtx;
+  rsHideModal('hist-actions-modal');
+  if (ctx) openEditSessionModal(ctx.date, ctx.sessionId);
+});
+document.getElementById('ha-delete-btn').addEventListener('click', () => {
+  const ctx = histActionsCtx;
+  rsHideModal('hist-actions-modal');
+  if (ctx) deleteHistorySession(ctx.date, ctx.sessionId);
+});
+
+// Same remove-then-recalculate-then-undo shape as the Calendar day sheet's
+// own delete action (.cds-del-session) — recalculating from the remaining
+// history rather than subtracting this session's original reward, since
+// that can't be trusted after other edits/deletions.
+async function deleteHistorySession(date, sessionId) {
+  if (!confirm('Delete this from your history?')) return;
+  const snapshot = sessions[date]?.[sessionId];
+  try {
+    await remove(ref(db, `sessions/${uid()}/${date}/${sessionId}`));
+    if (sessions[date]) delete sessions[date][sessionId];
+    await recalculateAndPersistPlantGrowth();
+    renderHistory(); renderDashboard();
+    showToast('Activity deleted', snapshot ? async () => {
+      try {
+        await set(ref(db, `sessions/${uid()}/${date}/${sessionId}`), snapshot);
+        (sessions[date] ??= {})[sessionId] = snapshot;
+        await recalculateAndPersistPlantGrowth();
+        renderHistory(); renderDashboard();
+        showToast('Activity restored');
+      } catch (err) {
+        console.error('Failed to restore activity:', err);
+        alert('Could not restore this activity. Please try again.');
+      }
+    } : null);
+  } catch (e) {
+    console.error('Failed to delete activity:', e);
+    alert('Could not delete this activity. Please try again.');
+  }
 }
 
 // ── Calendar ────────────────────────────────────────────────────────────────
@@ -11939,6 +12399,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['create-target-modal', () => rsHideModal('create-target-modal')],
   ['log-target-modal', () => rsHideModal('log-target-modal')],
   ['target-actions-modal', () => rsHideModal('target-actions-modal')],
+  ['hist-actions-modal', () => rsHideModal('hist-actions-modal')],
   ['exg-actions-modal', () => rsHideModal('exg-actions-modal')],
   ['edit-target-modal', () => rsHideModal('edit-target-modal')],
   ['edit-target-log-modal', closeEditTargetLogModal],
