@@ -2366,41 +2366,96 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 </div>
 
 <!-- Finish workout summary -->
+<!-- Post-workout summary — an achievement summary first, editable details
+     later (see openFinishSummary()). Reuses .card/divide-y, the same
+     leaf/eco iconography as Workout History and the Exercise Garden, and
+     the existing Double Progression / Plant Growth engines for every
+     number shown — nothing here is a second calculation path. -->
 <div id="finish-modal" style="display:none" class="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-5 max-h-[90vh] overflow-y-auto">
+
+    <!-- 1. Completion header -->
     <div class="text-center space-y-1">
-      <p class="text-2xl" aria-hidden="true">🌿</p>
-      <h3 class="font-display font-bold text-lg text-slate-800 dark:text-white">Workout complete</h3>
-      <p id="finish-group-name" class="text-sm font-semibold text-brand-500"></p>
-      <p id="finish-meta" class="text-xs text-slate-400"></p>
+      <div class="w-14 h-14 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center mx-auto mb-1" aria-hidden="true"><span class="ms text-3xl text-brand-500">eco</span></div>
+      <h3 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Great work!</h3>
+      <p id="finish-group-name" class="text-base font-bold text-brand-500"></p>
     </div>
 
-    <div id="finish-recommendations" class="space-y-2"></div>
-
-    <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center justify-between">
-      <span class="text-xs font-semibold text-brand-600 dark:text-brand-300">Plant Progress</span>
-      <span id="finish-growth-reward" class="text-base font-extrabold text-brand-600 dark:text-brand-400"></span>
+    <!-- 2. Session overview -->
+    <div class="card p-4">
+      <div class="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 text-center">
+        <div><span class="ms text-lg text-brand-500" aria-hidden="true">timer</span><p id="finish-ov-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Duration</p></div>
+        <div><span class="ms text-lg text-lavender-500" aria-hidden="true">fitness_center</span><p id="finish-ov-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Working sets</p></div>
+        <div><span class="ms text-lg text-orange-500" aria-hidden="true">local_fire_department</span><p id="finish-ov-cal" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Calories</p></div>
+      </div>
     </div>
 
-    <button id="finish-more-toggle" type="button" class="text-xs font-semibold text-brand-500 hover:underline flex items-center gap-1 py-1">
-      <span class="ms text-sm" id="finish-more-icon" aria-hidden="true">expand_more</span>Additional details
-    </button>
-    <div id="finish-more" style="display:none" class="space-y-3">
-      <div class="flex gap-3">
-        <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label><input id="finish-duration" type="number" inputmode="numeric" min="1"></div>
-        <div class="flex-1">
-          <label class="text-xs font-semibold text-slate-400 block mb-1">Calories burned (optional)</label>
-          <div class="flex gap-2">
-            <input id="finish-cal-burned" type="number" inputmode="numeric" placeholder="350" min="0" style="width:auto;flex:1">
-            <button id="import-cal-photo-btn" title="Import from photo" class="btn btn-outline px-3 flex-shrink-0"><span class="ms text-base" aria-hidden="true">photo_camera</span></button>
+    <!-- 3. Plant progress -->
+    <div>
+      <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">eco</span>Plant progress</p>
+      <div id="finish-plant-progress" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
+    </div>
+
+    <!-- 4. Today's highlight — total lifted volume, hidden entirely (see
+         openFinishSummary()) when there's no real lifting volume to show,
+         in favour of finish-no-volume-headline below. -->
+    <div id="finish-highlight-section">
+      <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">auto_awesome</span>Today's highlight</p>
+      <div class="card p-4">
+        <p class="text-xs text-slate-400">You lifted</p>
+        <p id="finish-volume-value" class="font-display font-extrabold text-3xl text-brand-500 mt-0.5"></p>
+        <div id="finish-comparison-row" class="flex items-end justify-between gap-2 mt-3">
+          <div class="min-w-0">
+            <p class="text-xs text-slate-400">Equivalent to</p>
+            <p id="finish-comparison-text" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           </div>
+          <button id="finish-comparison-refresh" type="button" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex-shrink-0" aria-label="Show a different comparison" style="min-width:36px;min-height:36px"><span class="ms text-lg" aria-hidden="true">refresh</span></button>
         </div>
       </div>
-      <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="finish-notes" rows="2" placeholder="Optional notes..." class="resize-none"></textarea></div>
+    </div>
+    <p id="finish-no-volume-headline" style="display:none" class="text-center font-display font-bold text-lg text-slate-700 dark:text-slate-200"></p>
+
+    <!-- 5. Session highlights -->
+    <div class="card p-4">
+      <div class="grid grid-cols-4 divide-x divide-slate-100 dark:divide-slate-800 text-center">
+        <div><p id="finish-hl-volume" class="font-display font-extrabold text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Total volume</p></div>
+        <div><p id="finish-hl-exercises" class="font-display font-extrabold text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Exercises</p></div>
+        <div><p id="finish-hl-progressions" class="font-display font-extrabold text-sm text-brand-500"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Progressions</p></div>
+        <div><p id="finish-hl-sets" class="font-display font-extrabold text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Working sets</p></div>
+      </div>
     </div>
 
+    <!-- 6. Exercise summary -->
+    <div>
+      <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">fitness_center</span>Exercise summary</p>
+      <div id="finish-exercise-summary" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
+    </div>
+
+    <!-- 7. Additional details — collapsed by default; duration always has a
+         real elapsed-time default so it's never "required," only correctable. -->
+    <div>
+      <button id="finish-more-toggle" type="button" class="w-full flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 py-1" aria-expanded="false" aria-controls="finish-more">
+        <span class="ms text-lg" id="finish-more-icon" aria-hidden="true">expand_more</span>Additional details
+      </button>
+      <div id="finish-more" style="display:none" class="space-y-3 pt-2">
+        <div class="flex gap-3">
+          <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label><input id="finish-duration" type="number" inputmode="numeric" min="1"></div>
+          <div class="flex-1">
+            <label class="text-xs font-semibold text-slate-400 block mb-1">Calories burned (optional)</label>
+            <div class="flex gap-2">
+              <input id="finish-cal-burned" type="number" inputmode="numeric" placeholder="350" min="0" style="width:auto;flex:1">
+              <button id="import-cal-photo-btn" title="Import from photo" class="btn btn-outline px-3 flex-shrink-0"><span class="ms text-base" aria-hidden="true">photo_camera</span></button>
+            </div>
+          </div>
+        </div>
+        <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="finish-notes" rows="2" placeholder="How did the session feel?" class="resize-none"></textarea></div>
+      </div>
+    </div>
+
+    <!-- 8. Primary action -->
     <div class="space-y-2 pt-1">
-      <button id="finish-save-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Save workout</button>
+      <button id="finish-save-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Finish workout</button>
+      <p class="text-center text-[11px] text-slate-400">Your garden is waiting.</p>
       <div class="flex items-center justify-center gap-4 text-xs font-semibold">
         <button id="finish-continue-btn" class="text-slate-400 hover:underline py-2">Continue editing</button>
         <button id="finish-discard-btn" class="text-red-400 hover:underline py-2">Discard</button>
@@ -4265,6 +4320,128 @@ function computeWorkoutGrowth(sessionExercises) {
 
   participationGrowth = round1(participationGrowth);
   return { participationGrowth, totalGrowthAwarded: participationGrowth, perExerciseUpdates };
+}
+
+// ── Post-workout summary: total volume ──────────────────────────────────────
+// set volume = load × completed reps, summed over every completed, non-
+// warmup working set (getCompletedWorkingSets() — the exact same working-
+// set filter progression/growth already use, so this can never diverge from
+// what counts as a "real" set elsewhere). Skipped exercises and incomplete/
+// skipped sets are excluded by construction.
+//
+// Units: the app tracks unit per-exercise, not as one global preference, so
+// a session that only ever used one unit is totalled in that unit exactly as
+// logged — no conversion, respecting the task's "do not mix units" rule for
+// the common case. Only a session that genuinely mixes kg and lbs exercises
+// converts everything to kg (KG_PER_LB below) so one coherent total can be
+// shown at all; this is the one place a conversion happens.
+//
+// Unilateral exercises: there is no stored flag anywhere in this app's data
+// model marking an exercise as "per side" (checked exercises/{id} and
+// session exercise entries — neither carries one). Per the task's own
+// instruction not to invent doubling behaviour the data doesn't support,
+// volume is computed directly from whatever reps/weight were actually
+// logged — if a user logs one side's reps for a per-side exercise, that
+// exact number is what counts, with no automatic ×2.
+//
+// Bodyweight/machine/assisted: also no special-casing — a bodyweight
+// exercise logged at weight 0 simply contributes 0 volume (never a
+// fabricated bodyweight estimate); a machine's logged load is used exactly
+// as entered, with no attempt to infer a pulley/assistance ratio.
+const KG_PER_LB = 0.453592;
+function computeSessionVolume(sessionExercises) {
+  const eligible = (sessionExercises || []).filter(ex => !ex.skipped);
+  const units = new Set(eligible.map(ex => (ex.unit === 'lbs' ? 'lbs' : 'kg')));
+  const displayUnit = units.size <= 1 ? (units.values().next().value || 'kg') : 'kg';
+  let volume = 0;
+  eligible.forEach(ex => {
+    const unit = ex.unit === 'lbs' ? 'lbs' : 'kg';
+    getCompletedWorkingSets(ex).forEach(set => {
+      let w = set.weight || 0;
+      if (unit !== displayUnit) w = unit === 'lbs' ? w * KG_PER_LB : w / KG_PER_LB;
+      volume += w * (set.reps || 0);
+    });
+  });
+  return { volume: round1(volume), unit: displayUnit, mixedUnits: units.size > 1 };
+}
+
+// ── Post-workout summary: fun weight equivalent ─────────────────────────────
+// Approximate, illustrative reference weights only (see task: "clearly treat
+// these as playful approximations, not precise scientific measurements") —
+// not sourced from any single authority, just representative real-world
+// ballpark figures chosen to give a legible spread from very light to very
+// heavy sessions.
+const VOLUME_COMPARISONS = [
+  { id: 'canoe', weightKg: 30, singular: 'canoe', plural: 'canoes' },
+  { id: 'washing-machine', weightKg: 70, singular: 'washing machine', plural: 'washing machines' },
+  { id: 'refrigerator', weightKg: 100, singular: 'refrigerator', plural: 'refrigerators' },
+  { id: 'motorcycle', weightKg: 200, singular: 'motorcycle', plural: 'motorcycles' },
+  { id: 'young-elephant', weightKg: 200, singular: 'young elephant', plural: 'young elephants' },
+  { id: 'black-bear', weightKg: 135, singular: 'black bear', plural: 'black bears' },
+  { id: 'vending-machine', weightKg: 400, singular: 'vending machine', plural: 'vending machines' },
+  { id: 'grand-piano', weightKg: 450, singular: 'grand piano', plural: 'grand pianos' },
+  { id: 'giraffe', weightKg: 800, singular: 'giraffe', plural: 'giraffes' },
+  { id: 'bison', weightKg: 900, singular: 'bison', plural: 'bison' },
+  { id: 'compact-car', weightKg: 1300, singular: 'compact car', plural: 'compact cars' },
+  { id: 'hippo', weightKg: 1500, singular: 'hippo', plural: 'hippos' },
+  { id: 'helicopter', weightKg: 1800, singular: 'helicopter', plural: 'helicopters' },
+  { id: 'rhino', weightKg: 2300, singular: 'rhino', plural: 'rhinos' },
+  { id: 'shipping-container', weightKg: 2200, singular: 'empty shipping container', plural: 'empty shipping containers' }
+];
+
+// Scores every comparison object and returns the single best-fitting one —
+// favouring a readable 1–30 count that lands close to a whole number (see
+// task: avoid "0.04 helicopters" or "428 refrigerators"). excludeId lets the
+// refresh control cycle to the next-best option instead of repeating the
+// same one. Returns null when volumeKg is 0 or nothing reasonable fits.
+function selectVolumeComparison(volumeKg, excludeId = null) {
+  if (!volumeKg || volumeKg <= 0) return null;
+  let best = null, bestScore = Infinity;
+  VOLUME_COMPARISONS.forEach(obj => {
+    if (obj.id === excludeId) return;
+    const raw = volumeKg / obj.weightKg;
+    if (raw < 0.4) return; // would round to 0 — not a fun/legible comparison
+    // Whole numbers are strongly preferred ("where possible") — only fall
+    // back to one decimal for a small count whose nearest whole number
+    // would be a poor (>15% relative error) fit, per the task's own
+    // "one decimal only when necessary" rule.
+    const wholeRounded = Math.round(raw);
+    const wholeRelError = wholeRounded > 0 ? Math.abs(raw - wholeRounded) / raw : Infinity;
+    let rounded, usesDecimal = false;
+    if (wholeRounded >= 1 && wholeRelError <= 0.15) rounded = wholeRounded;
+    else if (raw < 3) { rounded = Math.round(raw * 10) / 10; usesDecimal = true; }
+    else rounded = wholeRounded || 1;
+    if (!rounded) return;
+    let rangePenalty = 0;
+    if (rounded < 1) rangePenalty = (1 - rounded) * 5;
+    else if (rounded > 30) rangePenalty = (rounded - 30) * 0.1;
+    const roundingError = Math.abs(raw - rounded);
+    const score = rangePenalty + roundingError + (usesDecimal ? 0.05 : 0);
+    if (score < bestScore) { bestScore = score; best = { ...obj, count: rounded }; }
+  });
+  return best;
+}
+
+// New Double Progression weight-increase events this session would create,
+// previewed via the exact same pendingSession mechanism the finish-summary
+// recommendation preview already uses — never a second progression engine.
+// "leafCount" is per set position (matching renderDoubleProgressionLeaves()'s
+// own one-leaf-per-working-set model), so an exercise where every set moved
+// up in the same session counts more than one — never awarded just for
+// completing a workout, and warm-up sets never reach this at all
+// (progressionInputFor()/workingSetsFor() already strip them out upstream).
+function computeSessionPlantProgress(sessionExercises) {
+  const exerciseLeaves = []; // { exerciseId, name, leafCount }
+  let totalLeaves = 0;
+  (sessionExercises || []).forEach(ex => {
+    if (ex.skipped || !ex.exerciseId || !ex.progressionEnabled || !exercises[ex.exerciseId]) return;
+    if (!getCompletedWorkingSets(ex).length) return;
+    const pending = { date: todayStr(), sessionId: 'pending', ex };
+    const dp = calculateExerciseDoubleProgression(ex.exerciseId, pending);
+    const leafCount = dp.events.filter(e => e.workoutSessionId === 'pending' && e.eventType === 'set_weight_increased').length;
+    if (leafCount > 0) { exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount }); totalLeaves += leafCount; }
+  });
+  return { totalLeaves, exerciseLeaves };
 }
 
 // ── OpenAI ────────────────────────────────────────────────────────────────
@@ -10175,56 +10352,171 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
 });
 
 // ── Finish workout ───────────────────────────────────────────────────────────
+// One exercise row for the "Exercise summary" list — name, completed
+// working-set count, a concise progression status, the existing leaf
+// indicators, and a chevron into that exercise's real detail page. Every
+// number here is the same pendingSession preview the old recommendation
+// cards already computed — no second progression path.
+function finishExerciseSummaryRowHtml(ex) {
+  const workingCount = getCompletedWorkingSets(ex).length;
+  const pending = { date: todayStr(), sessionId: 'pending', ex };
+  const canConfigure = ex.exerciseId && ex.progressionEnabled && exercises[ex.exerciseId];
+  const result = canConfigure ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending) : null;
+  let statusText, leavesHtml = '';
+  if (result && result.configured) {
+    const positions = DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending);
+    const readyCount = positions.filter(p => p.status === 'ready_to_increase' || p.status === 'increased_weight').length;
+    statusText = readyCount > 0 ? `${readyCount} of ${result.workingSetCount} set${result.workingSetCount !== 1 ? 's' : ''} ready to increase` : `Building reps toward ${result.maxReps}`;
+    leavesHtml = `<div class="flex items-center gap-0.5 flex-shrink-0">${renderDoubleProgressionLeaves(positions, ex.unit, 'text-base')}</div>`;
+  } else {
+    statusText = 'Double Progression not set up for this exercise.';
+  }
+  return `
+    <button type="button" class="finish-ex-row w-full flex items-center gap-3 p-3 text-left" data-exercise-id="${ex.exerciseId || ''}">
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
+        <p class="text-xs text-slate-400 mt-0.5">${workingCount} working set${workingCount !== 1 ? 's' : ''}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${esc(statusText)}</p>
+      </div>
+      ${leavesHtml}
+      <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+    </button>`;
+}
+
+// "Plant progress" — real leaf-earning events this session would create
+// (computeSessionPlantProgress(), the same pendingSession preview as
+// above) plus the Companion's own growth-percent delta, previewed the same
+// side-effect-free way computeWorkoutGrowth() itself already documents.
+// Quiet fallback message when neither happened; never fabricated.
+function renderFinishPlantProgress(sessionExercises) {
+  const el = document.getElementById('finish-plant-progress');
+  const { totalLeaves, exerciseLeaves } = computeSessionPlantProgress(sessionExercises);
+
+  const preview = computeWorkoutGrowth(sessionExercises);
+  const beforeState = currentGrowthState();
+  const previewPoints = round1((userProfile.growthPoints || 0) + preview.participationGrowth);
+  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: previewPoints });
+  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
+
+  const rows = [];
+  if (totalLeaves > 0) {
+    rows.push(`
+      <div class="flex items-center gap-3 p-3">
+        <span class="w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
+        <div class="min-w-0 flex-1"><p class="font-display font-bold text-base text-slate-800 dark:text-white">${totalLeaves}</p><p class="text-xs text-slate-400">New leaf${totalLeaves !== 1 ? 'ves' : ''}</p></div>
+      </div>`);
+    exerciseLeaves.forEach(item => rows.push(`
+      <button type="button" class="finish-plant-row w-full flex items-center gap-3 p-3 text-left" data-exercise-id="${item.exerciseId}">
+        <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${DP_STAGE_EMOJI[item.stageIdx]}</span>
+        <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(item.name)}</p><p class="text-xs text-brand-500">Earned a new leaf</p></div>
+        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>`));
+  }
+  if (growthDelta > 0) {
+    const plant = PLANTS[userProfile.plant] || { emoji: '🌱', name: 'Companion' };
+    rows.push(`
+      <div class="flex items-center gap-3 p-3">
+        <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${plant.emoji}</span>
+        <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white">Companion</p><p class="text-xs text-brand-500">+${growthDelta}% growth</p></div>
+      </div>`);
+  }
+  el.innerHTML = rows.length ? rows.join('') : '<p class="text-sm text-slate-400 text-center py-4">No new leaves today, but your plants are still growing.</p>';
+  el.querySelectorAll('.finish-plant-row').forEach(b => b.addEventListener('click', () => { rsHideModal('finish-modal'); openExerciseDetail(b.dataset.exerciseId); }));
+}
+
+// "Today's highlight" — total lifted volume + one fun comparison (see
+// computeSessionVolume()/selectVolumeComparison()). Hidden entirely (in
+// favour of finish-no-volume-headline) when there's no real volume to
+// show — a cardio-only or all-bodyweight-at-0kg session, for instance —
+// rather than ever printing "0 kg".
+let finishComparisonExcludeId = null;
+function renderFinishComparison(volume) {
+  const comp = selectVolumeComparison(volume, finishComparisonExcludeId);
+  const row = document.getElementById('finish-comparison-row');
+  if (!comp) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  document.getElementById('finish-comparison-text').textContent = `${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
+  finishComparisonExcludeId = comp.id;
+}
+document.getElementById('finish-comparison-refresh').addEventListener('click', () => {
+  if (!activeSession) return;
+  const { volume } = computeSessionVolume(activeSession.exercises);
+  renderFinishComparison(volume);
+});
+
+function renderFinishHighlight(sessionExercises) {
+  const { volume, unit } = computeSessionVolume(sessionExercises);
+  const section = document.getElementById('finish-highlight-section');
+  const noVolumeHeadline = document.getElementById('finish-no-volume-headline');
+  if (volume > 0) {
+    section.style.display = '';
+    noVolumeHeadline.style.display = 'none';
+    document.getElementById('finish-volume-value').textContent = `${volume.toLocaleString()} ${unit}`;
+    finishComparisonExcludeId = null;
+    renderFinishComparison(volume);
+  } else {
+    section.style.display = 'none';
+    noVolumeHeadline.style.display = '';
+    const { totalLeaves } = computeSessionPlantProgress(sessionExercises);
+    const exCount = sessionExercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length).length;
+    noVolumeHeadline.textContent = totalLeaves > 0 ? `${totalLeaves} new leaf${totalLeaves !== 1 ? 'ves' : ''} earned` : `${exCount} exercise${exCount !== 1 ? 's' : ''} completed`;
+  }
+  return { volume, unit };
+}
+
 // Called from the last exercise's "Finish Workout" and from the End Workout
 // review's "Finish Now" — one summary flow regardless of entry point.
 function openFinishSummary() {
-  const totalSets = activeSession.exercises.reduce((sum, ex) => sum + workingSetsFor(ex).filter(s => s.completed).length, 0);
+  const eligibleExercises = activeSession.exercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length);
+  const totalSets = eligibleExercises.reduce((sum, ex) => sum + getCompletedWorkingSets(ex).length, 0);
   if (!totalSets) { alert('Log at least one completed set before finishing.'); return; }
 
-  document.getElementById('finish-group-name').textContent = activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName;
+  document.getElementById('finish-group-name').textContent = `${activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName} complete`;
   const mins = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
-  document.getElementById('finish-meta').textContent = `${mins} min · ${totalSets} working set${totalSets!==1?'s':''}`;
+  document.getElementById('finish-ov-duration').textContent = `${mins} min`;
+  document.getElementById('finish-ov-sets').textContent = totalSets;
+  document.getElementById('finish-ov-cal').textContent = '—';
 
-  const recsBox = document.getElementById('finish-recommendations');
-  const recCards = activeSession.exercises.map(ex => {
-    if (!ex.progressionEnabled || ex.skipped || !workingSetsFor(ex).some(s => s.completed)) return '';
-    const pending = { date: todayStr(), sessionId: 'pending', ex };
-    const result = DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending);
-    if (!result.configured) {
-      return `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Add a maximum rep target to enable Double Progression.</p>
-      </div>`;
-    }
-    const positions = DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending);
-    const readyCount = positions.filter(p => p.status === 'ready_to_increase' || p.status === 'increased_weight').length;
-    return `<div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-      <div class="flex items-center justify-between gap-2">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(ex.name)}</p>
-        <div class="flex items-center gap-0.5 flex-shrink-0">${renderDoubleProgressionLeaves(positions, ex.unit, 'text-base')}</div>
-      </div>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${readyCount > 0 ? `${readyCount} of ${result.workingSetCount} set${result.workingSetCount!==1?'s':''} ready to increase` : `Building reps toward ${result.maxReps} reps`}</p>
-    </div>`;
-  }).filter(Boolean).join('');
-  recsBox.innerHTML = recCards || '<p class="text-sm text-slate-400 text-center py-2">Complete all sets on an exercise to see a recommendation.</p>';
+  renderFinishPlantProgress(activeSession.exercises);
+  renderFinishHighlight(activeSession.exercises);
 
-  // Preview only — computeWorkoutGrowth() has no side effects, so calling it
-  // here to show the number doesn't award anything. The real award happens
-  // once, inside finish-save-btn's handler, after the session is persisted.
-  const preview = computeWorkoutGrowth(activeSession.exercises);
-  document.getElementById('finish-growth-reward').textContent = `+${preview.totalGrowthAwarded} Growth`;
+  const { totalLeaves } = computeSessionPlantProgress(activeSession.exercises);
+  const { volume } = computeSessionVolume(activeSession.exercises);
+  document.getElementById('finish-hl-volume').textContent = volume > 0 ? `${volume.toLocaleString()}` : '—';
+  document.getElementById('finish-hl-exercises').textContent = eligibleExercises.length;
+  document.getElementById('finish-hl-progressions').textContent = totalLeaves;
+  document.getElementById('finish-hl-sets').textContent = totalSets;
+
+  const exBox = document.getElementById('finish-exercise-summary');
+  exBox.innerHTML = eligibleExercises.map(finishExerciseSummaryRowHtml).join('');
+  exBox.querySelectorAll('.finish-ex-row').forEach(b => b.addEventListener('click', () => {
+    if (!b.dataset.exerciseId) return;
+    rsHideModal('finish-modal');
+    openExerciseDetail(b.dataset.exerciseId);
+  }));
+
   document.getElementById('finish-duration').value = mins;
   document.getElementById('finish-cal-burned').value = '';
   document.getElementById('finish-notes').value = '';
   document.getElementById('finish-more').style.display = 'none';
   document.getElementById('finish-more-icon').textContent = 'expand_more';
+  document.getElementById('finish-more-toggle').setAttribute('aria-expanded', 'false');
   document.getElementById('finish-modal').style.display = '';
 }
+
+// Calories are entered later, in Additional Details, but the overview row
+// at the top surfaces them the moment they're typed rather than only after
+// a re-open — a plain neutral placeholder until then, never a fabricated 0.
+document.getElementById('finish-cal-burned').addEventListener('input', e => {
+  const v = +e.target.value;
+  document.getElementById('finish-ov-cal').textContent = v > 0 ? String(v) : '—';
+});
 
 document.getElementById('finish-more-toggle').addEventListener('click', () => {
   const open = document.getElementById('finish-more').style.display === 'none';
   document.getElementById('finish-more').style.display = open ? '' : 'none';
   document.getElementById('finish-more-icon').textContent = open ? 'expand_less' : 'expand_more';
+  document.getElementById('finish-more-toggle').setAttribute('aria-expanded', String(open));
 });
 
 document.getElementById('finish-continue-btn').addEventListener('click', () => {
@@ -10257,6 +10549,9 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   const notes = document.getElementById('finish-notes').value.trim();
 
   const sessionType = activeSession.sessionType || 'group';
+  // Stored alongside the session so History/future summaries never need to
+  // recompute it from raw sets — see computeSessionVolume() for the formula.
+  const { volume: totalVolume, unit: volumeUnit } = computeSessionVolume(activeSession.exercises);
   const sessionData = {
     groupId: activeSession.groupId,
     groupName: activeSession.groupName,
@@ -10269,6 +10564,8 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     duration,
     caloriesBurned: caloriesBurned || null,
     notes: notes || null,
+    totalVolume: totalVolume || null,
+    volumeUnit: totalVolume ? volumeUnit : null,
     date: today,
     exercises: activeSession.exercises.map(ex => ({
       exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.category,
