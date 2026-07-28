@@ -2386,7 +2386,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 text-center">
         <div><span class="ms text-lg text-brand-500" aria-hidden="true">timer</span><p id="finish-ov-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Duration</p></div>
         <div><span class="ms text-lg text-lavender-500" aria-hidden="true">fitness_center</span><p id="finish-ov-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Working sets</p></div>
-        <div><span class="ms text-lg text-orange-500" aria-hidden="true">local_fire_department</span><p id="finish-ov-cal" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Calories</p></div>
+        <div><span class="ms text-lg text-orange-500" aria-hidden="true">fitness_center</span><p id="finish-ov-volume" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Total Volume</p></div>
       </div>
     </div>
 
@@ -2404,30 +2404,18 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="card p-4">
         <p class="text-xs text-slate-400">You lifted</p>
         <p id="finish-volume-value" class="font-display font-extrabold text-3xl text-brand-500 mt-0.5"></p>
-        <div id="finish-comparison-row" class="flex items-end justify-between gap-2 mt-3">
-          <div class="min-w-0">
-            <p class="text-xs text-slate-400">Equivalent to</p>
-            <p id="finish-comparison-text" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
-          </div>
-          <button id="finish-comparison-refresh" type="button" class="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 flex-shrink-0" aria-label="Show a different comparison" style="min-width:36px;min-height:36px"><span class="ms text-lg" aria-hidden="true">refresh</span></button>
+        <div id="finish-comparison-row" class="mt-3">
+          <p class="text-xs text-slate-400">Equivalent to</p>
+          <p id="finish-comparison-text" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
         </div>
       </div>
     </div>
     <p id="finish-no-volume-headline" style="display:none" class="text-center font-display font-bold text-lg text-slate-700 dark:text-slate-200"></p>
 
-    <!-- 5. Session highlights -->
-    <div class="card p-4">
-      <div class="grid grid-cols-4 divide-x divide-slate-100 dark:divide-slate-800 text-center">
-        <div><p id="finish-hl-volume" class="font-display font-extrabold text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Total volume</p></div>
-        <div><p id="finish-hl-exercises" class="font-display font-extrabold text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Exercises</p></div>
-        <div><p id="finish-hl-progressions" class="font-display font-extrabold text-sm text-brand-500"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Progressions</p></div>
-        <div><p id="finish-hl-sets" class="font-display font-extrabold text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Working sets</p></div>
-      </div>
-    </div>
-
     <!-- 6. Exercise summary -->
     <div>
       <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">fitness_center</span>Exercise summary</p>
+      <p id="finish-exercise-summary-subtitle" class="text-xs text-slate-400 -mt-1 mb-1.5"></p>
       <div id="finish-exercise-summary" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
     </div>
 
@@ -10425,24 +10413,18 @@ function renderFinishPlantProgress(sessionExercises) {
 }
 
 // "Today's highlight" — total lifted volume + one fun comparison (see
-// computeSessionVolume()/selectVolumeComparison()). Hidden entirely (in
-// favour of finish-no-volume-headline) when there's no real volume to
+// computeSessionVolume()/selectVolumeComparison()). Always the single
+// best-fitting comparison — no refresh/cycling control. Hidden entirely
+// (in favour of finish-no-volume-headline) when there's no real volume to
 // show — a cardio-only or all-bodyweight-at-0kg session, for instance —
 // rather than ever printing "0 kg".
-let finishComparisonExcludeId = null;
 function renderFinishComparison(volume) {
-  const comp = selectVolumeComparison(volume, finishComparisonExcludeId);
+  const comp = selectVolumeComparison(volume);
   const row = document.getElementById('finish-comparison-row');
   if (!comp) { row.style.display = 'none'; return; }
   row.style.display = '';
   document.getElementById('finish-comparison-text').textContent = `${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
-  finishComparisonExcludeId = comp.id;
 }
-document.getElementById('finish-comparison-refresh').addEventListener('click', () => {
-  if (!activeSession) return;
-  const { volume } = computeSessionVolume(activeSession.exercises);
-  renderFinishComparison(volume);
-});
 
 function renderFinishHighlight(sessionExercises) {
   const { volume, unit } = computeSessionVolume(sessionExercises);
@@ -10452,7 +10434,6 @@ function renderFinishHighlight(sessionExercises) {
     section.style.display = '';
     noVolumeHeadline.style.display = 'none';
     document.getElementById('finish-volume-value').textContent = `${volume.toLocaleString()} ${unit}`;
-    finishComparisonExcludeId = null;
     renderFinishComparison(volume);
   } else {
     section.style.display = 'none';
@@ -10471,21 +10452,18 @@ function openFinishSummary() {
   const totalSets = eligibleExercises.reduce((sum, ex) => sum + getCompletedWorkingSets(ex).length, 0);
   if (!totalSets) { alert('Log at least one completed set before finishing.'); return; }
 
-  document.getElementById('finish-group-name').textContent = `${activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName} complete`;
+  document.getElementById('finish-group-name').textContent = `${activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName} completed`;
   const mins = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
   document.getElementById('finish-ov-duration').textContent = `${mins} min`;
   document.getElementById('finish-ov-sets').textContent = totalSets;
-  document.getElementById('finish-ov-cal').textContent = '—';
+  const { volume, unit } = computeSessionVolume(activeSession.exercises);
+  document.getElementById('finish-ov-volume').textContent = volume > 0 ? `${volume.toLocaleString()} ${unit}` : '—';
 
   renderFinishPlantProgress(activeSession.exercises);
   renderFinishHighlight(activeSession.exercises);
 
   const { totalLeaves } = computeSessionPlantProgress(activeSession.exercises);
-  const { volume } = computeSessionVolume(activeSession.exercises);
-  document.getElementById('finish-hl-volume').textContent = volume > 0 ? `${volume.toLocaleString()}` : '—';
-  document.getElementById('finish-hl-exercises').textContent = eligibleExercises.length;
-  document.getElementById('finish-hl-progressions').textContent = totalLeaves;
-  document.getElementById('finish-hl-sets').textContent = totalSets;
+  document.getElementById('finish-exercise-summary-subtitle').textContent = `${eligibleExercises.length} exercise${eligibleExercises.length !== 1 ? 's' : ''} • ${totalLeaves} progression${totalLeaves !== 1 ? 's' : ''}`;
 
   const exBox = document.getElementById('finish-exercise-summary');
   exBox.innerHTML = eligibleExercises.map(finishExerciseSummaryRowHtml).join('');
@@ -10503,14 +10481,6 @@ function openFinishSummary() {
   document.getElementById('finish-more-toggle').setAttribute('aria-expanded', 'false');
   document.getElementById('finish-modal').style.display = '';
 }
-
-// Calories are entered later, in Additional Details, but the overview row
-// at the top surfaces them the moment they're typed rather than only after
-// a re-open — a plain neutral placeholder until then, never a fabricated 0.
-document.getElementById('finish-cal-burned').addEventListener('input', e => {
-  const v = +e.target.value;
-  document.getElementById('finish-ov-cal').textContent = v > 0 ? String(v) : '—';
-});
 
 document.getElementById('finish-more-toggle').addEventListener('click', () => {
   const open = document.getElementById('finish-more').style.display === 'none';
