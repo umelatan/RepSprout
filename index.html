@@ -10626,6 +10626,15 @@ function openCalendarDaySheet(date) {
 
   if (planned && relation !== 'past') {
     html += renderPlannedEntryCard(planned) + renderCdsActionArea(planned, relation);
+  } else if (planned) {
+    // A plan that never got marked complete before its date slipped into
+    // the past — Start/Resume/Change no longer make sense for a day that's
+    // already gone, but the stale plan still needs to be visible (with its
+    // own remove button) so the user can clear it out and log what actually
+    // happened, e.g. a recovery day. See openCalendarDaySheet() bug: this
+    // used to skip straight to a plain "Add To This Day" button, leaving
+    // the leftover plan invisible and un-removable.
+    html += renderPlannedEntryCard(planned) + `<button id="cds-add-btn" class="btn btn-green btn-pop w-full py-3 text-sm">Add To This Day</button>`;
   } else {
     html += `<button id="cds-add-btn" class="btn btn-green btn-pop w-full py-3 text-sm">Add To This Day</button>`;
   }
