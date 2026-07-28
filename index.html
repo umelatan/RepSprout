@@ -10411,9 +10411,9 @@ function renderFinishPlantProgress(sessionExercises) {
       <div class="p-3">
         <div class="flex items-center gap-3">
           <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${plant.emoji}</span>
-          <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white">Companion</p><p class="text-xs text-brand-500">+${growthDelta}% growth</p></div>
+          <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white">${esc(plant.name)}</p><p class="text-xs text-brand-500">+${growthDelta}% growth</p></div>
         </div>
-        <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2" role="progressbar" aria-label="Companion growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
+        <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2" role="progressbar" aria-label="${esc(plant.name)} growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
           <div id="finish-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${beforeState.overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
         </div>
       </div>`);
