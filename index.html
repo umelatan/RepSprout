@@ -10729,7 +10729,21 @@ function histMatchesSearch(query, s) {
   return (s.exercises || []).some(ex => (ex.name || '').toLowerCase().includes(q));
 }
 
-// ── Activity Journal rows — lightweight, no per-entry card ─────────────────
+// ── Activity Journal rows — a quiet connecting rail down the left edge,
+// with a small colour dot (sessionColor(s) — the same colour language as
+// the milestone rows and Workout Groups list) or the existing recovery
+// leaf glyph sitting on it per entry. Both the marker wrapper and each
+// date label's leading spacer share the same fixed width so the dots and
+// the rail line stay aligned down the whole page. ─────────────────────────
+const HIST_RAIL_COL_WIDTH = 16; // px — dot/leaf column width; the rail line sits at its horizontal center
+
+function histRowMarkerHtml(kind, color) {
+  const inner = kind === 'recovery'
+    ? `<span class="ms text-sm text-brand-500" aria-hidden="true">eco</span>`
+    : `<span class="w-2 h-2 rounded-full" style="background:${color}" aria-hidden="true"></span>`;
+  return `<span class="flex-shrink-0 flex items-center justify-center" style="width:${HIST_RAIL_COL_WIDTH}px;height:20px">${inner}</span>`;
+}
+
 // Tapping any row opens the same overflow-style actions sheet
 // (openHistActionsSheet()) rather than a separate detail page per kind:
 // strength workouts already get a real "detail" view for free via that
@@ -10737,7 +10751,7 @@ function histMatchesSearch(query, s) {
 // set; Activity/Recovery entries have no edit screen elsewhere in the app
 // to route to, so the same sheet (Delete only) is the only meaningful
 // action surface for them either way.
-function histJournalRowHtml(date, sessionId, s) {
+function histJournalRowHtml(date, sessionId, s, withDivider) {
   const kind = histSessionKind(s);
   const timeStr = histSessionTime(s);
   const title = esc(sessionLabel(s));
@@ -10746,7 +10760,7 @@ function histJournalRowHtml(date, sessionId, s) {
     const exCount = (s.exercises || []).length;
     metaLine = `${s.duration || 0} min <span aria-hidden="true">•</span> ${exCount} exercise${exCount !== 1 ? 's' : ''}`;
     const highlight = histSessionHighlight(date, sessionId, s);
-    if (highlight) progressLine = `<p class="text-xs font-semibold text-brand-500 mt-1">${esc(highlight.text)}</p>`;
+    if (highlight) progressLine = `<p class="text-xs font-semibold text-brand-500 mt-1 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>${esc(highlight.text)}</p>`;
   } else if (kind === 'activity') {
     metaLine = `${s.duration || 0} min${s.caloriesBurned ? ` <span aria-hidden="true">•</span> ${s.caloriesBurned.toLocaleString()} kcal` : ''}`;
     if (s.notes) progressLine = `<p class="text-xs text-slate-400 mt-1 truncate">${esc(s.notes)}</p>`;
@@ -10756,8 +10770,10 @@ function histJournalRowHtml(date, sessionId, s) {
     // Recovery Day was never a timed workout.
     metaLine = s.notes ? esc(s.notes) : 'Rest and reset';
   }
+  const dividerCls = withDivider ? 'border-t border-slate-100 dark:border-slate-800' : '';
   return `
-    <button type="button" class="hist-journal-row w-full flex items-start gap-3 py-3 text-left" data-date="${date}" data-id="${sessionId}">
+    <button type="button" class="hist-journal-row w-full flex items-start gap-3 py-3 text-left ${dividerCls}" data-date="${date}" data-id="${sessionId}">
+      ${histRowMarkerHtml(kind, sessionColor(s))}
       <div class="min-w-0 flex-1">
         <div class="flex items-baseline justify-between gap-2">
           <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate">${title}</p>
@@ -10768,6 +10784,21 @@ function histJournalRowHtml(date, sessionId, s) {
       </div>
       <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0 mt-0.5" aria-hidden="true">chevron_right</span>
     </button>`;
+}
+
+// A date-group heading takes on the colour of that day's first entry (the
+// same dot colour sitting right below it), except Recovery — which has no
+// accent colour of its own — where it stays plain muted text. Never a
+// dot of its own; the empty leading spacer just keeps it aligned with the
+// entries' marker column so the rail line reads as one continuous thread.
+function histDateLabelRowHtml(labelText, accentColor, withDivider) {
+  const dividerCls = withDivider ? 'border-t border-slate-100 dark:border-slate-800' : '';
+  const style = accentColor ? ` style="color:${accentColor}"` : '';
+  const cls = `text-xs font-bold uppercase tracking-wide${accentColor ? '' : ' text-slate-400'}`;
+  return `<div class="flex items-center gap-3 pt-3 pb-1 ${dividerCls}">
+    <span class="flex-shrink-0" style="width:${HIST_RAIL_COL_WIDTH}px"></span>
+    <p class="${cls}"${style}>${esc(labelText)}</p>
+  </div>`;
 }
 
 function renderHistory() {
@@ -10803,7 +10834,10 @@ function renderHistory() {
   // date-groups noting whenever the calendar month changes so a "June"/
   // "July" header and the previous month's reflective footer can be
   // inserted — but only for months OTHER than the real current one, which
-  // the summary panel above already establishes.
+  // the summary panel above already establishes. Each contiguous run of
+  // date-groups within one month gets its own rail (the connecting line +
+  // dots) — a bigger month header is a real section break, so the rail
+  // restarts after one rather than running behind it.
   const byDate = [];
   flat.forEach(entry => {
     const bucket = byDate[byDate.length - 1];
@@ -10815,10 +10849,19 @@ function renderHistory() {
   const currentRealMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
   let html = '';
   let openMonthKey = null;
+  let railBuffer = '';
+  let isFirstBlockInRail = true;
+  const flushRail = () => {
+    if (!railBuffer) return;
+    html += `<div class="relative"><div class="absolute bg-slate-200 dark:bg-slate-700/70" style="width:1px;left:${HIST_RAIL_COL_WIDTH / 2}px;top:10px;bottom:10px" aria-hidden="true"></div><div>${railBuffer}</div></div>`;
+    railBuffer = '';
+  };
   byDate.forEach(group => {
     const d = new Date(group.date + 'T12:00:00');
     const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
     if (monthKey !== openMonthKey) {
+      flushRail();
+      isFirstBlockInRail = true;
       if (openMonthKey !== null) {
         const [py, pm] = openMonthKey.split('-').map(Number);
         html += histMonthFooterHtml(py, pm);
@@ -10828,9 +10871,15 @@ function renderHistory() {
         html += `<p class="text-sm font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-300 pt-2">${esc(d.toLocaleDateString('en-US', { month: 'long' }))}</p>`;
       }
     }
-    const rowsHtml = group.items.map(({ date, sessionId, s }) => histJournalRowHtml(date, sessionId, s)).join('');
-    html += `<div><p class="text-xs font-bold uppercase tracking-wide text-slate-400 pt-1">${esc(histDateLabel(group.date))}</p><div class="divide-y divide-slate-100 dark:divide-slate-800">${rowsHtml}</div></div>`;
+    const firstKind = histSessionKind(group.items[0].s);
+    const accentColor = firstKind === 'recovery' ? null : sessionColor(group.items[0].s);
+    railBuffer += histDateLabelRowHtml(histDateLabel(group.date), accentColor, !isFirstBlockInRail);
+    isFirstBlockInRail = false;
+    group.items.forEach(({ date, sessionId, s }, idx) => {
+      railBuffer += histJournalRowHtml(date, sessionId, s, idx > 0);
+    });
   });
+  flushRail();
   if (openMonthKey !== null) {
     const [py, pm] = openMonthKey.split('-').map(Number);
     html += histMonthFooterHtml(py, pm);
