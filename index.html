@@ -10327,21 +10327,35 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
 // Every number here is the same pendingSession preview the old
 // recommendation cards already computed — no second progression path.
 function finishExerciseSummaryRowHtml(ex, idx) {
-  const workingCount = getCompletedWorkingSets(ex).length;
+  const completedSets = getCompletedWorkingSets(ex);
+  const workingCount = completedSets.length;
   const pending = { date: todayStr(), sessionId: 'pending', ex };
   const canConfigure = ex.exerciseId && ex.progressionEnabled && exercises[ex.exerciseId];
   const result = canConfigure ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending) : null;
   const positions = result && result.configured ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending) : [];
-  let statusText, leavesHtml = '';
+  let leavesHtml = '';
   if (result && result.configured) {
-    const readyCount = positions.filter(p => p.status === 'ready_to_increase' || p.status === 'increased_weight').length;
-    statusText = readyCount > 0 ? `${readyCount} of ${result.workingSetCount} set${result.workingSetCount !== 1 ? 's' : ''} ready to increase` : `Building reps toward ${result.maxReps}`;
     leavesHtml = `<div class="flex items-center gap-0.5 flex-shrink-0">${renderDoubleProgressionLeaves(positions, ex.unit, 'text-base')}</div>`;
-  } else {
-    statusText = 'Double Progression not set up for this exercise.';
+  }
+
+  // "Best set" surfaces the single most informative number instead of a
+  // readiness count already conveyed by the leaves above — the completed
+  // working set with the most reps, against this exercise's real target
+  // max (same for every position — see calculateExerciseDoubleProgression's
+  // targetMaxReps note), falling back to the exercise's own configured max
+  // reps when Double Progression isn't set up, or reps alone if no target exists.
+  let bestSetText = '';
+  if (completedSets.length) {
+    let bestIdx = 0;
+    completedSets.forEach((s, i) => { if ((s.reps || 0) > (completedSets[bestIdx].reps || 0)) bestIdx = i; });
+    const bestReps = completedSets[bestIdx].reps || 0;
+    const targetMax = (result && result.configured && result.maxReps != null)
+      ? result.maxReps
+      : (exercises[ex.exerciseId] && exercises[ex.exerciseId].maxReps != null ? exercises[ex.exerciseId].maxReps : null);
+    bestSetText = targetMax != null ? `Best set: ${bestReps} / ${targetMax} reps` : `Best set: ${bestReps} rep${bestReps !== 1 ? 's' : ''}`;
   }
   const unit = ex.unit || 'kg';
-  const setRows = getCompletedWorkingSets(ex).map((s, i) => {
+  const setRows = completedSets.map((s, i) => {
     const p = positions[i];
     let cue = '—', cueClass = 'text-slate-400';
     if (p) {
@@ -10365,7 +10379,7 @@ function finishExerciseSummaryRowHtml(ex, idx) {
         <div class="min-w-0 flex-1">
           <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
           <p class="text-xs text-slate-400 mt-0.5">${workingCount} working set${workingCount !== 1 ? 's' : ''}</p>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${esc(statusText)}</p>
+          ${bestSetText ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${esc(bestSetText)}</p>` : ''}
         </div>
         ${leavesHtml}
         <span class="ms exg-mg-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
