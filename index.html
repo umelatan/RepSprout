@@ -287,6 +287,7 @@ body{font-family:'Inter',sans-serif}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
   .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+  .finish-confetti-dot{animation:none!important;opacity:0!important}
 }
 /* Post-workout summary entrance sequence (see openFinishSummary()) — a
    fixed reveal order (leaf -> heading -> name -> overview -> plant
@@ -306,6 +307,16 @@ body{font-family:'Inter',sans-serif}
 .finish-leaf-in{opacity:0;animation:finishLeafUnfurl var(--rs-dur-standard) var(--rs-ease-settle) both}
 @keyframes finishSaveLeafPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
 .finish-save-leaf{display:inline-block;animation:finishSaveLeafPulse 1s var(--rs-ease-standard) infinite}
+/* A handful of small colour-dot "confetti" around the header leaf —
+   drifting sideways/up while pulsing in scale, so "moves a bit" and
+   "zooms in and out" (see task) are the same one keyframe rather than two
+   competing animations. Deliberately tiny and few (5 dots, muted
+   opacity), not a loud paper-confetti burst — stays inside this page's
+   calm/restrained visual language. Loops continuously for as long as the
+   modal is open, unlike the one-shot .finish-reveal/.finish-leaf-in
+   entrance animations above. */
+@keyframes finishConfettiFloat{0%,100%{transform:translate(0,0) scale(.8);opacity:.5}50%{transform:translate(3px,-9px) scale(1.15);opacity:.9}}
+.finish-confetti-dot{position:absolute;width:6px;height:6px;border-radius:2px;animation:finishConfettiFloat 2.6s ease-in-out infinite;pointer-events:none}
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
@@ -2392,8 +2403,17 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 <div id="finish-modal" style="display:none" class="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-5 max-h-[90vh] overflow-y-auto">
 
-    <!-- 1. Completion header -->
-    <div class="text-center space-y-1">
+    <!-- 1. Completion header — a few small confetti dots drift/pulse around
+         the leaf, loosely echoing the Home hero's own leaf-particle motif
+         (see .leaf-particle above) but as plain colour dots instead of
+         emoji, and combining drift with a gentle zoom rather than adding a
+         third keyframe. -->
+    <div class="text-center space-y-1 relative">
+      <span class="finish-confetti-dot" style="top:-2px;left:24%;background:#8b5cf6;animation-delay:0s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:4px;right:22%;background:#f97316;animation-delay:.6s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:26px;left:16%;background:#22c55e;animation-delay:1.1s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:20px;right:14%;background:#8b5cf6;animation-delay:1.7s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:44px;left:30%;background:#f97316;animation-delay:.3s" aria-hidden="true"></span>
       <div class="finish-leaf-in w-14 h-14 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center mx-auto mb-1" aria-hidden="true"><span class="ms text-3xl text-brand-500">eco</span></div>
       <h3 class="finish-reveal finish-reveal-1 font-display font-extrabold text-2xl text-slate-800 dark:text-white">Great work!</h3>
       <p id="finish-group-name" class="finish-reveal finish-reveal-2 text-base font-bold text-brand-500"></p>
@@ -4446,7 +4466,7 @@ function selectVolumeComparison(volumeKg, excludeId = null) {
 // completing a workout, and warm-up sets never reach this at all
 // (progressionInputFor()/workingSetsFor() already strip them out upstream).
 function computeSessionPlantProgress(sessionExercises) {
-  const exerciseLeaves = []; // { exerciseId, name, leafCount }
+  const exerciseLeaves = []; // { exerciseId, name, leafCount, stageIdx }
   let totalLeaves = 0;
   (sessionExercises || []).forEach(ex => {
     if (ex.skipped || !ex.exerciseId || !ex.progressionEnabled || !exercises[ex.exerciseId]) return;
@@ -4454,7 +4474,11 @@ function computeSessionPlantProgress(sessionExercises) {
     const pending = { date: todayStr(), sessionId: 'pending', ex };
     const dp = calculateExerciseDoubleProgression(ex.exerciseId, pending);
     const leafCount = dp.events.filter(e => e.workoutSessionId === 'pending' && e.eventType === 'set_weight_increased').length;
-    if (leafCount > 0) { exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount }); totalLeaves += leafCount; }
+    if (leafCount > 0) {
+      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+      exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
+      totalLeaves += leafCount;
+    }
   });
   return { totalLeaves, exerciseLeaves };
 }
