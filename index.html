@@ -286,8 +286,26 @@ body{font-family:'Inter',sans-serif}
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop{animation:none!important;transition:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
 }
+/* Post-workout summary entrance sequence (see openFinishSummary()) — a
+   fixed reveal order (leaf -> heading -> name -> overview -> plant
+   progress -> highlight -> exercise summary), each section just fading/
+   scaling in at a hardcoded delay along that ~1.5s timeline. The count-up
+   numbers inside the overview card are separately driven by
+   animateCountUp() in JS, not by these CSS delays. */
+@keyframes finishRevealUp{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+.finish-reveal{opacity:0;animation:finishRevealUp var(--rs-dur-standard) var(--rs-ease-settle) both}
+.finish-reveal-1{animation-delay:120ms}
+.finish-reveal-2{animation-delay:220ms}
+.finish-reveal-3{animation-delay:320ms}
+.finish-reveal-4{animation-delay:950ms}
+.finish-reveal-5{animation-delay:1150ms}
+.finish-reveal-6{animation-delay:1300ms}
+@keyframes finishLeafUnfurl{0%{opacity:0;transform:scale(.5) rotate(-12deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.finish-leaf-in{opacity:0;animation:finishLeafUnfurl var(--rs-dur-standard) var(--rs-ease-settle) both}
+@keyframes finishSaveLeafPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.finish-save-leaf{display:inline-block;animation:finishSaveLeafPulse 1s var(--rs-ease-standard) infinite}
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
@@ -2376,13 +2394,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
     <!-- 1. Completion header -->
     <div class="text-center space-y-1">
-      <div class="w-14 h-14 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center mx-auto mb-1" aria-hidden="true"><span class="ms text-3xl text-brand-500">eco</span></div>
-      <h3 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Great work!</h3>
-      <p id="finish-group-name" class="text-base font-bold text-brand-500"></p>
+      <div class="finish-leaf-in w-14 h-14 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center mx-auto mb-1" aria-hidden="true"><span class="ms text-3xl text-brand-500">eco</span></div>
+      <h3 class="finish-reveal finish-reveal-1 font-display font-extrabold text-2xl text-slate-800 dark:text-white">Great work!</h3>
+      <p id="finish-group-name" class="finish-reveal finish-reveal-2 text-base font-bold text-brand-500"></p>
     </div>
 
     <!-- 2. Session overview -->
-    <div class="card p-4">
+    <div class="finish-reveal finish-reveal-3 card p-4">
       <div class="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 text-center">
         <div><span class="ms text-lg text-brand-500" aria-hidden="true">timer</span><p id="finish-ov-duration" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Duration</p></div>
         <div><span class="ms text-lg text-lavender-500" aria-hidden="true">fitness_center</span><p id="finish-ov-sets" class="font-display font-extrabold text-lg text-slate-800 dark:text-white mt-1"></p><p class="text-[11px] text-slate-400">Working sets</p></div>
@@ -2391,7 +2409,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
 
     <!-- 3. Plant progress -->
-    <div>
+    <div class="finish-reveal finish-reveal-4">
       <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">eco</span>Plant progress</p>
       <div id="finish-plant-progress" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
     </div>
@@ -2399,7 +2417,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <!-- 4. Today's highlight — total lifted volume, hidden entirely (see
          openFinishSummary()) when there's no real lifting volume to show,
          in favour of finish-no-volume-headline below. -->
-    <div id="finish-highlight-section">
+    <div id="finish-highlight-section" class="finish-reveal finish-reveal-5">
       <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">auto_awesome</span>Today's highlight</p>
       <div class="card p-4">
         <p class="text-xs text-slate-400">You lifted</p>
@@ -2410,10 +2428,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
       </div>
     </div>
-    <p id="finish-no-volume-headline" style="display:none" class="text-center font-display font-bold text-lg text-slate-700 dark:text-slate-200"></p>
+    <p id="finish-no-volume-headline" style="display:none" class="finish-reveal finish-reveal-5 text-center font-display font-bold text-lg text-slate-700 dark:text-slate-200"></p>
 
     <!-- 6. Exercise summary -->
-    <div>
+    <div class="finish-reveal finish-reveal-6">
       <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">fitness_center</span>Exercise summary</p>
       <p id="finish-exercise-summary-subtitle" class="text-xs text-slate-400 -mt-1 mb-1.5"></p>
       <div id="finish-exercise-summary" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
@@ -4382,9 +4400,14 @@ const VOLUME_COMPARISONS = [
 // task: avoid "0.04 helicopters" or "428 refrigerators"). excludeId lets the
 // refresh control cycle to the next-best option instead of repeating the
 // same one. Returns null when volumeKg is 0 or nothing reasonable fits.
+// Randomized among the best-scoring candidates (not just the single best)
+// so lifting the exact same total volume in a later workout can genuinely
+// land on a different comparison — "surprise across workouts," per the
+// task, rather than every session with a given volume always showing the
+// identical object.
 function selectVolumeComparison(volumeKg, excludeId = null) {
   if (!volumeKg || volumeKg <= 0) return null;
-  let best = null, bestScore = Infinity;
+  const scored = [];
   VOLUME_COMPARISONS.forEach(obj => {
     if (obj.id === excludeId) return;
     const raw = volumeKg / obj.weightKg;
@@ -4405,9 +4428,13 @@ function selectVolumeComparison(volumeKg, excludeId = null) {
     else if (rounded > 30) rangePenalty = (rounded - 30) * 0.1;
     const roundingError = Math.abs(raw - rounded);
     const score = rangePenalty + roundingError + (usesDecimal ? 0.05 : 0);
-    if (score < bestScore) { bestScore = score; best = { ...obj, count: rounded }; }
+    scored.push({ obj, rounded, score });
   });
-  return best;
+  if (!scored.length) return null;
+  const bestScore = Math.min(...scored.map(s => s.score));
+  const contenders = scored.filter(s => s.score <= bestScore + 0.15);
+  const pick = contenders[Math.floor(Math.random() * contenders.length)];
+  return { ...pick.obj, count: pick.rounded };
 }
 
 // New Double Progression weight-increase events this session would create,
@@ -10341,34 +10368,61 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
 
 // ── Finish workout ───────────────────────────────────────────────────────────
 // One exercise row for the "Exercise summary" list — name, completed
-// working-set count, a concise progression status, the existing leaf
-// indicators, and a chevron into that exercise's real detail page. Every
-// number here is the same pendingSession preview the old recommendation
-// cards already computed — no second progression path.
-function finishExerciseSummaryRowHtml(ex) {
+// working-set count, a concise progression status, and the existing leaf
+// indicators. Expands in place (reusing the same .exg-mg-body accordion
+// already used across the app — Exercise Garden's muscle-group sections,
+// Create Exercise's Advanced, Workout History's Progress Timeline) to
+// reveal each working set's weight/reps and its own progression cue.
+// Every number here is the same pendingSession preview the old
+// recommendation cards already computed — no second progression path.
+function finishExerciseSummaryRowHtml(ex, idx) {
   const workingCount = getCompletedWorkingSets(ex).length;
   const pending = { date: todayStr(), sessionId: 'pending', ex };
   const canConfigure = ex.exerciseId && ex.progressionEnabled && exercises[ex.exerciseId];
   const result = canConfigure ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending) : null;
+  const positions = result && result.configured ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending) : [];
   let statusText, leavesHtml = '';
   if (result && result.configured) {
-    const positions = DoubleProgressionStrategy.calculateSetResults(ex.exerciseId, pending);
     const readyCount = positions.filter(p => p.status === 'ready_to_increase' || p.status === 'increased_weight').length;
     statusText = readyCount > 0 ? `${readyCount} of ${result.workingSetCount} set${result.workingSetCount !== 1 ? 's' : ''} ready to increase` : `Building reps toward ${result.maxReps}`;
     leavesHtml = `<div class="flex items-center gap-0.5 flex-shrink-0">${renderDoubleProgressionLeaves(positions, ex.unit, 'text-base')}</div>`;
   } else {
     statusText = 'Double Progression not set up for this exercise.';
   }
+  const unit = ex.unit || 'kg';
+  const setRows = getCompletedWorkingSets(ex).map((s, i) => {
+    const p = positions[i];
+    let cue = '—', cueClass = 'text-slate-400';
+    if (p) {
+      if (p.status === 'ready_to_increase' || p.status === 'increased_weight') { cue = 'Ready to increase'; cueClass = 'text-brand-500 font-semibold'; }
+      else if (p.targetMaxReps != null) {
+        const remaining = Math.max(0, p.targetMaxReps - (s.reps || 0));
+        cue = remaining ? `${remaining} rep${remaining !== 1 ? 's' : ''} to go` : 'At target';
+      }
+    }
+    return `
+      <div class="flex items-center justify-between gap-2 py-1.5 ${i > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''}">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 w-11 flex-shrink-0">Set ${i + 1}</span>
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">${s.weight || 0}${unit} × ${s.reps || 0}</span>
+        <span class="text-xs ${cueClass} flex-shrink-0">${esc(cue)}</span>
+      </div>`;
+  }).join('');
+  const key = `fin-ex-${idx}`;
   return `
-    <button type="button" class="finish-ex-row w-full flex items-center gap-3 p-3 text-left" data-exercise-id="${ex.exerciseId || ''}">
-      <div class="min-w-0 flex-1">
-        <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
-        <p class="text-xs text-slate-400 mt-0.5">${workingCount} working set${workingCount !== 1 ? 's' : ''}</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${esc(statusText)}</p>
+    <div>
+      <button type="button" class="finish-ex-toggle w-full flex items-center gap-3 p-3 text-left" data-key="${key}" aria-expanded="false" aria-controls="${key}-body">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${workingCount} working set${workingCount !== 1 ? 's' : ''}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${esc(statusText)}</p>
+        </div>
+        ${leavesHtml}
+        <span class="ms exg-mg-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>
+      <div id="${key}-body" class="exg-mg-body collapsed" data-fin-ex-body="${key}">
+        <div><div class="px-3 pb-3">${setRows}</div></div>
       </div>
-      ${leavesHtml}
-      <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
-    </button>`;
+    </div>`;
 }
 
 // "Plant progress" — real leaf-earning events this session would create
@@ -10390,12 +10444,12 @@ function renderFinishPlantProgress(sessionExercises) {
   if (totalLeaves > 0) {
     rows.push(`
       <div class="flex items-center gap-3 p-3">
-        <span class="w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
+        <span class="finish-leaf-in w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
         <div class="min-w-0 flex-1"><p class="font-display font-bold text-base text-slate-800 dark:text-white">${totalLeaves}</p><p class="text-xs text-slate-400">New leaf${totalLeaves !== 1 ? 'ves' : ''}</p></div>
       </div>`);
     exerciseLeaves.forEach(item => rows.push(`
       <button type="button" class="finish-plant-row w-full flex items-center gap-3 p-3 text-left" data-exercise-id="${item.exerciseId}">
-        <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${DP_STAGE_EMOJI[item.stageIdx]}</span>
+        <span class="finish-leaf-in w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${DP_STAGE_EMOJI[item.stageIdx]}</span>
         <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(item.name)}</p><p class="text-xs text-brand-500">Earned a new leaf</p></div>
         <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
       </button>`));
@@ -10403,13 +10457,31 @@ function renderFinishPlantProgress(sessionExercises) {
   if (growthDelta > 0) {
     const plant = PLANTS[userProfile.plant] || { emoji: '🌱', name: 'Companion' };
     rows.push(`
-      <div class="flex items-center gap-3 p-3">
-        <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${plant.emoji}</span>
-        <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white">Companion</p><p class="text-xs text-brand-500">+${growthDelta}% growth</p></div>
+      <div class="p-3">
+        <div class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${plant.emoji}</span>
+          <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white">Companion</p><p class="text-xs text-brand-500">+${growthDelta}% growth</p></div>
+        </div>
+        <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2" role="progressbar" aria-label="Companion growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
+          <div id="finish-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${beforeState.overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
+        </div>
       </div>`);
   }
   el.innerHTML = rows.length ? rows.join('') : '<p class="text-sm text-slate-400 text-center py-4">No new leaves today, but your plants are still growing.</p>';
   el.querySelectorAll('.finish-plant-row').forEach(b => b.addEventListener('click', () => { rsHideModal('finish-modal'); openExerciseDetail(b.dataset.exerciseId); }));
+
+  // Fill the bar from its BEFORE state (set above) to the real AFTER state
+  // once the Plant Progress section itself has faded in (finish-reveal-4,
+  // 950ms) — reusing the same width-transition pattern the Exercise Plant
+  // stage bar already uses elsewhere, just triggered after a delay instead
+  // of on render. Reduced motion jumps straight to the target, matching
+  // the rest of this page's reduced-motion handling.
+  const bar = document.getElementById('finish-plant-bar');
+  if (bar) {
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) bar.style.width = `${bar.dataset.target}%`;
+    else setTimeout(() => { bar.style.width = `${bar.dataset.target}%`; }, 1000);
+  }
 }
 
 // "Today's highlight" — total lifted volume + one fun comparison (see
@@ -10445,6 +10517,26 @@ function renderFinishHighlight(sessionExercises) {
   return { volume, unit };
 }
 
+// Animates an element's text from `from` to `to` over durationMs
+// (ease-out), via formatFn(currentValue) — used only for the three
+// overview numbers on
+// the post-workout summary, so "count up one after another" (see task) is
+// real motion, not a canned CSS animation. Skips straight to the final
+// value under prefers-reduced-motion, or when there's nothing to animate.
+function animateCountUp(el, from, to, durationMs, formatFn) {
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion || durationMs <= 0 || from === to) { el.textContent = formatFn(to); return; }
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / durationMs);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = formatFn(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(tick);
+    else el.textContent = formatFn(to);
+  }
+  requestAnimationFrame(tick);
+}
+
 // Called from the last exercise's "Finish Workout" and from the End Workout
 // review's "Finish Now" — one summary flow regardless of entry point.
 function openFinishSummary() {
@@ -10454,10 +10546,30 @@ function openFinishSummary() {
 
   document.getElementById('finish-group-name').textContent = `${activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName} completed`;
   const mins = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
-  document.getElementById('finish-ov-duration').textContent = `${mins} min`;
-  document.getElementById('finish-ov-sets').textContent = totalSets;
   const { volume, unit } = computeSessionVolume(activeSession.exercises);
-  document.getElementById('finish-ov-volume').textContent = volume > 0 ? `${volume.toLocaleString()} ${unit}` : '—';
+
+  // Duration, then working sets, then volume — staggered so they visibly
+  // count up "one after another" (see task) rather than all at once,
+  // landing inside the same ~1.5s entrance sequence the CSS reveal classes
+  // above already target (the overview card itself fades in at 320ms).
+  // Under reduced motion the whole page already reveals instantly (see the
+  // .finish-reveal override), so these are real numbers people read, not
+  // decorative motion — skip the stagger entirely rather than making
+  // someone who asked for less motion wait through it anyway.
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const durationEl = document.getElementById('finish-ov-duration');
+  const setsEl = document.getElementById('finish-ov-sets');
+  const volumeEl = document.getElementById('finish-ov-volume');
+  if (reducedMotion) {
+    durationEl.textContent = `${mins} min`;
+    setsEl.textContent = totalSets;
+    volumeEl.textContent = volume > 0 ? `${volume.toLocaleString()} ${unit}` : '—';
+  } else {
+    durationEl.textContent = '0 min'; setsEl.textContent = '0'; volumeEl.textContent = volume > 0 ? `0 ${unit}` : '—';
+    setTimeout(() => animateCountUp(durationEl, 0, mins, 450, v => `${Math.round(v)} min`), 380);
+    setTimeout(() => animateCountUp(setsEl, 0, totalSets, 400, v => `${Math.round(v)}`), 550);
+    if (volume > 0) setTimeout(() => animateCountUp(volumeEl, 0, volume, 550, v => `${Math.round(v).toLocaleString()} ${unit}`), 700);
+  }
 
   renderFinishPlantProgress(activeSession.exercises);
   renderFinishHighlight(activeSession.exercises);
@@ -10466,12 +10578,18 @@ function openFinishSummary() {
   document.getElementById('finish-exercise-summary-subtitle').textContent = `${eligibleExercises.length} exercise${eligibleExercises.length !== 1 ? 's' : ''} • ${totalLeaves} progression${totalLeaves !== 1 ? 's' : ''}`;
 
   const exBox = document.getElementById('finish-exercise-summary');
-  exBox.innerHTML = eligibleExercises.map(finishExerciseSummaryRowHtml).join('');
-  exBox.querySelectorAll('.finish-ex-row').forEach(b => b.addEventListener('click', () => {
-    if (!b.dataset.exerciseId) return;
-    rsHideModal('finish-modal');
-    openExerciseDetail(b.dataset.exerciseId);
-  }));
+  exBox.innerHTML = eligibleExercises.map((ex, i) => finishExerciseSummaryRowHtml(ex, i)).join('');
+  exBox.querySelectorAll('.finish-ex-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const body = document.getElementById(`${key}-body`);
+      if (!body) return;
+      const open = body.classList.contains('collapsed');
+      body.classList.toggle('collapsed', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.querySelector('.exg-mg-chevron').classList.toggle('expanded', open);
+    });
+  });
 
   document.getElementById('finish-duration').value = mins;
   document.getElementById('finish-cal-burned').value = '';
@@ -10507,7 +10625,8 @@ document.getElementById('finish-discard-btn').addEventListener('click', () => {
 document.getElementById('finish-save-btn').addEventListener('click', async () => {
   const btn = document.getElementById('finish-save-btn');
   if (btn.disabled) return; // guard against double-submit — also the idempotency guard for growth awarding below
-  btn.disabled = true; const prevLabel = btn.textContent; btn.textContent = 'Saving…';
+  btn.disabled = true; const prevLabel = btn.innerHTML;
+  btn.innerHTML = '<span class="ms text-lg finish-save-leaf" aria-hidden="true">eco</span> Saving…';
 
   const today = todayStr();
   // durationSeconds is the actual measured elapsed time; the minutes shown
@@ -10603,7 +10722,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   } catch (e) {
     console.error('Failed to save workout:', e);
     alert('Something went wrong saving your workout. Please try again.');
-    btn.disabled = false; btn.textContent = prevLabel;
+    btn.disabled = false; btn.innerHTML = prevLabel;
   }
 });
 
