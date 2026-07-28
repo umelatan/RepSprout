@@ -2457,23 +2457,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div id="finish-exercise-summary" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
     </div>
 
-    <!-- 7. Additional details — collapsed by default; duration always has a
-         real elapsed-time default so it's never "required," only correctable. -->
+    <!-- 7. Additional details — collapsed by default; duration is no
+         longer editable here (it's always the real elapsed session time). -->
     <div>
       <button id="finish-more-toggle" type="button" class="w-full flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-slate-400 py-1" aria-expanded="false" aria-controls="finish-more">
         <span class="ms text-lg" id="finish-more-icon" aria-hidden="true">expand_more</span>Additional details
       </button>
       <div id="finish-more" style="display:none" class="space-y-3 pt-2">
-        <div class="flex gap-3">
-          <div class="flex-1"><label class="text-xs font-semibold text-slate-400 block mb-1">Duration (min)</label><input id="finish-duration" type="number" inputmode="numeric" min="1"></div>
-          <div class="flex-1">
-            <label class="text-xs font-semibold text-slate-400 block mb-1">Calories burned (optional)</label>
-            <div class="flex gap-2">
-              <input id="finish-cal-burned" type="number" inputmode="numeric" placeholder="350" min="0" style="width:auto;flex:1">
-              <button id="import-cal-photo-btn" title="Import from photo" class="btn btn-outline px-3 flex-shrink-0"><span class="ms text-base" aria-hidden="true">photo_camera</span></button>
-            </div>
-          </div>
-        </div>
+        <div><label class="text-xs font-semibold text-slate-400 block mb-1">Calories burned (optional)</label><input id="finish-cal-burned" type="number" inputmode="numeric" placeholder="350" min="0"></div>
         <div><label class="text-xs font-semibold text-slate-400 block mb-1">Notes</label><textarea id="finish-notes" rows="2" placeholder="How did the session feel?" class="resize-none"></textarea></div>
       </div>
     </div>
@@ -2505,27 +2496,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <button id="sag-save-btn" class="btn btn-green btn-pop w-full py-3">Save Workout Group</button>
     <button id="sag-skip-btn" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-2">Not now</button>
-  </div>
-</div>
-
-<!-- Import calories from workout photo -->
-<div id="cal-photo-modal" style="display:none" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
-    <div class="flex items-center justify-between">
-      <h3 class="font-display font-bold text-slate-800 dark:text-white text-sm">Import Calories from Photo</h3>
-      <button id="cal-photo-close" class="text-slate-400 p-1"><span class="ms text-xl">close</span></button>
-    </div>
-    <p class="text-xs text-slate-400">Upload a screenshot from Apple Watch, Huawei Health, or any fitness app showing calories burned.</p>
-    <label class="flex flex-col items-center justify-center gap-2 h-28 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl cursor-pointer hover:border-brand-400 transition-colors">
-      <span class="ms text-3xl text-slate-300">upload</span>
-      <span class="text-xs text-slate-400">Upload screenshot</span>
-      <input id="cal-photo-input" type="file" accept="image/*" class="hidden">
-    </label>
-    <img id="cal-photo-preview" class="w-full rounded-xl object-cover max-h-32 hidden">
-    <div id="cal-analyzing" style="display:none" class="flex items-center gap-2 text-sm text-slate-500">
-      <div class="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>Extracting calories...
-    </div>
-    <button id="cal-photo-analyze-btn" class="btn btn-green w-full py-2.5 text-sm" disabled><span class="ms text-base">auto_awesome</span>Extract Calories</button>
   </div>
 </div>
 
@@ -4502,19 +4472,6 @@ async function callAI(prompt, imageBase64 = null) {
   return JSON.parse(data.choices[0].message.content);
 }
 
-async function extractCaloriesFromPhoto(b64) {
-  return callAI('This is a workout summary screenshot. Extract data. Return JSON with keys: calories_burned (number), duration_minutes (number).', b64);
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = e => resolve(e.target.result.split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 // ── Auth ───────────────────────────────────────────────────────────────────
 document.getElementById('signin-btn').addEventListener('click', () =>
   signInWithPopup(auth, gp).catch(e => alert('Sign-in error: ' + e.message))
@@ -4693,7 +4650,7 @@ function closeAllOpenWindows() {
     'choose-companion-modal', 'resume-session-modal',
     'create-target-modal', 'log-target-modal', 'target-actions-modal', 'exg-actions-modal',
     'edit-target-modal', 'target-full-history-modal',
-    'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal', 'cal-photo-modal',
+    'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal',
     'calendar-day-sheet', 'group-picker-modal',
     'activity-library-modal', 'custom-activity-form-modal', 'activity-detail-modal', 'multi-ex-picker-modal',
     'hist-actions-modal', 'hist-filter-modal'
@@ -6422,36 +6379,6 @@ function updatePickExBottomBar() {
   document.getElementById('pick-ex-count-label').textContent = `${n} exercise${n!==1?'s':''} added`;
   document.getElementById('pick-ex-done-btn').disabled = n === 0;
 }
-
-// Import calories from photo — used from the Finish Workout summary's
-// "Additional details" section, since strength users rarely know accurate
-// calorie burn and it should never compete with sets/reps for attention.
-document.getElementById('import-cal-photo-btn').addEventListener('click', () => {
-  document.getElementById('cal-photo-modal').style.display = '';
-});
-document.getElementById('cal-photo-close').addEventListener('click', () => {
-  rsHideModal('cal-photo-modal');
-});
-document.getElementById('cal-photo-input').addEventListener('change', async function() {
-  if (!this.files[0]) return;
-  const preview = document.getElementById('cal-photo-preview');
-  preview.src = URL.createObjectURL(this.files[0]);
-  preview.classList.remove('hidden');
-  document.getElementById('cal-photo-analyze-btn').disabled = false;
-});
-document.getElementById('cal-photo-analyze-btn').addEventListener('click', async function() {
-  const file = document.getElementById('cal-photo-input').files[0];
-  if (!file) return;
-  this.disabled = true;
-  document.getElementById('cal-analyzing').style.display = 'flex';
-  try {
-    const b64 = await fileToBase64(file);
-    const result = await extractCaloriesFromPhoto(b64);
-    document.getElementById('finish-cal-burned').value = result.calories_burned || '';
-    rsHideModal('cal-photo-modal');
-  } catch(e) { alert('Error: ' + e.message); }
-  finally { this.disabled = false; document.getElementById('cal-analyzing').style.display = 'none'; }
-});
 
 // ── Exercise library ────────────────────────────────────────────────────────
 function resizeTargetReps(current, length, minReps, maxReps) {
@@ -10614,7 +10541,6 @@ function openFinishSummary() {
     });
   });
 
-  document.getElementById('finish-duration').value = mins;
   document.getElementById('finish-cal-burned').value = '';
   document.getElementById('finish-notes').value = '';
   document.getElementById('finish-more').style.display = 'none';
@@ -10652,11 +10578,11 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   btn.innerHTML = '<span class="ms text-lg finish-save-leaf" aria-hidden="true">eco</span> Saving…';
 
   const today = todayStr();
-  // durationSeconds is the actual measured elapsed time; the minutes shown
-  // to the user (and stored as `duration`) can be manually corrected below.
+  // Duration is no longer editable in Additional Details — always the
+  // real measured elapsed time, matching what the overview card's own
+  // count-up already showed the user.
   const durationSeconds = Math.floor((Date.now() - activeSession.startedAt) / 1000);
-  const autoMinutes = Math.max(1, Math.round(durationSeconds / 60));
-  const duration = Math.max(1, +document.getElementById('finish-duration').value || autoMinutes);
+  const duration = Math.max(1, Math.round(durationSeconds / 60));
   const caloriesBurned = +document.getElementById('finish-cal-burned').value || 0;
   const notes = document.getElementById('finish-notes').value.trim();
 
@@ -13063,7 +12989,6 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['exercise-modal', () => rsHideModal('exercise-modal')],
   ['finish-modal', () => rsHideModal('finish-modal')],
   ['save-as-group-modal', () => { rsHideModal('save-as-group-modal'); goView('dashboard'); }],
-  ['cal-photo-modal', () => rsHideModal('cal-photo-modal')],
   ['calendar-day-sheet', () => rsHideModal('calendar-day-sheet')],
   ['activity-library-modal', () => rsHideModal('activity-library-modal')],
   ['custom-activity-form-modal', () => { rsHideModal('custom-activity-form-modal'); document.getElementById('activity-library-modal').style.display = ''; }],
