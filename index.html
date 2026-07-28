@@ -10256,7 +10256,10 @@ function dayIndicators(date) {
   Object.values(sessions[date] || {}).forEach(s => {
     if (s.sessionType === 'recovery') items.push({ kind: 'leaf', filled: true });
     else if (s.sessionType === 'other') items.push({ kind: 'dot', color: s.activityColor || ACTIVITY_CATEGORY_COLOR[s.activityCategory] || ACTIVITY_CATEGORY_COLOR.Custom, filled: true });
-    else items.push({ kind: 'dot', color: ACTIVITY_CATEGORY_COLOR.Strength, filled: true }); // completed group/quick
+    // Completed group/quick — same color resolution as the History list and
+    // day-sheet cards (sessionColor()), not a generic "Strength" green, so a
+    // workout group's own accent shows up here too.
+    else items.push({ kind: 'dot', color: sessionColor(s), filled: true });
   });
   Object.values(calendarEntries[date] || {}).forEach(e => {
     if (e.status !== 'planned') return; // completed plans are already represented via their linked session above
@@ -10264,7 +10267,9 @@ function dayIndicators(date) {
     else if (e.type === 'activity') {
       const act = getActivity(e.activityId);
       items.push({ kind: 'dot', color: act?.color || ACTIVITY_CATEGORY_COLOR[act?.category] || ACTIVITY_CATEGORY_COLOR.Custom, filled: false });
-    } else items.push({ kind: 'dot', color: ACTIVITY_CATEGORY_COLOR.Strength, filled: false }); // planned group/quick
+    } else if (e.type === 'group') {
+      items.push({ kind: 'dot', color: groups[e.workoutGroupId]?.color || GROUP_COLORS[0], filled: false });
+    } else items.push({ kind: 'dot', color: QUICK_WORKOUT_COLOR, filled: false }); // planned quick workout
   });
   return items;
 }
