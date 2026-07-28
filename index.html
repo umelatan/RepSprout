@@ -2981,8 +2981,13 @@ function getPlantGrowthState({ plantId, growthPoints }) {
   const stageSpan = stageEnd - stageStart;
   const currentStageProgressPercent = stageSpan > 0 ? Math.round(((overallProgressPercent - stageStart) / stageSpan) * 100) : 100;
   const nextStage = currentStage < GROWTH_TOTAL_STAGES ? currentStage + 1 : null;
-  const nextStageName = nextStage ? GROWTH_STAGE_NAMES[nextStage - 1] : null;
-  const remainingToNextStage = nextStage ? Math.max(0, stageEnd - overallProgressPercent) : 0;
+  // Once currentStage reaches the last named stage (Bloom), there's no next
+  // named stage to point at, but the plant isn't isFinalStage yet either —
+  // it's still climbing from 80% to 100% within Bloom itself. Point at "full
+  // bloom" instead of leaving nextStageName null (was rendering literally as
+  // "0% until null" on Home/Garden — see task).
+  const nextStageName = nextStage ? GROWTH_STAGE_NAMES[nextStage - 1] : (isFinalStage ? null : 'full bloom');
+  const remainingToNextStage = nextStage ? Math.max(0, stageEnd - overallProgressPercent) : (isFinalStage ? 0 : Math.max(0, 100 - overallProgressPercent));
 
   // Stage 4 shows the real plant emoji as a dim, partial reveal; stage 5 is
   // the real plant emoji at full strength; stages 1-3 use the generic fallback.
