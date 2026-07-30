@@ -4448,22 +4448,26 @@ function computeSessionVolume(sessionExercises) {
 // not sourced from any single authority, just representative real-world
 // ballpark figures chosen to give a legible spread from very light to very
 // heavy sessions.
+// emoji: the closest real-world match available in standard Unicode — a
+// few items (refrigerator, washing machine, vending machine, grand piano,
+// shipping container) have no dedicated emoji, so these fall back to the
+// nearest visually/conceptually associated one rather than a generic icon.
 const VOLUME_COMPARISONS = [
-  { id: 'canoe', weightKg: 30, singular: 'canoe', plural: 'canoes' },
-  { id: 'washing-machine', weightKg: 70, singular: 'washing machine', plural: 'washing machines' },
-  { id: 'refrigerator', weightKg: 100, singular: 'refrigerator', plural: 'refrigerators' },
-  { id: 'motorcycle', weightKg: 200, singular: 'motorcycle', plural: 'motorcycles' },
-  { id: 'young-elephant', weightKg: 200, singular: 'young elephant', plural: 'young elephants' },
-  { id: 'black-bear', weightKg: 135, singular: 'black bear', plural: 'black bears' },
-  { id: 'vending-machine', weightKg: 400, singular: 'vending machine', plural: 'vending machines' },
-  { id: 'grand-piano', weightKg: 450, singular: 'grand piano', plural: 'grand pianos' },
-  { id: 'giraffe', weightKg: 800, singular: 'giraffe', plural: 'giraffes' },
-  { id: 'bison', weightKg: 900, singular: 'bison', plural: 'bison' },
-  { id: 'compact-car', weightKg: 1300, singular: 'compact car', plural: 'compact cars' },
-  { id: 'hippo', weightKg: 1500, singular: 'hippo', plural: 'hippos' },
-  { id: 'helicopter', weightKg: 1800, singular: 'helicopter', plural: 'helicopters' },
-  { id: 'rhino', weightKg: 2300, singular: 'rhino', plural: 'rhinos' },
-  { id: 'shipping-container', weightKg: 2200, singular: 'empty shipping container', plural: 'empty shipping containers' }
+  { id: 'canoe', weightKg: 30, singular: 'canoe', plural: 'canoes', emoji: '🛶' },
+  { id: 'washing-machine', weightKg: 70, singular: 'washing machine', plural: 'washing machines', emoji: '🧺' },
+  { id: 'refrigerator', weightKg: 100, singular: 'refrigerator', plural: 'refrigerators', emoji: '🧊' },
+  { id: 'motorcycle', weightKg: 200, singular: 'motorcycle', plural: 'motorcycles', emoji: '🏍️' },
+  { id: 'young-elephant', weightKg: 200, singular: 'young elephant', plural: 'young elephants', emoji: '🐘' },
+  { id: 'black-bear', weightKg: 135, singular: 'black bear', plural: 'black bears', emoji: '🐻' },
+  { id: 'vending-machine', weightKg: 400, singular: 'vending machine', plural: 'vending machines', emoji: '🥤' },
+  { id: 'grand-piano', weightKg: 450, singular: 'grand piano', plural: 'grand pianos', emoji: '🎹' },
+  { id: 'giraffe', weightKg: 800, singular: 'giraffe', plural: 'giraffes', emoji: '🦒' },
+  { id: 'bison', weightKg: 900, singular: 'bison', plural: 'bison', emoji: '🦬' },
+  { id: 'compact-car', weightKg: 1300, singular: 'compact car', plural: 'compact cars', emoji: '🚗' },
+  { id: 'hippo', weightKg: 1500, singular: 'hippo', plural: 'hippos', emoji: '🦛' },
+  { id: 'helicopter', weightKg: 1800, singular: 'helicopter', plural: 'helicopters', emoji: '🚁' },
+  { id: 'rhino', weightKg: 2300, singular: 'rhino', plural: 'rhinos', emoji: '🦏' },
+  { id: 'shipping-container', weightKg: 2200, singular: 'empty shipping container', plural: 'empty shipping containers', emoji: '📦' }
 ];
 
 // Scores every comparison object and returns the single best-fitting one —
@@ -10783,7 +10787,7 @@ function renderFinishComparison(volume) {
   const row = document.getElementById('finish-comparison-row');
   if (!comp) { row.style.display = 'none'; return; }
   row.style.display = '';
-  document.getElementById('finish-comparison-text').textContent = `${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
+  document.getElementById('finish-comparison-text').textContent = `${comp.emoji} ${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
 }
 
 function renderFinishHighlight(sessionExercises) {
@@ -11728,7 +11732,7 @@ function renderWorkoutSummaryPage(date, sessionId) {
     document.getElementById('wsum-volume-value').textContent = `${volume.toLocaleString()} ${unit}`;
     const comp = selectVolumeComparison(volume, null, sessionId);
     const row = document.getElementById('wsum-comparison-row');
-    if (comp) { row.style.display = ''; document.getElementById('wsum-comparison-text').textContent = `${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`; }
+    if (comp) { row.style.display = ''; document.getElementById('wsum-comparison-text').textContent = `${comp.emoji} ${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`; }
     else row.style.display = 'none';
   } else {
     highlightSection.style.display = 'none';
