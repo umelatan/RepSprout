@@ -10686,9 +10686,12 @@ function plantProgressBlocksHtml({ idPrefix, totalLeaves, exerciseLeaves, growth
     const shown = exerciseLeaves.slice(0, maxShown);
     const remaining = exerciseLeaves.length - shown.length;
     const rowsHtml = shown.map(item => `
-      <button type="button" class="${idPrefix}-plant-row w-full text-left py-1.5" data-exercise-id="${item.exerciseId}">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(item.name)}</p>
-        <p class="text-xs text-brand-500 font-semibold">+${item.leafCount} new ${item.leafCount !== 1 ? 'leaves' : 'leaf'}</p>
+      <button type="button" class="${idPrefix}-plant-row w-full flex items-center gap-3 text-left py-1.5" data-exercise-id="${item.exerciseId}">
+        <span class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-base leading-none" aria-hidden="true">${DP_STAGE_EMOJI[item.stageIdx]}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(item.name)}</p>
+          <p class="text-xs text-brand-500 font-semibold">+${item.leafCount} new ${item.leafCount !== 1 ? 'leaves' : 'leaf'}</p>
+        </div>
       </button>`).join('');
     const moreHtml = remaining > 0 ? `<p class="text-xs text-slate-400 pt-1">+${remaining} more...</p>` : '';
     blocks.push(`
