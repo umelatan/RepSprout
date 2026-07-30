@@ -1107,6 +1107,75 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800" id="exd-footer" style="display:none"></div>
 </div>
 
+<!-- Workout Summary — revisiting a past, already-saved workout from the
+     History journal (see openWorkoutSummaryPage()). Deliberately NOT a
+     re-skin of the post-workout finish-modal: this is a calm journal entry
+     you're reopening, not a celebration you're replaying — no "Great
+     work!", no confetti, no completion animations, no Finish button. Same
+     full-screen-overlay shell as exercise-detail-view (.rs-view gives it
+     the app's one standard page-entrance fade+slide, nothing more elaborate).
+     Reuses the finish screen's own Session overview / Today's highlight /
+     Plant progress / Exercise summary components wherever the underlying
+     data supports it — see renderWorkoutSummaryPage(). -->
+<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-slate-50 dark:bg-slate-950 flex flex-col">
+  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center justify-between flex-shrink-0">
+    <button id="wsum-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
+    <button id="wsum-more-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More actions"><span class="ms text-xl" aria-hidden="true">more_horiz</span></button>
+  </header>
+  <main class="flex-1 overflow-y-auto">
+    <div class="max-w-lg mx-auto p-4 space-y-5">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-xl text-slate-400">fitness_center</span></div>
+        <div class="min-w-0 flex-1">
+          <h1 id="wsum-name" class="font-display font-extrabold text-2xl text-slate-800 dark:text-white truncate"></h1>
+          <p id="wsum-datetime" class="text-sm text-slate-400"></p>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <div class="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 text-center">
+          <div><span class="ms text-lg text-brand-500" aria-hidden="true">timer</span><p id="wsum-ov-duration" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p><p class="text-[11px] text-slate-400">Duration</p></div>
+          <div><span class="ms text-lg text-lavender-500" aria-hidden="true">fitness_center</span><p id="wsum-ov-sets" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p><p class="text-[11px] text-slate-400">Working sets</p></div>
+          <div><span class="ms text-lg text-orange-500" aria-hidden="true">trending_up</span><p id="wsum-ov-progressions" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p><p class="text-[11px] text-slate-400">Progressions</p></div>
+        </div>
+      </div>
+
+      <div id="wsum-highlight-section">
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-lavender-500" aria-hidden="true">auto_awesome</span>Today's highlight</p>
+        <div class="card p-4">
+          <p class="text-xs text-slate-400">You lifted</p>
+          <p id="wsum-volume-value" class="font-display font-extrabold text-3xl text-brand-500"></p>
+          <div id="wsum-comparison-row" class="mt-3">
+            <p class="text-xs text-slate-400">Equivalent to lifting</p>
+            <p id="wsum-comparison-text" class="text-sm font-bold text-slate-700 dark:text-slate-200"></p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">eco</span>Plant progress</p>
+        <div id="wsum-plant-progress" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
+      </div>
+
+      <div>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-slate-400" aria-hidden="true">description</span>Exercises</p>
+        <p id="wsum-exercise-summary-subtitle" class="text-xs text-slate-400 -mt-1 mb-1.5"></p>
+        <div id="wsum-exercise-summary" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
+      </div>
+
+      <div id="wsum-calories-section">
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-orange-500" aria-hidden="true">local_fire_department</span>Calories</p>
+        <div class="card p-3.5"><p id="wsum-calories-text" class="text-sm text-slate-600 dark:text-slate-300"></p></div>
+      </div>
+
+      <div id="wsum-notes-section">
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-amber-500" aria-hidden="true">description</span>Notes</p>
+        <div class="card p-3.5"><p id="wsum-notes-text" class="text-sm text-slate-600 dark:text-slate-300"></p></div>
+      </div>
+    </div>
+  </main>
+</div>
+
 <!-- "How it works" — one static explanation shared by every exercise, opened
      from the Exercise Progress Detail page's plant hero. -->
 <div id="dp-how-it-works-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -1786,6 +1855,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <button id="ha-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
     <button id="ha-edit-btn" type="button" style="display:none" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">edit</span>Edit entry</button>
+    <button id="ha-share-btn" type="button" style="display:none" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">ios_share</span>Share</button>
     <button id="ha-delete-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Delete entry</button>
   </div>
 </div>
@@ -4406,7 +4476,12 @@ const VOLUME_COMPARISONS = [
 // land on a different comparison — "surprise across workouts," per the
 // task, rather than every session with a given volume always showing the
 // identical object.
-function selectVolumeComparison(volumeKg, excludeId = null) {
+// seed: optional. Omitted (live finish screen) uses genuine Math.random()
+// so the same volume can land on a different comparison across workouts.
+// The historical Workout Summary page passes its sessionId here instead —
+// a past workout's comparison must stay the SAME every time that page is
+// reopened, not re-roll on every view.
+function selectVolumeComparison(volumeKg, excludeId = null, seed = null) {
   if (!volumeKg || volumeKg <= 0) return null;
   const scored = [];
   VOLUME_COMPARISONS.forEach(obj => {
@@ -4434,8 +4509,18 @@ function selectVolumeComparison(volumeKg, excludeId = null) {
   if (!scored.length) return null;
   const bestScore = Math.min(...scored.map(s => s.score));
   const contenders = scored.filter(s => s.score <= bestScore + 0.15);
-  const pick = contenders[Math.floor(Math.random() * contenders.length)];
+  const rand = seed != null ? seededRandom01(seed) : Math.random();
+  const pick = contenders[Math.floor(rand * contenders.length)];
   return { ...pick.obj, count: pick.rounded };
+}
+
+// Deterministic 0..1 pseudo-random derived from a string seed — exists only
+// so selectVolumeComparison() can give a past workout a stable, repeatable
+// pick (see its seed param above) without a second, parallel "random" system.
+function seededRandom01(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return (Math.abs(h) % 1000) / 1000;
 }
 
 // New Double Progression weight-increase events this session would create,
@@ -4462,6 +4547,82 @@ function computeSessionPlantProgress(sessionExercises) {
     }
   });
   return { totalLeaves, exerciseLeaves };
+}
+
+// Historical counterpart to computeSessionPlantProgress() above — for an
+// already-saved session (Workout Summary page), not a not-yet-saved
+// "pending" one. calculateExerciseDoubleProgression() with no pendingSession
+// only ever replays real, already-saved sessions, so the target session's
+// own leaf events are already in dp.events tagged with its real
+// workoutSessionId — this just filters to that id instead of 'pending'.
+// Same pattern already used by histSessionHighlight()/histMonthlyMetrics().
+function computeHistoricalSessionPlantProgress(sessionId, sessionExercises) {
+  const exerciseLeaves = [];
+  let totalLeaves = 0;
+  (sessionExercises || []).forEach(ex => {
+    if (ex.skipped || !ex.exerciseId || !ex.progressionEnabled || !exercises[ex.exerciseId]) return;
+    if (!getCompletedWorkingSets(ex).length) return;
+    const dp = calculateExerciseDoubleProgression(ex.exerciseId);
+    const leafCount = dp.events.filter(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased').length;
+    if (leafCount > 0) {
+      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+      exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
+      totalLeaves += leafCount;
+    }
+  });
+  return { totalLeaves, exerciseLeaves };
+}
+
+// Reconstructs the Companion's growth-percent BEFORE and AFTER one specific
+// already-saved session, by replaying the same chronological accumulation
+// recalculatePlantGrowth() uses for the live total (kept in sync with it —
+// same GROWTH_AWARD values, same companion-journey scoping — but stopping
+// to read the running total right around the target session instead of only
+// returning the final number). Never reads today's live growthPoints; a past
+// workout's own growth contribution shouldn't change because of what
+// happened since. Returns null if the session falls outside the active
+// companion's journey (before its startedAt, or somehow after today) —
+// callers already treat growthDelta<=0 as "nothing to show," matching the
+// live finish screen's own companion-journey scoping limitation.
+function computeHistoricalGrowthDelta(targetDate, targetSessionId) {
+  const companionStartedAt = userProfile.companion?.startedAt || '';
+  const today = todayStr();
+  if (targetDate > today || targetDate < companionStartedAt) return { beforePoints: 0, afterPoints: 0 };
+
+  const allSessions = [];
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    if (date > today || date < companionStartedAt) return;
+    Object.entries(daySessions || {}).forEach(([id, s]) => { if (s) allSessions.push({ date, id, session: s }); });
+  });
+  allSessions.sort((a, b) => a.date === b.date
+    ? (a.session.completedAt || 0) - (b.session.completedAt || 0)
+    : a.date.localeCompare(b.date));
+
+  let running = 0, beforePoints = 0, afterPoints = 0, found = false;
+  for (const { date, id, session: s } of allSessions) {
+    let progressValue = 0;
+    if (s.sessionType === 'recovery') progressValue = RECOVERY_DAY_GROWTH;
+    else if (s.sessionType === 'other') progressValue = OTHER_ACTIVITY_GROWTH;
+    else {
+      let anyWorkingSetCompleted = false;
+      for (const ex of (s.exercises || [])) {
+        if (ex.skipped) continue;
+        const completedWorkingSets = workingSetsFor(ex).filter(st => st.completed).length;
+        if (completedWorkingSets > 0) { anyWorkingSetCompleted = true; progressValue += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise; }
+      }
+      if (anyWorkingSetCompleted) progressValue += GROWTH_AWARD.completedWorkout;
+    }
+    progressValue = round1(progressValue);
+    if (date === targetDate && id === targetSessionId) {
+      beforePoints = running;
+      afterPoints = round1(running + progressValue);
+      found = true;
+      break;
+    }
+    running = round1(running + progressValue);
+  }
+  if (!found) { beforePoints = running; afterPoints = running; }
+  return { beforePoints, afterPoints };
 }
 
 // ── OpenAI ────────────────────────────────────────────────────────────────
@@ -4544,7 +4705,7 @@ function subscribeData() {
     // exercise card and the open detail page — both must recompute here too,
     // not just Dashboard/History/Calendar, or editing/deleting a past
     // workout wouldn't recalculate leaves/stage until the next full reload.
-    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList(); renderExerciseLibrary(); refreshExerciseDetailIfOpen();
+    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList(); renderExerciseLibrary(); refreshExerciseDetailIfOpen(); refreshWorkoutSummaryIfOpen();
   }, e => console.error(e));
   dataRefs.push(rSessions);
 
@@ -10401,22 +10562,97 @@ function finishExerciseSummaryRowHtml(ex, idx) {
     </div>`;
 }
 
-// "Plant progress" — real leaf-earning events this session would create
-// (computeSessionPlantProgress(), the same pendingSession preview as
-// above) plus the Companion's own growth-percent delta, previewed the same
-// side-effect-free way computeWorkoutGrowth() itself already documents.
-// Quiet fallback message when neither happened; never fabricated.
-function renderFinishPlantProgress(sessionExercises) {
-  const el = document.getElementById('finish-plant-progress');
-  const { totalLeaves, exerciseLeaves } = computeSessionPlantProgress(sessionExercises);
+// Historical counterpart to finishExerciseSummaryRowHtml() above, for the
+// Workout Summary page. Same shape and same shared pieces
+// (getCompletedWorkingSets, renderDoubleProgressionLeaves, evaluateSetStatus,
+// the .exg-mg-body accordion) but reads one already-saved session's own
+// snapshot instead of previewing "as if logged today": the target reps used
+// for Best set/each set's cue are this session's OWN minReps/maxReps (a
+// historical session snapshots its own target at save time — see
+// calculateExerciseDoubleProgression's note on why), and "New leaf" comes
+// from the real event log filtered to this session's id, never a live
+// "as of today" recomputation.
+function histExerciseSummaryRowHtml(ex, idx, sessionId) {
+  const completedSets = getCompletedWorkingSets(ex);
+  const workingCount = completedSets.length;
+  const unit = ex.unit || 'kg';
+  const canConfigure = ex.exerciseId && ex.progressionEnabled && exercises[ex.exerciseId];
+  const targetMin = ex.minReps != null ? ex.minReps : null;
+  const targetMax = ex.maxReps != null ? ex.maxReps : null;
 
-  const preview = computeWorkoutGrowth(sessionExercises);
-  const beforeState = currentGrowthState();
-  const previewPoints = round1((userProfile.growthPoints || 0) + preview.participationGrowth);
-  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: previewPoints });
-  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
+  const maturedPositions = new Set();
+  if (canConfigure) {
+    const dp = calculateExerciseDoubleProgression(ex.exerciseId);
+    dp.events.forEach(e => { if (e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased') maturedPositions.add(e.setPosition); });
+  }
 
+  let bestSetText = '';
+  if (completedSets.length) {
+    let bestIdx = 0;
+    completedSets.forEach((s, i) => { if ((s.reps || 0) > (completedSets[bestIdx].reps || 0)) bestIdx = i; });
+    const bestReps = completedSets[bestIdx].reps || 0;
+    bestSetText = targetMax != null ? `Best set: ${bestReps} / ${targetMax} reps` : `Best set: ${bestReps} rep${bestReps !== 1 ? 's' : ''}`;
+  }
+
+  // The leaf/readiness indicators are a Double Progression concept — only
+  // built when this exercise actually had progression configured that
+  // session, matching finishExerciseSummaryRowHtml's own
+  // "result && result.configured" gate. Without it, an exercise with
+  // progression disabled would still show a "ready to increase" leaf purely
+  // from raw rep math, implying a mechanic that was never actually active.
+  const positions = canConfigure ? completedSets.map((s, i) => {
+    const matured = maturedPositions.has(i);
+    const status = matured ? DP_STATUS.INCREASED_WEIGHT : evaluateSetStatus({ set: s, minReps: targetMin, maxReps: targetMax }).status;
+    return { setPosition: i, currentWeight: s.weight || 0, currentReps: s.reps || 0, matured, status, targetMinReps: targetMin, targetMaxReps: targetMax };
+  }) : [];
+  const leavesHtml = positions.length ? `<div class="flex items-center gap-0.5 flex-shrink-0">${renderDoubleProgressionLeaves(positions, unit, 'text-base')}</div>` : '';
+
+  const setRows = completedSets.map((s, i) => {
+    const matured = maturedPositions.has(i);
+    let cue = '—', cueClass = 'text-slate-400';
+    if (matured) { cue = 'New leaf'; cueClass = 'text-brand-500 font-semibold'; }
+    else if (targetMax != null) {
+      const remaining = Math.max(0, targetMax - (s.reps || 0));
+      cue = remaining ? `${remaining} rep${remaining !== 1 ? 's' : ''} to go` : 'At target';
+    }
+    return `
+      <div class="flex items-center justify-between gap-2 py-1.5 ${i > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''}">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 w-11 flex-shrink-0">Set ${i + 1}</span>
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">${s.weight || 0}${unit} × ${s.reps || 0}</span>
+        <span class="text-xs ${cueClass} flex-shrink-0">${esc(cue)}</span>
+      </div>`;
+  }).join('');
+
+  const key = `hist-ex-${idx}`;
+  return `
+    <div>
+      <button type="button" class="hist-ex-toggle w-full flex items-center gap-3 p-3 text-left" data-key="${key}" aria-expanded="false" aria-controls="${key}-body">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${workingCount} working set${workingCount !== 1 ? 's' : ''}</p>
+          ${bestSetText ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${esc(bestSetText)}</p>` : ''}
+        </div>
+        ${leavesHtml}
+        <span class="ms exg-mg-chevron text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>
+      <div id="${key}-body" class="exg-mg-body collapsed" data-hist-ex-body="${key}">
+        <div><div class="px-3 pb-3">${setRows}</div></div>
+      </div>
+    </div>`;
+}
+
+// Shared "Plant progress" HTML — the Companion hero block (name, this
+// workout's growth gain, progress bar) plus the exercise-plants one-line
+// summary with its "View all" expandable list. Used by both the live finish
+// screen (leaf/growth PREVIEW for a not-yet-saved session, animated bar,
+// unfurl-in leaf icons) and the historical Workout Summary page (real,
+// already-happened numbers for a saved session, no animation) — idPrefix
+// keeps each caller's element ids unique, animateIn controls whether the
+// leaf icons play their entrance animation (skipped on the historical page
+// per "don't replay the completion animation").
+function plantProgressBlocksHtml({ idPrefix, totalLeaves, exerciseLeaves, growthDelta, beforeState, afterState, animateIn }) {
   const blocks = [];
+  const leafInClass = animateIn ? 'finish-leaf-in ' : '';
 
   // The Companion is the hero of this section — its name, this workout's
   // growth gain, and the progress bar, kept visually apart from the
@@ -10430,7 +10666,7 @@ function renderFinishPlantProgress(sessionExercises) {
           <p class="font-display font-bold text-base text-slate-800 dark:text-white">${esc(plant.name)}</p>
           <p class="text-xs text-brand-500 font-semibold mb-1.5">+${growthDelta}% growth</p>
           <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-label="${esc(plant.name)} growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
-            <div id="finish-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${beforeState.overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
+            <div id="${idPrefix}-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${(animateIn ? beforeState : afterState).overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
           </div>
         </div>
       </div>`);
@@ -10446,37 +10682,62 @@ function renderFinishPlantProgress(sessionExercises) {
     const shown = exerciseLeaves.slice(0, maxShown);
     const remaining = exerciseLeaves.length - shown.length;
     const rowsHtml = shown.map(item => `
-      <button type="button" class="finish-plant-row w-full text-left py-1.5" data-exercise-id="${item.exerciseId}">
+      <button type="button" class="${idPrefix}-plant-row w-full text-left py-1.5" data-exercise-id="${item.exerciseId}">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(item.name)}</p>
         <p class="text-xs text-brand-500 font-semibold">+${item.leafCount} new ${item.leafCount !== 1 ? 'leaves' : 'leaf'}</p>
       </button>`).join('');
     const moreHtml = remaining > 0 ? `<p class="text-xs text-slate-400 pt-1">+${remaining} more...</p>` : '';
     blocks.push(`
       <div>
-        <button type="button" id="finish-leaves-toggle" class="w-full flex items-center gap-3 p-3 text-left" aria-expanded="false" aria-controls="finish-leaves-body">
-          <span class="finish-leaf-in w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
+        <button type="button" id="${idPrefix}-leaves-toggle" class="w-full flex items-center gap-3 p-3 text-left" aria-expanded="false" aria-controls="${idPrefix}-leaves-body">
+          <span class="${leafInClass}w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
           <p class="text-sm font-semibold text-slate-800 dark:text-white flex-1 min-w-0">${exerciseLeaves.length} exercise plant${exerciseLeaves.length !== 1 ? 's' : ''} earned new leaves</p>
           <span class="text-xs font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0">View all<span class="ms exg-mg-chevron text-base" aria-hidden="true">chevron_right</span></span>
         </button>
-        <div id="finish-leaves-body" class="exg-mg-body collapsed">
+        <div id="${idPrefix}-leaves-body" class="exg-mg-body collapsed">
           <div><div class="px-3 pb-3 divide-y divide-slate-100 dark:divide-slate-800">${rowsHtml}</div>${moreHtml ? `<div class="px-3 pb-2">${moreHtml}</div>` : ''}</div>
         </div>
       </div>`);
   }
 
-  el.innerHTML = blocks.length ? blocks.join('') : '<p class="text-sm text-slate-400 text-center py-4">No new leaves today, but your plants are still growing.</p>';
+  return blocks.length ? blocks.join('') : '<p class="text-sm text-slate-400 text-center py-4">No new leaves today, but your plants are still growing.</p>';
+}
 
-  const leavesToggle = document.getElementById('finish-leaves-toggle');
-  if (leavesToggle) {
-    leavesToggle.addEventListener('click', () => {
-      const body = document.getElementById('finish-leaves-body');
+// Wires the "View all" toggle + per-exercise row taps for one
+// plantProgressBlocksHtml() render — shared by both callers since the
+// interaction is identical; only what happens before the tap (closing the
+// finish modal vs. nothing, since the Workout Summary page IS a page) differs.
+function wirePlantProgressBlocks(idPrefix, onRowTap) {
+  const toggle = document.getElementById(`${idPrefix}-leaves-toggle`);
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const body = document.getElementById(`${idPrefix}-leaves-body`);
       const open = body.classList.contains('collapsed');
       body.classList.toggle('collapsed', !open);
-      leavesToggle.setAttribute('aria-expanded', String(open));
-      leavesToggle.querySelector('.exg-mg-chevron').classList.toggle('expanded', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.querySelector('.exg-mg-chevron').classList.toggle('expanded', open);
     });
   }
-  el.querySelectorAll('.finish-plant-row').forEach(b => b.addEventListener('click', () => { rsHideModal('finish-modal'); openExerciseDetail(b.dataset.exerciseId); }));
+  document.querySelectorAll(`.${idPrefix}-plant-row`).forEach(b => b.addEventListener('click', () => onRowTap(b.dataset.exerciseId)));
+}
+
+// "Plant progress" — real leaf-earning events this session would create
+// (computeSessionPlantProgress(), the same pendingSession preview as
+// above) plus the Companion's own growth-percent delta, previewed the same
+// side-effect-free way computeWorkoutGrowth() itself already documents.
+// Quiet fallback message when neither happened; never fabricated.
+function renderFinishPlantProgress(sessionExercises) {
+  const el = document.getElementById('finish-plant-progress');
+  const { totalLeaves, exerciseLeaves } = computeSessionPlantProgress(sessionExercises);
+
+  const preview = computeWorkoutGrowth(sessionExercises);
+  const beforeState = currentGrowthState();
+  const previewPoints = round1((userProfile.growthPoints || 0) + preview.participationGrowth);
+  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: previewPoints });
+  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
+
+  el.innerHTML = plantProgressBlocksHtml({ idPrefix: 'finish', totalLeaves, exerciseLeaves, growthDelta, beforeState, afterState, animateIn: true });
+  wirePlantProgressBlocks('finish', exerciseId => { rsHideModal('finish-modal'); openExerciseDetail(exerciseId); });
 
   // Fill the bar from its BEFORE state (set above) to the real AFTER state
   // once the Plant Progress section itself has faded in (finish-reveal-4,
@@ -10490,6 +10751,25 @@ function renderFinishPlantProgress(sessionExercises) {
     if (reducedMotion) bar.style.width = `${bar.dataset.target}%`;
     else setTimeout(() => { bar.style.width = `${bar.dataset.target}%`; }, 1000);
   }
+}
+
+// Historical counterpart for the Workout Summary page — real before/after
+// growth (computeHistoricalGrowthDelta()) and real leaf events
+// (computeHistoricalSessionPlantProgress()) for one already-saved session,
+// rendered at its final state immediately (no bar animation, no leaf
+// unfurl-in) since this page revisits a past workout rather than
+// celebrating one just finished.
+function renderHistPlantProgress(date, sessionId, sessionExercises) {
+  const el = document.getElementById('wsum-plant-progress');
+  const { totalLeaves, exerciseLeaves } = computeHistoricalSessionPlantProgress(sessionId, sessionExercises);
+  const { beforePoints, afterPoints } = computeHistoricalGrowthDelta(date, sessionId);
+  const beforeState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: beforePoints });
+  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: afterPoints });
+  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
+
+  el.innerHTML = plantProgressBlocksHtml({ idPrefix: 'wsum', totalLeaves, exerciseLeaves, growthDelta, beforeState, afterState, animateIn: false });
+  wirePlantProgressBlocks('wsum', exerciseId => openExerciseDetail(exerciseId));
+  return totalLeaves;
 }
 
 // "Today's highlight" — total lifted volume + one fun comparison (see
@@ -10871,6 +11151,18 @@ function histDateLabel(date) {
   if (diffDays === 1) return 'Yesterday';
   if (diffDays > 1 && diffDays <= 6) return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// Full "Wed, 29 Jul 2026" date for the Workout Summary page header — always
+// the exact date, never a relative label like histDateLabel() above (a
+// journal entry you've opened should read its own date, not "3 days ago").
+// Built from fixed abbreviation arrays instead of toLocaleDateString() so
+// the day-month-year order matches exactly regardless of browser locale.
+const WSUM_WEEKDAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WSUM_MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function wsumFullDateLabel(date) {
+  const d = new Date(date + 'T12:00:00');
+  return `${WSUM_WEEKDAY_ABBR[d.getDay()]}, ${d.getDate()} ${WSUM_MONTH_ABBR[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 // "2 days ago" / "1 week ago" — used only by Latest Milestones, whose rows
@@ -11281,10 +11573,20 @@ function renderHistory() {
   }
   list.innerHTML = html;
 
-  list.querySelectorAll('.hist-journal-row').forEach(b => b.addEventListener('click', () => openHistActionsSheet(b.dataset.date, b.dataset.id)));
+  // Workout entries open the dedicated Workout Summary page (a journal
+  // entry to revisit); Activity/Recovery entries have no such page, so they
+  // keep going straight to the plain actions sheet as before.
+  list.querySelectorAll('.hist-journal-row').forEach(b => b.addEventListener('click', () => {
+    const { date, id } = b.dataset;
+    const s = sessions[date]?.[id];
+    if (s && histSessionKind(s) === 'workout') openWorkoutSummaryPage(date, id);
+    else openHistActionsSheet(date, id);
+  }));
 }
 
-// ── Workout History overflow menu (Edit/Delete) ─────────────────────────────
+// ── Workout History overflow menu (Edit/Share/Delete) ───────────────────────
+// Also reused, unchanged, as the Workout Summary page's own "⋯" menu (see
+// openWorkoutSummaryPage()) — one shared sheet rather than a second copy.
 let histActionsCtx = null;
 function openHistActionsSheet(date, sessionId) {
   const s = sessions[date]?.[sessionId];
@@ -11293,6 +11595,7 @@ function openHistActionsSheet(date, sessionId) {
   document.getElementById('ha-title').textContent = sessionLabel(s);
   const editable = s.sessionType === 'group' || s.sessionType === 'quick' || Array.isArray(s.exercises);
   document.getElementById('ha-edit-btn').style.display = editable ? '' : 'none';
+  document.getElementById('ha-share-btn').style.display = editable ? '' : 'none';
   document.getElementById('hist-actions-modal').style.display = '';
 }
 document.getElementById('ha-close').addEventListener('click', () => rsHideModal('hist-actions-modal'));
@@ -11301,11 +11604,38 @@ document.getElementById('ha-edit-btn').addEventListener('click', () => {
   rsHideModal('hist-actions-modal');
   if (ctx) openEditSessionModal(ctx.date, ctx.sessionId);
 });
+document.getElementById('ha-share-btn').addEventListener('click', () => {
+  const ctx = histActionsCtx;
+  rsHideModal('hist-actions-modal');
+  if (ctx) shareWorkoutSummary(ctx.date, ctx.sessionId);
+});
 document.getElementById('ha-delete-btn').addEventListener('click', () => {
   const ctx = histActionsCtx;
   rsHideModal('hist-actions-modal');
   if (ctx) deleteHistorySession(ctx.date, ctx.sessionId);
 });
+
+// Plain-text share (native share sheet where available, clipboard
+// otherwise) — deliberately lightweight, matching the rest of this app's
+// no-backend-service footprint; no image generation or social-specific
+// formatting.
+async function shareWorkoutSummary(date, sessionId) {
+  const s = sessions[date]?.[sessionId];
+  if (!s) return;
+  const workingSets = (s.exercises || []).reduce((sum, ex) => sum + getCompletedWorkingSets(ex).length, 0);
+  const { totalLeaves } = computeHistoricalSessionPlantProgress(sessionId, s.exercises || []);
+  const lines = [
+    `${sessionLabel(s)} — ${wsumFullDateLabel(date)}`,
+    `${s.duration || 0} min • ${workingSets} working set${workingSets !== 1 ? 's' : ''}${totalLeaves ? ` • ${totalLeaves} progression${totalLeaves !== 1 ? 's' : ''}` : ''}`
+  ];
+  const text = lines.join('\n');
+  if (navigator.share) {
+    try { await navigator.share({ title: sessionLabel(s), text }); } catch (e) { /* user cancelled the native share sheet */ }
+  } else if (navigator.clipboard) {
+    await navigator.clipboard.writeText(text);
+    showToast('Copied workout summary to clipboard');
+  }
+}
 
 // Same remove-then-recalculate-then-undo shape as the Calendar day sheet's
 // own delete action (.cds-del-session) — recalculating from the remaining
@@ -11318,6 +11648,9 @@ async function deleteHistorySession(date, sessionId) {
     await remove(ref(db, `sessions/${uid()}/${date}/${sessionId}`));
     if (sessions[date]) delete sessions[date][sessionId];
     await recalculateAndPersistPlantGrowth();
+    // Can't keep showing a Workout Summary page for a session that no
+    // longer exists — back out to the History list it came from.
+    if (workoutSummaryCtx && workoutSummaryCtx.date === date && workoutSummaryCtx.sessionId === sessionId) closeWorkoutSummaryPage();
     renderHistory(); renderDashboard();
     showToast('Activity deleted', snapshot ? async () => {
       try {
@@ -11336,6 +11669,108 @@ async function deleteHistorySession(date, sessionId) {
     alert('Could not delete this activity. Please try again.');
   }
 }
+
+// ── Workout Summary page — revisit a past, already-saved workout ───────────
+// Reached only from a workout-type History journal row (see the
+// .hist-journal-row wiring above); Activity/Recovery entries have no
+// equivalent page and keep opening the plain actions sheet instead.
+// Everything here reads sessions[date][sessionId] fresh at render time —
+// never a cached snapshot — so refreshWorkoutSummaryIfOpen() (hooked into
+// the sessions realtime listener and the edit-session-modal save path) can
+// just re-run the same render after any change, exactly like
+// refreshExerciseDetailIfOpen() does for the Exercise Detail page.
+let workoutSummaryCtx = null; // { date, sessionId } — only set while the page is open
+
+function closeWorkoutSummaryPage() {
+  workoutSummaryCtx = null;
+  hide('workout-summary-view');
+}
+
+function openWorkoutSummaryPage(date, sessionId) {
+  const s = sessions[date]?.[sessionId];
+  if (!s) return;
+  workoutSummaryCtx = { date, sessionId };
+  renderWorkoutSummaryPage(date, sessionId);
+  show('workout-summary-view');
+}
+
+function refreshWorkoutSummaryIfOpen() {
+  if (!workoutSummaryCtx) return;
+  const { date, sessionId } = workoutSummaryCtx;
+  if (!sessions[date]?.[sessionId]) { closeWorkoutSummaryPage(); return; }
+  renderWorkoutSummaryPage(date, sessionId);
+}
+
+function renderWorkoutSummaryPage(date, sessionId) {
+  const s = sessions[date]?.[sessionId];
+  if (!s) return;
+  const sessionExercises = Array.isArray(s.exercises) ? s.exercises : [];
+
+  document.getElementById('wsum-name').textContent = sessionLabel(s);
+  const timeStr = histSessionTime(s);
+  document.getElementById('wsum-datetime').textContent = timeStr ? `${wsumFullDateLabel(date)} • ${timeStr}` : wsumFullDateLabel(date);
+
+  const eligibleExercises = sessionExercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length);
+  const totalSets = eligibleExercises.reduce((sum, ex) => sum + getCompletedWorkingSets(ex).length, 0);
+  const { totalLeaves } = computeHistoricalSessionPlantProgress(sessionId, sessionExercises);
+  document.getElementById('wsum-ov-duration').textContent = `${s.duration || 0} min`;
+  document.getElementById('wsum-ov-sets').textContent = totalSets;
+  document.getElementById('wsum-ov-progressions').textContent = totalLeaves;
+
+  // Today's Highlight — reused as-is (computeSessionVolume() doesn't care
+  // whether its input is a live or historical exercise array), except the
+  // comparison pick is seeded by sessionId so reopening this same page
+  // always shows the same comparison instead of re-rolling on every view.
+  const { volume, unit } = computeSessionVolume(sessionExercises);
+  const highlightSection = document.getElementById('wsum-highlight-section');
+  if (volume > 0) {
+    highlightSection.style.display = '';
+    document.getElementById('wsum-volume-value').textContent = `${volume.toLocaleString()} ${unit}`;
+    const comp = selectVolumeComparison(volume, null, sessionId);
+    const row = document.getElementById('wsum-comparison-row');
+    if (comp) { row.style.display = ''; document.getElementById('wsum-comparison-text').textContent = `${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`; }
+    else row.style.display = 'none';
+  } else {
+    highlightSection.style.display = 'none';
+  }
+
+  renderHistPlantProgress(date, sessionId, sessionExercises);
+
+  document.getElementById('wsum-exercise-summary-subtitle').textContent = `${eligibleExercises.length} exercise${eligibleExercises.length !== 1 ? 's' : ''} • ${totalLeaves} progression${totalLeaves !== 1 ? 's' : ''}`;
+  const exBox = document.getElementById('wsum-exercise-summary');
+  exBox.innerHTML = eligibleExercises.map((ex, i) => histExerciseSummaryRowHtml(ex, i, sessionId)).join('');
+  exBox.querySelectorAll('.hist-ex-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      const body = document.getElementById(`${key}-body`);
+      if (!body) return;
+      const open = body.classList.contains('collapsed');
+      body.classList.toggle('collapsed', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.querySelector('.exg-mg-chevron').classList.toggle('expanded', open);
+    });
+  });
+
+  // Calories/Notes — shown only when this session actually has them,
+  // never an empty card (see task: "Hide the section if there are no
+  // notes"). No Photos section: sessions carry no photo data anywhere in
+  // this app today, so there is nothing real to show there.
+  const caloriesSection = document.getElementById('wsum-calories-section');
+  if (s.caloriesBurned) { caloriesSection.style.display = ''; document.getElementById('wsum-calories-text').textContent = `${s.caloriesBurned.toLocaleString()} kcal burned`; }
+  else caloriesSection.style.display = 'none';
+
+  const notesSection = document.getElementById('wsum-notes-section');
+  if (s.notes) { notesSection.style.display = ''; document.getElementById('wsum-notes-text').textContent = s.notes; }
+  else notesSection.style.display = 'none';
+}
+
+document.getElementById('wsum-back-btn').addEventListener('click', closeWorkoutSummaryPage);
+// Reuses the exact same Edit/Share/Delete sheet the History list's own
+// row-overflow opens — see openHistActionsSheet() — rather than a second
+// menu component.
+document.getElementById('wsum-more-btn').addEventListener('click', () => {
+  if (workoutSummaryCtx) openHistActionsSheet(workoutSummaryCtx.date, workoutSummaryCtx.sessionId);
+});
 
 // ── Calendar ────────────────────────────────────────────────────────────────
 document.getElementById('cal-prev').addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); });
@@ -12126,7 +12561,7 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
     // are all it takes to pick up any weight/rep change too.
     const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
     rsHideModal('edit-session-modal');
-    renderDashboard(); renderHistory(); renderCalendar(); renderProfile();
+    renderDashboard(); renderHistory(); renderCalendar(); renderProfile(); refreshWorkoutSummaryIfOpen();
     if (calendarSelectedDate === esmDate) openCalendarDaySheet(esmDate);
     showToast(stageChangeMessage(previousGrowth, newGrowth) || 'Workout updated');
   } catch (e) {
