@@ -10436,7 +10436,7 @@ function renderFinishPlantProgress(sessionExercises) {
     const rowsHtml = shown.map(item => `
       <button type="button" class="finish-plant-row w-full text-left py-1.5" data-exercise-id="${item.exerciseId}">
         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(item.name)}</p>
-        <p class="text-xs text-brand-500 font-semibold">+${item.leafCount} new leaf${item.leafCount !== 1 ? 's' : ''}</p>
+        <p class="text-xs text-brand-500 font-semibold">+${item.leafCount} new ${item.leafCount !== 1 ? 'leaves' : 'leaf'}</p>
       </button>`).join('');
     const moreHtml = remaining > 0 ? `<p class="text-xs text-slate-400 pt-1">+${remaining} more...</p>` : '';
     blocks.push(`
