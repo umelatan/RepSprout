@@ -10404,34 +10404,66 @@ function renderFinishPlantProgress(sessionExercises) {
   const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: previewPoints });
   const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
 
-  const rows = [];
-  if (totalLeaves > 0) {
-    rows.push(`
-      <div class="flex items-center gap-3 p-3">
-        <span class="finish-leaf-in w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
-        <div class="min-w-0 flex-1"><p class="font-display font-bold text-base text-slate-800 dark:text-white">${totalLeaves}</p><p class="text-xs text-slate-400">New leaf${totalLeaves !== 1 ? 'ves' : ''}</p></div>
-      </div>`);
-    exerciseLeaves.forEach(item => rows.push(`
-      <button type="button" class="finish-plant-row w-full flex items-center gap-3 p-3 text-left" data-exercise-id="${item.exerciseId}">
-        <span class="finish-leaf-in w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${DP_STAGE_EMOJI[item.stageIdx]}</span>
-        <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(item.name)}</p><p class="text-xs text-brand-500">Earned a new leaf</p></div>
-        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
-      </button>`));
-  }
+  const blocks = [];
+
+  // The Companion is the hero of this section — its name, this workout's
+  // growth gain, and the progress bar, kept visually apart from the
+  // exercise plants below rather than listed alongside them as one of many.
   if (growthDelta > 0) {
     const plant = PLANTS[userProfile.plant] || { emoji: '🌱', name: 'Companion' };
-    rows.push(`
-      <div class="p-3">
-        <div class="flex items-center gap-3">
-          <span class="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-lg leading-none" aria-hidden="true">${plant.emoji}</span>
-          <div class="min-w-0 flex-1"><p class="font-semibold text-sm text-slate-800 dark:text-white">${esc(plant.name)}</p><p class="text-xs text-brand-500">+${growthDelta}% growth</p></div>
-        </div>
-        <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-2" role="progressbar" aria-label="${esc(plant.name)} growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
-          <div id="finish-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${beforeState.overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
+    blocks.push(`
+      <div class="p-3 flex items-center gap-3">
+        <span class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-xl leading-none" aria-hidden="true">${plant.emoji}</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display font-bold text-base text-slate-800 dark:text-white">${esc(plant.name)}</p>
+          <p class="text-xs text-brand-500 font-semibold mb-1.5">+${growthDelta}% growth</p>
+          <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-label="${esc(plant.name)} growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
+            <div id="finish-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${beforeState.overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
+          </div>
         </div>
       </div>`);
   }
-  el.innerHTML = rows.length ? rows.join('') : '<p class="text-sm text-slate-400 text-center py-4">No new leaves today, but your plants are still growing.</p>';
+
+  // Exercise plants — a one-line summary instead of an itemized list;
+  // "View all" expands in place (same .exg-mg-body accordion the Exercise
+  // Summary section already uses) to reveal only the first few, since the
+  // Garden page — not this summary — is the real home for the full
+  // collection.
+  if (totalLeaves > 0) {
+    const maxShown = 3;
+    const shown = exerciseLeaves.slice(0, maxShown);
+    const remaining = exerciseLeaves.length - shown.length;
+    const rowsHtml = shown.map(item => `
+      <button type="button" class="finish-plant-row w-full text-left py-1.5" data-exercise-id="${item.exerciseId}">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(item.name)}</p>
+        <p class="text-xs text-brand-500 font-semibold">+${item.leafCount} new leaf${item.leafCount !== 1 ? 's' : ''}</p>
+      </button>`).join('');
+    const moreHtml = remaining > 0 ? `<p class="text-xs text-slate-400 pt-1">+${remaining} more...</p>` : '';
+    blocks.push(`
+      <div>
+        <button type="button" id="finish-leaves-toggle" class="w-full flex items-center gap-3 p-3 text-left" aria-expanded="false" aria-controls="finish-leaves-body">
+          <span class="finish-leaf-in w-9 h-9 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-brand-500">eco</span></span>
+          <p class="text-sm font-semibold text-slate-800 dark:text-white flex-1 min-w-0">${exerciseLeaves.length} exercise plant${exerciseLeaves.length !== 1 ? 's' : ''} earned new leaves</p>
+          <span class="text-xs font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0">View all<span class="ms exg-mg-chevron text-base" aria-hidden="true">chevron_right</span></span>
+        </button>
+        <div id="finish-leaves-body" class="exg-mg-body collapsed">
+          <div><div class="px-3 pb-3 divide-y divide-slate-100 dark:divide-slate-800">${rowsHtml}</div>${moreHtml ? `<div class="px-3 pb-2">${moreHtml}</div>` : ''}</div>
+        </div>
+      </div>`);
+  }
+
+  el.innerHTML = blocks.length ? blocks.join('') : '<p class="text-sm text-slate-400 text-center py-4">No new leaves today, but your plants are still growing.</p>';
+
+  const leavesToggle = document.getElementById('finish-leaves-toggle');
+  if (leavesToggle) {
+    leavesToggle.addEventListener('click', () => {
+      const body = document.getElementById('finish-leaves-body');
+      const open = body.classList.contains('collapsed');
+      body.classList.toggle('collapsed', !open);
+      leavesToggle.setAttribute('aria-expanded', String(open));
+      leavesToggle.querySelector('.exg-mg-chevron').classList.toggle('expanded', open);
+    });
+  }
   el.querySelectorAll('.finish-plant-row').forEach(b => b.addEventListener('click', () => { rsHideModal('finish-modal'); openExerciseDetail(b.dataset.exerciseId); }));
 
   // Fill the bar from its BEFORE state (set above) to the real AFTER state
@@ -10476,7 +10508,7 @@ function renderFinishHighlight(sessionExercises) {
     noVolumeHeadline.style.display = '';
     const { totalLeaves } = computeSessionPlantProgress(sessionExercises);
     const exCount = sessionExercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length).length;
-    noVolumeHeadline.textContent = totalLeaves > 0 ? `${totalLeaves} new leaf${totalLeaves !== 1 ? 'ves' : ''} earned` : `${exCount} exercise${exCount !== 1 ? 's' : ''} completed`;
+    noVolumeHeadline.textContent = totalLeaves > 0 ? `${totalLeaves} new ${totalLeaves !== 1 ? 'leaves' : 'leaf'} earned` : `${exCount} exercise${exCount !== 1 ? 's' : ''} completed`;
   }
   return { volume, unit };
 }
