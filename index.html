@@ -18,6 +18,11 @@ tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{body:['Inter','syst
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
 <style>
 *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+/* Disables double-tap-to-zoom app-wide (this is a tap-driven app, not
+   zoomable text content) while leaving pinch-to-zoom intact for anyone who
+   needs it — narrower than viewport-meta's user-scalable=no, which would
+   kill pinch-zoom too. */
+html{touch-action:manipulation}
 /* Shared motion tokens — every interaction-driven transition/animation in the
    app should reference these instead of hardcoding its own duration/easing,
    so the whole app moves with one consistent, calm feel and
