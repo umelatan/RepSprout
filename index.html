@@ -1125,7 +1125,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   <main class="flex-1 overflow-y-auto">
     <div class="max-w-lg mx-auto p-4 space-y-5">
       <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-xl text-slate-400">fitness_center</span></div>
+        <div id="wsum-icon" class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" aria-hidden="true"><span id="wsum-icon-glyph" class="ms text-xl">fitness_center</span></div>
         <div class="min-w-0 flex-1">
           <h1 id="wsum-name" class="font-display font-extrabold text-2xl text-slate-800 dark:text-white truncate"></h1>
           <p id="wsum-datetime" class="text-sm text-slate-400"></p>
@@ -11713,6 +11713,14 @@ function renderWorkoutSummaryPage(date, sessionId) {
   document.getElementById('wsum-name').textContent = sessionLabel(s);
   const timeStr = histSessionTime(s);
   document.getElementById('wsum-datetime').textContent = timeStr ? `${wsumFullDateLabel(date)} • ${timeStr}` : wsumFullDateLabel(date);
+
+  // Header icon tints to this workout's own group colour (sessionColor() —
+  // the exact same accent History's own journal rows use) instead of a
+  // fixed neutral circle, so this page visually matches the group it came
+  // from.
+  const accentColor = sessionColor(s);
+  document.getElementById('wsum-icon').style.background = `${accentColor}26`;
+  document.getElementById('wsum-icon-glyph').style.color = accentColor;
 
   const eligibleExercises = sessionExercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length);
   const totalSets = eligibleExercises.reduce((sum, ex) => sum + getCompletedWorkingSets(ex).length, 0);
