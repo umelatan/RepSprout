@@ -273,26 +273,20 @@ body{font-family:'Inter',sans-serif}
 .water-ripple-loop{position:absolute;bottom:-4px;left:50%;width:2.5rem;height:.6rem;margin-left:-1.25rem;border-radius:50%;border:1.5px solid rgba(34,197,94,.5);animation:waterRippleLoop 2.4s ease-out infinite;pointer-events:none}
 .water-static-drop{position:absolute;opacity:.85;pointer-events:none}
 .water-static-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%);pointer-events:none}
-/* Mission-card plant-evolution icon: the ring's stroke-dashoffset transitions
-   smoothly on every progress update (see the inline style on #mission-stage-ring),
-   and .stage-pop plays once when the resolved stage itself changes — never on
-   a routine re-render at the same stage. */
+/* .stage-pop plays once on a real state change (e.g. the target-completion
+   checkmark); .stage-glow is the ambient pulse behind the Log Set sheet's
+   plant/growth icons. */
 @keyframes stagePop{0%{transform:scale(.55);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}
 @keyframes stageGlowPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.55;transform:scale(1.1)}}
 .stage-pop{animation:stagePop .5s ease-out}
 .stage-glow{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;animation:stageGlowPulse 2.4s ease-in-out infinite}
-/* Occasional sparkle on the mission-card growth icon — a single JS-spawned,
-   self-removing flourish (see scheduleMissionSparkle()), not a continuous
-   loop, so it shows up every 8-14s rather than every glow pulse. */
-@keyframes missionSparkleOnce{0%{transform:scale(.4) rotate(0deg);opacity:0}30%{opacity:1}65%{transform:scale(1.15) rotate(12deg);opacity:1}100%{transform:scale(.5) rotate(20deg);opacity:0}}
-.mission-sparkle-once{position:absolute;top:-2px;right:-2px;font-size:.7rem;animation:missionSparkleOnce 1.3s ease-out 1;pointer-events:none}
 /* Fixed brand green, not plant-themed — this badge is the universal
    "+1 Growth" cue, distinct from the personalized plant portrait next to it
    which already carries the selected plant's own theme color. */
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
   .finish-confetti-dot{animation:none!important;opacity:0!important}
 }
 /* Post-workout summary entrance sequence (see openFinishSummary()) — a
@@ -626,26 +620,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Today's mission — the one strong card on the page -->
         <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 shadow-sm">
-          <div class="flow-root">
-            <!-- Static Companion badge — the mascot's emoji in a plain ring,
-                 no progress indicator. Floated (not a flex sibling) so the
-                 label and "Mission complete" text actually wrap alongside it
-                 instead of starting only below a full-width icon row;
-                 flow-root on the parent contains the float so the card
-                 doesn't collapse short of it. -->
-            <div class="float-right ml-4 mb-2 flex flex-col items-center gap-1 flex-shrink-0">
-              <div id="mission-stage-icon" class="relative w-14 h-14 flex-shrink-0" role="img" aria-label="">
-                <span id="mission-stage-glow" class="stage-glow" aria-hidden="true"></span>
-                <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
-                  <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
-                  <circle id="mission-stage-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset var(--rs-dur-celebration) var(--rs-ease-settle)"></circle>
-                </svg>
-                <div id="mission-stage-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
-                  <span id="mission-stage-emoji" class="text-xl leading-none" aria-hidden="true">🌱</span>
-                </div>
-              </div>
-              <p id="mission-stage-name" class="text-[10px] font-semibold text-slate-400 text-center leading-tight"></p>
-            </div>
+          <div>
             <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
             <div id="dash-mission-body" class="space-y-3 mt-3"></div>
           </div>
@@ -4889,7 +4864,6 @@ function renderTodayMission() {
       <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-sm">
         <span class="ms text-xl" aria-hidden="true">check_circle</span>Mission complete
       </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Your ${esc(plantName)} grew today.</p>
       <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="px-2 py-0.5 rounded-lg text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
         <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
@@ -4911,66 +4885,6 @@ function renderTodayMission() {
         <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
       </div>`;
   }
-
-  renderMissionStageIcon();
-}
-
-// The mission card's Companion badge — a plain, static ring around the
-// user's chosen companion's emoji. Not a progress indicator: the Companion
-// no longer grows, so this always shows a full ring and the same emoji.
-function renderMissionStageIcon() {
-  const plantKey = userProfile.plant || 'sprout';
-  const p = PLANTS[plantKey] || { emoji: '🌱' };
-  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
-  const CIRCUMFERENCE = 2 * Math.PI * 28;
-
-  const ring = document.getElementById('mission-stage-ring');
-  ring.setAttribute('stroke', theme.primary);
-  ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
-  ring.style.strokeDashoffset = '0';
-  document.getElementById('mission-stage-glow').style.background = `radial-gradient(circle, ${theme.glow}, transparent 70%)`;
-  startMissionSparkle();
-
-  const emojiEl = document.getElementById('mission-stage-emoji');
-  emojiEl.textContent = p.emoji;
-  emojiEl.style.opacity = '';
-  emojiEl.style.transform = '';
-
-  document.getElementById('mission-stage-icon').setAttribute('aria-label', 'Companion');
-  document.getElementById('mission-stage-name').textContent = 'Companion';
-}
-
-// Occasional sparkle on the mission-card growth icon — deliberately much
-// rarer than the glow's own 2.4s pulse (every 8-14s, one-shot, self-removing)
-// so it reads as "occasionally," not "every loop." Self-stops the moment the
-// dashboard isn't the visible view or the icon leaves the DOM, same
-// self-checking pattern as startPlantWatering()'s droplet loop — no need to
-// hook goView() explicitly.
-let missionSparkleHandle = null;
-function stopMissionSparkle() {
-  clearTimeout(missionSparkleHandle);
-  missionSparkleHandle = null;
-}
-function scheduleMissionSparkle() {
-  missionSparkleHandle = setTimeout(() => {
-    const icon = document.getElementById('mission-stage-icon');
-    const dashView = document.getElementById('dashboard-view');
-    if (!icon || !dashView || dashView.style.display === 'none') { stopMissionSparkle(); return; }
-    if (!document.hidden) {
-      const spark = document.createElement('span');
-      spark.className = 'mission-sparkle-once';
-      spark.setAttribute('aria-hidden', 'true');
-      spark.textContent = '✨';
-      spark.addEventListener('animationend', () => spark.remove());
-      icon.appendChild(spark);
-    }
-    scheduleMissionSparkle();
-  }, 8000 + Math.random() * 6000);
-}
-function startMissionSparkle() {
-  if (missionSparkleHandle) return; // already looping — never stack timers
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  scheduleMissionSparkle();
 }
 
 function renderClosestProgress() {
