@@ -1008,10 +1008,16 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <button type="button" id="garden-tab-locked" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Locked Plants</button>
       </div>
 
+      <!-- Body-part filter chips — reuses the Exercise Library's own
+           MG_LABEL grouping (see renderGardenFilters()), narrowed to the
+           four the task asks for. Filters both tabs' grids. -->
+      <div id="garden-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
+
       <div id="garden-active-panel">
-        <div id="garden-empty-state" style="display:none" class="card p-6 text-center space-y-3">
-          <p class="text-sm text-slate-400">Create your first exercise to plant something new.</p>
-          <button type="button" id="garden-create-exercise-btn" class="btn btn-green text-sm px-4 py-2">Create Exercise</button>
+        <div id="garden-empty-state" style="display:none" class="card p-6 text-center space-y-2">
+          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Your garden is empty.</p>
+          <p class="text-sm text-slate-400">Create your first exercise to plant your first seed.</p>
+          <button type="button" id="garden-create-exercise-btn" class="btn btn-green text-sm px-4 py-2 mt-1">Create Exercise</button>
         </div>
         <div id="garden-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
       </div>
@@ -4236,102 +4242,75 @@ function exercisePlantMasteryDepth(dpResult) {
 }
 // Ordered, cumulative cosmetic tiers — purely decorative, never a growth
 // signal of their own (real growth still only ever comes from
-// calculateExerciseDoubleProgression()'s own leaf/cycle math).
-const MASTERY_COSMETIC_TIERS = ['Premium pot', 'Decorative stones', 'Mastery marker', 'Seasonal flowers', 'Extra fullness'];
+// calculateExerciseDoubleProgression()'s own leaf/cycle math). The
+// "Mastered" badge itself shows immediately on mastery (see
+// exercisePlantVisual() below) rather than being gated behind one of
+// these, so it isn't duplicated as its own tier here.
+const MASTERY_COSMETIC_TIERS = ['Premium pot', 'Decorative stones', 'Seasonal flowers', 'Extra fullness'];
 function exercisePlantCosmetics(dpResult) {
   return MASTERY_COSMETIC_TIERS.slice(0, Math.min(exercisePlantMasteryDepth(dpResult), MASTERY_COSMETIC_TIERS.length));
 }
-// How visually "full" an exercise plant's foliage is — blends its capped
-// stage index with how far the CURRENT cycle's own leaves have matured, so
-// growth still visibly creeps within a stage instead of only jumping at
-// cycle boundaries. Purely a rendering input; never itself a growth signal.
-function exercisePlantFullness(dpResult) {
-  const stageIdx = exercisePlantStageIdx(dpResult);
-  const stageProgress = dpResult.workingSetCount > 0 ? dpResult.leavesMatured / dpResult.workingSetCount : 0;
-  return Math.min(1, (stageIdx + stageProgress) / GROWTH_TOTAL_STAGES);
-}
 
 // ── Garden artwork ───────────────────────────────────────────────────────────
-// Deliberately NOT emoji (see the Garden redesign task's "No emojis as
-// permanent plant artwork") — a small, reusable, parameterized illustration
-// instead. This app has no per-species/per-stage art asset library (see
-// GROWTH_STAGE_FALLBACK_EMOJI's own note on that gap), so building bespoke
-// botanical illustrations per exercise is out of scope here; this is a
-// deliberate, documented simplification, not an oversight.
-const EXERCISE_PLANT_TINTS = ['#22c55e', '#16a34a', '#4ade80', '#65a30d', '#15803d', '#84cc16', '#059669', '#10b981'];
-// Deterministic, stable per exerciseId (never re-rolled) — "the exercise
-// keeps the same plant identity forever" per the task, without persisting
-// a new field anywhere; reuses the same seeded-hash technique
-// selectVolumeComparison() already uses for its own stable-per-id pick.
-function exercisePlantTint(exerciseId) {
-  const idx = Math.floor(seededRandom01(exerciseId) * EXERCISE_PLANT_TINTS.length);
-  return EXERCISE_PLANT_TINTS[Math.min(idx, EXERCISE_PLANT_TINTS.length - 1)];
+// Exercise plant species — revealed ONLY once bloomed (task: "I DO NOT
+// want users to know what plant they are growing until it blooms...
+// Only when the exercise reaches the Bloom stage should the final plant
+// species be revealed"). A distinct, non-overlapping pool from the five
+// Companion species (PLANTS) — visually separate systems, never the same
+// identity.
+const EXERCISE_PLANT_SPECIES = [
+  { name: 'Rose', emoji: '🌹' },
+  { name: 'Hibiscus', emoji: '🌺' },
+  { name: 'Clover', emoji: '🍀' },
+  { name: 'Daisy', emoji: '🌼' },
+  { name: 'Palm', emoji: '🌴' },
+  { name: 'Evergreen', emoji: '🌲' },
+  { name: 'Bamboo Shoot', emoji: '🎍' },
+  { name: 'House Plant', emoji: '🪴' }
+];
+// Deterministic, stable per exerciseId forever (task: "The exercise keeps
+// the same plant identity forever... do not replace the mature exercise
+// plant with a different species") — same seeded-hash technique
+// selectVolumeComparison() already uses for its own stable-per-id pick,
+// never persisted as a new field.
+function exercisePlantSpeciesFor(exerciseId) {
+  const idx = Math.floor(seededRandom01(exerciseId) * EXERCISE_PLANT_SPECIES.length);
+  return EXERCISE_PLANT_SPECIES[Math.min(idx, EXERCISE_PLANT_SPECIES.length - 1)];
 }
 
-function exercisePlantSvg({ exerciseId, fullness, cosmetics = [], size = 72 }) {
-  const tint = exercisePlantTint(exerciseId);
+// Exercise plants' own stage labels — deliberately separate from
+// GROWTH_STAGE_NAMES (the Companion's own wording); the two systems' names
+// were never required to match, and this task gives exercise plants their
+// own vocabulary.
+const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Seedling', 'Growing'];
+
+// The ONE exercise plant visual — Exercise Library cards, the Exercise
+// Progress Detail hero, and the Garden page all call this and only this,
+// so "what does this exercise's plant look like" never has two answers.
+// Pre-bloom (stageIdx 0-3) is the exact same DP_STAGE_EMOJI glyph every
+// exercise already used before this task — genuinely unrevealed, not a
+// per-exercise recolor of anything. Only once bloomed does this exercise's
+// own deterministic species (see exercisePlantSpeciesFor() above) appear.
+// Reuses the exact glow-behind-glyph, no-tile-background treatment the
+// Exercise Garden cards already established (no emoji-in-a-square-tile
+// look) — see the removed exgPlantVisual() this replaces.
+function exercisePlantVisual({ exerciseId, stageIdx, mastered = false, cosmetics = [], accent, size = 64 }) {
+  const bloomed = stageIdx != null && stageIdx >= GROWTH_TOTAL_STAGES - 1;
+  const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : bloomed ? exercisePlantSpeciesFor(exerciseId).emoji : DP_STAGE_EMOJI[stageIdx];
   const hasPremiumPot = cosmetics.includes('Premium pot');
   const hasStones = cosmetics.includes('Decorative stones');
-  const hasMarker = cosmetics.includes('Mastery marker');
   const hasFlowers = cosmetics.includes('Seasonal flowers');
   const hasFullness = cosmetics.includes('Extra fullness');
-  const f = Math.max(0.15, Math.min(1, fullness + (hasFullness ? 0.15 : 0)));
-  const leafCount = Math.max(1, Math.round(f * 5));
-  let leaves = '';
-  for (let i = 0; i < leafCount; i++) {
-    const angle = (i / Math.max(1, leafCount)) * Math.PI - Math.PI / 2 - 0.35;
-    const r = 8 + f * 6;
-    const cx = 32 + Math.cos(angle) * r * 0.95;
-    const cy = 27 - Math.sin(angle) * r * 0.55 - f * 5;
-    const rad = 5.5 + f * 4.5 - i * 0.35;
-    leaves += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad.toFixed(1)}" fill="${tint}" opacity="${(0.9 - i * 0.06).toFixed(2)}"/>`;
-  }
-  const stones = hasStones ? [0, 1, 2].map(i => `<ellipse cx="${23 + i * 8}" cy="49" rx="2.4" ry="1.5" fill="#94a3b8"/>`).join('') : '';
-  const flowers = hasFlowers ? '<circle cx="26" cy="16" r="1.8" fill="#f0abfc"/><circle cx="38" cy="14" r="1.8" fill="#f0abfc"/>' : '';
-  const marker = hasMarker ? '<circle cx="46" cy="15" r="5.5" fill="#f59e0b"/><path d="M46 12l1 2 2.1.3-1.5 1.5.35 2.1-1.95-1-1.95 1 .35-2.1-1.5-1.5 2.1-.3z" fill="#fffbeb"/>' : '';
+  const glow = hasPremiumPot ? 'rgba(245,158,11,.3)' : (accent || EXG_ACCENT.brand).glow;
+  const fontSize = size * (hasFullness ? 0.92 : 0.84);
   return `
-    <svg viewBox="0 0 64 56" width="${size}" height="${size * 56 / 64}" aria-hidden="true">
-      <path d="M20 34h24l-2.6 13.2a3.2 3.2 0 01-3.15 2.6H25.75a3.2 3.2 0 01-3.15-2.6L20 34z" fill="${hasPremiumPot ? '#c99a63' : '#b97748'}"/>
-      <path d="M20 34h24l-0.8 4H20.8l-0.8-4z" fill="#8a5a34" opacity=".5"/>
-      ${stones}
-      ${leaves}
-      ${flowers}
-      ${marker}
-    </svg>`;
-}
-
-// Companion artwork — deliberately its OWN illustration shape (not a
-// recolored copy of exercisePlantSvg above) so it stays visually distinct
-// per the task's "the companion should remain emotionally important and
-// visually separate from exercise plants." One shared pot, but each of the
-// five species gets its own simple top ornament using that species' real
-// PLANT_THEME colour (spines for Cactus, a canopy for Oak, stalks for
-// Bamboo, spikes for Lavender, a disc+petals for Sunflower) — geometric
-// shapes, not a bespoke illustration, for the same asset-scope reason
-// exercisePlantSvg() documents above.
-function companionPlantSvg({ plantId, fullness, isFinalStage, postBloomStageIndex, size = 120 }) {
-  const theme = PLANT_THEME[plantId] || DEFAULT_THEME;
-  const f = Math.max(0.2, Math.min(1, fullness));
-  const stemHeight = 10 + f * 14;
-  const s = 0.5 + f * 0.6;
-  const topY = 30 - stemHeight;
-  const ornaments = {
-    cactus: `<g transform="translate(32,${topY}) scale(${s})"><rect x="-7" y="-14" width="14" height="20" rx="7" fill="${theme.primary}"/><rect x="-11" y="-4" width="6" height="10" rx="3" fill="${theme.primary}"/><rect x="5" y="-8" width="6" height="10" rx="3" fill="${theme.primary}"/></g>`,
-    oak: `<g transform="translate(32,${topY + 2}) scale(${s})"><circle cx="0" cy="-6" r="15" fill="${theme.primary}"/><circle cx="-11" cy="2" r="10" fill="${theme.primary}" opacity=".85"/><circle cx="11" cy="2" r="10" fill="${theme.primary}" opacity=".85"/></g>`,
-    bamboo: `<g transform="translate(32,${topY}) scale(${s})"><rect x="-8" y="-22" width="5" height="26" rx="2.5" fill="${theme.primary}"/><rect x="0" y="-26" width="5" height="30" rx="2.5" fill="${theme.primary}"/><rect x="8" y="-18" width="5" height="22" rx="2.5" fill="${theme.primary}"/></g>`,
-    lavender: `<g transform="translate(32,${topY}) scale(${s})">${[-10, -3.3, 3.3, 10].map(x => `<rect x="${x - 1.6}" y="-24" width="3.2" height="20" rx="1.6" fill="${theme.primary}"/>`).join('')}</g>`,
-    sunflower: `<g transform="translate(32,${topY - 4}) scale(${s})">${Array.from({ length: 10 }, (_, i) => { const a = i / 10 * Math.PI * 2; const cx = Math.cos(a) * 13, cy = Math.sin(a) * 13; return `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="6" ry="3.2" fill="${theme.primary}" transform="rotate(${(a * 180 / Math.PI).toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`; }).join('')}<circle cx="0" cy="0" r="8" fill="#78350f"/></g>`
-  };
-  const ornament = ornaments[plantId] || ornaments.oak;
-  const bloomRing = isFinalStage ? `<circle cx="32" cy="${topY}" r="${18 + (postBloomStageIndex || 0) * 2}" fill="none" stroke="${theme.primary}" stroke-width="1.5" opacity=".25"/>` : '';
-  return `
-    <svg viewBox="0 0 64 60" width="${size}" height="${size * 60 / 64}" aria-hidden="true">
-      <path d="M18 36h28l-3 15.3a3.6 3.6 0 01-3.55 2.9H24.55A3.6 3.6 0 0121 51.3L18 36z" fill="#b97748"/>
-      <path d="M18 36h28l-0.9 4.5H18.9L18 36z" fill="#8a5a34" opacity=".5"/>
-      <rect x="30.5" y="${topY}" width="3" height="${(stemHeight + 6).toFixed(1)}" rx="1.5" fill="#4d7c46"/>
-      ${bloomRing}
-      ${ornament}
-    </svg>`;
+    <div class="relative flex-shrink-0 flex items-center justify-center" style="width:${size}px;height:${size}px" aria-hidden="true">
+      <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${glow} 0%,rgba(0,0,0,0) 70%);filter:blur(6px)"></div>
+      <span class="relative leading-none" style="font-size:${fontSize}px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))">${emoji}</span>
+      ${hasFlowers ? `<span class="absolute" style="top:-2px;left:0;font-size:${size * 0.22}px" aria-hidden="true">🌸</span>` : ''}
+      ${hasStones ? `<span class="absolute" style="bottom:-2px;font-size:${size * 0.2}px" aria-hidden="true">🪨</span>` : ''}
+      ${mastered ? `<span class="absolute" style="top:-3px;right:-3px;font-size:${size * 0.28}px" aria-hidden="true">⭐</span>` : ''}
+    </div>`;
 }
 
 // Short, user-facing labels for the raw DP_STATUS enum values — used
@@ -5764,15 +5743,20 @@ function renderProfile() {
 // Post-bloom (Thriving/Flourishing/Legacy) is entirely new surface area
 // getPlantGrowthState() now provides (see its own comment) — Home is
 // intentionally left untouched and still only reads the pre-existing fields.
+// Companion artwork reuses the exact same asset Home's own hero already
+// shows (getPlantGrowthState()'s selectedAsset/selectedAssetOpacity — the
+// one plant-emoji lookup this app has, GROWTH_STAGE_FALLBACK_EMOJI pre-
+// reveal then the real species emoji from stage 4 on) rather than a second
+// illustration system, per "reuse existing components... wherever possible."
 function renderGardenCompanion() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
   const growth = currentGrowthState();
 
-  const fullness = growth.isFinalStage ? 1 : (growth.currentStage - 1 + growth.currentStageProgressPercent / 100) / growth.totalStages;
-  document.getElementById('garden-companion-art').innerHTML = companionPlantSvg({
-    plantId, fullness, isFinalStage: growth.isFinalStage, postBloomStageIndex: growth.postBloomStageIndex, size: 88
-  });
+  const artEl = document.getElementById('garden-companion-art');
+  artEl.textContent = growth.selectedAsset;
+  artEl.style.opacity = growth.selectedAssetOpacity;
+  artEl.className = `text-6xl flex-shrink-0 ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
   document.getElementById('garden-companion-name').textContent = plant.name;
 
   const sessionDates = [];
@@ -5812,11 +5796,11 @@ function openGardenCompanionDetail() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
   const growth = currentGrowthState();
-  const fullness = growth.isFinalStage ? 1 : (growth.currentStage - 1 + growth.currentStageProgressPercent / 100) / growth.totalStages;
 
-  document.getElementById('gcd-art').innerHTML = companionPlantSvg({
-    plantId, fullness, isFinalStage: growth.isFinalStage, postBloomStageIndex: growth.postBloomStageIndex, size: 120
-  });
+  const artEl = document.getElementById('gcd-art');
+  artEl.textContent = growth.selectedAsset;
+  artEl.style.opacity = growth.selectedAssetOpacity;
+  artEl.className = `text-6xl flex-shrink-0 ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
   document.getElementById('gcd-name').textContent = plant.name;
   document.getElementById('gcd-desc').textContent = plant.desc || '';
   document.getElementById('gcd-stage').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
@@ -5898,34 +5882,58 @@ function setGardenTab(tab) {
 document.getElementById('garden-tab-active').addEventListener('click', () => setGardenTab('active'));
 document.getElementById('garden-tab-locked').addEventListener('click', () => setGardenTab('locked'));
 
-// A plant card is deliberately simple (task: "Keep the cards simple and
-// consistent with RepSprout's existing UI... Do not add equipment icons or
-// muscle diagrams") — artwork, exercise name, Stage N/Mastered, and the
-// same leaf-row component the Exercise Summary/finish screens already use,
-// never a second leaf-rendering implementation.
-function gardenPlantCardHtml({ exerciseId, ex, dpResult, mastered, cosmetics, stageIdx, fullness }) {
+// Body-part filter — reuses the Exercise Library's own MG_LABEL grouping
+// (task: "Reuse the Exercise Library grouping where appropriate"),
+// narrowed to the four the task names. '' means All.
+const GARDEN_FILTER_KEYS = ['', 'upper', 'lower', 'core', 'full'];
+const GARDEN_FILTER_LABELS = { '': 'All', upper: 'Upper Body', lower: 'Lower Body', core: 'Core', full: 'Full Body' };
+let gardenGroupFilter = '';
+function renderGardenFilters() {
+  document.getElementById('garden-filters').innerHTML = GARDEN_FILTER_KEYS.map(key => {
+    const on = key === gardenGroupFilter;
+    const activeClasses = on
+      ? 'bg-slate-700 text-white border-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:border-slate-200'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800';
+    return `<button type="button" class="garden-filter-chip flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${activeClasses}" data-key="${key}" aria-pressed="${on}">${esc(GARDEN_FILTER_LABELS[key])}</button>`;
+  }).join('');
+  document.getElementById('garden-filters').querySelectorAll('.garden-filter-chip').forEach(b => b.addEventListener('click', () => {
+    gardenGroupFilter = b.dataset.key;
+    renderGardenGrid();
+  }));
+}
+
+// A plant card is deliberately simple (task: "Cards should be minimal") —
+// artwork, exercise name, its body-part tag (plain text, never an
+// equipment icon or muscle diagram), current stage/Mastered, and the same
+// leaf-row component the Exercise Summary/finish screens already use,
+// never a second leaf-rendering implementation. Species stays hidden
+// pre-bloom — see exercisePlantVisual()'s own note.
+function gardenPlantCardHtml({ exerciseId, ex, dpResult, mastered, cosmetics, stageIdx }) {
   const positions = DoubleProgressionStrategy.calculateSetResults(exerciseId);
   const leavesHtml = renderDoubleProgressionLeaves(positions, ex.unit, 'text-sm');
-  const stageLabel = mastered ? 'Mastered' : `Stage ${stageIdx + 1}`;
+  const stageLabel = mastered ? `${exercisePlantSpeciesFor(exerciseId).name} · Mastered` : EXERCISE_PLANT_STAGE_NAMES[stageIdx];
+  const accent = exgAccentFor(mastered ? 'bloomed' : dpResult.leavesMatured > 0 ? 'growing' : 'sprout');
   return `
     <button type="button" class="garden-plant-card card p-3 text-center flex flex-col items-center gap-1" data-exercise-id="${exerciseId}">
-      <div class="flex-shrink-0">${exercisePlantSvg({ exerciseId, fullness, cosmetics, size: 60 })}</div>
+      <div class="flex-shrink-0">${exercisePlantVisual({ exerciseId, stageIdx, mastered, cosmetics, accent, size: 60 })}</div>
       <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate w-full">${esc(ex.name)}</p>
+      ${MG_LABEL[ex.muscleGroup] ? `<p class="text-[11px] text-slate-400 -mt-0.5">${esc(MG_LABEL[ex.muscleGroup])}</p>` : ''}
       <p class="text-[11px] font-semibold ${mastered ? 'text-amber-500' : 'text-brand-500'}">${esc(stageLabel)}</p>
       <div class="flex items-center justify-center gap-0.5 flex-wrap">${leavesHtml}</div>
     </button>`;
 }
 
-// Locked cards use a silhouette (grayscale/dimmed) of the same artwork —
-// never a large "+ New Plant" CTA card (task: "Users unlock plants; they
-// do not manually create arbitrary plants"). Tapping one just explains its
-// unlock condition, except the one generic "create a new exercise" slot,
-// which opens the existing Create Exercise flow (openExerciseModal()).
-function gardenLockedCardHtml({ exerciseId, name, tag, reason, isCreate }) {
+// Locked cards use a silhouette (grayscale/dimmed) of the same Seed-stage
+// artwork every plant starts at — never a large "+ New Plant" CTA card
+// (task: "Users unlock plants; they do not manually create arbitrary
+// plants"). Tapping one just explains its unlock condition, except the one
+// generic "create a new exercise" slot, which opens the existing Create
+// Exercise flow (openExerciseModal()).
+function gardenLockedCardHtml({ name, tag, reason, isCreate }) {
   return `
     <button type="button" class="garden-locked-card card p-3 text-center flex flex-col items-center gap-1" data-reason="${esc(reason)}" data-create="${isCreate ? '1' : '0'}">
       <div class="flex-shrink-0 relative" style="filter:grayscale(1) brightness(.6)">
-        ${exercisePlantSvg({ exerciseId: isCreate ? 'locked-generic' : exerciseId, fullness: 0.28, cosmetics: [], size: 60 })}
+        ${exercisePlantVisual({ exerciseId: 'locked', stageIdx: 0, accent: EXG_ACCENT.brand, size: 60 })}
         <span class="ms text-sm text-slate-400 absolute top-0 right-0" aria-hidden="true">lock</span>
       </div>
       <p class="font-display font-bold text-sm text-slate-500 dark:text-slate-400 truncate w-full">${isCreate ? 'Unknown Plant' : esc(name)}</p>
@@ -5934,10 +5942,12 @@ function gardenLockedCardHtml({ exerciseId, name, tag, reason, isCreate }) {
 }
 
 function renderGardenGrid() {
+  renderGardenFilters();
+  const matchesFilter = ex => !gardenGroupFilter || ex.muscleGroup === gardenGroupFilter;
   const all = gardenExercisePlants();
-  const active = all.filter(p => p.everTrained);
-  const untrained = all.filter(p => !p.everTrained);
-  const archived = gardenArchivedPlants();
+  const active = all.filter(p => p.everTrained && matchesFilter(p.ex));
+  const untrained = all.filter(p => !p.everTrained && matchesFilter(p.ex));
+  const archived = gardenArchivedPlants().filter(p => matchesFilter(p.ex));
 
   document.getElementById('garden-empty-state').style.display = all.length === 0 ? '' : 'none';
 
@@ -5945,14 +5955,14 @@ function renderGardenGrid() {
   grid.innerHTML = active.map(p => gardenPlantCardHtml({
     exerciseId: p.exerciseId, ex: p.ex, dpResult: p.dpResult,
     mastered: isExercisePlantMastered(p.dpResult), cosmetics: exercisePlantCosmetics(p.dpResult),
-    stageIdx: exercisePlantStageIdx(p.dpResult), fullness: exercisePlantFullness(p.dpResult)
+    stageIdx: exercisePlantStageIdx(p.dpResult)
   })).join('');
   grid.querySelectorAll('.garden-plant-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
 
   const lockedCards = [];
-  untrained.forEach(p => lockedCards.push(gardenLockedCardHtml({ exerciseId: p.exerciseId, name: p.ex.name, tag: 'Locked', reason: `Progress ${p.ex.name} to unlock.` })));
-  archived.forEach(p => lockedCards.push(gardenLockedCardHtml({ exerciseId: p.exerciseId, name: p.ex.name, tag: 'Archived', reason: `${p.ex.name}'s growth history is preserved. Unarchive it to resume growing this plant.` })));
-  lockedCards.push(gardenLockedCardHtml({ exerciseId: 'locked-generic', name: 'Unknown Plant', tag: 'Locked', reason: 'Create a new exercise to unlock.', isCreate: true }));
+  untrained.forEach(p => lockedCards.push(gardenLockedCardHtml({ name: p.ex.name, tag: 'Locked', reason: `Progress ${p.ex.name} to unlock.` })));
+  archived.forEach(p => lockedCards.push(gardenLockedCardHtml({ name: p.ex.name, tag: 'Archived', reason: `${p.ex.name}'s growth history is preserved. Unarchive it to resume growing this plant.` })));
+  lockedCards.push(gardenLockedCardHtml({ name: 'Unknown Plant', tag: 'Locked', reason: 'Create a new exercise to unlock.', isCreate: true }));
   const lockedGrid = document.getElementById('garden-locked-grid');
   lockedGrid.innerHTML = lockedCards.join('');
   lockedGrid.querySelectorAll('.garden-locked-card').forEach(b => b.addEventListener('click', () => {
@@ -7082,7 +7092,7 @@ function classifyExerciseForGarden(id, ex) {
   const hasReadyLeaf = dpPositions.some(p => !p.matured && p.status === DP_STATUS.READY_TO_INCREASE);
   const bucket = stageIdx === 0 ? 'sprout' : isFinal ? 'bloomed' : 'growing';
   const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : leavesMatured > 0 ? 'growing' : 'sprout';
-  return { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, bucket, section };
+  return { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, bucket, section, cycleIndex, configured: !disabled };
 }
 
 // "Last used {today|yesterday|N days ago|N week(s) ago}" / "Not used yet" —
@@ -7214,29 +7224,7 @@ function toggleExgGroupSection(key) {
   if (body) body.classList.toggle('collapsed', !nowExpanded);
 }
 
-// The Exercise Plant visual itself — DP_STAGE_EMOJI is the ONLY plant asset
-// this codebase has (Home's companion hero and the Exercise Progress Detail
-// page are both emoji-based too; there is no separate illustrated PNG/SVG
-// asset system to plug into). What made the old Garden card badge feel like
-// a "generic icon in a tile" was the hero-surface/hero-glow wrapper's
-// visible rounded gradient background — fine at full hero scale on Home,
-// but reads as a coloured square at card scale. Here the emoji renders
-// directly on the card's own transparent background: no wrapper fill, no
-// border, just a soft stage-tinted glow behind it and a drop-shadow on the
-// glyph itself, at roughly the 64–76px size the task asked for. A null
-// stageIdx (disabled exercise) falls back to the Sprout glyph itself
-// (DP_STAGE_EMOJI[0]) — the existing neutral asset, never an emoji-library
-// icon or a black/coloured square.
-function exgPlantVisual(stageIdx, accent) {
-  const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : DP_STAGE_EMOJI[stageIdx];
-  return `
-    <div class="relative flex-shrink-0 flex items-center justify-center" style="width:4.25rem;height:4.25rem" aria-hidden="true">
-      <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${accent.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(7px)"></div>
-      <span class="relative leading-none" style="font-size:3.75rem;filter:drop-shadow(0 8px 6px rgba(15,23,42,.16))">${emoji}</span>
-    </div>`;
-}
-
-// One card — Exercise Plant visual (see exgPlantVisual() above), stage name
+// One card — Exercise Plant visual (see exercisePlantVisual() above), stage name
 // and leaves via the existing renderDoubleProgressionLeaves()
 // (matured/ready/growing colors untouched, warm-up sets structurally
 // excluded since positions only ever come from working-set data),
@@ -7256,11 +7244,18 @@ function renderExgCard(entry) {
   const tag = exerciseTagLabel(id, ex);
   const lastUsed = exgLastUsedLabel(id);
   const readyPill = !disabled && hasReadyLeaf ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full ${EXG_ACCENT.brand.soft} flex-shrink-0">Ready!</span>` : '';
+  const mastered = isExercisePlantMastered(entry);
+  // Species stays hidden until Bloom — the stage label is the generic
+  // EXERCISE_PLANT_STAGE_NAMES wording pre-bloom, and only the exercise's
+  // own revealed species name once mastered (task: "the artwork itself
+  // should communicate the stage... only when the exercise reaches the
+  // Bloom stage should the final plant species be revealed").
+  const stageLabel = mastered ? `${exercisePlantSpeciesFor(id).name} · Mastered` : EXERCISE_PLANT_STAGE_NAMES[stageIdx];
 
   const stageBlock = disabled
     ? `<p class="text-[11px] text-slate-400 mt-1">Double-progression suggestions are off for this exercise.</p>`
     : `<div class="flex items-center gap-1.5 flex-wrap mt-1">
-        <span class="text-xs font-bold ${accent.text}">${esc(GROWTH_STAGE_NAMES[stageIdx])}${isFinal ? ' 🌸' : ''}</span>
+        <span class="text-xs font-bold ${mastered ? 'text-amber-500' : accent.text}">${esc(stageLabel)}</span>
         <span class="flex items-center gap-0.5">${renderDoubleProgressionLeaves(dpPositions, unit, 'text-lg')}</span>
         ${readyPill}
       </div>
@@ -7268,7 +7263,7 @@ function renderExgCard(entry) {
 
   return `
     <div class="exg-card card p-3.5 flex items-start gap-3 w-full text-left hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="View ${esc(ex.name)} progress">
-      ${exgPlantVisual(disabled ? null : stageIdx, accent)}
+      ${exercisePlantVisual({ exerciseId: id, stageIdx: disabled ? null : stageIdx, mastered, cosmetics: exercisePlantCosmetics(entry), accent, size: 68 })}
       <div class="min-w-0 flex-1">
         <p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400 mt-0.5">${weightText} · ${repRangeText}</p>
@@ -7409,10 +7404,11 @@ function renderExerciseDetail(exerciseId) {
   // ── Plant hero — this exercise's own Double Progression journey, entirely
   // separate from the Home companion plant (userProfile.plant / renderPlantHero()).
   // Uses the exact same transparent-background plant visual as the Exercise
-  // Garden cards (exgPlantVisual()) — no square/tile background here either,
-  // just the DP_STAGE_EMOJI glyph with a faint stage-tinted glow — so the two
-  // surfaces read as the same plant system without touching PLANTS or
-  // userProfile.plant.
+  // Garden cards (exercisePlantVisual()) — no square/tile background here
+  // either — so this page, the Exercise Library cards, and the Garden page
+  // all read as the same plant system without touching PLANTS or
+  // userProfile.plant. Species stays hidden pre-bloom exactly like the
+  // Garden/Library cards (see exercisePlantVisual()'s own note).
   const exdGardenEntry = classifyExerciseForGarden(exerciseId, ex);
   const exdAccent = exgAccentFor(exdGardenEntry.section);
   let heroHtml, leavesHtml = '';
@@ -7422,24 +7418,28 @@ function renderExerciseDetail(exerciseId) {
       : 'Add a maximum rep target to enable Double Progression.';
     heroHtml = `
       <div class="card p-4 text-center space-y-2">
-        <div class="flex justify-center">${exgPlantVisual(null, exdAccent)}</div>
+        <div class="flex justify-center">${exercisePlantVisual({ exerciseId, stageIdx: null, accent: exdAccent, size: 88 })}</div>
         <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
       </div>`;
   } else {
     const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
-    const stageName = GROWTH_STAGE_NAMES[stageIdx];
     const isFinal = dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+    const mastered = isExercisePlantMastered(dpResult);
+    const cosmetics = exercisePlantCosmetics(dpResult);
+    const species = mastered ? exercisePlantSpeciesFor(exerciseId) : null;
+    const stageName = mastered ? `${species.name} · Mastered` : EXERCISE_PLANT_STAGE_NAMES[stageIdx];
     const pct = dpResult.workingSetCount ? Math.round((dpResult.leavesMatured / dpResult.workingSetCount) * 100) : 0;
     heroHtml = `
       <div class="card p-4 space-y-3">
         <div class="flex items-center gap-4">
-          ${exgPlantVisual(stageIdx, exdAccent)}
+          ${exercisePlantVisual({ exerciseId, stageIdx, mastered, cosmetics, accent: exdAccent, size: 88 })}
           <div class="min-w-0 flex-1">
             <p class="text-xs text-slate-400">Current stage</p>
             <div class="flex items-center gap-2 flex-wrap">
-              <p class="font-display font-bold text-xl text-slate-800 dark:text-white">${stageName}${isFinal ? ' 🌸' : ''}</p>
-              <span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>
+              <p class="font-display font-bold text-xl ${mastered ? 'text-amber-500' : 'text-slate-800 dark:text-white'}">${esc(stageName)}</p>
+              ${!mastered ? `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>` : ''}
             </div>
+            ${cosmetics.length ? `<p class="text-[11px] text-slate-400 mt-0.5">${cosmetics.join(' · ')}</p>` : ''}
           </div>
         </div>
         <div class="flex items-center gap-2">
