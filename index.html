@@ -1469,12 +1469,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Guided workout: queue row actions (Start now / Move later / Skip / Remove) -->
+<!-- Guided workout: queue row actions (Start now / Move later / Swap / Skip / Remove) -->
 <div id="queue-row-actions-modal" style="display:none" class="fixed inset-0 z-[59] flex items-end justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-4 space-y-1">
     <p id="qra-title" class="text-xs font-semibold text-slate-400 px-3 pb-1 truncate"></p>
     <button id="qra-start-now" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 text-sm font-semibold text-brand-600 dark:text-brand-400 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">bolt</span>Start now</button>
     <button id="qra-move-later" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">arrow_downward</span>Move later</button>
+    <button id="qra-swap" style="display:none" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">swap_horiz</span>Swap exercise</button>
     <button id="qra-skip" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">remove_circle</span><span id="qra-skip-label">Skip exercise</span></button>
     <button id="qra-remove" style="display:none" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from today's session</button>
     <button id="qra-cancel" class="w-full text-center px-3 py-3 rounded-xl text-sm font-semibold text-slate-400">Cancel</button>
@@ -9904,7 +9905,11 @@ function openQueueRowActions(idx) {
   // against here is an already-completed one.
   document.getElementById('qra-start-now').style.display = exerciseIsDone(ex) ? 'none' : '';
   document.getElementById('qra-skip-label').textContent = ex.skipped ? 'Unskip exercise' : 'Skip exercise';
-  document.getElementById('qra-remove').style.display = !ex.sets.some(s => s.completed) ? '' : 'none';
+  // Swap replaces the whole entry (including any logged sets), so it's
+  // only offered while there's nothing to lose — same guard as Remove.
+  const noLoggedSets = !ex.sets.some(s => s.completed);
+  document.getElementById('qra-swap').style.display = noLoggedSets ? '' : 'none';
+  document.getElementById('qra-remove').style.display = noLoggedSets ? '' : 'none';
   document.getElementById('queue-row-actions-modal').style.display = '';
 }
 function closeQueueRowActions() {
@@ -9928,6 +9933,25 @@ document.getElementById('qra-move-later').addEventListener('click', () => {
   if (activeSession.currentExerciseIndex > idx) activeSession.currentExerciseIndex--;
   closeQueueRowActions();
   renderQueue(); renderGuidedWorkout(); saveActiveSessionDraft();
+});
+// Swap replaces the exercise at this queue slot with a different one from
+// the shared library (or a brand-new one, via the picker's own "Create
+// exercise" card) — same picker "Add to today's workout" already uses
+// (openPickExModal), just wired to replace-in-place instead of append.
+// A fresh buildSessionExercise() entry means the slot starts clean at
+// Set 1, using the newly-picked exercise's own rep range/weight/rest —
+// never carrying over the swapped-out exercise's targets.
+function swapQueueExercise(idx, newExerciseId) {
+  const entry = buildSessionExercise(newExerciseId);
+  if (!entry) return;
+  activeSession.exercises[idx] = entry;
+  renderQueue(); renderGuidedWorkout(); saveActiveSessionDraft();
+}
+document.getElementById('qra-swap').addEventListener('click', () => {
+  const idx = queueActionsIdx;
+  if (idx == null) return;
+  closeQueueRowActions();
+  openPickExModal(newId => { rsHideModal('pick-ex-modal'); swapQueueExercise(idx, newId); }, []);
 });
 document.getElementById('qra-skip').addEventListener('click', () => {
   const idx = queueActionsIdx;
