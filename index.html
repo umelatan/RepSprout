@@ -4464,25 +4464,36 @@ function computeSessionVolume(sessionExercises) {
 // heavy sessions.
 // emoji: the closest real-world match available in standard Unicode — a
 // few items (refrigerator, washing machine, vending machine, grand piano,
-// shipping container, speedboat for jet ski, pool table for billiards)
-// have no dedicated emoji, so these fall back to the nearest visually/
-// conceptually associated one rather than a generic icon.
+// shipping container, speedboat for jet ski, pool table for billiards,
+// go-kart for a racing car, pinball machine for an arcade cabinet) have no
+// dedicated emoji, so these fall back to the nearest visually/conceptually
+// associated one rather than a generic icon.
+// Deliberately balanced across animals, vehicles, and everyday
+// objects/appliances — animals alone shouldn't dominate the fun facts.
 const VOLUME_COMPARISONS = [
   { id: 'bicycle', weightKg: 12, singular: 'bicycle', plural: 'bicycles', emoji: '🚲' },
   { id: 'scooter', weightKg: 15, singular: 'scooter', plural: 'scooters', emoji: '🛴' },
   { id: 'canoe', weightKg: 30, singular: 'canoe', plural: 'canoes', emoji: '🛶' },
+  { id: 'shopping-cart', weightKg: 30, singular: 'shopping cart', plural: 'shopping carts', emoji: '🛒' },
   { id: 'washing-machine', weightKg: 70, singular: 'washing machine', plural: 'washing machines', emoji: '🧺' },
   { id: 'mattress', weightKg: 70, singular: 'mattress', plural: 'mattresses', emoji: '🛏️' },
   { id: 'sofa', weightKg: 90, singular: 'sofa', plural: 'sofas', emoji: '🛋️' },
   { id: 'kangaroo', weightKg: 90, singular: 'kangaroo', plural: 'kangaroos', emoji: '🦘' },
+  { id: 'grandfather-clock', weightKg: 90, singular: 'grandfather clock', plural: 'grandfather clocks', emoji: '🕰️' },
   { id: 'refrigerator', weightKg: 100, singular: 'refrigerator', plural: 'refrigerators', emoji: '🧊' },
+  { id: 'filing-cabinet', weightKg: 100, singular: 'filing cabinet', plural: 'filing cabinets', emoji: '🗄️' },
+  { id: 'go-kart', weightKg: 100, singular: 'go-kart', plural: 'go-karts', emoji: '🏎️' },
   { id: 'panda', weightKg: 115, singular: 'panda', plural: 'pandas', emoji: '🐼' },
   { id: 'black-bear', weightKg: 135, singular: 'black bear', plural: 'black bears', emoji: '🐻' },
   { id: 'bathtub', weightKg: 150, singular: 'bathtub', plural: 'bathtubs', emoji: '🛁' },
+  { id: 'traffic-light', weightKg: 150, singular: 'traffic light', plural: 'traffic lights', emoji: '🚦' },
+  { id: 'pinball-machine', weightKg: 140, singular: 'pinball machine', plural: 'pinball machines', emoji: '🕹️' },
   { id: 'gorilla', weightKg: 180, singular: 'gorilla', plural: 'gorillas', emoji: '🦍' },
+  { id: 'barrel-of-oil', weightKg: 180, singular: 'barrel of oil', plural: 'barrels of oil', emoji: '🛢️' },
   { id: 'lion', weightKg: 190, singular: 'lion', plural: 'lions', emoji: '🦁' },
   { id: 'motorcycle', weightKg: 200, singular: 'motorcycle', plural: 'motorcycles', emoji: '🏍️' },
   { id: 'young-elephant', weightKg: 200, singular: 'young elephant', plural: 'young elephants', emoji: '🐘' },
+  { id: 'church-bell', weightKg: 200, singular: 'church bell', plural: 'church bells', emoji: '🔔' },
   { id: 'tiger', weightKg: 220, singular: 'tiger', plural: 'tigers', emoji: '🐅' },
   { id: 'pool-table', weightKg: 340, singular: 'pool table', plural: 'pool tables', emoji: '🎱' },
   { id: 'speedboat', weightKg: 350, singular: 'speedboat', plural: 'speedboats', emoji: '🚤' },
@@ -4491,6 +4502,7 @@ const VOLUME_COMPARISONS = [
   { id: 'crocodile', weightKg: 450, singular: 'crocodile', plural: 'crocodiles', emoji: '🐊' },
   { id: 'polar-bear', weightKg: 450, singular: 'polar bear', plural: 'polar bears', emoji: '🐻‍❄️' },
   { id: 'horse', weightKg: 500, singular: 'horse', plural: 'horses', emoji: '🐴' },
+  { id: 'golf-cart', weightKg: 500, singular: 'golf cart', plural: 'golf carts', emoji: '🛺' },
   { id: 'camel', weightKg: 600, singular: 'camel', plural: 'camels', emoji: '🐫' },
   { id: 'cow', weightKg: 700, singular: 'cow', plural: 'cows', emoji: '🐄' },
   { id: 'giraffe', weightKg: 800, singular: 'giraffe', plural: 'giraffes', emoji: '🦒' },
@@ -4507,7 +4519,10 @@ const VOLUME_COMPARISONS = [
   { id: 'orca', weightKg: 3600, singular: 'orca', plural: 'orcas', emoji: '🐋' },
   { id: 'elephant', weightKg: 4000, singular: 'elephant', plural: 'elephants', emoji: '🐘' },
   { id: 'tractor', weightKg: 4500, singular: 'tractor', plural: 'tractors', emoji: '🚜' },
-  { id: 'school-bus', weightKg: 8000, singular: 'school bus', plural: 'school buses', emoji: '🚌' }
+  { id: 'delivery-truck', weightKg: 5000, singular: 'delivery truck', plural: 'delivery trucks', emoji: '🚚' },
+  { id: 'school-bus', weightKg: 8000, singular: 'school bus', plural: 'school buses', emoji: '🚌' },
+  { id: 'fire-truck', weightKg: 12000, singular: 'fire truck', plural: 'fire trucks', emoji: '🚒' },
+  { id: 'train-carriage', weightKg: 30000, singular: 'train carriage', plural: 'train carriages', emoji: '🚃' }
 ];
 
 // Scores every comparison object and returns the single best-fitting one —
