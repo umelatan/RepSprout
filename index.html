@@ -619,10 +619,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="max-w-2xl w-full mx-auto px-4 md:px-6 mt-2 relative z-10 space-y-6">
 
         <!-- Today's mission — the one strong card on the page -->
-        <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 shadow-sm">
+        <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
           <div>
             <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
-            <div id="dash-mission-body" class="space-y-3 mt-3"></div>
+            <div id="dash-mission-body" class="space-y-2.5 mt-2.5"></div>
           </div>
         </div>
 
@@ -655,11 +655,12 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <div id="dash-target-preview-body"></div>
         </div>
 
-        <!-- Ambient stats — quiet, secondary -->
-        <div id="dash-stats-row" class="flex items-center justify-center gap-8">
-          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p></div>
-          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500" aria-hidden="true">fitness_center</span> <span id="total-sessions-val">0</span></p><p class="text-[10px] text-slate-400">workouts</p></div>
-          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span id="last-session-val">—</span></p><p class="text-[10px] text-slate-400">last session</p></div>
+        <!-- Ambient stats — quiet, secondary. Apple Health-style hierarchy:
+             the number carries the weight, the label just quietly names it. -->
+        <div id="dash-stats-row" class="flex items-center justify-center gap-10">
+          <div class="text-center"><p class="font-display font-extrabold text-xl text-slate-800 dark:text-white flex items-center justify-center gap-1"><span class="ms text-base align-middle text-amber-500" aria-hidden="true">local_fire_department</span><span id="streak-val">0</span></p><p class="text-[11px] text-slate-400 mt-0.5">day streak</p></div>
+          <div class="text-center"><p class="font-display font-extrabold text-xl text-slate-800 dark:text-white flex items-center justify-center gap-1"><span class="ms text-base align-middle text-brand-500" aria-hidden="true">fitness_center</span><span id="total-sessions-val">0</span></p><p class="text-[11px] text-slate-400 mt-0.5">workouts</p></div>
+          <div class="text-center"><p class="font-display font-extrabold text-xl text-slate-800 dark:text-white"><span id="last-session-val">—</span></p><p class="text-[11px] text-slate-400 mt-0.5">last session</p></div>
         </div>
 
         <!-- Closest progress — open section, not a card -->
@@ -668,13 +669,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <div id="dash-progress-body" class="space-y-2"></div>
         </div>
 
-        <!-- Garden preview — wide, soft-tinted, collectible -->
-        <div class="garden-shelf rounded-3xl p-4 space-y-3">
+        <!-- Garden preview — a glimpse, not an inventory. See renderGardenPreview(). -->
+        <div class="garden-shelf rounded-3xl p-4 space-y-4">
           <div class="flex items-center justify-between">
             <p class="text-xs font-semibold text-slate-400">Garden</p>
             <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-2">View Garden →</button>
           </div>
-          <div id="dash-garden-preview" class="space-y-3"></div>
+          <div id="dash-garden-preview" class="space-y-4"></div>
         </div>
 
         <!-- Recent win — compact chip, not a card -->
@@ -4834,11 +4835,10 @@ function renderHomeMissionPlannedCard(planned) {
     primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-recovery-complete';
   }
   return `
-    <p class="text-xs font-semibold text-brand-500">Today's Mission</p>
     <p class="text-base font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
     <p class="text-xs text-slate-400">${esc(meta)}</p>
     <button data-action="${primaryAction}" data-entry-id="${planned.id}" class="btn btn-green btn-pop w-full py-3.5 text-base">${esc(primaryLabel)}</button>
-    <div class="flex items-center justify-center gap-4 pt-1 text-xs font-semibold flex-wrap">
+    <div class="flex items-center justify-center gap-4 pt-0.5 text-xs font-semibold flex-wrap">
       <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Workout</button>
       <button data-action="today-add-another" class="text-slate-400 hover:underline py-2">Add Another Activity</button>
       <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
@@ -4850,7 +4850,6 @@ function renderTodayMission() {
   const today = todayStr();
   const todaySessions = sessions[today] || {};
   const done = Object.keys(todaySessions).length > 0;
-  const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
   // A still-incomplete planned activity always takes priority over "done for
   // today" — multiple planned activities advance one at a time (task spec:
   // "after it is completed, automatically show the next planned activity").
@@ -4868,19 +4867,15 @@ function renderTodayMission() {
         <span class="px-2 py-0.5 rounded-lg text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
         <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
       </div>
-      <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
+      <div class="flex items-center gap-4 pt-0.5 text-xs font-semibold">
         <button data-action="view-workout" class="text-brand-500 hover:underline py-2">View workout</button>
         <button data-action="log-another" class="text-slate-400 hover:underline py-2">Log another activity</button>
       </div>`;
   } else {
     body.innerHTML = `
       <p class="text-base font-semibold text-slate-700 dark:text-slate-200">Log any workout today</p>
-      <div class="flex items-center justify-between">
-        <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
-        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>${plantName !== 'plant' ? `Helps ${esc(plantName)} flourish` : 'Nurtures your plant'}</span>
-      </div>
       <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>
-      <div class="flex items-center justify-center gap-4 pt-1 text-xs font-semibold flex-wrap">
+      <div class="flex items-center justify-center gap-4 pt-0.5 text-xs font-semibold flex-wrap">
         <button data-action="today-log-activity" class="text-slate-400 hover:underline py-2">Log other activity</button>
         <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
       </div>`;
@@ -4952,29 +4947,28 @@ function renderGardenPreview() {
 
   const growingHtml = growing.length
     ? growing.map(g => `
-      <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:64px">
-        ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 40 })}
-        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate w-full text-center">${esc(g.name)}</span>
-        <span class="text-[9px] text-slate-400">${esc(EXERCISE_PLANT_STAGE_NAMES[g.stageIdx])}</span>
+      <div class="flex flex-col items-center gap-1.5 flex-shrink-0" style="width:72px">
+        ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 44 })}
+        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 text-center leading-tight">${esc(g.name)}</span>
       </div>`).join('')
-    : `<p class="text-xs text-slate-400 text-center py-2">Set up progression on an exercise to start your first plant.</p>`;
+    : `<p class="text-xs text-slate-400 text-center py-2">Start training to grow your first plant.</p>`;
 
   const collectedHtml = collected.length
     ? collected.map(c => `
-      <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:64px">
+      <div class="flex flex-col items-center gap-1.5 flex-shrink-0" style="width:72px">
         <span class="text-3xl leading-none" aria-hidden="true">${c.speciesEmoji}</span>
-        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate w-full text-center">${esc(c.speciesName)}</span>
+        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 text-center leading-tight">${esc(c.speciesName)}</span>
       </div>`).join('')
-    : `<p class="text-xs text-slate-400 text-center py-2">No blooms collected yet — keep training to earn your first.</p>`;
+    : `<p class="text-xs text-slate-400 text-center py-2">Your first bloom is waiting.</p>`;
 
   wrap.innerHTML = `
-    <div class="space-y-1.5">
-      <p class="text-[10px] font-bold tracking-wider text-slate-400">CURRENTLY GROWING</p>
-      <div class="flex items-center gap-3 overflow-x-auto">${growingHtml}</div>
+    <div class="space-y-2">
+      <p class="text-[11px] text-slate-400">Growing</p>
+      <div class="flex items-center gap-4 overflow-x-auto">${growingHtml}</div>
     </div>
-    <div class="space-y-1.5">
-      <p class="text-[10px] font-bold tracking-wider text-slate-400">LATEST COLLECTED</p>
-      <div class="flex items-center gap-3 overflow-x-auto">${collectedHtml}</div>
+    <div class="space-y-2">
+      <p class="text-[11px] text-slate-400">Collected</p>
+      <div class="flex items-center gap-4 overflow-x-auto">${collectedHtml}</div>
     </div>`;
 }
 
