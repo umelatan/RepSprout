@@ -557,6 +557,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="workout"><span class="ms text-xl">fitness_center</span>Workout</a>
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="calendar"><span class="ms text-xl">calendar_month</span>Calendar</a>
       <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="profile"><span class="ms text-xl">yard</span>Garden</a>
+      <a class="rs-nav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 cursor-pointer transition-all text-sm font-medium" data-view="settings"><span class="ms text-xl">settings</span>Settings</a>
     </nav>
     <div class="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center gap-2 px-2">
       <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -980,23 +981,55 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
     <!-- GARDEN / PROFILE -->
     <section id="profile-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
-      <div class="card p-6 text-center space-y-2">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active Companion</p>
-        <div id="profile-plant-emoji" class="text-6xl p-bloom">🌱</div>
-        <p id="profile-plant-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
-        <p id="profile-plant-status" class="text-sm text-slate-400"></p>
-        <p id="profile-plant-stage" class="text-xs font-semibold text-brand-500"></p>
-        <button id="profile-choose-companion-btn" type="button" style="display:none" class="btn btn-green text-sm px-4 py-2 mt-1">Choose next companion</button>
-        <p class="text-xs text-slate-400 pt-2">🌐 Garden sharing with friends — <span class="text-brand-500 font-semibold">coming soon</span></p>
+      <!-- Companion card — the emotionally-important, permanent journey.
+           Never a settings block: artwork + name + current state + progress
+           toward its next milestone + a plain "Stage N · Name" line. See
+           renderGardenCompanion(). Tapping opens a small detail sheet
+           (garden-companion-modal), never a settings page. -->
+      <button type="button" id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
+        <div id="garden-companion-art" class="flex-shrink-0" aria-hidden="true"></div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Your Companion</p>
+          <p id="garden-companion-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
+          <p id="garden-companion-status" class="text-sm text-slate-400 mt-0.5"></p>
+          <p id="garden-companion-milestone" class="text-xs font-semibold text-brand-500 mt-2"></p>
+          <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1.5" role="progressbar" id="garden-companion-bar-track" aria-label="Companion growth">
+            <div id="garden-companion-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:0%"></div>
+          </div>
+          <p id="garden-companion-stage-label" class="text-xs text-slate-400 mt-1.5"></p>
+        </div>
+      </button>
+
+      <!-- My Garden / Locked Plants tabs — one flat, scrollable collection
+           grid per tab (see renderGardenGrid()). No large "+ New Plant"
+           card; plants are unlocked by training, never manually created. -->
+      <div class="flex items-center gap-5 border-b border-slate-100 dark:border-slate-800">
+        <button type="button" id="garden-tab-active" class="garden-tab pb-2.5 text-sm font-bold border-b-2" aria-selected="true">My Garden</button>
+        <button type="button" id="garden-tab-locked" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Locked Plants</button>
       </div>
 
-      <!-- Permanent collection — every Companion that has ever fully bloomed.
-           Populated only by completeCompanionBloom(); see renderCollectedCompanions(). -->
-      <div id="profile-collected-wrap" style="display:none" class="card p-4 space-y-3">
-        <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Bloomed Companions</h3>
-        <div id="profile-collected-list" class="grid grid-cols-2 gap-2"></div>
+      <div id="garden-active-panel">
+        <div id="garden-empty-state" style="display:none" class="card p-6 text-center space-y-3">
+          <p class="text-sm text-slate-400">Create your first exercise to plant something new.</p>
+          <button type="button" id="garden-create-exercise-btn" class="btn btn-green text-sm px-4 py-2">Create Exercise</button>
+        </div>
+        <div id="garden-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
       </div>
 
+      <div id="garden-locked-panel" style="display:none">
+        <div id="garden-locked-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+      </div>
+
+      <p class="text-center text-xs text-slate-400 flex items-center justify-center gap-1 pt-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Plants grow with consistent effort. Keep showing up.</p>
+    </section>
+
+    <!-- SETTINGS — moved out of the Garden page (see the Garden redesign
+         task's "Remove unrelated settings... Move those into the existing
+         Settings area instead of deleting the underlying functionality").
+         No functional change to any of these sections, just relocated;
+         still rendered by renderProfile(), which now also renders the
+         Garden page's own companion/grid data. -->
+    <section id="settings-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
       <div class="card p-4 space-y-3">
         <h3 class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Daily Goals</h3>
         <div class="grid grid-cols-2 gap-3">
@@ -1205,6 +1238,29 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Companion detail sheet — see openGardenCompanionDetail(). A small
+     sheet, not a full page (task: "Tap companion → companion detail page
+     or sheet"), and never a settings surface. -->
+<div id="garden-companion-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div id="gcd-art" class="flex-shrink-0" aria-hidden="true"></div>
+        <div class="min-w-0">
+          <p id="gcd-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
+          <p id="gcd-desc" class="text-xs text-slate-400"></p>
+          <p id="gcd-stage" class="text-xs font-semibold text-brand-500 mt-1"></p>
+        </div>
+      </div>
+      <button id="gcd-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <div>
+      <p class="text-xs font-semibold text-slate-400 mb-1">Journey</p>
+      <div id="gcd-timeline" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
+    </div>
+  </div>
+</div>
+
 <!-- "Choose next companion" — shown once the active Companion has fully
      bloomed. Not a random/gacha pick: the same five species onboarding
      offers, always fully visible, no locking. See selectNextCompanion(). -->
@@ -1232,6 +1288,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="workout"><span class="ms text-xl">fitness_center</span>Workout</a>
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="calendar"><span class="ms text-xl">calendar_month</span>Calendar</a>
       <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="profile"><span class="ms text-xl">yard</span>Garden</a>
+      <a class="rs-mnav flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 cursor-pointer transition-all text-sm font-medium" data-view="settings"><span class="ms text-xl">settings</span>Settings</a>
     </nav>
     <div class="border-t border-slate-100 dark:border-slate-800 pt-4 flex items-center gap-2 px-2">
       <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -3126,6 +3183,18 @@ const GROWTH_POINTS_FOR_BLOOM = 100;
 // a known asset gap in the implementation summary, not hidden.
 const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
 
+// Post-bloom Companion stages — growth doesn't stop at Bloom (see the
+// Garden redesign task: "Continued workouts should keep improving its
+// stage and appearance," "Companion growth should continue beyond full
+// bloom"). Same 20-point-wide pacing as the five pre-bloom stages
+// (GROWTH_STAGE_THRESHOLDS' own spacing) so post-bloom growth feels like
+// the same rhythm rather than a sudden grind-wall or a freebie. Legacy is
+// the terminal named stage — growth past it still accumulates
+// (bonusGrowthPoints keeps climbing, surfaced via legacyCyclePercent below)
+// but never claims a fourth, undefined "next milestone" name.
+const POST_BLOOM_STAGE_NAMES = ['Thriving', 'Flourishing', 'Legacy'];
+const POST_BLOOM_STAGE_WIDTH = 20;
+
 // ── Three connected but distinct plant systems ──────────────────────────────
 // 1. COMPANION PLANT (this section, GROWTH_AWARD/recalculatePlantGrowth/
 //    getPlantGrowthState below) — the Home hero. Represents overall care and
@@ -3204,12 +3273,42 @@ function getPlantGrowthState({ plantId, growthPoints }) {
       ? 'A bud is beginning to form.'
       : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'New leaves are forming.';
 
+  // Post-bloom: only meaningful once isFinalStage. postBloomStageIndex is
+  // 0-based (0=Thriving, 1=Flourishing, 2=Legacy); isLegacy marks the
+  // terminal stage, past which there is no further named milestone —
+  // postBloomRemainingToNext/postBloomNextStageName are null there instead
+  // of ever repeating the "Stage 5 of 5 / X% to full bloom" contradiction
+  // the Garden redesign task calls out. displayStageNumber/displayStageName
+  // give callers one combined pre+post-bloom stage identity to render
+  // ("Stage 6 · Thriving") without re-deriving this arithmetic themselves.
+  let postBloomStageIndex = null, postBloomStageName = null, postBloomProgressPercent = null,
+    postBloomRemainingToNext = null, postBloomNextStageName = null, isLegacy = false, legacyCyclePercent = null;
+  if (isFinalStage) {
+    const stageIdx = Math.min(Math.floor(bonusGrowthPoints / POST_BLOOM_STAGE_WIDTH), POST_BLOOM_STAGE_NAMES.length - 1);
+    postBloomStageIndex = stageIdx;
+    postBloomStageName = POST_BLOOM_STAGE_NAMES[stageIdx];
+    isLegacy = stageIdx === POST_BLOOM_STAGE_NAMES.length - 1;
+    const withinStage = bonusGrowthPoints - stageIdx * POST_BLOOM_STAGE_WIDTH;
+    if (isLegacy) {
+      legacyCyclePercent = Math.round(((withinStage % POST_BLOOM_STAGE_WIDTH) / POST_BLOOM_STAGE_WIDTH) * 100);
+    } else {
+      postBloomProgressPercent = Math.round((withinStage / POST_BLOOM_STAGE_WIDTH) * 100);
+      postBloomRemainingToNext = Math.max(0, round1(POST_BLOOM_STAGE_WIDTH - withinStage));
+      postBloomNextStageName = POST_BLOOM_STAGE_NAMES[stageIdx + 1];
+    }
+  }
+  const displayStageNumber = isFinalStage ? GROWTH_TOTAL_STAGES + postBloomStageIndex + 1 : currentStage;
+  const displayStageName = isFinalStage ? postBloomStageName : stageName;
+
   return {
     currentStage, totalStages: GROWTH_TOTAL_STAGES, stageName,
     overallProgressPercent, currentStageProgressPercent,
     nextStage, nextStageName, remainingToNextStage,
     selectedAsset, selectedAssetOpacity, selectedAssetScale,
-    isFinalStage, bonusGrowthPoints, growthReason
+    isFinalStage, bonusGrowthPoints, growthReason,
+    postBloomStageIndex, postBloomStageName, postBloomProgressPercent,
+    postBloomRemainingToNext, postBloomNextStageName, isLegacy, legacyCyclePercent,
+    displayStageNumber, displayStageName
   };
 }
 
@@ -4116,6 +4215,125 @@ const DoubleProgressionStrategy = {
 // entirely separate per the task spec).
 const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷', '🌸'];
 
+// ── Exercise Plant "Mastered" state (Garden) ────────────────────────────────
+// Reached once cycleIndex has climbed through every named stage — the same
+// "the moment the threshold is crossed, not one cycle later" rule the
+// Companion's own Bloom/isFinalStage already uses, so the two systems read
+// consistently. Continued progression past mastery never resets or swaps
+// to a different species/plant identity (per the task's explicit "do not
+// replace the mature exercise plant with a different species") — it only
+// unlocks small cosmetic tiers, one per additional full cycle completed.
+function isExercisePlantMastered(dpResult) {
+  return !!dpResult && dpResult.configured && dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+}
+function exercisePlantStageIdx(dpResult) {
+  return Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+}
+// 0 the moment mastery is first reached, 1 after one more full cycle
+// completes beyond that, 2 after two more, etc.
+function exercisePlantMasteryDepth(dpResult) {
+  return isExercisePlantMastered(dpResult) ? dpResult.cycleIndex - (GROWTH_TOTAL_STAGES - 1) : 0;
+}
+// Ordered, cumulative cosmetic tiers — purely decorative, never a growth
+// signal of their own (real growth still only ever comes from
+// calculateExerciseDoubleProgression()'s own leaf/cycle math).
+const MASTERY_COSMETIC_TIERS = ['Premium pot', 'Decorative stones', 'Mastery marker', 'Seasonal flowers', 'Extra fullness'];
+function exercisePlantCosmetics(dpResult) {
+  return MASTERY_COSMETIC_TIERS.slice(0, Math.min(exercisePlantMasteryDepth(dpResult), MASTERY_COSMETIC_TIERS.length));
+}
+// How visually "full" an exercise plant's foliage is — blends its capped
+// stage index with how far the CURRENT cycle's own leaves have matured, so
+// growth still visibly creeps within a stage instead of only jumping at
+// cycle boundaries. Purely a rendering input; never itself a growth signal.
+function exercisePlantFullness(dpResult) {
+  const stageIdx = exercisePlantStageIdx(dpResult);
+  const stageProgress = dpResult.workingSetCount > 0 ? dpResult.leavesMatured / dpResult.workingSetCount : 0;
+  return Math.min(1, (stageIdx + stageProgress) / GROWTH_TOTAL_STAGES);
+}
+
+// ── Garden artwork ───────────────────────────────────────────────────────────
+// Deliberately NOT emoji (see the Garden redesign task's "No emojis as
+// permanent plant artwork") — a small, reusable, parameterized illustration
+// instead. This app has no per-species/per-stage art asset library (see
+// GROWTH_STAGE_FALLBACK_EMOJI's own note on that gap), so building bespoke
+// botanical illustrations per exercise is out of scope here; this is a
+// deliberate, documented simplification, not an oversight.
+const EXERCISE_PLANT_TINTS = ['#22c55e', '#16a34a', '#4ade80', '#65a30d', '#15803d', '#84cc16', '#059669', '#10b981'];
+// Deterministic, stable per exerciseId (never re-rolled) — "the exercise
+// keeps the same plant identity forever" per the task, without persisting
+// a new field anywhere; reuses the same seeded-hash technique
+// selectVolumeComparison() already uses for its own stable-per-id pick.
+function exercisePlantTint(exerciseId) {
+  const idx = Math.floor(seededRandom01(exerciseId) * EXERCISE_PLANT_TINTS.length);
+  return EXERCISE_PLANT_TINTS[Math.min(idx, EXERCISE_PLANT_TINTS.length - 1)];
+}
+
+function exercisePlantSvg({ exerciseId, fullness, cosmetics = [], size = 72 }) {
+  const tint = exercisePlantTint(exerciseId);
+  const hasPremiumPot = cosmetics.includes('Premium pot');
+  const hasStones = cosmetics.includes('Decorative stones');
+  const hasMarker = cosmetics.includes('Mastery marker');
+  const hasFlowers = cosmetics.includes('Seasonal flowers');
+  const hasFullness = cosmetics.includes('Extra fullness');
+  const f = Math.max(0.15, Math.min(1, fullness + (hasFullness ? 0.15 : 0)));
+  const leafCount = Math.max(1, Math.round(f * 5));
+  let leaves = '';
+  for (let i = 0; i < leafCount; i++) {
+    const angle = (i / Math.max(1, leafCount)) * Math.PI - Math.PI / 2 - 0.35;
+    const r = 8 + f * 6;
+    const cx = 32 + Math.cos(angle) * r * 0.95;
+    const cy = 27 - Math.sin(angle) * r * 0.55 - f * 5;
+    const rad = 5.5 + f * 4.5 - i * 0.35;
+    leaves += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${rad.toFixed(1)}" fill="${tint}" opacity="${(0.9 - i * 0.06).toFixed(2)}"/>`;
+  }
+  const stones = hasStones ? [0, 1, 2].map(i => `<ellipse cx="${23 + i * 8}" cy="49" rx="2.4" ry="1.5" fill="#94a3b8"/>`).join('') : '';
+  const flowers = hasFlowers ? '<circle cx="26" cy="16" r="1.8" fill="#f0abfc"/><circle cx="38" cy="14" r="1.8" fill="#f0abfc"/>' : '';
+  const marker = hasMarker ? '<circle cx="46" cy="15" r="5.5" fill="#f59e0b"/><path d="M46 12l1 2 2.1.3-1.5 1.5.35 2.1-1.95-1-1.95 1 .35-2.1-1.5-1.5 2.1-.3z" fill="#fffbeb"/>' : '';
+  return `
+    <svg viewBox="0 0 64 56" width="${size}" height="${size * 56 / 64}" aria-hidden="true">
+      <path d="M20 34h24l-2.6 13.2a3.2 3.2 0 01-3.15 2.6H25.75a3.2 3.2 0 01-3.15-2.6L20 34z" fill="${hasPremiumPot ? '#c99a63' : '#b97748'}"/>
+      <path d="M20 34h24l-0.8 4H20.8l-0.8-4z" fill="#8a5a34" opacity=".5"/>
+      ${stones}
+      ${leaves}
+      ${flowers}
+      ${marker}
+    </svg>`;
+}
+
+// Companion artwork — deliberately its OWN illustration shape (not a
+// recolored copy of exercisePlantSvg above) so it stays visually distinct
+// per the task's "the companion should remain emotionally important and
+// visually separate from exercise plants." One shared pot, but each of the
+// five species gets its own simple top ornament using that species' real
+// PLANT_THEME colour (spines for Cactus, a canopy for Oak, stalks for
+// Bamboo, spikes for Lavender, a disc+petals for Sunflower) — geometric
+// shapes, not a bespoke illustration, for the same asset-scope reason
+// exercisePlantSvg() documents above.
+function companionPlantSvg({ plantId, fullness, isFinalStage, postBloomStageIndex, size = 120 }) {
+  const theme = PLANT_THEME[plantId] || DEFAULT_THEME;
+  const f = Math.max(0.2, Math.min(1, fullness));
+  const stemHeight = 10 + f * 14;
+  const s = 0.5 + f * 0.6;
+  const topY = 30 - stemHeight;
+  const ornaments = {
+    cactus: `<g transform="translate(32,${topY}) scale(${s})"><rect x="-7" y="-14" width="14" height="20" rx="7" fill="${theme.primary}"/><rect x="-11" y="-4" width="6" height="10" rx="3" fill="${theme.primary}"/><rect x="5" y="-8" width="6" height="10" rx="3" fill="${theme.primary}"/></g>`,
+    oak: `<g transform="translate(32,${topY + 2}) scale(${s})"><circle cx="0" cy="-6" r="15" fill="${theme.primary}"/><circle cx="-11" cy="2" r="10" fill="${theme.primary}" opacity=".85"/><circle cx="11" cy="2" r="10" fill="${theme.primary}" opacity=".85"/></g>`,
+    bamboo: `<g transform="translate(32,${topY}) scale(${s})"><rect x="-8" y="-22" width="5" height="26" rx="2.5" fill="${theme.primary}"/><rect x="0" y="-26" width="5" height="30" rx="2.5" fill="${theme.primary}"/><rect x="8" y="-18" width="5" height="22" rx="2.5" fill="${theme.primary}"/></g>`,
+    lavender: `<g transform="translate(32,${topY}) scale(${s})">${[-10, -3.3, 3.3, 10].map(x => `<rect x="${x - 1.6}" y="-24" width="3.2" height="20" rx="1.6" fill="${theme.primary}"/>`).join('')}</g>`,
+    sunflower: `<g transform="translate(32,${topY - 4}) scale(${s})">${Array.from({ length: 10 }, (_, i) => { const a = i / 10 * Math.PI * 2; const cx = Math.cos(a) * 13, cy = Math.sin(a) * 13; return `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="6" ry="3.2" fill="${theme.primary}" transform="rotate(${(a * 180 / Math.PI).toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`; }).join('')}<circle cx="0" cy="0" r="8" fill="#78350f"/></g>`
+  };
+  const ornament = ornaments[plantId] || ornaments.oak;
+  const bloomRing = isFinalStage ? `<circle cx="32" cy="${topY}" r="${18 + (postBloomStageIndex || 0) * 2}" fill="none" stroke="${theme.primary}" stroke-width="1.5" opacity=".25"/>` : '';
+  return `
+    <svg viewBox="0 0 64 60" width="${size}" height="${size * 60 / 64}" aria-hidden="true">
+      <path d="M18 36h28l-3 15.3a3.6 3.6 0 01-3.55 2.9H24.55A3.6 3.6 0 0121 51.3L18 36z" fill="#b97748"/>
+      <path d="M18 36h28l-0.9 4.5H18.9L18 36z" fill="#8a5a34" opacity=".5"/>
+      <rect x="30.5" y="${topY}" width="3" height="${(stemHeight + 6).toFixed(1)}" rx="1.5" fill="#4d7c46"/>
+      ${bloomRing}
+      ${ornament}
+    </svg>`;
+}
+
 // Short, user-facing labels for the raw DP_STATUS enum values — used
 // anywhere the status needs to read as a word/phrase instead of a
 // snake_case key (Exercise Progress Detail set rows, exercise cards).
@@ -4848,8 +5066,8 @@ document.getElementById('ob-finish-btn').addEventListener('click', async functio
 });
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-const VIEWS = ['dashboard','workout','calendar','profile'];
-const TITLES = { dashboard:'Dashboard', workout:'Workout', calendar:'Calendar', profile:'Garden' };
+const VIEWS = ['dashboard','workout','calendar','profile','settings'];
+const TITLES = { dashboard:'Dashboard', workout:'Workout', calendar:'Calendar', profile:'Garden', settings:'Settings' };
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -5529,37 +5747,228 @@ document.getElementById('dash-target-preview-body').addEventListener('click', e 
 });
 
 // ── Profile render ──────────────────────────────────────────────────────────
+// renderProfile() is the one function every realtime listener/save-flow
+// already calls whenever companion/exercise/session data changes (see its
+// many call sites) — kept as the single entry point so none of them need
+// updating; it now renders both the Garden page and the Settings page
+// (renderSettingsPanel() below), since both live off the same data refresh.
 function renderProfile() {
-  const plant = userProfile.plant || 'sprout';
-  const p = PLANTS[plant] || { emoji:'🌱', name:'', desc:'' };
-  const goals = userProfile.goals || {};
+  renderGardenCompanion();
+  renderGardenGrid();
+  renderSettingsPanel();
+}
+
+// ── Garden: Companion card ──────────────────────────────────────────────────
+// Same currentGrowthState() the Home hero and mission-card icon already
+// read — one growth number, one function, never a second source of truth.
+// Post-bloom (Thriving/Flourishing/Legacy) is entirely new surface area
+// getPlantGrowthState() now provides (see its own comment) — Home is
+// intentionally left untouched and still only reads the pre-existing fields.
+function renderGardenCompanion() {
+  const plantId = userProfile.plant || 'sprout';
+  const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
+  const growth = currentGrowthState();
+
+  const fullness = growth.isFinalStage ? 1 : (growth.currentStage - 1 + growth.currentStageProgressPercent / 100) / growth.totalStages;
+  document.getElementById('garden-companion-art').innerHTML = companionPlantSvg({
+    plantId, fullness, isFinalStage: growth.isFinalStage, postBloomStageIndex: growth.postBloomStageIndex, size: 88
+  });
+  document.getElementById('garden-companion-name').textContent = plant.name;
+
   const sessionDates = [];
   Object.values(sessions).forEach(dayMap => {
     if (typeof dayMap === 'object') Object.keys(dayMap).forEach(d => { if (!sessionDates.includes(d)) sessionDates.push(d); });
   });
   const health = getPlantHealth(sessionDates);
-  const [hl1, hl2] = HEALTH_LABELS[health] || ['',''];
+  const [, hl2] = HEALTH_LABELS[health] || ['', ''];
+  document.getElementById('garden-companion-status').textContent = hl2;
 
-  // Same getPlantGrowthState() result as the Home hero and mission-card icon —
-  // the Garden page is "your current plant," not a separate collectible-form
-  // display, so it shows the same in-progress stage rather than jumping to bloom.
+  const bar = document.getElementById('garden-companion-bar');
+  const milestoneEl = document.getElementById('garden-companion-milestone');
+  // Never the "Stage 5 of 5" + "X% to full bloom" contradiction the task
+  // calls out: once fully bloomed the next milestone is always a real
+  // post-bloom stage name, and once at Legacy (no further named stage)
+  // this says so instead of dangling a fake percentage.
+  if (growth.isFinalStage && growth.isLegacy) {
+    milestoneEl.textContent = 'Growing eternally';
+    bar.style.width = `${growth.legacyCyclePercent}%`;
+  } else if (growth.isFinalStage) {
+    milestoneEl.textContent = `${growth.postBloomRemainingToNext}% until next milestone`;
+    bar.style.width = `${growth.postBloomProgressPercent}%`;
+  } else {
+    milestoneEl.textContent = `${growth.remainingToNextStage}% until next milestone`;
+    bar.style.width = `${growth.currentStageProgressPercent}%`;
+  }
+  document.getElementById('garden-companion-stage-label').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
+}
+
+document.getElementById('garden-companion-card').addEventListener('click', openGardenCompanionDetail);
+
+// A small detail sheet, not a settings page or a second Home — see the
+// task's "Tap companion → companion detail page or sheet." Reuses the same
+// companion artwork/growth numbers the card above already computed; no
+// second growth calculation.
+function openGardenCompanionDetail() {
+  const plantId = userProfile.plant || 'sprout';
+  const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
   const growth = currentGrowthState();
-  const emojiEl = document.getElementById('profile-plant-emoji');
-  emojiEl.textContent = growth.selectedAsset;
-  emojiEl.style.opacity = growth.selectedAssetOpacity;
-  emojiEl.className = `text-6xl ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
-  document.getElementById('profile-plant-name').textContent   = `${p.name} — ${hl1}`;
-  document.getElementById('profile-plant-status').textContent = hl2;
-  const bloomed = userProfile.companion && userProfile.companion.status === 'bloomed';
-  document.getElementById('profile-plant-stage').textContent = bloomed
-    ? `Fully bloomed 🌸 — ${fmtDate(userProfile.companion.bloomedAt)}`
-    : growth.isFinalStage
-      ? 'Fully bloomed 🌸'
-      : `Stage ${growth.currentStage} of ${growth.totalStages} · ${growth.stageName} — ${growth.remainingToNextStage}% to ${growth.nextStageName}`;
-  document.getElementById('profile-choose-companion-btn').style.display = bloomed ? '' : 'none';
+  const fullness = growth.isFinalStage ? 1 : (growth.currentStage - 1 + growth.currentStageProgressPercent / 100) / growth.totalStages;
 
-  renderCollectedCompanions();
+  document.getElementById('gcd-art').innerHTML = companionPlantSvg({
+    plantId, fullness, isFinalStage: growth.isFinalStage, postBloomStageIndex: growth.postBloomStageIndex, size: 120
+  });
+  document.getElementById('gcd-name').textContent = plant.name;
+  document.getElementById('gcd-desc').textContent = plant.desc || '';
+  document.getElementById('gcd-stage').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
 
+  // Every named stage this companion has already passed through, plus the
+  // ones still ahead — a real timeline, never a hardcoded list of names
+  // (GROWTH_STAGE_NAMES/POST_BLOOM_STAGE_NAMES are the same arrays every
+  // other stage computation already reads).
+  const allStageNames = [...GROWTH_STAGE_NAMES, ...POST_BLOOM_STAGE_NAMES];
+  const reachedCount = growth.displayStageNumber;
+  document.getElementById('gcd-timeline').innerHTML = allStageNames.map((name, i) => {
+    const stageNum = i + 1;
+    const reached = stageNum <= reachedCount;
+    const isCurrent = stageNum === reachedCount;
+    return `
+      <div class="flex items-center gap-2.5 py-1.5">
+        <span class="ms text-base flex-shrink-0 ${reached ? 'text-brand-500' : 'text-slate-300 dark:text-slate-600'}" aria-hidden="true">${reached ? 'check_circle' : 'radio_button_unchecked'}</span>
+        <span class="text-sm ${isCurrent ? 'font-bold text-slate-800 dark:text-white' : reached ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}">${esc(name)}</span>
+        ${isCurrent ? '<span class="text-[10px] font-bold text-brand-500 ml-auto flex-shrink-0">Current</span>' : ''}
+      </div>`;
+  }).join('');
+
+  document.getElementById('garden-companion-modal').style.display = '';
+}
+document.getElementById('gcd-close').addEventListener('click', () => rsHideModal('garden-companion-modal'));
+
+// ── Garden: exercise plant collection ───────────────────────────────────────
+// Every Double-Progression-configured, non-archived exercise is a plant —
+// "active" (My Garden) once it has real training history, "locked" (tied to
+// a real, existing exercise) until then — never rewarded just for creating
+// the exercise (task: "Do not reward users simply for creating random new
+// exercises"). Archived exercises keep their full growth history (never
+// deleted) but move to Locked Plants, tagged "Archived" instead of "Locked".
+// Exercises with progressionEnabled===false have no Double Progression
+// concept at all — consistent with every other place in this app that
+// already gates leaves/progression on that same flag, they never get a
+// plant card either.
+function gardenExercisePlants() {
+  return Object.entries(exercises)
+    .filter(([, ex]) => !ex.archived && ex.progressionEnabled !== false)
+    .map(([exerciseId, ex]) => {
+      const dpResult = DoubleProgressionStrategy.calculateExerciseResult(exerciseId);
+      if (!dpResult.configured) return null;
+      const positions = DoubleProgressionStrategy.calculateSetResults(exerciseId);
+      const everTrained = positions.some(p => p.currentWeight != null);
+      return { exerciseId, ex, dpResult, everTrained };
+    })
+    .filter(Boolean);
+}
+function gardenArchivedPlants() {
+  return Object.entries(exercises)
+    .filter(([, ex]) => ex.archived && ex.progressionEnabled !== false)
+    .map(([exerciseId, ex]) => {
+      const dpResult = DoubleProgressionStrategy.calculateExerciseResult(exerciseId);
+      return dpResult.configured ? { exerciseId, ex, dpResult } : null;
+    })
+    .filter(Boolean);
+}
+
+let gardenActiveTab = 'active';
+function setGardenTab(tab) {
+  gardenActiveTab = tab;
+  const isActive = tab === 'active';
+  const activeBtn = document.getElementById('garden-tab-active');
+  const lockedBtn = document.getElementById('garden-tab-locked');
+  activeBtn.classList.toggle('text-brand-500', isActive);
+  activeBtn.classList.toggle('border-brand-500', isActive);
+  activeBtn.classList.toggle('text-slate-400', !isActive);
+  activeBtn.classList.toggle('border-transparent', !isActive);
+  activeBtn.setAttribute('aria-selected', String(isActive));
+  lockedBtn.classList.toggle('text-brand-500', !isActive);
+  lockedBtn.classList.toggle('border-brand-500', !isActive);
+  lockedBtn.classList.toggle('text-slate-400', isActive);
+  lockedBtn.classList.toggle('border-transparent', isActive);
+  lockedBtn.setAttribute('aria-selected', String(!isActive));
+  document.getElementById('garden-active-panel').style.display = isActive ? '' : 'none';
+  document.getElementById('garden-locked-panel').style.display = isActive ? 'none' : '';
+}
+document.getElementById('garden-tab-active').addEventListener('click', () => setGardenTab('active'));
+document.getElementById('garden-tab-locked').addEventListener('click', () => setGardenTab('locked'));
+
+// A plant card is deliberately simple (task: "Keep the cards simple and
+// consistent with RepSprout's existing UI... Do not add equipment icons or
+// muscle diagrams") — artwork, exercise name, Stage N/Mastered, and the
+// same leaf-row component the Exercise Summary/finish screens already use,
+// never a second leaf-rendering implementation.
+function gardenPlantCardHtml({ exerciseId, ex, dpResult, mastered, cosmetics, stageIdx, fullness }) {
+  const positions = DoubleProgressionStrategy.calculateSetResults(exerciseId);
+  const leavesHtml = renderDoubleProgressionLeaves(positions, ex.unit, 'text-sm');
+  const stageLabel = mastered ? 'Mastered' : `Stage ${stageIdx + 1}`;
+  return `
+    <button type="button" class="garden-plant-card card p-3 text-center flex flex-col items-center gap-1" data-exercise-id="${exerciseId}">
+      <div class="flex-shrink-0">${exercisePlantSvg({ exerciseId, fullness, cosmetics, size: 60 })}</div>
+      <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate w-full">${esc(ex.name)}</p>
+      <p class="text-[11px] font-semibold ${mastered ? 'text-amber-500' : 'text-brand-500'}">${esc(stageLabel)}</p>
+      <div class="flex items-center justify-center gap-0.5 flex-wrap">${leavesHtml}</div>
+    </button>`;
+}
+
+// Locked cards use a silhouette (grayscale/dimmed) of the same artwork —
+// never a large "+ New Plant" CTA card (task: "Users unlock plants; they
+// do not manually create arbitrary plants"). Tapping one just explains its
+// unlock condition, except the one generic "create a new exercise" slot,
+// which opens the existing Create Exercise flow (openExerciseModal()).
+function gardenLockedCardHtml({ exerciseId, name, tag, reason, isCreate }) {
+  return `
+    <button type="button" class="garden-locked-card card p-3 text-center flex flex-col items-center gap-1" data-reason="${esc(reason)}" data-create="${isCreate ? '1' : '0'}">
+      <div class="flex-shrink-0 relative" style="filter:grayscale(1) brightness(.6)">
+        ${exercisePlantSvg({ exerciseId: isCreate ? 'locked-generic' : exerciseId, fullness: 0.28, cosmetics: [], size: 60 })}
+        <span class="ms text-sm text-slate-400 absolute top-0 right-0" aria-hidden="true">lock</span>
+      </div>
+      <p class="font-display font-bold text-sm text-slate-500 dark:text-slate-400 truncate w-full">${isCreate ? 'Unknown Plant' : esc(name)}</p>
+      <p class="text-[11px] text-slate-400">${esc(tag)}</p>
+    </button>`;
+}
+
+function renderGardenGrid() {
+  const all = gardenExercisePlants();
+  const active = all.filter(p => p.everTrained);
+  const untrained = all.filter(p => !p.everTrained);
+  const archived = gardenArchivedPlants();
+
+  document.getElementById('garden-empty-state').style.display = all.length === 0 ? '' : 'none';
+
+  const grid = document.getElementById('garden-grid');
+  grid.innerHTML = active.map(p => gardenPlantCardHtml({
+    exerciseId: p.exerciseId, ex: p.ex, dpResult: p.dpResult,
+    mastered: isExercisePlantMastered(p.dpResult), cosmetics: exercisePlantCosmetics(p.dpResult),
+    stageIdx: exercisePlantStageIdx(p.dpResult), fullness: exercisePlantFullness(p.dpResult)
+  })).join('');
+  grid.querySelectorAll('.garden-plant-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
+
+  const lockedCards = [];
+  untrained.forEach(p => lockedCards.push(gardenLockedCardHtml({ exerciseId: p.exerciseId, name: p.ex.name, tag: 'Locked', reason: `Progress ${p.ex.name} to unlock.` })));
+  archived.forEach(p => lockedCards.push(gardenLockedCardHtml({ exerciseId: p.exerciseId, name: p.ex.name, tag: 'Archived', reason: `${p.ex.name}'s growth history is preserved. Unarchive it to resume growing this plant.` })));
+  lockedCards.push(gardenLockedCardHtml({ exerciseId: 'locked-generic', name: 'Unknown Plant', tag: 'Locked', reason: 'Create a new exercise to unlock.', isCreate: true }));
+  const lockedGrid = document.getElementById('garden-locked-grid');
+  lockedGrid.innerHTML = lockedCards.join('');
+  lockedGrid.querySelectorAll('.garden-locked-card').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.create === '1') openExerciseModal();
+    else alert(b.dataset.reason);
+  }));
+
+  setGardenTab(gardenActiveTab);
+}
+document.getElementById('garden-create-exercise-btn').addEventListener('click', () => openExerciseModal());
+
+// ── Settings page ────────────────────────────────────────────────────────────
+// Extracted from the old Garden-page-as-settings-screen render — same
+// fields, same behavior, just relocated (see #settings-view).
+function renderSettingsPanel() {
+  const goals = userProfile.goals || {};
   if (goals.calories) document.getElementById('goal-cal').value  = goals.calories;
   if (goals.protein)  document.getElementById('goal-pro').value  = goals.protein;
   if (goals.carbs)    document.getElementById('goal-carb').value = goals.carbs;
@@ -5571,28 +5980,6 @@ function renderProfile() {
 
   setSettingsRestMode(userProfile.restTimerMode || 'exercise_specific');
   setSettingsRestChip(userProfile.restSeconds || null);
-}
-document.getElementById('profile-choose-companion-btn').addEventListener('click', openChooseCompanionModal);
-
-// The permanent scrapbook — every Companion that has ever fully bloomed,
-// newest first. Reads collectedCompanions only (never derived from the
-// active companion's in-progress state), so a plant that hasn't bloomed yet
-// never shows up here as if it were already collected.
-function renderCollectedCompanions() {
-  const collected = getCollectedCompanions();
-  const wrap = document.getElementById('profile-collected-wrap');
-  wrap.style.display = collected.length ? '' : 'none';
-  if (!collected.length) return;
-  document.getElementById('profile-collected-list').innerHTML = collected.map(c => {
-    const p = PLANTS[c.speciesId] || { emoji: '🌱', name: 'Companion' };
-    const theme = PLANT_THEME[c.speciesId] || DEFAULT_THEME;
-    return `
-      <div class="flex flex-col items-center gap-1 p-3 rounded-xl" style="background:${theme.soft}" tabindex="0" role="group" aria-label="${esc(p.name)}, bloomed ${fmtDate(c.bloomedAt)}">
-        <span class="text-3xl" aria-hidden="true">${p.emoji}</span>
-        <p class="text-xs font-semibold text-slate-700 dark:text-slate-800">${esc(p.name)}</p>
-        <p class="text-[10px] text-slate-500 dark:text-slate-600">Bloomed ${fmtDate(c.bloomedAt)}</p>
-      </div>`;
-  }).join('');
 }
 
 // ── Rest Timer settings (profile view) ──────────────────────────────────────
