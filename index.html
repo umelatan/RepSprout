@@ -274,8 +274,12 @@ body{font-family:'Inter',sans-serif}
 .companion-pot{border-radius:0 0 40% 40%/0 0 55% 55%;background:linear-gradient(180deg,#4a3222 0%,#4a3222 22%,#d18a5c 22%,#c17a4d 55%,#8a5a34 100%);box-shadow:inset 0 -3px 6px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.12)}
 .dark .companion-pot{background:linear-gradient(180deg,#3a2718 0%,#3a2718 22%,#b0714f 22%,#a8663d 55%,#6b4226 100%)}
 .companion-cosmetic{position:absolute;font-size:.65rem;line-height:1;pointer-events:none;user-select:none}
-.companion-moss{bottom:.7rem;left:10%}
-.companion-stones{bottom:.65rem;right:10%}
+/* A shared soil bed instead of a pot per sprout (task: "look more like a
+   'garden' instead of a pot... we can see the sprouts etc growing too") —
+   one wide mound the mother's pot sits on and every sprout pokes directly
+   out of, with a visible darker soil line and an inset shadow for depth. */
+.companion-garden-bed{border-radius:50% 50% 20% 20%/100% 100% 25% 25%;background:linear-gradient(180deg,#6b4f30 0%,#5c4326 40%,#4a3520 100%);box-shadow:inset 0 4px 10px rgba(0,0,0,.35),inset 0 -2px 0 rgba(255,255,255,.05)}
+.dark .companion-garden-bed{background:linear-gradient(180deg,#5c4326 0%,#4a3520 40%,#3a2a18 100%)}
 /* Ambient life on the Home hero only — a butterfly that visits, lingers
    briefly, then leaves (never a permanent fixture: task "butterflies
    sometimes visit... land briefly then fly away... are NOT permanent"),
@@ -3367,30 +3371,78 @@ function companionCareCosmetics(growth) {
 }
 
 // Care doesn't just make the one flower prettier forever — it becomes a
-// garden (task: "Instead of endlessly making ONE flower prettier... the
-// companion slowly becomes a garden... Bloom -> tiny offshoot appears ->
-// second Lavender grows -> third -> small cluster -> established garden").
-// The original companion is always the mother plant; these are smaller
-// offshoots sharing its pot, never a replacement. Capped at 5 so "an
-// established garden" reads as a settled, permanent scene rather than
-// something that keeps growing taller forever.
-function companionGardenOffshootCount(growth) {
-  if (!growth.isFinalStage) return 0;
-  return [1, 2, 4, 5][growth.postBloomStageIndex] ?? 5;
+// garden, one surprise sprout at a time (task: "on random time... a small
+// baby plant growing... the surprise factor of HEY there's another
+// character plant growing again... and it goes through the entire growing
+// stages again... until we have a whole garden"). Each sprout's own "how
+// many more bonus points until it starts" and "how many points it needs to
+// reach its own full bloom" are picked once via a seeded hash keyed to this
+// companion + the sprout's index (seededRandom01()) — reproducible (the
+// same companion always produces the same sequence of surprises) rather
+// than reshuffling on every render, but not an evenly-spaced, predictable
+// cadence either. Each sprout genuinely re-plays the mother's own seed ->
+// full-bloom journey at its own pace — see plantArtForProgress().
+const GARDEN_SPROUT_GAP_MIN = 10, GARDEN_SPROUT_GAP_MAX = 26; // bonus points between one sprout starting and the next
+const GARDEN_SPROUT_BLOOM_MIN = 8, GARDEN_SPROUT_BLOOM_MAX = 18; // points a sprout itself needs to reach its own full bloom
+// A practical rendering ceiling — bonusGrowthPoints (and the Care stage
+// name/progress bar) keep climbing forever past this, but the visible
+// garden itself settles into a full, mature bed rather than sprouting new
+// slots forever, the same way a real garden bed eventually fills in.
+const GARDEN_MAX_VISIBLE_SPROUTS = 6;
+
+function gardenSprouts(growth) {
+  if (!growth.isFinalStage) return [];
+  const seedKey = userProfile.companion?.id || 'companion';
+  const sprouts = [];
+  let cursor = 0;
+  for (let i = 0; i < GARDEN_MAX_VISIBLE_SPROUTS; i++) {
+    const gap = GARDEN_SPROUT_GAP_MIN + seededRandom01(`${seedKey}-sprout-gap-${i}`) * (GARDEN_SPROUT_GAP_MAX - GARDEN_SPROUT_GAP_MIN);
+    const startAt = cursor + gap;
+    if (startAt > growth.bonusGrowthPoints) break; // this sprout (and every later one) hasn't started yet
+    const bloomTarget = GARDEN_SPROUT_BLOOM_MIN + seededRandom01(`${seedKey}-sprout-bloom-${i}`) * (GARDEN_SPROUT_BLOOM_MAX - GARDEN_SPROUT_BLOOM_MIN);
+    sprouts.push({ progress: Math.min(1, (growth.bonusGrowthPoints - startAt) / bloomTarget) });
+    cursor = startAt;
+  }
+  return sprouts;
 }
 
-// Deterministic offshoot placement (not reshuffled every render) — a tight
-// cluster right beside the mother's own pot, alternating sides and shrinking
-// a little further out, each with its own small pot on the exact same
-// baseline as the mother (never floating at a different height) and a
-// little later into its own gentle sway so the cluster never looks
-// synchronized.
-const OFFSHOOT_SLOTS = [
-  { dx: -1,    scale: .62, delay: '.2s'  },
-  { dx: 1,     scale: .58, delay: '.9s'  },
-  { dx: -1.85, scale: .5,  delay: '1.6s' },
-  { dx: 1.85,  scale: .48, delay: '.5s'  },
-  { dx: -2.6,  scale: .42, delay: '1.1s' }
+// Renders a plant at any point 0-1 through its own growth, reusing the same
+// seed -> real-species-emoji visual language the mother's own pre-Bloom
+// stages already use (GROWTH_SEED_EMOJI at the very start, then the real
+// species emoji growing in scale/opacity) — one shared "what does a plant
+// look like at fraction X of its growth" function for the mother and every
+// garden sprout, never a second art system.
+function plantArtForProgress(progress, speciesEmoji) {
+  const clamped = Math.max(0, Math.min(1, progress));
+  const stageCount = GROWTH_STAGE_SCALE.length;
+  if (clamped < 0.5 / stageCount) return { asset: GROWTH_SEED_EMOJI, opacity: 1, scale: 0.55 };
+  const idx = Math.min(stageCount - 1, Math.floor(clamped * stageCount));
+  return { asset: speciesEmoji, opacity: GROWTH_STAGE_OPACITY[idx], scale: GROWTH_STAGE_SCALE[idx] };
+}
+
+// Deterministic sprout placement (not reshuffled every render) — a loose
+// cluster around the mother's pot, alternating sides and shrinking a little
+// further out, each on the exact same soil baseline (never floating at a
+// different height) and a little later into its own gentle sway so the bed
+// never looks synchronized. dx is in rem, tuned per size so even a full 6-
+// sprout garden stays inside the hero's fixed-width art column instead of
+// overflowing into the text beside it (see #dash-companion-scene's own
+// width:46%) — every slot starts just clear of the mother's own pot edge.
+const GARDEN_SPROUT_SLOTS_BIG = [
+  { dx: -2.4, size: .5,  delay: '.2s'  },
+  { dx: 2.3,  size: .46, delay: '.9s'  },
+  { dx: -3.0, size: .4,  delay: '1.6s' },
+  { dx: 2.9,  size: .36, delay: '.5s'  },
+  { dx: -3.4, size: .3,  delay: '1.1s' },
+  { dx: 3.3,  size: .28, delay: '1.9s' }
+];
+const GARDEN_SPROUT_SLOTS_SMALL = [
+  { dx: -1.5,  size: .5,  delay: '.2s'  },
+  { dx: 1.45,  size: .46, delay: '.9s'  },
+  { dx: -1.95, size: .4,  delay: '1.6s' },
+  { dx: 1.9,   size: .36, delay: '.5s'  },
+  { dx: -2.35, size: .3,  delay: '1.1s' },
+  { dx: 2.3,   size: .28, delay: '1.9s' }
 ];
 
 // The one companion artwork snippet — used identically by Home's hero, the
@@ -3408,40 +3460,39 @@ const OFFSHOOT_SLOTS = [
 // glyphs themselves don't perfectly align.
 function companionArtHtml(growth, { big = false } = {}) {
   const cosmetics = companionCareCosmetics(growth);
-  const offshootCount = companionGardenOffshootCount(growth);
+  const sprouts = gardenSprouts(growth);
+  const speciesEmoji = (PLANTS[userProfile.plant] || {}).emoji || growth.selectedAsset;
   const motherRem = big ? 6.5 : 3.75;
-  const motherPotW = big ? 5.4 : 3.1;
+  const motherPotW = big ? 4 : 2.3;
   const motherPotH = big ? 1.5 : .95;
-  const unitRem = big ? 2.7 : 1.6; // horizontal spacing step between offshoot slots
+  const sproutBaseRem = big ? 2.8 : 1.6; // each sprout's own "fully bloomed" size ceiling
+  const bedHeightRem = big ? 1.15 : .68;
 
-  const slots = OFFSHOOT_SLOTS.slice(0, offshootCount);
-  const offshootsHtml = slots.map(slot => {
-    const glyphRem = (motherRem * slot.scale).toFixed(2);
-    const potW = (motherPotW * slot.scale).toFixed(2);
-    const potH = (motherPotH * slot.scale).toFixed(2);
+  const slots = (big ? GARDEN_SPROUT_SLOTS_BIG : GARDEN_SPROUT_SLOTS_SMALL).slice(0, sprouts.length);
+  const sproutsHtml = slots.map((slot, i) => {
+    const art = plantArtForProgress(sprouts[i].progress, speciesEmoji);
+    const glyphRem = (sproutBaseRem * slot.size).toFixed(2);
     return `
-      <div class="absolute bottom-0 flex flex-col items-center" style="left:calc(50% + ${(slot.dx * unitRem).toFixed(2)}rem);transform:translateX(-50%)">
-        <span class="leading-none p-sway" style="font-size:${glyphRem}rem;animation-delay:${slot.delay}" aria-hidden="true">${growth.selectedAsset}</span>
-        <div class="companion-pot" style="width:${potW}rem;height:${potH}rem;margin-top:${(-0.4 * slot.scale).toFixed(2)}rem"></div>
-      </div>`;
+      <span class="absolute leading-none p-sway" style="left:calc(50% + ${slot.dx}rem);bottom:${(bedHeightRem * 0.42).toFixed(2)}rem;font-size:${glyphRem}rem;opacity:${art.opacity};transform:translateX(-50%) scale(${art.scale});transform-origin:bottom center;animation-delay:${slot.delay}" aria-hidden="true">${art.asset}</span>`;
   }).join('');
 
   const farthestDx = slots.length ? Math.max(...slots.map(s => Math.abs(s.dx))) : 0;
-  const sceneWidthRem = Math.max(motherPotW, farthestDx * unitRem * 2 + motherPotW * 0.6);
-  const sceneHeightRem = motherRem + motherPotH;
+  const bedWidthRem = Math.max(motherPotW * 1.15, farthestDx * 2 + sproutBaseRem * 0.7);
+  const sceneWidthRem = bedWidthRem;
+  const sceneHeightRem = motherRem + motherPotH * 0.6 + bedHeightRem;
 
   return `
     <div class="relative" style="width:${sceneWidthRem.toFixed(2)}rem;height:${sceneHeightRem.toFixed(2)}rem;margin:0 auto">
-      <div class="absolute bottom-0 left-1/2 rounded-full pointer-events-none" style="width:${sceneWidthRem.toFixed(2)}rem;height:${(big?1:.6)}rem;transform:translateX(-50%);background:radial-gradient(ellipse closest-side, rgba(0,0,0,.4), transparent 75%)" aria-hidden="true"></div>
-      ${offshootsHtml}
-      <div class="absolute bottom-0 left-1/2 flex flex-col items-center" style="transform:translateX(-50%)">
+      <div class="absolute bottom-0 left-1/2 companion-garden-bed" style="width:${bedWidthRem.toFixed(2)}rem;height:${bedHeightRem.toFixed(2)}rem;transform:translateX(-50%)" aria-hidden="true"></div>
+      ${sproutsHtml}
+      <div class="absolute left-1/2 flex flex-col items-center" style="bottom:${(bedHeightRem * 0.55).toFixed(2)}rem;transform:translateX(-50%)">
         <span style="display:inline-block;transform:scale(${growth.selectedAssetScale});transform-origin:bottom center">
           <span class="leading-none ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="font-size:${motherRem}rem;opacity:${growth.selectedAssetOpacity}" aria-hidden="true">${growth.selectedAsset}</span>
         </span>
         <div class="companion-pot" style="width:${motherPotW}rem;height:${motherPotH}rem;margin-top:${big?'-.75rem':'-.5rem'}"></div>
-        ${cosmetics.moss ? `<span class="companion-cosmetic companion-moss" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🌾</span>` : ''}
-        ${cosmetics.stones ? `<span class="companion-cosmetic companion-stones" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🪨</span>` : ''}
       </div>
+      ${cosmetics.moss ? `<span class="companion-cosmetic companion-moss" style="bottom:${(bedHeightRem*0.5).toFixed(2)}rem;left:14%;${big?'font-size:1.1rem':''}" aria-hidden="true">🌾</span>` : ''}
+      ${cosmetics.stones ? `<span class="companion-cosmetic companion-stones" style="bottom:${(bedHeightRem*0.5).toFixed(2)}rem;right:14%;${big?'font-size:1.1rem':''}" aria-hidden="true">🪨</span>` : ''}
     </div>`;
 }
 
@@ -3455,7 +3506,19 @@ function companionArtHtml(growth, { big = false } = {}) {
 // renderDashboard() re-render instead of being wiped mid-animation. Same
 // self-checking, self-removing, never-double-scheduled shape as
 // startPlantWatering()'s droplet loop.
-let companionButterflyHandle = null, companionPetalHandle = null;
+// Whether today has a butterfly (or petal) moment at all is decided once,
+// per day, per companion — seeded (seededRandom01()) so it's the same
+// answer all day but different day to day, exactly like the garden sprouts
+// above. This deliberately replaces an earlier recurring-timer version:
+// a loop that re-rolled every 18-35s for as long as the tab stayed open
+// meant waiting long enough basically guaranteed a visit, which is the
+// opposite of "once in a while" (task: "not depending on how long we open
+// the page"). Now it's decided once per page load; if today "has" one it
+// fires a single time at a random moment and never again today, so
+// lingering on the page longer never improves the odds.
+const BUTTERFLY_DAILY_CHANCE = 0.35;
+const PETAL_DAILY_CHANCE = 0.35;
+let companionButterflyHandle = null, companionPetalHandle = null, companionAmbientDecided = false;
 function companionAmbientSceneEl() {
   const dashView = document.getElementById('dashboard-view');
   if (!dashView || dashView.style.display === 'none') return null;
@@ -3465,11 +3528,24 @@ function stopCompanionAmbient() {
   clearTimeout(companionButterflyHandle); companionButterflyHandle = null;
   clearTimeout(companionPetalHandle); companionPetalHandle = null;
 }
-function scheduleCompanionButterflyVisit() {
-  companionButterflyHandle = setTimeout(() => {
+// Returns a setTimeout handle if today "has" this visit (or null if not —
+// nothing to schedule), firing spawn(stage) once at a seeded-random moment.
+function scheduleDailyAmbientVisit({ chance, seedSuffix, minDelayMs, maxDelayMs, spawn }) {
+  const seedKey = `${userProfile.companion?.id || 'companion'}-${seedSuffix}-${todayStr()}`;
+  if (seededRandom01(seedKey) >= chance) return null;
+  const delayMs = minDelayMs + seededRandom01(seedKey + '-delay') * (maxDelayMs - minDelayMs);
+  return setTimeout(() => {
     const stage = companionAmbientSceneEl();
-    if (!stage) { companionButterflyHandle = null; return; }
-    if (!document.hidden && currentGrowthState().isFinalStage) {
+    if (stage && !document.hidden && currentGrowthState().isFinalStage) spawn(stage);
+  }, delayMs);
+}
+function startCompanionAmbient() {
+  if (companionAmbientDecided) return; // decide once per page load, never re-roll on every re-render
+  companionAmbientDecided = true;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  companionButterflyHandle = scheduleDailyAmbientVisit({
+    chance: BUTTERFLY_DAILY_CHANCE, seedSuffix: 'butterfly', minDelayMs: 3000, maxDelayMs: 45000,
+    spawn(stage) {
       const el = document.createElement('span');
       el.className = 'companion-butterfly-visit';
       el.setAttribute('aria-hidden', 'true');
@@ -3479,14 +3555,10 @@ function scheduleCompanionButterflyVisit() {
       el.addEventListener('animationend', () => el.remove());
       stage.appendChild(el);
     }
-    scheduleCompanionButterflyVisit();
-  }, 18000 + Math.random() * 17000); // every 18-35s — occasional, never a loop you can predict
-}
-function scheduleCompanionPetalFall() {
-  companionPetalHandle = setTimeout(() => {
-    const stage = companionAmbientSceneEl();
-    if (!stage) { companionPetalHandle = null; return; }
-    if (!document.hidden && currentGrowthState().isFinalStage) {
+  });
+  companionPetalHandle = scheduleDailyAmbientVisit({
+    chance: PETAL_DAILY_CHANCE, seedSuffix: 'petal', minDelayMs: 2000, maxDelayMs: 40000,
+    spawn(stage) {
       const el = document.createElement('span');
       el.className = 'companion-petal-fall';
       el.setAttribute('aria-hidden', 'true');
@@ -3496,13 +3568,7 @@ function scheduleCompanionPetalFall() {
       el.addEventListener('animationend', () => el.remove());
       stage.appendChild(el);
     }
-    scheduleCompanionPetalFall();
-  }, 15000 + Math.random() * 13000); // every 15-28s
-}
-function startCompanionAmbient() {
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  if (!companionButterflyHandle) scheduleCompanionButterflyVisit();
-  if (!companionPetalHandle) scheduleCompanionPetalFall();
+  });
 }
 
 // ── Plant growth: always derived fresh from remaining activity history ─────
