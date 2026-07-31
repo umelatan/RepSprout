@@ -9938,10 +9938,15 @@ document.getElementById('qra-move-later').addEventListener('click', () => {
 // the shared library (or a brand-new one, via the picker's own "Create
 // exercise" card) — same picker "Add to today's workout" already uses
 // (openPickExModal), just wired to replace-in-place instead of append.
+// Confirmed with the old -> new names before committing, since — unlike
+// Add — this discards the slot's current targets, not just appends.
 // A fresh buildSessionExercise() entry means the slot starts clean at
 // Set 1, using the newly-picked exercise's own rep range/weight/rest —
 // never carrying over the swapped-out exercise's targets.
 function swapQueueExercise(idx, newExerciseId) {
+  const oldEx = activeSession.exercises[idx];
+  const newName = exercises[newExerciseId]?.name || 'this exercise';
+  if (!oldEx || !confirm(`Swap ${oldEx.name} for ${newName}?`)) return;
   const entry = buildSessionExercise(newExerciseId);
   if (!entry) return;
   activeSession.exercises[idx] = entry;
