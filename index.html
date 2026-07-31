@@ -236,8 +236,6 @@ body{font-family:'Inter',sans-serif}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
-.mission-surface{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)}
-.dark .mission-surface{background:linear-gradient(135deg,rgba(20,83,45,.4) 0%,rgba(5,46,22,.6) 100%)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
@@ -274,14 +272,35 @@ body{font-family:'Inter',sans-serif}
    companion detail sheet all render the same companionArtHtml() markup, so
    the companion is always grounded "in its pot," never floating loose (see
    the Home redesign task). Care-stage cosmetics (moss/stones) sit statically
-   at the pot's rim; the butterfly reuses .leaf-particle's own drift. */
-.companion-pot{height:.8rem;margin:-.1rem auto 0;border-radius:0 0 .65rem .65rem;background:linear-gradient(180deg,#c17a4d,#8a5a34)}
+   at the pot's rim. */
+.companion-pot{margin:-.1rem auto 0;border-radius:0 0 .65rem .65rem;background:linear-gradient(180deg,#c17a4d,#8a5a34)}
 .dark .companion-pot{background:linear-gradient(180deg,#a8663d,#6b4226)}
 .companion-cosmetic{position:absolute;font-size:.65rem;line-height:1;pointer-events:none;user-select:none}
 .companion-moss{bottom:.7rem;left:10%}
 .companion-stones{bottom:.65rem;right:10%}
+/* Ambient life on the Home hero only — a butterfly that visits, lingers
+   briefly, then leaves (never a permanent fixture: task "butterflies
+   sometimes visit... land briefly then fly away... are NOT permanent"),
+   and an occasional falling petal. Both are one-shot, JS-spawned and self-
+   removing on animationend (see startCompanionAmbient()), the same pattern
+   startPlantWatering() already uses for its droplets — nothing here is a
+   plain CSS `infinite` loop sitting in the DOM forever. */
+@keyframes companionButterflyVisit{
+  0%{opacity:0;transform:translate(26px,-18px) scale(.6) rotate(-8deg)}
+  15%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
+  70%{opacity:1;transform:translate(-2px,2px) scale(1) rotate(5deg)}
+  88%{opacity:1;transform:translate(-9px,-12px) scale(.92) rotate(-5deg)}
+  100%{opacity:0;transform:translate(-34px,-30px) scale(.55) rotate(-12deg)}
+}
+.companion-butterfly-visit{position:absolute;font-size:1.15rem;line-height:1;pointer-events:none;user-select:none;animation:companionButterflyVisit 5s ease-in-out 1}
+@keyframes companionPetalFall{
+  0%{opacity:0;transform:translate(0,-8px) rotate(0deg)}
+  12%{opacity:.9}
+  100%{opacity:0;transform:translate(16px,58px) rotate(150deg)}
+}
+.companion-petal-fall{position:absolute;font-size:.8rem;line-height:1;pointer-events:none;user-select:none;animation:companionPetalFall 3.4s ease-in 1}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf,.companion-butterfly-visit,.companion-petal-fall{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
   .finish-confetti-dot{animation:none!important;opacity:0!important}
 }
 /* Post-workout summary entrance sequence (see openFinishSummary()) — a
@@ -585,59 +604,56 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <!-- DASHBOARD -->
     <section id="dashboard-view" class="rs-view flex-1 pb-8">
 
-      <!-- Companion card — the emotional centerpiece of Home (see the Home
-           Companion redesign task). Replaces the old full-bleed floating-
-           emoji hero: no more giant floating artwork, no "Choose next
-           companion" (the companion is never replaced), just a calm card
-           matching the rest of RepSprout's dark-surface card language.
-           Artwork/stage/Care all come from the exact same
-           currentGrowthState() the Garden companion card and Companion
-           Detail sheet already read — one source of truth, see
+      <!-- The hero IS the companion — not a card containing it (task: "The
+           companion should NO LONGER live inside a card... the entire hero
+           section IS the companion... no visible card border"). Full-bleed
+           (no max-w/px wrapper, unlike everything below it) so the artwork
+           and its soft species-tinted wash can actually reach the edges of
+           the screen and own the top of the page, the way a scene does
+           rather than a UI component. Artwork/stage/Care all come from the
+           exact same currentGrowthState() the Garden companion card and
+           Companion Detail sheet already read — one source of truth, see
            renderPlantHero() below and openGardenCompanionDetail() in the
-           Garden section, which this card's tap reuses directly rather
+           Garden section, which this scene's tap reuses directly rather
            than opening a second detail surface. -->
-      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 pt-3">
-        <button type="button" id="dash-companion-card" class="card w-full text-left p-5 relative overflow-hidden">
-          <div class="relative flex items-start gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1"><span class="ms text-xs text-lavender-400" aria-hidden="true">favorite</span>Your Companion</p>
-              <p id="plant-name-label" class="font-display font-extrabold text-xl text-slate-800 dark:text-white mt-1 truncate"></p>
-              <p id="plant-level-label" class="text-sm font-bold mt-0.5"></p>
+      <button type="button" id="dash-companion-card" class="relative w-full text-left block overflow-hidden">
+        <!-- Stable overlay for ambient butterfly/petal visits (see
+             startCompanionAmbient()) — a sibling of #plant-emoji, not a
+             child of it, so a visitor mid-flight is never wiped out by a
+             routine renderPlantHero() re-render replacing #plant-emoji's
+             own innerHTML. -->
+        <div id="dash-companion-scene" class="relative flex items-center justify-center pt-10 pb-3" style="min-height:13rem">
+          <div id="plant-emoji" class="relative" aria-hidden="true"></div>
+        </div>
+        <div class="relative px-6 pb-7 pt-1 text-center space-y-1.5 max-w-sm mx-auto">
+          <p id="plant-name-label" class="font-display font-extrabold text-2xl text-slate-800 dark:text-white"></p>
+          <p id="plant-level-label" class="text-sm font-bold"></p>
 
-              <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
-                <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
-                <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+          <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
+            <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+          </div>
+
+          <div id="dash-hero-body" class="pt-1 space-y-3">
+            <p id="plant-time-together" class="text-xs text-slate-400"></p>
+            <div class="max-w-[15rem] mx-auto">
+              <div class="flex items-center justify-between gap-2">
+                <p id="growth-next-label" class="text-xs text-slate-400 truncate"></p>
+                <p id="growth-pct-label" class="text-xs font-bold text-brand-500 flex-shrink-0"></p>
               </div>
-
-              <div id="dash-hero-body" class="pt-3 space-y-3">
-                <p id="plant-time-together" class="text-xs text-slate-400"></p>
-                <div>
-                  <div class="flex items-center justify-between gap-2">
-                    <p id="growth-next-label" class="text-xs text-slate-400 truncate"></p>
-                    <p id="growth-pct-label" class="text-xs font-bold text-brand-500 flex-shrink-0"></p>
-                  </div>
-                  <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
-                    <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
-                  </div>
-                </div>
+              <div class="h-1.5 bg-slate-200/60 dark:bg-slate-800 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
+                <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
               </div>
             </div>
-            <!-- Companion artwork — always the shared companionArtHtml() snippet
-                 (pot base + Care cosmetics), never a bare floating glyph; see
-                 renderPlantHero(). -->
-            <div id="plant-emoji" class="relative flex-shrink-0" aria-hidden="true"></div>
+            <!-- Small rotating contextual message — the one line of copy in
+                 the whole scene (task: "Small rotating contextual message").
+                 No icon/chevron affordance: the entire scene above is
+                 already the tap target, so this stays purely a caption. -->
+            <p id="plant-subtitle-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
+            <div id="dash-companion-dots" class="flex items-center justify-center gap-1" aria-hidden="true"></div>
           </div>
-          <div id="dash-companion-message-row" class="relative flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <span class="ms text-base text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
-            <p id="plant-subtitle-label" class="text-sm text-slate-600 dark:text-slate-300 flex-1 min-w-0"></p>
-            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
-          </div>
-          <!-- Rotating-message page dots — purely decorative (task: "Rotate
-               these messages so the Home page feels alive"); see
-               pickCompanionMessage(). -->
-          <div id="dash-companion-dots" class="relative flex items-center justify-center gap-1 mt-2" aria-hidden="true"></div>
-        </button>
-      </div>
+        </div>
+      </button>
 
       <!-- Content below the hero, with breathing room before Start Growing -->
       <div id="dash-content" class="max-w-2xl w-full mx-auto px-4 md:px-6 mt-2 relative z-10 space-y-6">
@@ -649,11 +665,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
              see renderStartGrowing(). -->
         <div id="dash-start-growing"></div>
 
-        <!-- Today's mission — summarises today's workout only, nothing about
-             the companion (task: "Do NOT mention the companion here. Do NOT
-             repeat Bloom or Care."). Hidden entirely until there's something
-             to summarise — see renderTodayMission(). -->
-        <div id="dash-mission-card" style="display:none" class="mission-surface rounded-3xl p-5 shadow-sm space-y-3">
+        <!-- Today — summarises today's workout only, nothing about the
+             companion (task: "Do NOT mention the companion here. Do NOT
+             repeat Bloom or Care."). Plain, no heavy card (task: "Avoid
+             making every section another heavy rounded card"); hidden
+             entirely until there's something to summarise — see
+             renderTodayMission(). -->
+        <div id="dash-mission-card" style="display:none" class="space-y-2">
+          <p class="text-xs font-semibold text-slate-400">Today</p>
           <div id="dash-mission-body" class="space-y-3"></div>
         </div>
 
@@ -686,11 +705,17 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <div id="dash-target-preview-body"></div>
         </div>
 
-        <!-- Ambient stats — quiet, secondary -->
-        <div id="dash-stats-row" class="flex items-center justify-center divide-x divide-slate-200/70 dark:divide-slate-800/70">
-          <div class="text-center flex-1 px-2"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p><p id="best-streak-val" class="text-[10px] text-slate-300 dark:text-slate-600"></p></div>
-          <div class="text-center flex-1 px-2"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500" aria-hidden="true">fitness_center</span> <span id="total-sessions-val">0</span></p><p class="text-[10px] text-slate-400">workouts</p><p class="text-[10px] text-slate-300 dark:text-slate-600">This month</p></div>
-          <div class="text-center flex-1 px-2"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span id="last-session-val">—</span></p><p class="text-[10px] text-slate-400">last session</p><p id="last-session-sub-val" class="text-[10px] text-slate-300 dark:text-slate-600"></p></div>
+        <!-- Consistency — merged from three separate numbers down to two
+             (task: "Merge or simplify other statistics where possible");
+             the old "last session" date is dropped as redundant with
+             Today above it (and with the hero's own "time together" when
+             nothing's logged yet). -->
+        <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
+          <p class="text-xs font-semibold text-slate-400 pt-3">Consistency</p>
+          <div id="dash-stats-row" class="flex items-center justify-center gap-10">
+            <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span> day streak</p><p id="best-streak-val" class="text-[10px] text-slate-400"></p></div>
+            <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500" aria-hidden="true">fitness_center</span> <span id="total-sessions-val">0</span> workouts</p><p class="text-[10px] text-slate-400">this month</p></div>
+          </div>
         </div>
 
         <!-- Closest progress — open section, not a card -->
@@ -3136,23 +3161,26 @@ const GROWTH_PER_LEVEL = 5; // legacy "leaves per level" divisor — reused belo
 // growth number in the app: the Home progress bar, the mission-card icon,
 // the Garden page, and the stage-change celebration all read it through
 // getPlantGrowthState() below, never independently.
-const GROWTH_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing', 'Bloom'];
-const GROWTH_STAGE_THRESHOLDS = [0, 20, 40, 60, 80]; // percent at which each stage begins
+// Six named stages, not five — "Bud" is its own moment right before Bloom
+// rather than folded into "Growing" (see the Home-as-a-living-garden
+// redesign task: "Seed -> Sprout -> Young Plant -> Growing -> Bud -> Bloom").
+const GROWTH_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing', 'Bud', 'Bloom'];
+const GROWTH_STAGE_THRESHOLDS = [0, 17, 33, 50, 67, 83]; // percent at which each stage begins
 const GROWTH_TOTAL_STAGES = GROWTH_STAGE_NAMES.length;
 const GROWTH_POINTS_FOR_BLOOM = 100;
 
-// No per-species, per-stage art exists yet (PLANTS only carries one emoji per
-// plant — its final form). Stages 1-3 use a genuinely species-agnostic
-// fallback progression (seed -> sprout -> fuller plant) rather than inventing
-// fake species-specific art — the species itself stays hidden until Bloom
-// (see the Home Companion redesign task: "Do NOT use a generic Lavender
-// image... Only when the exercise/companion reaches the Bloom stage should
-// the final plant species be revealed"). Stage 4 ("Growing") renders the
-// real selected-plant emoji at reduced scale/opacity as a partial reveal of
-// its true form, stage 5 ("Bloom") at full scale/opacity — the actual
-// reveal moment. This is reported as a known asset gap in the
-// implementation summary, not hidden.
-const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
+// The real species emoji is visible from Sprout onward, simply smaller/
+// paler early on and fuller/brighter as it grows — never a generic fallback
+// standing in for the actual companion (task: "The companion artwork should
+// ALWAYS reflect its actual progression... Never display a fully bloomed
+// Lavender if the user is still in Bud stage," which cuts the other way
+// too: a Lavender in Bud is still recognizably a Lavender, not a bare
+// potted-plant placeholder). Stage 1 (Seed) is the one universal stage —
+// real seeds of any species look the same, so it's the only stage that
+// isn't the species' own glyph.
+const GROWTH_SEED_EMOJI = '🌰';
+const GROWTH_STAGE_SCALE =   [0.42, 0.52, 0.64, 0.78, 0.9,  1];
+const GROWTH_STAGE_OPACITY = [1,    0.55, 0.68, 0.8,  0.92, 1];
 
 // Post-bloom Companion stages — growth doesn't stop at Bloom (see the Home
 // Companion redesign task: "After Bloom: Do NOT replace the plant... continue
@@ -3231,19 +3259,21 @@ function getPlantGrowthState({ plantId, growthPoints }) {
   const nextStageName = nextStage ? GROWTH_STAGE_NAMES[nextStage - 1] : (isFinalStage ? null : 'full bloom');
   const remainingToNextStage = nextStage ? Math.max(0, stageEnd - overallProgressPercent) : (isFinalStage ? 0 : Math.max(0, 100 - overallProgressPercent));
 
-  // Stage 4 shows the real plant emoji as a dim, partial reveal; stage 5 is
-  // the real plant emoji at full strength; stages 1-3 use the generic fallback.
-  const selectedAsset = currentStage >= 4 ? plant.emoji : (GROWTH_STAGE_FALLBACK_EMOJI[currentStage - 1] || plant.emoji);
-  const selectedAssetOpacity = currentStage === 4 ? 0.55 : 1;
-  const selectedAssetScale = currentStage === 4 ? 0.82 : 0.7 + (currentStage - 1) * 0.075;
+  // The real species emoji at every stage but the first (Seed), growing in
+  // scale/opacity as it progresses — see GROWTH_SEED_EMOJI/GROWTH_STAGE_SCALE.
+  const selectedAsset = currentStage === 1 ? GROWTH_SEED_EMOJI : plant.emoji;
+  const selectedAssetOpacity = GROWTH_STAGE_OPACITY[currentStage - 1];
+  const selectedAssetScale = GROWTH_STAGE_SCALE[currentStage - 1];
 
   const bonusGrowthPoints = Math.max(0, gp - GROWTH_POINTS_FOR_BLOOM);
 
   const growthReason = isFinalStage
     ? `${plant.name} is in full bloom.`
-    : nextStage === GROWTH_TOTAL_STAGES
-      ? 'A bud is beginning to form.'
-      : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'New leaves are forming.';
+    : stageName === 'Bud'
+      ? 'Ready to bloom any day now.'
+      : nextStage && GROWTH_STAGE_NAMES[nextStage - 1] === 'Bud'
+        ? 'A bud is beginning to form.'
+        : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'The new shoot is growing nicely.';
 
   // Post-bloom ("Care"): only meaningful once isFinalStage. postBloomStageIndex
   // is 0-based (0=Healthy, 1=Flourishing, 2=Well Established, 3=Timeless);
@@ -3314,26 +3344,128 @@ function companionTimeTogetherLabel(startedAt) {
 // appear here too"), so this reads postBloomStageIndex once and every
 // surface renders the same unlocks rather than three separate guesses.
 function companionCareCosmetics(growth) {
-  if (!growth.isFinalStage) return { moss: false, stones: false, butterfly: false };
+  if (!growth.isFinalStage) return { moss: false, stones: false };
   const depth = growth.postBloomStageIndex; // 0 Healthy, 1 Flourishing, 2 Well Established, 3 Timeless
-  return { moss: depth >= 1, stones: depth >= 2, butterfly: depth >= 1 };
+  return { moss: depth >= 1, stones: depth >= 2 };
 }
+
+// Care doesn't just make the one flower prettier forever — it becomes a
+// garden (task: "Instead of endlessly making ONE flower prettier... the
+// companion slowly becomes a garden... Bloom -> tiny offshoot appears ->
+// second Lavender grows -> third -> small cluster -> established garden").
+// The original companion is always the mother plant; these are smaller
+// offshoots sharing its pot, never a replacement. Capped at 5 so "an
+// established garden" reads as a settled, permanent scene rather than
+// something that keeps growing taller forever.
+function companionGardenOffshootCount(growth) {
+  if (!growth.isFinalStage) return 0;
+  return [1, 2, 4, 5][growth.postBloomStageIndex] ?? 5;
+}
+
+// Deterministic offshoot placement (not reshuffled every render) — organic
+// scatter around the mother's base, each a little smaller and a little
+// later into its own gentle sway so the cluster never looks synchronized.
+const OFFSHOOT_LAYOUT = [
+  { left: '22%', bottom: '0%',  scale: 1,    delay: '.2s'  },
+  { left: '76%', bottom: '2%',  scale: .88,  delay: '.9s'  },
+  { left: '9%',  bottom: '18%', scale: .74,  delay: '1.6s' },
+  { left: '88%', bottom: '20%', scale: .8,   delay: '.5s'  },
+  { left: '50%', bottom: '26%', scale: .68,  delay: '1.1s' }
+];
 
 // The one companion artwork snippet — used identically by Home's hero, the
 // Garden companion card and the companion detail sheet, so the companion
 // never looks different from one screen to the next. Always grounded on a
-// small pot base (task: "never float... always presented as a living plant
-// in its pot"), with whichever Care cosmetics are currently unlocked.
-function companionArtHtml(growth) {
+// shared pot/bed (task: "never float... always presented as a living plant
+// in its pot"), with whichever Care-stage offshoots and pot cosmetics are
+// currently unlocked. `big` is Home's much larger hero treatment (task:
+// "the hero should occupy significantly more visual space") — Garden's card
+// and the detail sheet keep the original compact size.
+function companionArtHtml(growth, { big = false } = {}) {
   const cosmetics = companionCareCosmetics(growth);
+  const offshootCount = companionGardenOffshootCount(growth);
+  const motherRem = big ? 6.5 : 3.75;
+  const offshootBaseRem = big ? 2.3 : 1.25;
+  const potWidth = big ? '4.25rem' : '2.75rem';
+  const potHeight = big ? '1.3rem' : '.8rem';
+  const sceneWidth = big ? '13rem' : '7rem';
+  const sceneHeight = `${motherRem + (offshootCount ? 1.6 : 0.4)}rem`;
+
+  const offshootsHtml = Array.from({ length: offshootCount }, (_, i) => {
+    const l = OFFSHOOT_LAYOUT[i % OFFSHOOT_LAYOUT.length];
+    return `<span class="absolute p-sway" style="left:${l.left};bottom:${l.bottom};font-size:${(offshootBaseRem * l.scale).toFixed(2)}rem;line-height:1;animation-delay:${l.delay}" aria-hidden="true">${growth.selectedAsset}</span>`;
+  }).join('');
+
   return `
     <div class="relative inline-flex flex-col items-center">
-      <span class="text-6xl leading-none ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}" style="opacity:${growth.selectedAssetOpacity}" aria-hidden="true">${growth.selectedAsset}</span>
-      <div class="companion-pot w-11"></div>
-      ${cosmetics.moss ? '<span class="companion-cosmetic companion-moss" aria-hidden="true">🌾</span>' : ''}
-      ${cosmetics.stones ? '<span class="companion-cosmetic companion-stones" aria-hidden="true">🪨</span>' : ''}
-      ${cosmetics.butterfly ? '<span class="leaf-particle text-base" style="top:-8%;right:-10%;animation-delay:.6s" aria-hidden="true">🦋</span>' : ''}
+      <div class="relative" style="width:${sceneWidth};height:${sceneHeight}">
+        ${offshootsHtml}
+        <span class="absolute bottom-0 left-1/2 leading-none ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="font-size:${motherRem}rem;opacity:${growth.selectedAssetOpacity};transform:translateX(-50%) scale(${growth.selectedAssetScale})" aria-hidden="true">${growth.selectedAsset}</span>
+      </div>
+      <div class="companion-pot" style="width:${potWidth};height:${potHeight}"></div>
+      ${cosmetics.moss ? `<span class="companion-cosmetic companion-moss" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🌾</span>` : ''}
+      ${cosmetics.stones ? `<span class="companion-cosmetic companion-stones" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🪨</span>` : ''}
     </div>`;
+}
+
+// Ambient life on the Home hero — a butterfly that occasionally visits and
+// leaves, and an occasional falling petal, once the companion has reached
+// Bloom (task: "leaves gently sway... tiny butterflies sometimes visit...
+// butterflies land briefly then fly away... butterflies are NOT permanent...
+// petals occasionally fall... Nothing should feel noisy"). Spawns into the
+// stable #dash-companion-scene wrapper — never into the innerHTML the plant
+// art itself is redrawn into, so an in-flight visitor survives a routine
+// renderDashboard() re-render instead of being wiped mid-animation. Same
+// self-checking, self-removing, never-double-scheduled shape as
+// startPlantWatering()'s droplet loop.
+let companionButterflyHandle = null, companionPetalHandle = null;
+function companionAmbientSceneEl() {
+  const dashView = document.getElementById('dashboard-view');
+  if (!dashView || dashView.style.display === 'none') return null;
+  return document.getElementById('dash-companion-scene');
+}
+function stopCompanionAmbient() {
+  clearTimeout(companionButterflyHandle); companionButterflyHandle = null;
+  clearTimeout(companionPetalHandle); companionPetalHandle = null;
+}
+function scheduleCompanionButterflyVisit() {
+  companionButterflyHandle = setTimeout(() => {
+    const stage = companionAmbientSceneEl();
+    if (!stage) { companionButterflyHandle = null; return; }
+    if (!document.hidden && currentGrowthState().isFinalStage) {
+      const el = document.createElement('span');
+      el.className = 'companion-butterfly-visit';
+      el.setAttribute('aria-hidden', 'true');
+      el.textContent = '🦋';
+      el.style.top = `${8 + Math.random() * 28}%`;
+      el.style.left = `${58 + Math.random() * 26}%`;
+      el.addEventListener('animationend', () => el.remove());
+      stage.appendChild(el);
+    }
+    scheduleCompanionButterflyVisit();
+  }, 18000 + Math.random() * 17000); // every 18-35s — occasional, never a loop you can predict
+}
+function scheduleCompanionPetalFall() {
+  companionPetalHandle = setTimeout(() => {
+    const stage = companionAmbientSceneEl();
+    if (!stage) { companionPetalHandle = null; return; }
+    if (!document.hidden && currentGrowthState().isFinalStage) {
+      const el = document.createElement('span');
+      el.className = 'companion-petal-fall';
+      el.setAttribute('aria-hidden', 'true');
+      el.textContent = '🌸';
+      el.style.top = `${18 + Math.random() * 14}%`;
+      el.style.left = `${34 + Math.random() * 32}%`;
+      el.addEventListener('animationend', () => el.remove());
+      stage.appendChild(el);
+    }
+    scheduleCompanionPetalFall();
+  }, 15000 + Math.random() * 13000); // every 15-28s
+}
+function startCompanionAmbient() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!companionButterflyHandle) scheduleCompanionButterflyVisit();
+  if (!companionPetalHandle) scheduleCompanionPetalFall();
 }
 
 // ── Plant growth: always derived fresh from remaining activity history ─────
@@ -4224,15 +4356,15 @@ const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷', '🌸'];
 // replace the mature exercise plant with a different species") — it only
 // unlocks small cosmetic tiers, one per additional full cycle completed.
 function isExercisePlantMastered(dpResult) {
-  return !!dpResult && dpResult.configured && dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+  return !!dpResult && dpResult.configured && dpResult.cycleIndex >= EXERCISE_PLANT_TOTAL_STAGES - 1;
 }
 function exercisePlantStageIdx(dpResult) {
-  return Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+  return Math.min(dpResult.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
 }
 // 0 the moment mastery is first reached, 1 after one more full cycle
 // completes beyond that, 2 after two more, etc.
 function exercisePlantMasteryDepth(dpResult) {
-  return isExercisePlantMastered(dpResult) ? dpResult.cycleIndex - (GROWTH_TOTAL_STAGES - 1) : 0;
+  return isExercisePlantMastered(dpResult) ? dpResult.cycleIndex - (EXERCISE_PLANT_TOTAL_STAGES - 1) : 0;
 }
 // Ordered, cumulative cosmetic tiers — purely decorative, never a growth
 // signal of their own (real growth still only ever comes from
@@ -4277,6 +4409,14 @@ function exercisePlantSpeciesFor(exerciseId) {
 // were never required to match, and this task gives exercise plants their
 // own vocabulary.
 const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Seedling', 'Growing'];
+// Exercise plants used to just reuse the Companion's own GROWTH_TOTAL_STAGES
+// as their stage ceiling (mastery = cycleIndex >= GROWTH_TOTAL_STAGES-1).
+// That was an accidental coupling, not a deliberate design decision — this
+// gives them their own independent ceiling (4 named stages + mastery = 5,
+// the same effective value as before) so the Companion's own stage count
+// can change (see the Home redesign task's richer evolution ladder) without
+// silently reshaping Exercise Plants' unrelated stage math.
+const EXERCISE_PLANT_TOTAL_STAGES = EXERCISE_PLANT_STAGE_NAMES.length + 1;
 
 // The ONE exercise plant visual — Exercise Library cards, the Exercise
 // Progress Detail hero, and the Garden page all call this and only this,
@@ -4289,7 +4429,7 @@ const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Seedling', 'Growing'];
 // Exercise Garden cards already established (no emoji-in-a-square-tile
 // look) — see the removed exgPlantVisual() this replaces.
 function exercisePlantVisual({ exerciseId, stageIdx, mastered = false, cosmetics = [], accent, size = 64 }) {
-  const bloomed = stageIdx != null && stageIdx >= GROWTH_TOTAL_STAGES - 1;
+  const bloomed = stageIdx != null && stageIdx >= EXERCISE_PLANT_TOTAL_STAGES - 1;
   const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : bloomed ? exercisePlantSpeciesFor(exerciseId).emoji : DP_STAGE_EMOJI[stageIdx];
   const hasPremiumPot = cosmetics.includes('Premium pot');
   const hasStones = cosmetics.includes('Decorative stones');
@@ -4791,7 +4931,7 @@ function computeSessionPlantProgress(sessionExercises) {
     const dp = calculateExerciseDoubleProgression(ex.exerciseId, pending);
     const leafCount = dp.events.filter(e => e.workoutSessionId === 'pending' && e.eventType === 'set_weight_increased').length;
     if (leafCount > 0) {
-      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+      const stageIdx = Math.min(dp.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
       exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
       totalLeaves += leafCount;
     }
@@ -4815,7 +4955,7 @@ function computeHistoricalSessionPlantProgress(sessionId, sessionExercises) {
     const dp = calculateExerciseDoubleProgression(ex.exerciseId);
     const leafCount = dp.events.filter(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased').length;
     if (leafCount > 0) {
-      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+      const stageIdx = Math.min(dp.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
       exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
       totalLeaves += leafCount;
     }
@@ -5279,11 +5419,11 @@ function computeCurrentStreak(sessionDates) {
 // on every re-render, which would read as busy rather than calm.
 const COMPANION_MESSAGES = [
   { eligible: () => true, text: () => 'Another day together.' },
-  { eligible: ctx => ctx.loggedToday, text: ctx => `Your ${ctx.plantName} appreciated today's workout.` },
-  { eligible: ctx => ctx.streak >= 3, text: () => 'Consistency looks good on you.' },
-  { eligible: ctx => ctx.cosmetics.butterfly, text: () => 'A butterfly visited today.' },
-  { eligible: ctx => !ctx.growth.isFinalStage, text: () => 'The leaves look a little fuller.' },
-  { eligible: ctx => ctx.growth.isFinalStage, text: () => 'Looking healthier today.' }
+  { eligible: ctx => ctx.loggedToday, text: ctx => `Your ${ctx.plantName} looks healthier today.` },
+  { eligible: ctx => ctx.growth.isFinalStage, text: () => 'A butterfly stopped by.' },
+  { eligible: ctx => !ctx.growth.isFinalStage, text: ctx => ctx.growth.growthReason },
+  { eligible: () => true, text: () => 'Quiet growth is still growth.' },
+  { eligible: ctx => ctx.streak >= 3, text: () => 'Consistency looks good on you.' }
 ];
 function pickCompanionMessage(ctx) {
   const eligible = COMPANION_MESSAGES.filter(m => m.eligible(ctx));
@@ -5305,17 +5445,23 @@ function renderPlantHero(sessionDates, hasHistory) {
   const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
 
   document.getElementById('plant-name-label').textContent = p.name;
+  // The whole hero's wash — a soft, species-tinted glow behind the scene
+  // rather than a bordered card (task: "the entire hero section IS the
+  // companion... no visible card border").
+  document.getElementById('dash-companion-card').style.background =
+    `radial-gradient(ellipse 90% 70% at 50% 8%, ${theme.soft} 0%, transparent 72%)`;
 
   const growth = currentGrowthState();
   // Dynamic artwork — companionArtHtml() reads the exact same
-  // selectedAsset/selectedAssetOpacity fields Garden's companion card
-  // renders (see renderGardenCompanion()), so the real species image only
-  // ever appears once Bloom is actually reached (task: "Do NOT use a
-  // generic Lavender image... render the current companion based on its
-  // actual state"), never a moment sooner here than anywhere else, and any
-  // Care-stage cosmetics (moss/stones/butterfly) Garden has unlocked show
-  // here too — one artwork function, three surfaces.
-  document.getElementById('plant-emoji').innerHTML = companionArtHtml(growth);
+  // selectedAsset/selectedAssetOpacity/postBloomStageIndex fields Garden's
+  // companion card renders (see renderGardenCompanion()), so the companion
+  // always reflects its real progression (task: "The companion artwork
+  // should ALWAYS reflect its actual progression... Never display a fully
+  // bloomed Lavender if the user is still in Bud stage") and any Care-stage
+  // offshoots/cosmetics Garden shows appear here too, at Home's much larger
+  // `big` size — one artwork function, three surfaces, one of them bigger.
+  document.getElementById('plant-emoji').innerHTML = companionArtHtml(growth, { big: true });
+  startCompanionAmbient();
 
   const levelLabel = document.getElementById('plant-level-label');
   levelLabel.textContent = growth.displayStageName;
@@ -5325,10 +5471,10 @@ function renderPlantHero(sessionDates, hasHistory) {
     document.getElementById('hero-empty-line1').textContent = `${p.name} is ready to grow.`;
     document.getElementById('hero-empty-line2').textContent = 'Your first leaf is one workout away.';
     show('dash-hero-empty'); hide('dash-hero-body');
-    hide('dash-companion-message-row'); hide('dash-companion-dots');
+    hide('dash-companion-dots');
     return;
   }
-  hide('dash-hero-empty'); show('dash-hero-body'); show('dash-companion-message-row'); show('dash-companion-dots');
+  hide('dash-hero-empty'); show('dash-hero-body'); show('dash-companion-dots');
 
   // Small rotating message + dot indicator (task: "Small rotating companion
   // message... Rotate these messages so the Home page feels alive") — see
@@ -5336,8 +5482,7 @@ function renderPlantHero(sessionDates, hasHistory) {
   const today = todayStr();
   const loggedToday = !!(sessions[today] && Object.keys(sessions[today]).length);
   const streak = computeCurrentStreak(sessionDates);
-  const cosmetics = companionCareCosmetics(growth);
-  const picked = pickCompanionMessage({ loggedToday, streak, growth, cosmetics, plantName: p.name });
+  const picked = pickCompanionMessage({ loggedToday, streak, growth, plantName: p.name });
   document.getElementById('plant-subtitle-label').textContent = picked.text;
   document.getElementById('dash-companion-dots').innerHTML = Array.from({ length: picked.dotCount }, (_, i) =>
     `<span class="rounded-full ${i === picked.dotIndex ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'}" style="width:5px;height:5px" aria-hidden="true"></span>`
@@ -5386,13 +5531,6 @@ function renderDashStats(sessionDates, hasHistory) {
   document.getElementById('streak-val').textContent = computeCurrentStreak(sessionDates);
   document.getElementById('best-streak-val').textContent = `Best: ${computeBestStreak(sessionDates)} days`;
   document.getElementById('total-sessions-val').textContent = workoutsThisMonthCount();
-  // "Last session" means an actual workout or exercise activity — a
-  // Recovery Day is real rest, not something to report as your last
-  // session, so it's excluded here even though it still counts toward the
-  // streak stat above.
-  const lastWorkoutDate = lastWorkoutSessionDate();
-  document.getElementById('last-session-val').textContent = lastWorkoutDate ? fmtDate(lastWorkoutDate) : '—';
-  document.getElementById('last-session-sub-val').textContent = lastWorkoutDate ? (lastWorkoutSessionLabel(lastWorkoutDate) || '') : '';
 }
 
 // Longest daily streak on record, ever — distinct from the *current* streak
@@ -5415,22 +5553,6 @@ function computeBestStreak(sessionDates) {
 function workoutsThisMonthCount() {
   const monthPrefix = todayStr().slice(0, 7);
   return nonRecoveryWorkoutDates().filter(d => d.startsWith(monthPrefix)).length;
-}
-
-// What the most recent real workout/activity actually was (its group or
-// activity name) — the Stats row's small caption under the last-session date.
-function lastWorkoutSessionLabel(date) {
-  const s = Object.values(sessions[date] || {}).find(s => s && s.sessionType !== 'recovery');
-  return s ? sessionLabel(s) : null;
-}
-
-// Most recent date with at least one non-Recovery-Day session (group,
-// quick, or other activity) — a Recovery Day on a later date must never
-// make an older real workout look "current."
-function lastWorkoutSessionDate() {
-  const dates = Object.keys(sessions).filter(date =>
-    Object.values(sessions[date] || {}).some(s => s && s.sessionType !== 'recovery'));
-  return dates.length ? dates.sort().reverse()[0] : null;
 }
 
 // Shared by the Home Start Growing section and the Calendar day sheet — a
@@ -5780,16 +5902,12 @@ function renderProfile() {
 }
 
 // ── Garden: Companion card ──────────────────────────────────────────────────
-// Same currentGrowthState() the Home hero and mission-card icon already
-// read — one growth number, one function, never a second source of truth.
-// Post-bloom (Thriving/Flourishing/Legacy) is entirely new surface area
-// getPlantGrowthState() now provides (see its own comment) — Home is
-// intentionally left untouched and still only reads the pre-existing fields.
-// Companion artwork reuses the exact same asset Home's own hero already
-// shows (getPlantGrowthState()'s selectedAsset/selectedAssetOpacity — the
-// one plant-emoji lookup this app has, GROWTH_STAGE_FALLBACK_EMOJI pre-
-// reveal then the real species emoji from stage 4 on) rather than a second
-// illustration system, per "reuse existing components... wherever possible."
+// Same currentGrowthState() the Home hero already reads — one growth
+// number, one function, never a second source of truth. Companion artwork
+// reuses the exact same companionArtHtml() Home's own hero renders (just at
+// the smaller, non-`big` size), so the Garden card always shows the same
+// mother plant, the same Care-stage offshoots and the same pot cosmetics
+// Home does.
 function renderGardenCompanion() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
@@ -7123,8 +7241,8 @@ function classifyExerciseForGarden(id, ex) {
   const workingSetCount = dpResult ? dpResult.workingSetCount : Math.max(1, ex.defaultSets || (ex.targetReps || []).length || 3);
   const leavesMatured = dpResult ? dpResult.leavesMatured : 0;
   const cycleIndex = dpResult ? dpResult.cycleIndex : 0;
-  const stageIdx = Math.min(cycleIndex, GROWTH_TOTAL_STAGES - 1);
-  const isFinal = cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+  const stageIdx = Math.min(cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
+  const isFinal = cycleIndex >= EXERCISE_PLANT_TOTAL_STAGES - 1;
   const hasReadyLeaf = dpPositions.some(p => !p.matured && p.status === DP_STATUS.READY_TO_INCREASE);
   const bucket = stageIdx === 0 ? 'sprout' : isFinal ? 'bloomed' : 'growing';
   const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : leavesMatured > 0 ? 'growing' : 'sprout';
@@ -7458,8 +7576,8 @@ function renderExerciseDetail(exerciseId) {
         <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
       </div>`;
   } else {
-    const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
-    const isFinal = dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+    const stageIdx = Math.min(dpResult.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
+    const isFinal = dpResult.cycleIndex >= EXERCISE_PLANT_TOTAL_STAGES - 1;
     const mastered = isExercisePlantMastered(dpResult);
     const cosmetics = exercisePlantCosmetics(dpResult);
     const species = mastered ? exercisePlantSpeciesFor(exerciseId) : null;
@@ -7473,7 +7591,7 @@ function renderExerciseDetail(exerciseId) {
             <p class="text-xs text-slate-400">Current stage</p>
             <div class="flex items-center gap-2 flex-wrap">
               <p class="font-display font-bold text-xl ${mastered ? 'text-amber-500' : 'text-slate-800 dark:text-white'}">${esc(stageName)}</p>
-              ${!mastered ? `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>` : ''}
+              ${!mastered ? `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${EXERCISE_PLANT_TOTAL_STAGES}</span>` : ''}
             </div>
             ${cosmetics.length ? `<p class="text-[11px] text-slate-400 mt-0.5">${cosmetics.join(' · ')}</p>` : ''}
           </div>
