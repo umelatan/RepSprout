@@ -5077,8 +5077,7 @@ function renderProfile() {
 
 // ── Garden: Companion card ──────────────────────────────────────────────────
 // The Companion is the permanent mascot, not a progression surface — just
-// its art, name, and a streak/recency-based mood message (getPlantHealth()),
-// the same status text the Home hero shows.
+// its art, name, and its species' own personality description (PLANTS[id].desc).
 function renderGardenCompanion() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
@@ -5088,14 +5087,7 @@ function renderGardenCompanion() {
   artEl.style.opacity = '';
   artEl.className = 'text-6xl flex-shrink-0 p-sway';
   document.getElementById('garden-companion-name').textContent = plant.name;
-
-  const sessionDates = [];
-  Object.values(sessions).forEach(dayMap => {
-    if (typeof dayMap === 'object') Object.keys(dayMap).forEach(d => { if (!sessionDates.includes(d)) sessionDates.push(d); });
-  });
-  const health = getPlantHealth(sessionDates);
-  const [, hl2] = HEALTH_LABELS[health] || ['', ''];
-  document.getElementById('garden-companion-status').textContent = hl2;
+  document.getElementById('garden-companion-status').textContent = plant.desc || '';
 }
 
 document.getElementById('garden-companion-card').addEventListener('click', openGardenCompanionDetail);
