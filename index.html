@@ -57,7 +57,11 @@ html{touch-action:manipulation}
 }
 body{font-family:'Inter',sans-serif}
 .font-display,h1,h2,h3{font-family:'Plus Jakarta Sans',sans-serif}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(100,100,100,.3);border-radius:2px}
+/* Scrollbars hidden everywhere (Android's WebView/Chrome otherwise always
+   shows a visible one, unlike iOS) — scrolling itself is untouched, only
+   the scrollbar's own chrome is suppressed. */
+*{scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{width:0;height:0;display:none}
 @keyframes sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
 @keyframes droop{0%,100%{transform:translateY(0)}50%{transform:translateY(8px) scaleY(.94)}}
 @keyframes bloom{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
@@ -4604,10 +4608,17 @@ function closeAllOpenWindows() {
 
 function goView(v) {
   closeAllOpenWindows();
-  // Release the Workout hub's scroll lock (see switchWorkoutTab()) the
-  // moment any other view takes over — v === 'workout' re-locks it itself,
-  // via the switchWorkoutTab('hub') call below.
-  if (v !== 'workout') { document.documentElement.style.overflow = ''; document.body.style.overflow = ''; }
+  // Every view switch starts at the top of the page — views share one
+  // document scroll position (no per-view scroll container), so without
+  // this a view can open already scrolled partway down from wherever the
+  // previous view happened to leave off (e.g. Garden opening mid-page).
+  window.scrollTo(0, 0);
+  // Calendar is a fixed, non-scrolling screen (locked here); the Workout
+  // hub locks the same way but via switchWorkoutTab('hub') below, since it
+  // has to react to its own sub-tab switches too, not just goView(). Any
+  // other view releases the lock.
+  document.documentElement.style.overflow = v === 'calendar' ? 'hidden' : '';
+  document.body.style.overflow = v === 'calendar' ? 'hidden' : '';
   // Nav feedback (highlight/title) is synchronous — a tap should register
   // instantly even though the page content below fades out/in.
   document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
