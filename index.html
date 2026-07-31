@@ -236,6 +236,10 @@ body{font-family:'Inter',sans-serif}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
+.mission-surface{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)}
+.dark .mission-surface{background:linear-gradient(135deg,rgba(20,83,45,.4) 0%,rgba(5,46,22,.6) 100%)}
+.win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
+.dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
 .btn-pop:hover{box-shadow:0 8px 16px -6px rgba(34,197,94,.4)}
 .dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
@@ -258,37 +262,26 @@ body{font-family:'Inter',sans-serif}
 .water-ripple-loop{position:absolute;bottom:-4px;left:50%;width:2.5rem;height:.6rem;margin-left:-1.25rem;border-radius:50%;border:1.5px solid rgba(34,197,94,.5);animation:waterRippleLoop 2.4s ease-out infinite;pointer-events:none}
 .water-static-drop{position:absolute;opacity:.85;pointer-events:none}
 .water-static-glow{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(34,197,94,.35),transparent 70%);pointer-events:none}
-/* .stage-pop plays once when a resolved stage/state actually changes — never
-   on a routine re-render of the same value (see its call sites). */
+/* Mission-card plant-evolution icon: the ring's stroke-dashoffset transitions
+   smoothly on every progress update (see the inline style on #mission-stage-ring),
+   and .stage-pop plays once when the resolved stage itself changes — never on
+   a routine re-render at the same stage. */
 @keyframes stagePop{0%{transform:scale(.55);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes stageGlowPulse{0%,100%{opacity:.25;transform:scale(.92)}50%{opacity:.55;transform:scale(1.1)}}
 .stage-pop{animation:stagePop .5s ease-out}
+.stage-glow{position:absolute;inset:-4px;border-radius:50%;pointer-events:none;animation:stageGlowPulse 2.4s ease-in-out infinite}
+/* Occasional sparkle on the mission-card growth icon — a single JS-spawned,
+   self-removing flourish (see scheduleMissionSparkle()), not a continuous
+   loop, so it shows up every 8-14s rather than every glow pulse. */
+@keyframes missionSparkleOnce{0%{transform:scale(.4) rotate(0deg);opacity:0}30%{opacity:1}65%{transform:scale(1.15) rotate(12deg);opacity:1}100%{transform:scale(.5) rotate(20deg);opacity:0}}
+.mission-sparkle-once{position:absolute;top:-2px;right:-2px;font-size:.7rem;animation:missionSparkleOnce 1.3s ease-out 1;pointer-events:none}
 /* Fixed brand green, not plant-themed — this badge is the universal
    "+1 Growth" cue, distinct from the personalized plant portrait next to it
    which already carries the selected plant's own theme color. */
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
-/* Ambient life on the Home hero only — a butterfly that visits, lingers
-   briefly, then leaves (never a permanent fixture: task "butterflies
-   sometimes visit... land briefly then fly away... are NOT permanent"),
-   and an occasional falling petal. Both are one-shot, JS-spawned and self-
-   removing on animationend (see startCompanionAmbient()), the same pattern
-   startPlantWatering() already uses for its droplets — nothing here is a
-   plain CSS `infinite` loop sitting in the DOM forever. */
-@keyframes companionButterflyVisit{
-  0%{opacity:0;transform:translate(26px,-18px) scale(.6) rotate(-8deg)}
-  15%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}
-  70%{opacity:1;transform:translate(-2px,2px) scale(1) rotate(5deg)}
-  88%{opacity:1;transform:translate(-9px,-12px) scale(.92) rotate(-5deg)}
-  100%{opacity:0;transform:translate(-34px,-30px) scale(.55) rotate(-12deg)}
-}
-.companion-butterfly-visit{position:absolute;font-size:1.15rem;line-height:1;pointer-events:none;user-select:none;animation:companionButterflyVisit 5s ease-in-out 1}
-@keyframes companionPetalFall{
-  0%{opacity:0;transform:translate(0,-8px) rotate(0deg)}
-  12%{opacity:.9}
-  100%{opacity:0;transform:translate(16px,58px) rotate(150deg)}
-}
-.companion-petal-fall{position:absolute;font-size:.8rem;line-height:1;pointer-events:none;user-select:none;animation:companionPetalFall 3.4s ease-in 1}
 @media (prefers-reduced-motion:reduce){
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf,.companion-butterfly-visit,.companion-petal-fall{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+  .stage-glow{opacity:.4}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,#mission-stage-ring,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.mission-sparkle-once,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
   .finish-confetti-dot{animation:none!important;opacity:0!important}
 }
 /* Post-workout summary entrance sequence (see openFinishSummary()) — a
@@ -576,10 +569,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <button id="mob-menu-btn" class="md:hidden p-2 rounded-xl text-slate-400 hover:text-brand-500 transition-colors">
           <span class="ms text-xl">menu</span>
         </button>
-        <div class="min-w-0">
-          <h2 id="page-title" class="font-display font-extrabold text-slate-800 dark:text-white text-base sm:text-lg"></h2>
-          <p id="page-subtitle" style="display:none" class="text-xs text-slate-400 -mt-0.5">Welcome back to your garden.</p>
-        </div>
+        <h2 id="page-title" class="font-display font-extrabold text-slate-800 dark:text-white text-base sm:text-lg"></h2>
       </div>
       <div class="flex items-center gap-2">
         <button id="theme-toggle" class="p-2 rounded-xl text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all">
@@ -595,82 +585,88 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <!-- DASHBOARD -->
     <section id="dashboard-view" class="rs-view flex-1 pb-8">
 
-      <!-- The hero, redesigned from a blank page (task: "completely ignore
-           the existing hero... Forget cards. Forget left/right layouts.").
-           No card, no two-column split, no numeric stats — just the
-           companion's name (wordmark scale) with the mascot itself growing
-           up into the lower half of the letters, and one quiet line of
-           feeling underneath. Everything a number used to say here (stage
-           name, time together, % to next milestone) still lives one tap
-           away in openGardenCompanionDetail() — the hero's only job now is
-           the emotional read, not the data. The scene's own background
-           dissolves to transparent at its bottom edge (see
-           renderPlantHero()) rather than ending in a hard rectangle, so the
-           companion reads as stepping out into the page rather than being
-           boxed into a panel. -->
-      <button type="button" id="dash-companion-card" class="relative w-full text-left block overflow-hidden" style="transform-origin:top center;will-change:transform,opacity">
-        <!-- A deliberately moody night scene regardless of the app's own
-             light/dark toggle — same reasoning as a photo of a garden at
-             dusk not changing with the reader's theme. Set from
-             renderPlantHero() using the companion's own species tint. -->
-        <div class="absolute inset-0" id="dash-companion-vignette" aria-hidden="true"></div>
-        <!-- Ambient sparkles — static, never re-rendered, so they're plain
-             markup rather than part of companionArtHtml(). -->
-        <div id="dash-companion-sparkles" class="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <span class="sparkle-dot" style="top:10%;left:14%;right:auto;font-size:10px;opacity:.6;animation:sparklePulse 3.2s ease-in-out infinite" aria-hidden="true">✨</span>
-          <span class="sparkle-dot" style="top:16%;left:78%;right:auto;font-size:8px;opacity:.5;animation:sparklePulse 2.6s ease-in-out infinite .8s" aria-hidden="true">✨</span>
-          <span class="sparkle-dot" style="top:8%;left:50%;right:auto;font-size:9px;opacity:.45;animation:sparklePulse 3.6s ease-in-out infinite 1.4s" aria-hidden="true">✨</span>
-        </div>
+      <!-- Companion card — the emotional centerpiece of Home (see the Home
+           Companion redesign task). Replaces the old full-bleed floating-
+           emoji hero: no more giant floating artwork, no "Choose next
+           companion" (the companion is never replaced), just a calm card
+           matching the rest of RepSprout's dark-surface card language.
+           Artwork/stage/Care all come from the exact same
+           currentGrowthState() the Garden companion card and Companion
+           Detail sheet already read — one source of truth, see
+           renderPlantHero() below and openGardenCompanionDetail() in the
+           Garden section, which this card's tap reuses directly rather
+           than opening a second detail surface. -->
+      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 pt-3">
+        <button type="button" id="dash-companion-card" class="card w-full text-left p-5 relative overflow-hidden">
+          <!-- Ambient butterfly — only shown once the companion is in a
+               Care stage (see renderPlantHero()); reuses the exact same
+               .leaf-particle drift animation as the leaf particles
+               elsewhere, just a different glyph, so it's covered by the
+               same prefers-reduced-motion disable rule for free. -->
+          <span id="dash-companion-particle" class="leaf-particle text-base" style="display:none;top:8%;right:14%;animation-delay:.6s" aria-hidden="true">🦋</span>
+          <div class="relative flex items-start gap-4">
+            <div class="min-w-0 flex-1">
+              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1"><span class="ms text-xs text-lavender-400" aria-hidden="true">favorite</span>Your Companion</p>
+              <p id="plant-name-label" class="font-display font-extrabold text-xl text-slate-800 dark:text-white mt-1 truncate"></p>
+              <p id="plant-level-label" class="text-sm font-bold mt-0.5"></p>
 
-        <div class="relative pt-9 px-4">
-          <!-- The companion's name, wordmark-scale — the first thing read,
-               before any illustration detail. -->
-          <p id="plant-name-label" class="relative z-0 text-center font-display font-extrabold text-white truncate" style="font-size:clamp(2.75rem,15vw,4.25rem);line-height:.88"></p>
+              <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
+                <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
+                <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+              </div>
 
-          <!-- The mascot — pulled up into the name's own lower half via a
-               negative margin, so silhouette and typography genuinely
-               overlap instead of sitting side by side. A stable wrapper
-               (never itself re-rendered) hosts ambient butterfly/petal
-               visits as true siblings of #plant-emoji, so a visitor
-               mid-flight survives a routine renderPlantHero() re-render. -->
-          <div id="dash-companion-scene" class="relative z-10 flex items-end justify-center" style="margin-top:-1.9rem;min-height:6.5rem" aria-hidden="true">
-            <div id="plant-emoji" class="relative"></div>
+              <div id="dash-hero-body" class="pt-3 space-y-3">
+                <p id="plant-time-together" class="text-xs text-slate-400"></p>
+                <div>
+                  <div class="flex items-center justify-between gap-2">
+                    <p id="growth-next-label" class="text-xs text-slate-400 truncate"></p>
+                    <p id="growth-pct-label" class="text-xs font-bold text-brand-500 flex-shrink-0"></p>
+                  </div>
+                  <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
+                    <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="plant-emoji" class="relative flex-shrink-0 text-6xl leading-none p-sway" aria-hidden="true">🌱</div>
           </div>
-
-          <div id="dash-hero-empty" style="display:none" class="relative z-10 text-center pb-8 pt-1 space-y-1">
-            <p class="text-sm font-semibold text-slate-200" id="hero-empty-line1"></p>
-            <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+          <div id="dash-companion-message-row" class="relative flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <span class="ms text-base text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
+            <p id="plant-subtitle-label" class="text-sm text-slate-600 dark:text-slate-300 flex-1 min-w-0"></p>
+            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
           </div>
+        </button>
+      </div>
 
-          <div id="dash-hero-body" class="relative z-10 text-center pb-8">
-            <!-- The one line of copy in the whole scene (task: "Small
-                 rotating contextual message"). Everything else the old
-                 hero spelled out in numbers is now a visual discovery, or
-                 one tap away. -->
-            <p id="plant-subtitle-label" class="italic text-sm text-slate-300"></p>
-            <div id="dash-companion-dots" class="flex items-center justify-center gap-1 pt-2" aria-hidden="true"></div>
+      <!-- Content below the hero, with breathing room before Today's Mission -->
+      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 mt-2 relative z-10 space-y-6">
+
+        <!-- Today's mission — the one strong card on the page -->
+        <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 shadow-sm">
+          <div class="flow-root">
+            <!-- The one plant-evolution icon in the app — same growth state as the
+                 hero progress bar above, via getPlantGrowthState(). Not a second
+                 growth system, just a second view of the same numbers. Floated
+                 (not a flex sibling) so the label and "Mission complete" text
+                 actually wrap alongside it instead of starting only below a
+                 full-width icon row; flow-root on the parent contains the float
+                 so the card doesn't collapse short of it. -->
+            <div class="float-right ml-4 mb-2 flex flex-col items-center gap-1 flex-shrink-0">
+              <div id="mission-stage-icon" class="relative w-14 h-14 flex-shrink-0" role="img" aria-label="">
+                <span id="mission-stage-glow" class="stage-glow" aria-hidden="true"></span>
+                <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
+                  <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
+                  <circle id="mission-stage-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset var(--rs-dur-celebration) var(--rs-ease-settle)"></circle>
+                </svg>
+                <div id="mission-stage-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
+                  <span id="mission-stage-emoji" class="text-xl leading-none" aria-hidden="true">🌱</span>
+                </div>
+              </div>
+              <p id="mission-stage-name" class="text-[10px] font-semibold text-slate-400 text-center leading-tight"></p>
+            </div>
+            <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
+            <div id="dash-mission-body" class="space-y-3 mt-3"></div>
           </div>
-        </div>
-      </button>
-
-      <!-- Content below the hero, with breathing room before Start Growing -->
-      <div id="dash-content" class="max-w-2xl w-full mx-auto px-4 md:px-6 mt-2 relative z-10 space-y-6">
-
-        <!-- Start Growing — the primary CTA (task: "Keep this as the primary
-             CTA"), always visible regardless of whether today's workout is
-             already logged. Becomes the plan-aware card instead of the
-             generic button when Calendar has something planned for today —
-             see renderStartGrowing(). -->
-        <div id="dash-start-growing"></div>
-
-        <!-- Today — summarises today's workout only, nothing about the
-             companion (task: "Do NOT mention the companion here. Do NOT
-             repeat Bloom or Care."). A soft card, not the bright gradient
-             surface this used to be; hidden entirely until there's
-             something to summarise — see renderTodayMission(). -->
-        <div id="dash-mission-card" style="display:none" class="card p-4 space-y-2">
-          <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Today</p>
-          <div id="dash-mission-body" class="space-y-3"></div>
         </div>
 
         <!-- Targets — entirely optional. Exactly one of these two shows at a
@@ -702,31 +698,26 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <div id="dash-target-preview-body"></div>
         </div>
 
-        <!-- Closest Progress / Consistency — two compact cards side by side.
-             Closest Progress keeps its original data (findClosestProgression())
-             just presented as a name + a small ring instead of the rep-chain;
-             Consistency merges the old three-number stats row down to two
-             plus a Mon-Sun activity dot grid. -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="card p-4 space-y-2 min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Closest Progress</p>
-            <div id="dash-progress-body"></div>
-          </div>
-          <div class="card p-4 space-y-2 min-w-0">
-            <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Consistency</p>
-            <div id="dash-stats-row" class="space-y-2"></div>
-          </div>
+        <!-- Ambient stats — quiet, secondary -->
+        <div id="dash-stats-row" class="flex items-center justify-center gap-8">
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span></p><p class="text-[10px] text-slate-400">day streak</p></div>
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500" aria-hidden="true">fitness_center</span> <span id="total-sessions-val">0</span></p><p class="text-[10px] text-slate-400">workouts</p></div>
+          <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span id="last-session-val">—</span></p><p class="text-[10px] text-slate-400">last session</p></div>
         </div>
 
-        <!-- Recent win -->
-        <div class="card p-4 flex items-center gap-3">
-          <span class="text-3xl flex-shrink-0" aria-hidden="true">🏅</span>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Recent Win</p>
-            <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200"></p>
-            <p id="dash-win-sub" class="text-xs text-slate-400"></p>
+        <!-- Closest progress — open section, not a card -->
+        <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
+          <p class="text-xs font-semibold text-slate-400 pt-3">Closest progress</p>
+          <div id="dash-progress-body" class="space-y-2"></div>
+        </div>
+
+        <!-- Recent win — compact chip, not a card -->
+        <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
+          <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
+          <div class="min-w-0">
+            <p class="text-[10px] font-semibold text-brand-600 dark:text-brand-300">Recent win</p>
+            <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate"></p>
           </div>
-          <button id="dash-win-view-all" type="button" class="text-xs font-semibold text-brand-500 hover:underline flex-shrink-0 inline-flex items-center gap-0.5">View All <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
         </div>
 
         <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-2"></p>
@@ -1253,7 +1244,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div class="min-w-0">
           <p id="gcd-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           <p id="gcd-desc" class="text-xs text-slate-400"></p>
-          <p id="gcd-together" class="text-xs text-slate-400"></p>
           <p id="gcd-stage" class="text-xs font-semibold text-brand-500 mt-1"></p>
         </div>
       </div>
@@ -3158,26 +3148,23 @@ const GROWTH_PER_LEVEL = 5; // legacy "leaves per level" divisor — reused belo
 // growth number in the app: the Home progress bar, the mission-card icon,
 // the Garden page, and the stage-change celebration all read it through
 // getPlantGrowthState() below, never independently.
-// Six named stages, not five — "Bud" is its own moment right before Bloom
-// rather than folded into "Growing" (see the Home-as-a-living-garden
-// redesign task: "Seed -> Sprout -> Young Plant -> Growing -> Bud -> Bloom").
-const GROWTH_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing', 'Bud', 'Bloom'];
-const GROWTH_STAGE_THRESHOLDS = [0, 17, 33, 50, 67, 83]; // percent at which each stage begins
+const GROWTH_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing', 'Bloom'];
+const GROWTH_STAGE_THRESHOLDS = [0, 20, 40, 60, 80]; // percent at which each stage begins
 const GROWTH_TOTAL_STAGES = GROWTH_STAGE_NAMES.length;
 const GROWTH_POINTS_FOR_BLOOM = 100;
 
-// The real species emoji is visible from Sprout onward, simply smaller/
-// paler early on and fuller/brighter as it grows — never a generic fallback
-// standing in for the actual companion (task: "The companion artwork should
-// ALWAYS reflect its actual progression... Never display a fully bloomed
-// Lavender if the user is still in Bud stage," which cuts the other way
-// too: a Lavender in Bud is still recognizably a Lavender, not a bare
-// potted-plant placeholder). Stage 1 (Seed) is the one universal stage —
-// real seeds of any species look the same, so it's the only stage that
-// isn't the species' own glyph.
-const GROWTH_SEED_EMOJI = '🌰';
-const GROWTH_STAGE_SCALE =   [0.42, 0.52, 0.64, 0.78, 0.9,  1];
-const GROWTH_STAGE_OPACITY = [1,    0.55, 0.68, 0.8,  0.92, 1];
+// No per-species, per-stage art exists yet (PLANTS only carries one emoji per
+// plant — its final form). Stages 1-3 use a genuinely species-agnostic
+// fallback progression (seed -> sprout -> fuller plant) rather than inventing
+// fake species-specific art — the species itself stays hidden until Bloom
+// (see the Home Companion redesign task: "Do NOT use a generic Lavender
+// image... Only when the exercise/companion reaches the Bloom stage should
+// the final plant species be revealed"). Stage 4 ("Growing") renders the
+// real selected-plant emoji at reduced scale/opacity as a partial reveal of
+// its true form, stage 5 ("Bloom") at full scale/opacity — the actual
+// reveal moment. This is reported as a known asset gap in the
+// implementation summary, not hidden.
+const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
 
 // Post-bloom Companion stages — growth doesn't stop at Bloom (see the Home
 // Companion redesign task: "After Bloom: Do NOT replace the plant... continue
@@ -3256,21 +3243,19 @@ function getPlantGrowthState({ plantId, growthPoints }) {
   const nextStageName = nextStage ? GROWTH_STAGE_NAMES[nextStage - 1] : (isFinalStage ? null : 'full bloom');
   const remainingToNextStage = nextStage ? Math.max(0, stageEnd - overallProgressPercent) : (isFinalStage ? 0 : Math.max(0, 100 - overallProgressPercent));
 
-  // The real species emoji at every stage but the first (Seed), growing in
-  // scale/opacity as it progresses — see GROWTH_SEED_EMOJI/GROWTH_STAGE_SCALE.
-  const selectedAsset = currentStage === 1 ? GROWTH_SEED_EMOJI : plant.emoji;
-  const selectedAssetOpacity = GROWTH_STAGE_OPACITY[currentStage - 1];
-  const selectedAssetScale = GROWTH_STAGE_SCALE[currentStage - 1];
+  // Stage 4 shows the real plant emoji as a dim, partial reveal; stage 5 is
+  // the real plant emoji at full strength; stages 1-3 use the generic fallback.
+  const selectedAsset = currentStage >= 4 ? plant.emoji : (GROWTH_STAGE_FALLBACK_EMOJI[currentStage - 1] || plant.emoji);
+  const selectedAssetOpacity = currentStage === 4 ? 0.55 : 1;
+  const selectedAssetScale = currentStage === 4 ? 0.82 : 0.7 + (currentStage - 1) * 0.075;
 
   const bonusGrowthPoints = Math.max(0, gp - GROWTH_POINTS_FOR_BLOOM);
 
   const growthReason = isFinalStage
     ? `${plant.name} is in full bloom.`
-    : stageName === 'Bud'
-      ? 'Ready to bloom any day now.'
-      : nextStage && GROWTH_STAGE_NAMES[nextStage - 1] === 'Bud'
-        ? 'A bud is beginning to form.'
-        : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'The new shoot is growing nicely.';
+    : nextStage === GROWTH_TOTAL_STAGES
+      ? 'A bud is beginning to form.'
+      : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'New leaves are forming.';
 
   // Post-bloom ("Care"): only meaningful once isFinalStage. postBloomStageIndex
   // is 0-based (0=Healthy, 1=Flourishing, 2=Well Established, 3=Timeless);
@@ -3334,308 +3319,6 @@ function companionTimeTogetherLabel(startedAt) {
   const years = round1(days / 365);
   return `Growing with you for ${years} year${years !== 1 ? 's' : ''}`;
 }
-
-// Care doesn't just make the one flower prettier forever — it becomes a
-// garden, one surprise sprout at a time (task: "on random time... a small
-// baby plant growing... the surprise factor of HEY there's another
-// character plant growing again... and it goes through the entire growing
-// stages again... until we have a whole garden"). Each sprout's own "how
-// many more bonus points until it starts" and "how many points it needs to
-// reach its own full bloom" are picked once via a seeded hash keyed to this
-// companion + the sprout's index (seededRandom01()) — reproducible (the
-// same companion always produces the same sequence of surprises) rather
-// than reshuffling on every render, but not an evenly-spaced, predictable
-// cadence either. Each sprout genuinely re-plays the mother's own seed ->
-// full-bloom journey at its own pace — see mascotSvg().
-const GARDEN_SPROUT_GAP_MIN = 10, GARDEN_SPROUT_GAP_MAX = 26; // bonus points between one sprout starting and the next
-const GARDEN_SPROUT_BLOOM_MIN = 8, GARDEN_SPROUT_BLOOM_MAX = 18; // points a sprout itself needs to reach its own full bloom
-// A practical rendering ceiling — bonusGrowthPoints (and the Care stage
-// name/progress bar) keep climbing forever past this, but the visible
-// garden itself settles into a full, mature bed rather than sprouting new
-// slots forever, the same way a real garden bed eventually fills in.
-const GARDEN_MAX_VISIBLE_SPROUTS = 6;
-
-function gardenSprouts(growth) {
-  if (!growth.isFinalStage) return [];
-  const seedKey = userProfile.companion?.id || 'companion';
-  const sprouts = [];
-  let cursor = 0;
-  for (let i = 0; i < GARDEN_MAX_VISIBLE_SPROUTS; i++) {
-    const gap = GARDEN_SPROUT_GAP_MIN + seededRandom01(`${seedKey}-sprout-gap-${i}`) * (GARDEN_SPROUT_GAP_MAX - GARDEN_SPROUT_GAP_MIN);
-    const startAt = cursor + gap;
-    if (startAt > growth.bonusGrowthPoints) break; // this sprout (and every later one) hasn't started yet
-    const bloomTarget = GARDEN_SPROUT_BLOOM_MIN + seededRandom01(`${seedKey}-sprout-bloom-${i}`) * (GARDEN_SPROUT_BLOOM_MAX - GARDEN_SPROUT_BLOOM_MIN);
-    sprouts.push({ progress: Math.min(1, (growth.bonusGrowthPoints - startAt) / bloomTarget) });
-    cursor = startAt;
-  }
-  return sprouts;
-}
-
-// ── The mascot: a flat silhouette, not a botanical render ──────────────────
-// The companion redesign task calls out the old real-species-emoji artwork
-// directly: "The illustration should feel like a mascot. Not a botanical
-// render... Less detail. Stronger silhouette. Cleaner forms... simple
-// enough that it can naturally evolve through years of progression."
-// mascotSvg() draws every companion (mother and every garden sprout) as the
-// same small set of flat primitives — a stem, a foliage mass, and a
-// species-distinct crown accent — interpolated CONTINUOUSLY from a 0-1
-// growth fraction rather than snapping between fixed poses, so the
-// character is very slightly fuller today than yesterday, every single
-// day, not just at named stage boundaries. Two flat tones only (the
-// species' own primary + its lighter soft tint for the crown), no
-// gradients, no pot, no soil — one shared shape language, drawn at
-// whatever size/progress/species the caller needs.
-const MASCOT_SPECIES = {
-  lavender:  { body: 'round',     crown: 'spike'  },
-  sunflower: { body: 'round',     crown: 'radial' },
-  cactus:    { body: 'paddle',    crown: 'dot'    },
-  oak:       { body: 'canopy',    crown: 'none'   },
-  bamboo:    { body: 'segmented', crown: 'tuft'   }
-};
-
-function mascotSvg({ progress, theme, species, px = 96 }) {
-  const t = Math.max(0, Math.min(1, progress));
-  const cfg = MASCOT_SPECIES[species] || MASCOT_SPECIES.lavender;
-  const primary = theme.primary, soft = theme.soft;
-  const vbW = 100, vbH = 130, groundY = 122;
-
-  // The seed moment — nothing but a small dot resting on the ground yet.
-  if (t < 0.05) {
-    const r = round1(3 + (t / 0.05) * 3);
-    return `<svg viewBox="0 0 ${vbW} ${vbH}" width="${px}" height="${round1(px * vbH / vbW)}" aria-hidden="true">
-      <ellipse cx="50" cy="${groundY}" rx="13" ry="3" fill="rgba(0,0,0,.28)"/>
-      <circle cx="50" cy="${groundY - r}" r="${r}" fill="${primary}"/>
-    </svg>`;
-  }
-
-  const stemH = round1(6 + t * 42);
-  const stemTopY = round1(groundY - stemH);
-  const bodyR = round1(7 + t * 15);
-  const leafT = round1(Math.max(0, Math.min(1, (t - 0.22) / 0.45)));
-  const crownT = round1(Math.max(0, Math.min(1, (t - 0.68) / 0.32)));
-  const shadowRx = round1(15 + t * 8);
-
-  const parts = [`<ellipse cx="50" cy="${groundY}" rx="${shadowRx}" ry="3.5" fill="rgba(0,0,0,.3)"/>`];
-
-  // Stem — a single rounded bar for most species, or a segmented cane with
-  // two faint growth-ring notches for bamboo.
-  if (cfg.body === 'segmented') {
-    parts.push(`<rect x="46" y="${stemTopY}" width="8" height="${stemH}" rx="3" fill="${primary}"/>`);
-    if (stemH > 18) parts.push(`<rect x="45" y="${round1(groundY - stemH * 0.38)}" width="10" height="2" rx="1" fill="${soft}" opacity=".6"/>`);
-    if (stemH > 32) parts.push(`<rect x="45" y="${round1(groundY - stemH * 0.7)}" width="10" height="2" rx="1" fill="${soft}" opacity=".6"/>`);
-  } else {
-    parts.push(`<rect x="47" y="${stemTopY}" width="6" height="${stemH}" rx="3" fill="${primary}"/>`);
-  }
-
-  // Foliage mass — round blob (most species), a cactus's flatter paddle
-  // pair, or oak's oversized, slowly-thickening canopy.
-  const bodyCx = 50, bodyCy = round1(stemTopY - bodyR * 0.55);
-  if (cfg.body === 'paddle') {
-    parts.push(`<rect x="${round1(bodyCx - bodyR * 0.55)}" y="${round1(bodyCy - bodyR)}" width="${round1(bodyR * 1.1)}" height="${round1(bodyR * 1.9)}" rx="${round1(bodyR * 0.5)}" fill="${primary}"/>`);
-    if (t > 0.4) parts.push(`<rect x="${round1(bodyCx - bodyR * 1.55)}" y="${round1(bodyCy - bodyR * 0.55)}" width="${round1(bodyR * 0.8)}" height="${round1(bodyR * 1.3)}" rx="${round1(bodyR * 0.4)}" fill="${primary}" transform="rotate(-16 ${bodyCx} ${bodyCy})"/>`);
-  } else if (cfg.body === 'canopy') {
-    parts.push(`<circle cx="${bodyCx}" cy="${bodyCy}" r="${round1(bodyR * 1.2)}" fill="${primary}"/>`);
-    if (t > 0.5) parts.push(`<circle cx="${round1(bodyCx - bodyR * 0.95)}" cy="${round1(bodyCy + bodyR * 0.35)}" r="${round1(bodyR * 0.6)}" fill="${primary}"/><circle cx="${round1(bodyCx + bodyR * 0.95)}" cy="${round1(bodyCy + bodyR * 0.35)}" r="${round1(bodyR * 0.6)}" fill="${primary}"/>`);
-  } else if (cfg.body === 'segmented') {
-    // A small rounded node cap plus four fanning pointed leaves (two lean
-    // up, two droop out to the sides) — reads as a fuller bamboo crown even
-    // before the brighter bloom tuft layers on top of it.
-    parts.push(`<circle cx="50" cy="${stemTopY}" r="${round1(4 + t * 3)}" fill="${primary}"/>`);
-    if (leafT > 0) {
-      const op = round1(0.65 + leafT * 0.35);
-      parts.push(`<polygon points="50,${stemTopY} ${round1(50 - 3 - leafT * 4)},${round1(stemTopY - 9 - leafT * 8)} 51,${round1(stemTopY - 2)}" fill="${primary}" opacity="${op}"/>`);
-      parts.push(`<polygon points="50,${stemTopY} ${round1(50 + 3 + leafT * 4)},${round1(stemTopY - 10 - leafT * 8)} 49,${round1(stemTopY - 2)}" fill="${primary}" opacity="${op}"/>`);
-      parts.push(`<polygon points="50,${stemTopY} ${round1(50 - 8 - leafT * 5)},${round1(stemTopY + 6)} 50,${round1(stemTopY + 2)}" fill="${primary}" opacity="${round1(0.6 + leafT * 0.3)}"/>`);
-      parts.push(`<polygon points="50,${stemTopY} ${round1(50 + 8 + leafT * 5)},${round1(stemTopY + 6)} 50,${round1(stemTopY + 2)}" fill="${primary}" opacity="${round1(0.6 + leafT * 0.3)}"/>`);
-    }
-  } else {
-    parts.push(`<ellipse cx="${bodyCx}" cy="${bodyCy}" rx="${bodyR}" ry="${round1(bodyR * 0.85)}" fill="${primary}"/>`);
-  }
-
-  // Leaves — two simple flanking ellipses, for every species except the
-  // ones with their own foliage language (cactus's paddles, bamboo's tufts
-  // above).
-  if (leafT > 0 && cfg.body !== 'paddle' && cfg.body !== 'segmented') {
-    const ly = round1(groundY - stemH * 0.42);
-    parts.push(`<ellipse cx="${round1(50 - 9 - leafT * 4)}" cy="${ly}" rx="${round1(5.5 + leafT * 5)}" ry="${round1(3 + leafT * 2)}" fill="${primary}" opacity="${round1(0.7 + leafT * 0.3)}" transform="rotate(-35 ${round1(50 - 9)} ${ly})"/>`);
-    parts.push(`<ellipse cx="${round1(50 + 9 + leafT * 4)}" cy="${round1(ly - 4)}" rx="${round1(5.5 + leafT * 5)}" ry="${round1(3 + leafT * 2)}" fill="${primary}" opacity="${round1(0.7 + leafT * 0.3)}" transform="rotate(35 ${round1(50 + 9)} ${round1(ly - 4)})"/>`);
-  }
-
-  // Crown — the species-distinct bloom accent, in the lighter "soft" tone
-  // so it visibly pops against the darker foliage the moment it appears.
-  if (crownT > 0) {
-    const ccx = 50, ccy = round1(bodyCy - bodyR * 0.85);
-    if (cfg.crown === 'spike') {
-      for (let i = 0; i < 3; i++) parts.push(`<circle cx="${ccx}" cy="${round1(ccy - i * 6 * crownT)}" r="${round1(2.6 + crownT * 2.2)}" fill="${soft}" opacity="${crownT}"/>`);
-    } else if (cfg.crown === 'radial') {
-      const R = round1(6 + crownT * 7);
-      for (let i = 0; i < 8; i++) parts.push(`<ellipse cx="${ccx}" cy="${round1(ccy - R * 0.9)}" rx="3" ry="${round1(4.5 + crownT * 3)}" fill="${soft}" opacity="${crownT}" transform="rotate(${i * 45} ${ccx} ${ccy})"/>`);
-      parts.push(`<circle cx="${ccx}" cy="${ccy}" r="${round1(3.5 + crownT * 2.5)}" fill="${primary}"/>`);
-    } else if (cfg.crown === 'dot') {
-      parts.push(`<circle cx="${ccx}" cy="${round1(ccy + bodyR * 0.3)}" r="${round1(2.8 + crownT * 2.6)}" fill="${soft}" opacity="${crownT}"/>`);
-    } else if (cfg.crown === 'tuft') {
-      parts.push(`<polygon points="50,${stemTopY} ${round1(50 - 4 - crownT * 6)},${round1(stemTopY - 12 - crownT * 6)} 51,${round1(stemTopY - 2)}" fill="${soft}" opacity="${round1(0.55 + crownT * 0.45)}"/>`);
-      parts.push(`<polygon points="50,${stemTopY} ${round1(50 + 4 + crownT * 6)},${round1(stemTopY - 13 - crownT * 6)} 49,${round1(stemTopY - 2)}" fill="${soft}" opacity="${round1(0.55 + crownT * 0.45)}"/>`);
-    }
-  }
-
-  return `<svg viewBox="0 0 ${vbW} ${vbH}" width="${px}" height="${round1(px * vbH / vbW)}" aria-hidden="true">${parts.join('')}</svg>`;
-}
-
-// Deterministic sprout placement (not reshuffled every render) — a loose
-// cluster around the mother's pot, alternating sides and shrinking a little
-// further out, each on the exact same soil baseline (never floating at a
-// different height) and a little later into its own gentle sway so the bed
-// never looks synchronized. dx is in rem, tuned per size so even a full 6-
-// sprout garden stays inside the hero's fixed-width art column instead of
-// overflowing into the text beside it (see #dash-companion-scene's own
-// width:46%) — every slot starts just clear of the mother's own pot edge.
-const GARDEN_SPROUT_SLOTS_BIG = [
-  { dx: -2.4, size: .5,  delay: '.2s'  },
-  { dx: 2.3,  size: .46, delay: '.9s'  },
-  { dx: -3.0, size: .4,  delay: '1.6s' },
-  { dx: 2.9,  size: .36, delay: '.5s'  },
-  { dx: -3.4, size: .3,  delay: '1.1s' },
-  { dx: 3.3,  size: .28, delay: '1.9s' }
-];
-const GARDEN_SPROUT_SLOTS_SMALL = [
-  { dx: -1.5,  size: .5,  delay: '.2s'  },
-  { dx: 1.45,  size: .46, delay: '.9s'  },
-  { dx: -1.95, size: .4,  delay: '1.6s' },
-  { dx: 1.9,   size: .36, delay: '.5s'  },
-  { dx: -2.35, size: .3,  delay: '1.1s' },
-  { dx: 2.3,   size: .28, delay: '1.9s' }
-];
-
-// The one companion scene — used identically by Home's hero, the Garden
-// card and the companion detail sheet, so the companion never looks
-// different from one screen to the next. Every plant (mother and every
-// garden sprout) is the same mascotSvg() silhouette at its own progress,
-// standing on its own soft shadow — no pot, no shared soil bed, nothing
-// beyond the character itself, matching the mascot redesign's "less
-// detail, stronger silhouette" directly.
-function companionArtHtml(growth, { big = false } = {}) {
-  const plantKey = userProfile.plant || 'sprout';
-  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
-  const sprouts = gardenSprouts(growth);
-  const motherProgress = growth.isFinalStage ? 1 : growth.overallProgressPercent / 100;
-  const motherPx = big ? 112 : 66;
-  const sproutBasePx = big ? 92 : 54;
-
-  const slots = (big ? GARDEN_SPROUT_SLOTS_BIG : GARDEN_SPROUT_SLOTS_SMALL).slice(0, sprouts.length);
-  const sproutsHtml = slots.map((slot, i) => {
-    const svg = mascotSvg({ progress: sprouts[i].progress, theme, species: plantKey, px: Math.round(sproutBasePx * slot.size) });
-    return `<span class="absolute bottom-0 inline-block p-sway" style="left:calc(50% + ${slot.dx}rem);transform:translateX(-50%);transform-origin:bottom center;animation-delay:${slot.delay}" aria-hidden="true">${svg}</span>`;
-  }).join('');
-
-  const farthestDx = slots.length ? Math.max(...slots.map(s => Math.abs(s.dx))) : 0;
-  const sceneWidthRem = Math.max(big ? 7 : 4.2, farthestDx * 2 + (big ? 3.2 : 2));
-  const motherSvg = mascotSvg({ progress: motherProgress, theme, species: plantKey, px: motherPx });
-
-  return `
-    <div class="relative" style="width:${sceneWidthRem.toFixed(2)}rem;margin:0 auto">
-      ${sproutsHtml}
-      <span class="relative inline-block ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="transform-origin:bottom center" aria-hidden="true">${motherSvg}</span>
-    </div>`;
-}
-
-// Ambient life on the Home hero — a butterfly that occasionally visits and
-// leaves, and an occasional falling petal, once the companion has reached
-// Bloom (task: "leaves gently sway... tiny butterflies sometimes visit...
-// butterflies land briefly then fly away... butterflies are NOT permanent...
-// petals occasionally fall... Nothing should feel noisy"). Spawns into the
-// stable #dash-companion-scene wrapper — never into the innerHTML the plant
-// art itself is redrawn into, so an in-flight visitor survives a routine
-// renderDashboard() re-render instead of being wiped mid-animation. Same
-// self-checking, self-removing, never-double-scheduled shape as
-// startPlantWatering()'s droplet loop.
-// Whether today has a butterfly (or petal) moment at all is decided once,
-// per day, per companion — seeded (seededRandom01()) so it's the same
-// answer all day but different day to day, exactly like the garden sprouts
-// above. This deliberately replaces an earlier recurring-timer version:
-// a loop that re-rolled every 18-35s for as long as the tab stayed open
-// meant waiting long enough basically guaranteed a visit, which is the
-// opposite of "once in a while" (task: "not depending on how long we open
-// the page"). Now it's decided once per page load; if today "has" one it
-// fires a single time at a random moment and never again today, so
-// lingering on the page longer never improves the odds.
-const BUTTERFLY_DAILY_CHANCE = 0.35;
-const PETAL_DAILY_CHANCE = 0.35;
-let companionButterflyHandle = null, companionPetalHandle = null, companionAmbientDecided = false;
-function companionAmbientSceneEl() {
-  const dashView = document.getElementById('dashboard-view');
-  if (!dashView || dashView.style.display === 'none') return null;
-  return document.getElementById('dash-companion-scene');
-}
-function stopCompanionAmbient() {
-  clearTimeout(companionButterflyHandle); companionButterflyHandle = null;
-  clearTimeout(companionPetalHandle); companionPetalHandle = null;
-}
-// Returns a setTimeout handle if today "has" this visit (or null if not —
-// nothing to schedule), firing spawn(stage) once at a seeded-random moment.
-function scheduleDailyAmbientVisit({ chance, seedSuffix, minDelayMs, maxDelayMs, spawn }) {
-  const seedKey = `${userProfile.companion?.id || 'companion'}-${seedSuffix}-${todayStr()}`;
-  if (seededRandom01(seedKey) >= chance) return null;
-  const delayMs = minDelayMs + seededRandom01(seedKey + '-delay') * (maxDelayMs - minDelayMs);
-  return setTimeout(() => {
-    const stage = companionAmbientSceneEl();
-    if (stage && !document.hidden && currentGrowthState().isFinalStage) spawn(stage);
-  }, delayMs);
-}
-function startCompanionAmbient() {
-  if (companionAmbientDecided) return; // decide once per page load, never re-roll on every re-render
-  companionAmbientDecided = true;
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  companionButterflyHandle = scheduleDailyAmbientVisit({
-    chance: BUTTERFLY_DAILY_CHANCE, seedSuffix: 'butterfly', minDelayMs: 3000, maxDelayMs: 45000,
-    spawn(stage) {
-      const el = document.createElement('span');
-      el.className = 'companion-butterfly-visit';
-      el.setAttribute('aria-hidden', 'true');
-      el.textContent = '🦋';
-      el.style.top = `${8 + Math.random() * 28}%`;
-      el.style.left = `${58 + Math.random() * 26}%`;
-      el.addEventListener('animationend', () => el.remove());
-      stage.appendChild(el);
-    }
-  });
-  companionPetalHandle = scheduleDailyAmbientVisit({
-    chance: PETAL_DAILY_CHANCE, seedSuffix: 'petal', minDelayMs: 2000, maxDelayMs: 40000,
-    spawn(stage) {
-      const el = document.createElement('span');
-      el.className = 'companion-petal-fall';
-      el.setAttribute('aria-hidden', 'true');
-      el.textContent = '🌸';
-      el.style.top = `${18 + Math.random() * 14}%`;
-      el.style.left = `${34 + Math.random() * 32}%`;
-      el.addEventListener('animationend', () => el.remove());
-      stage.appendChild(el);
-    }
-  });
-}
-
-// A hero that shrinks while scrolling (task: "hero that shrinks while
-// scrolling" — one of the explicit new-layout examples). As the user
-// scrolls the companion out of view, it settles and fades slightly rather
-// than just vanishing the instant it crosses the top of the screen —
-// scroll-linked, rAF-throttled, and a no-op outside the dashboard/reduced-
-// motion so it never fights any other view's own scrolling.
-let heroScrollRaf = null;
-function updateHeroScrollShrink() {
-  const dashView = document.getElementById('dashboard-view');
-  const hero = document.getElementById('dash-companion-card');
-  if (!dashView || !hero || dashView.style.display === 'none') return;
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const rect = hero.getBoundingClientRect();
-  const progress = Math.max(0, Math.min(1, -rect.top / Math.max(1, rect.height * 0.85)));
-  hero.style.transform = `scale(${round1(1 - progress * 0.1)})`;
-  hero.style.opacity = String(round1(1 - progress * 0.55));
-}
-function onWindowScrollForHero() {
-  if (heroScrollRaf) return;
-  heroScrollRaf = requestAnimationFrame(() => { heroScrollRaf = null; updateHeroScrollShrink(); });
-}
-window.addEventListener('scroll', onWindowScrollForHero, { passive: true });
 
 // ── Plant growth: always derived fresh from remaining activity history ─────
 // userProfile.growthPoints is NOT a running counter that add/edit/delete
@@ -4525,15 +4208,15 @@ const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷', '🌸'];
 // replace the mature exercise plant with a different species") — it only
 // unlocks small cosmetic tiers, one per additional full cycle completed.
 function isExercisePlantMastered(dpResult) {
-  return !!dpResult && dpResult.configured && dpResult.cycleIndex >= EXERCISE_PLANT_TOTAL_STAGES - 1;
+  return !!dpResult && dpResult.configured && dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
 }
 function exercisePlantStageIdx(dpResult) {
-  return Math.min(dpResult.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
+  return Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
 }
 // 0 the moment mastery is first reached, 1 after one more full cycle
 // completes beyond that, 2 after two more, etc.
 function exercisePlantMasteryDepth(dpResult) {
-  return isExercisePlantMastered(dpResult) ? dpResult.cycleIndex - (EXERCISE_PLANT_TOTAL_STAGES - 1) : 0;
+  return isExercisePlantMastered(dpResult) ? dpResult.cycleIndex - (GROWTH_TOTAL_STAGES - 1) : 0;
 }
 // Ordered, cumulative cosmetic tiers — purely decorative, never a growth
 // signal of their own (real growth still only ever comes from
@@ -4578,14 +4261,6 @@ function exercisePlantSpeciesFor(exerciseId) {
 // were never required to match, and this task gives exercise plants their
 // own vocabulary.
 const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Seedling', 'Growing'];
-// Exercise plants used to just reuse the Companion's own GROWTH_TOTAL_STAGES
-// as their stage ceiling (mastery = cycleIndex >= GROWTH_TOTAL_STAGES-1).
-// That was an accidental coupling, not a deliberate design decision — this
-// gives them their own independent ceiling (4 named stages + mastery = 5,
-// the same effective value as before) so the Companion's own stage count
-// can change (see the Home redesign task's richer evolution ladder) without
-// silently reshaping Exercise Plants' unrelated stage math.
-const EXERCISE_PLANT_TOTAL_STAGES = EXERCISE_PLANT_STAGE_NAMES.length + 1;
 
 // The ONE exercise plant visual — Exercise Library cards, the Exercise
 // Progress Detail hero, and the Garden page all call this and only this,
@@ -4598,7 +4273,7 @@ const EXERCISE_PLANT_TOTAL_STAGES = EXERCISE_PLANT_STAGE_NAMES.length + 1;
 // Exercise Garden cards already established (no emoji-in-a-square-tile
 // look) — see the removed exgPlantVisual() this replaces.
 function exercisePlantVisual({ exerciseId, stageIdx, mastered = false, cosmetics = [], accent, size = 64 }) {
-  const bloomed = stageIdx != null && stageIdx >= EXERCISE_PLANT_TOTAL_STAGES - 1;
+  const bloomed = stageIdx != null && stageIdx >= GROWTH_TOTAL_STAGES - 1;
   const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : bloomed ? exercisePlantSpeciesFor(exerciseId).emoji : DP_STAGE_EMOJI[stageIdx];
   const hasPremiumPot = cosmetics.includes('Premium pot');
   const hasStones = cosmetics.includes('Decorative stones');
@@ -5100,7 +4775,7 @@ function computeSessionPlantProgress(sessionExercises) {
     const dp = calculateExerciseDoubleProgression(ex.exerciseId, pending);
     const leafCount = dp.events.filter(e => e.workoutSessionId === 'pending' && e.eventType === 'set_weight_increased').length;
     if (leafCount > 0) {
-      const stageIdx = Math.min(dp.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
+      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
       exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
       totalLeaves += leafCount;
     }
@@ -5124,7 +4799,7 @@ function computeHistoricalSessionPlantProgress(sessionId, sessionExercises) {
     const dp = calculateExerciseDoubleProgression(ex.exerciseId);
     const leafCount = dp.events.filter(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased').length;
     if (leafCount > 0) {
-      const stageIdx = Math.min(dp.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
+      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
       exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
       totalLeaves += leafCount;
     }
@@ -5392,10 +5067,7 @@ function goView(v) {
   closeAllOpenWindows();
   // Nav feedback (highlight/title) is synchronous — a tap should register
   // instantly even though the page content below fades out/in.
-  document.getElementById('page-title').innerHTML = v === 'dashboard'
-    ? `${esc(getGreeting())} <span class="text-lavender-400">✨</span>`
-    : esc(TITLES[v] || '');
-  document.getElementById('page-subtitle').style.display = v === 'dashboard' ? '' : 'none';
+  document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
@@ -5406,13 +5078,7 @@ function goView(v) {
   // swapViews() below without a stale setTimeout re-asserting 'hub' after
   // the caller already chose a different sub-tab.
   if (v === 'workout') switchWorkoutTab('hub');
-  const swapViews = () => {
-    VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
-    // Re-apply the hero's scroll-shrink transform the moment it becomes
-    // visible again — otherwise it'd keep showing whatever shrink amount
-    // was last computed before the tab switch until the next scroll event.
-    if (v === 'dashboard') requestAnimationFrame(updateHeroScrollShrink);
-  };
+  const swapViews = () => { VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none'); };
   const current = VIEWS.find(x => x !== v && document.getElementById(x+'-view').style.display !== 'none');
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!current || reducedMotion) { swapViews(); return; }
@@ -5504,7 +5170,7 @@ function findClosestProgression() {
       exerciseId: id, name: exDef.name, group: exDef.muscleGroup,
       weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
       weightIncrement: exDef.weightIncrement || 0,
-      targetReps, maxReps, lastSets: last.sets.map(st => st.reps || 0),
+      targetReps, lastSets: last.sets.map(st => st.reps || 0),
       remaining, ready: !!exDef.weightUpFlag
     };
     if (entry.ready) { if (!readyFallback) readyFallback = entry; continue; }
@@ -5516,42 +5182,9 @@ function findClosestProgression() {
 // Surfaces the most recent genuinely-earned win: a weight-increase unlock,
 // otherwise a real rep improvement between an exercise's last two sessions,
 // otherwise a real monthly session count. Never invents numbers.
-// A handful of achievement types, checked in roughly "how exciting is this"
-// order (task: "Rotate achievements" — the actual variety comes from which
-// of these happen to be true today, not from a timer). Do not duplicate
-// Today's Mission: this never reports plain "you logged a workout," only
-// genuine milestones.
 function findRecentWin() {
-  // A weight milestone reached today outranks the merely-upcoming
-  // "ready for more weight" flag below — it already happened.
-  const today = todayStr();
-  const todaySessions = sessions[today] || {};
-  const priorWeight = {};
-  Object.keys(sessions).filter(d => d < today).sort().forEach(d => {
-    Object.values(sessions[d] || {}).forEach(s => (s.exercises || []).forEach(ex => {
-      if (ex.exerciseId) priorWeight[ex.exerciseId] = +ex.weight;
-    }));
-  });
-  for (const s of Object.values(todaySessions)) {
-    if (!s || s.sessionType === 'recovery') continue;
-    for (const ex of (s.exercises || [])) {
-      const prior = ex.exerciseId != null ? priorWeight[ex.exerciseId] : null;
-      if (prior != null && +ex.weight > prior) return { title: 'New Personal Best', sub: `${ex.name} reached ${ex.weight}${ex.unit || 'kg'}` };
-    }
-  }
-
   const readyEntry = Object.values(exercises).find(ex => ex.weightUpFlag);
-  if (readyEntry) return { title: 'Ready to Grow', sub: `${readyEntry.name} is ready for more weight` };
-
-  // First Bloom, the day it happens — the companion's own biggest milestone.
-  const growth = currentGrowthState();
-  const plantName = (PLANTS[userProfile.plant] || {}).name || 'companion';
-  if (growth.isFinalStage && userProfile.companion?.bloomedAt === today) return { title: 'First Bloom', sub: `Your ${plantName} has fully bloomed.` };
-
-  // A streak milestone reached today.
-  const sessionDates = allSessionDates();
-  const streak = computeCurrentStreak(sessionDates);
-  if (sessionDates.includes(today) && [7, 14, 30, 60, 100].includes(streak)) return { title: `${streak}-Day Streak`, sub: 'Consistency is paying off.' };
+  if (readyEntry) return { icon:'🍃', text: `${readyEntry.name} is ready for more weight` };
 
   const history = {};
   Object.keys(sessions).sort().forEach(date => {
@@ -5564,80 +5197,15 @@ function findRecentWin() {
   for (const list of Object.values(history)) {
     if (list.length < 2) continue;
     const prev = list[list.length-2], last = list[list.length-1];
-    if (last.total > prev.total) return { title: 'Rep PR', sub: `+${last.total-prev.total} rep${last.total-prev.total>1?'s':''} on ${last.name}` };
+    if (last.total > prev.total) return { icon:'💪', text: `+${last.total-prev.total} rep${last.total-prev.total>1?'s':''} on ${last.name}` };
   }
-
-  // A weekly volume roundup — how much total weight has actually moved this
-  // week, a satisfying "big number" summary distinct from any single
-  // exercise's own progression.
-  const weeklyVolume = totalVolumeThisWeek();
-  if (weeklyVolume > 0) return { title: 'Volume Beast', sub: `Lifted a total of ${weeklyVolume.toLocaleString()} kg this week!` };
 
   const monthPrefix = todayStr().slice(0,7);
   const sessionsThisMonth = Object.keys(sessions).filter(d => d.startsWith(monthPrefix))
     .reduce((sum, d) => sum + Object.keys(sessions[d] || {}).length, 0);
-  if (sessionsThisMonth > 0) return { title: 'Showing Up', sub: `${sessionsThisMonth} workout${sessionsThisMonth>1?'s':''} logged this month` };
+  if (sessionsThisMonth > 0) return { icon:'🌱', text: `${sessionsThisMonth} workout${sessionsThisMonth>1?'s':''} logged this month` };
 
   return null;
-}
-
-// Total weight moved (weight x reps, completed working sets only) from this
-// calendar week's Monday through today — the Recent Win card's "Volume
-// Beast" roundup.
-function totalVolumeThisWeek() {
-  const today = new Date(todayStr() + 'T12:00:00');
-  const monday = new Date(today);
-  monday.setDate(monday.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-  let total = 0;
-  for (let i = 0; i < 7; i++) {
-    const dt = new Date(monday); dt.setDate(monday.getDate() + i);
-    if (dt > today) break;
-    const ds = dt.toISOString().slice(0, 10);
-    Object.values(sessions[ds] || {}).forEach(s => {
-      if (!s || s.sessionType === 'recovery') return;
-      (s.exercises || []).forEach(ex => (ex.sets || []).forEach(st => {
-        if (st.completed && !st.warmup) total += (+(st.weight ?? ex.weight) || 0) * (+st.reps || 0);
-      }));
-    });
-  }
-  return Math.round(total);
-}
-
-// Current daily streak (consecutive days with at least one logged session,
-// counting back from today) — shared by the Home hero's rotating message
-// eligibility and the Stats row below, so "3+ day streak" always means the
-// same thing in both places.
-function computeCurrentStreak(sessionDates) {
-  const today = todayStr();
-  let streak = 0, check = new Date(today + 'T12:00:00');
-  for (let i = 0; i < 60; i++) {
-    if (sessionDates.includes(check.toISOString().slice(0, 10))) streak++;
-    else if (i > 0) break;
-    check.setDate(check.getDate() - 1);
-  }
-  return streak;
-}
-
-// A small pool of companion messages — the hero rotates through whichever
-// of these are eligible right now (task: "Rotate these messages so the Home
-// page feels alive. Do not always display the same message"). Rotation is
-// day-based, the same "Math.floor(Date.now()/86400000)" pattern
-// renderEncouragement() already uses — the message changes once a day, not
-// on every re-render, which would read as busy rather than calm.
-const COMPANION_MESSAGES = [
-  { eligible: () => true, text: () => 'Another day together.' },
-  { eligible: ctx => ctx.loggedToday, text: ctx => `Your ${ctx.plantName} looks healthier today.` },
-  { eligible: ctx => ctx.growth.isFinalStage, text: () => 'A butterfly stopped by.' },
-  { eligible: ctx => !ctx.growth.isFinalStage, text: ctx => ctx.growth.growthReason },
-  { eligible: () => true, text: () => 'Quiet growth is still growth.' },
-  { eligible: ctx => ctx.streak >= 3, text: () => 'Consistency looks good on you.' }
-];
-function pickCompanionMessage(ctx) {
-  const eligible = COMPANION_MESSAGES.filter(m => m.eligible(ctx));
-  const pool = eligible.length ? eligible : [COMPANION_MESSAGES[0]];
-  const dayIndex = Math.floor(Date.now() / 86400000);
-  const dotCount = Math.min(3, pool.length);
-  return { text: pool[dayIndex % pool.length].text(ctx), dotIndex: dayIndex % dotCount, dotCount };
 }
 
 // The Home Companion card — see the Home Companion redesign task. Every
@@ -5652,51 +5220,82 @@ function renderPlantHero(sessionDates, hasHistory) {
   const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
 
   document.getElementById('plant-name-label').textContent = p.name;
-  // A moody night scene — deliberately dark regardless of the app's own
-  // light/dark toggle (a photo of a garden at dusk doesn't change with the
-  // reader's theme), tinted with the companion's own species glow so
-  // Lavender/Sunflower/etc. each still feel a little different. Fades to
-  // fully transparent at the very bottom instead of ending in a hard
-  // rectangle, so the mascot reads as stepping out into the page rather
-  // than being boxed into a panel (task: "companion breaking outside its
-  // container").
-  document.getElementById('dash-companion-vignette').style.background =
-    `radial-gradient(circle at 50% 28%, ${theme.glow} 0%, transparent 60%), linear-gradient(180deg, #0b0f1c 0%, #12141f 55%, rgba(13,16,22,0) 100%)`;
 
   const growth = currentGrowthState();
-  // Dynamic artwork — companionArtHtml() draws the mascot at the
-  // companion's real progress fraction (task: "The companion artwork
-  // should ALWAYS reflect its actual progression"), plus every garden
-  // sprout that's started so far, each independently — one artwork
-  // function, three surfaces (Home, Garden, detail sheet), one of them
-  // bigger.
-  document.getElementById('plant-emoji').innerHTML = companionArtHtml(growth, { big: true });
-  startCompanionAmbient();
-  updateHeroScrollShrink(); // apply immediately for the current scroll position, not just on the next scroll event
+  // Dynamic artwork — selectedAsset/selectedAssetOpacity are the exact same
+  // fields Garden's companion card renders (see renderGardenCompanion()),
+  // so the real species image only ever appears once Bloom is actually
+  // reached (task: "Do NOT use a generic Lavender image... render the
+  // current companion based on its actual state"), never a moment sooner
+  // here than anywhere else. Gentle sway only (task: "Leaves gently
+  // sway") — the old vertical-bob float animation (.p-hero-float) is gone
+  // per "Remove: Floating plant artwork."
+  const emoji = document.getElementById('plant-emoji');
+  emoji.textContent = growth.selectedAsset;
+  emoji.style.opacity = growth.selectedAssetOpacity;
+  emoji.className = 'relative flex-shrink-0 text-6xl leading-none p-sway';
+
+  const levelLabel = document.getElementById('plant-level-label');
+  levelLabel.textContent = growth.displayStageName;
+  levelLabel.style.color = theme.primary;
 
   if (!hasHistory) {
     document.getElementById('hero-empty-line1').textContent = `${p.name} is ready to grow.`;
     document.getElementById('hero-empty-line2').textContent = 'Your first leaf is one workout away.';
     show('dash-hero-empty'); hide('dash-hero-body');
-    hide('dash-companion-dots');
+    hide('dash-companion-message-row'); hide('dash-companion-particle');
     return;
   }
-  hide('dash-hero-empty'); show('dash-hero-body'); show('dash-companion-dots');
+  hide('dash-hero-empty'); show('dash-hero-body'); show('dash-companion-message-row');
 
-  // The one line of copy in the whole scene, rotating (task: "Small
-  // rotating contextual message... Rotate these messages so the Home page
-  // feels alive"). Everything the old hero spelled out in numbers — stage
-  // name, time together, % to next milestone — is now either a visual
-  // discovery in the mascot itself, or one tap away in the detail sheet
-  // this card already opens.
+  // Short encouraging message — the exact same "logged something today /
+  // how long since the last session" mood detection as before
+  // (getPlantHealth()/HEALTH_LABELS), just worded to name the companion
+  // and its current Care/growth stage directly.
   const today = todayStr();
   const loggedToday = !!(sessions[today] && Object.keys(sessions[today]).length);
-  const streak = computeCurrentStreak(sessionDates);
-  const picked = pickCompanionMessage({ loggedToday, streak, growth, plantName: p.name });
-  document.getElementById('plant-subtitle-label').textContent = picked.text;
-  document.getElementById('dash-companion-dots').innerHTML = Array.from({ length: picked.dotCount }, (_, i) =>
-    `<span class="rounded-full" style="width:5px;height:5px;background:${i === picked.dotIndex ? theme.primary : 'rgba(255,255,255,.25)'}" aria-hidden="true"></span>`
-  ).join('');
+  const health = getPlantHealth(sessionDates);
+  const message = loggedToday && health !== 'dormant' && health !== 'wilting'
+    ? `Thanks for showing up today. Your ${p.name} is ${growth.displayStageName.toLowerCase()} with you.`
+    : (HEALTH_LABELS[health] || ['', ''])[1];
+  document.getElementById('plant-subtitle-label').textContent = message;
+
+  // Time together — real, from the companion's own startedAt, never re-
+  // derived per render (task: "show how long the companion has been
+  // growing with the user... calculated from when the companion was first
+  // chosen").
+  document.getElementById('plant-time-together').textContent = companionTimeTogetherLabel(userProfile.companion?.startedAt) || '';
+
+  // One unified Care/growth bar, pre- or post-Bloom — no more separate
+  // "bloomed, choose a new companion" branch (task: "The companion is
+  // never replaced" / "Remove... Choose next companion. Any wording that
+  // implies the companion is finished after Bloom").
+  const bar = document.getElementById('growth-bar-fill');
+  bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
+  const track = bar.parentElement;
+  track.setAttribute('aria-valuemin', '0');
+  track.setAttribute('aria-valuemax', '100');
+  let pct, nextLabel;
+  if (growth.isFinalStage && growth.isTimeless) {
+    pct = growth.timelessCyclePercent;
+    nextLabel = 'Timeless';
+  } else if (growth.isFinalStage) {
+    pct = growth.postBloomProgressPercent;
+    nextLabel = 'Next Care Milestone';
+  } else {
+    pct = growth.overallProgressPercent;
+    nextLabel = `Next: ${growth.nextStageName}`;
+  }
+  document.getElementById('growth-pct-label').textContent = `${pct}%`;
+  document.getElementById('growth-next-label').textContent = nextLabel;
+  bar.style.width = `${pct}%`;
+  track.setAttribute('aria-valuenow', String(pct));
+
+  // Butterflies only once the companion has reached a Care stage (task:
+  // "Butterflies occasionally appear once the companion is mature") —
+  // reuses the exact .leaf-particle drift animation everywhere else in the
+  // app already uses, just a different glyph.
+  document.getElementById('dash-companion-particle').style.display = growth.isFinalStage ? '' : 'none';
 }
 // Tapping the card opens the exact same companion detail sheet the Garden
 // page's own companion card opens (openGardenCompanionDetail(), defined in
@@ -5705,85 +5304,51 @@ function renderPlantHero(sessionDates, hasHistory) {
 document.getElementById('dash-companion-card').addEventListener('click', () => openGardenCompanionDetail());
 
 function renderDashStats(sessionDates, hasHistory) {
-  const el = document.getElementById('dash-stats-row');
-  if (!hasHistory) {
-    el.innerHTML = `<p class="text-xs text-slate-400 pt-1">Your streak will start with your first workout.</p>`;
-    return;
+  if (!hasHistory) { hide('dash-stats-row'); return; }
+  show('dash-stats-row');
+  const today = todayStr();
+  let streak = 0, check = new Date(today+'T12:00:00');
+  for (let i = 0; i < 60; i++) {
+    if (sessionDates.includes(check.toISOString().slice(0,10))) streak++;
+    else if (i > 0) break;
+    check.setDate(check.getDate()-1);
   }
-  const streak = computeCurrentStreak(sessionDates);
-  const best = computeBestStreak(sessionDates);
-  const workouts = workoutsThisMonthCount();
-  el.innerHTML = `
-    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><span class="ms text-base text-amber-500" aria-hidden="true">local_fire_department</span>${streak} day streak</p>
-    <p class="text-[10px] text-slate-400 -mt-1">Best: ${best} days</p>
-    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 pt-1"><span class="ms text-base text-brand-500" aria-hidden="true">fitness_center</span>${workouts} workout${workouts!==1?'s':''} <span class="text-slate-400 font-normal">this month</span></p>
-    ${weekActivityGridHtml(sessionDates)}`;
+  document.getElementById('streak-val').textContent = streak;
+  document.getElementById('total-sessions-val').textContent = nonRecoveryWorkoutDates().length;
+  // "Last session" means an actual workout or exercise activity — a
+  // Recovery Day is real rest, not something to report as your last
+  // session, so it's excluded here even though it still counts toward the
+  // streak/total-sessions stats above.
+  const lastWorkoutDate = lastWorkoutSessionDate();
+  document.getElementById('last-session-val').textContent = lastWorkoutDate ? fmtDate(lastWorkoutDate) : '—';
 }
 
-// Mon-Sun activity dots — which days this calendar week already have at
-// least one logged session (any session type; a Recovery Day still keeps
-// the streak/week alive, same convention computeCurrentStreak() already
-// uses). Purely a compact "at a glance" companion to the streak number
-// above it, not a second streak calculation.
-function currentWeekActivityFlags(sessionDates) {
-  const today = new Date(todayStr() + 'T12:00:00');
-  const dow = today.getDay(); // 0=Sun..6=Sat
-  const monday = new Date(today);
-  monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1));
-  return ['M','T','W','T','F','S','S'].map((label, i) => {
-    const dt = new Date(monday); dt.setDate(monday.getDate() + i);
-    const ds = dt.toISOString().slice(0, 10);
-    return { label, active: sessionDates.includes(ds), isToday: ds === todayStr() };
-  });
-}
-function weekActivityGridHtml(sessionDates) {
-  const flags = currentWeekActivityFlags(sessionDates);
-  return `
-    <div class="flex items-center justify-between gap-1 pt-2">
-      ${flags.map(f => `
-        <span class="flex flex-col items-center gap-1">
-          <span class="text-[9px] font-semibold ${f.isToday ? 'text-brand-500' : 'text-slate-400'}">${f.label}</span>
-          <span class="rounded-full flex-shrink-0 ${f.active ? '' : 'bg-slate-200 dark:bg-slate-700'}" style="width:7px;height:7px;${f.active ? 'background:#22c55e' : ''}"></span>
-        </span>`).join('')}
-    </div>`;
+// Most recent date with at least one non-Recovery-Day session (group,
+// quick, or other activity) — a Recovery Day on a later date must never
+// make an older real workout look "current."
+function lastWorkoutSessionDate() {
+  const dates = Object.keys(sessions).filter(date =>
+    Object.values(sessions[date] || {}).some(s => s && s.sessionType !== 'recovery'));
+  return dates.length ? dates.sort().reverse()[0] : null;
 }
 
-// Longest daily streak on record, ever — distinct from the *current* streak
-// above it (computeCurrentStreak()), which resets the moment a day is missed.
-function computeBestStreak(sessionDates) {
-  const sorted = [...new Set(sessionDates)].sort();
-  let best = 0, run = 0, prev = null;
-  for (const d of sorted) {
-    const diff = prev ? Math.round((new Date(d+'T12:00:00') - new Date(prev+'T12:00:00')) / 86400000) : null;
-    run = diff === 1 ? run + 1 : 1;
-    if (run > best) best = run;
-    prev = d;
-  }
-  return best;
-}
-
-// Real workouts/activities (never Recovery Days) logged in the current
-// calendar month — a rolling "how consistent am I lately" pulse next to the
-// day streak, rather than a lifetime total that never moves week to week.
-function workoutsThisMonthCount() {
-  const monthPrefix = todayStr().slice(0, 7);
-  return nonRecoveryWorkoutDates().filter(d => d.startsWith(monthPrefix)).length;
-}
-
-// Shared by the Home Start Growing section and the Calendar day sheet — a
-// planned Quick Workout links to the same saved exercise library either
-// way, so both surfaces describe it the same way instead of two separate
-// strings.
+// Tracks the stage shown on the previous call so the mission-card icon only
+// plays its stage-change pop on an actual transition, never on a routine
+// re-render at the same stage (which would falsely "celebrate" every refresh).
+let lastRenderedMissionStage = null;
+// Today's Mission, when the calendar has something planned for today —
+// same data currentGrowthState()-style single source as the Calendar day
+// sheet (firstIncompletePlannedEntry()), just rendered with data-action
+// buttons instead of ids since this card uses event delegation.
+// Shared by the Home mission card and the Calendar day sheet — a planned
+// Quick Workout links to the same saved exercise library either way, so
+// both surfaces describe it the same way instead of two separate strings.
 function describePlannedQuickWorkout(exerciseIds) {
   if (!exerciseIds || !exerciseIds.length) return 'Build it as you go';
   const names = exerciseIds.map(id => exercises[id]?.name).filter(Boolean);
   return `${exerciseIds.length} exercise${exerciseIds.length!==1?'s':''} planned${names.length ? ': ' + names.join(', ') : ''}`;
 }
 
-// Today's plan, when the Calendar has something scheduled — same
-// firstIncompletePlannedEntry() single source the Calendar day sheet itself
-// reads, just rendered with data-action buttons instead of ids since this
-// card uses event delegation (see the #dash-content click listener).
 function renderHomeMissionPlannedCard(planned) {
   let label, meta, primaryLabel, primaryAction;
   if (planned.type === 'group') {
@@ -5804,7 +5369,7 @@ function renderHomeMissionPlannedCard(planned) {
     primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-recovery-complete';
   }
   return `
-    <p class="text-xs font-semibold text-brand-500">Planned for today</p>
+    <p class="text-xs font-semibold text-brand-500">Today's Mission</p>
     <p class="text-base font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
     <p class="text-xs text-slate-400">${esc(meta)}</p>
     <button data-action="${primaryAction}" data-entry-id="${planned.id}" class="btn btn-green btn-pop w-full py-3.5 text-base">${esc(primaryLabel)}</button>
@@ -5815,144 +5380,153 @@ function renderHomeMissionPlannedCard(planned) {
     </div>`;
 }
 
-// Section 2, Start Growing — the primary CTA (task: "Keep this as the
-// primary CTA"), always visible whether or not today's workout is already
-// logged. Plan-aware: a still-incomplete Calendar plan always takes
-// priority over the generic button (multiple planned activities advance
-// one at a time, task spec: "after it is completed, automatically show the
-// next planned activity").
-function renderStartGrowing() {
-  const el = document.getElementById('dash-start-growing');
-  const planned = firstIncompletePlannedEntry(todayStr());
-  if (planned) {
-    el.innerHTML = `<div class="card p-4 space-y-3">${renderHomeMissionPlannedCard(planned)}</div>`;
-    return;
-  }
-  el.innerHTML = `
-    <div class="flex items-stretch gap-3">
-      <button data-action="start-growing" class="btn-pop flex-1 flex items-center gap-3 py-3 px-4 rounded-2xl text-left transition-transform active:scale-[.98]" style="background:linear-gradient(135deg,#4ade80,#16a34a)">
-        <span class="w-11 h-11 rounded-full bg-black/15 flex items-center justify-center flex-shrink-0"><span class="ms text-xl text-white" aria-hidden="true">eco</span></span>
-        <span class="leading-tight min-w-0">
-          <span class="block font-bold text-base text-white">Start Growing</span>
-          <span class="block text-xs text-white/80">Begin your workout</span>
-        </span>
-      </button>
-      <button data-action="today-log-activity" class="card flex-shrink-0 flex flex-col items-center justify-center gap-1.5 p-3 text-slate-500 dark:text-slate-300 text-[11px] font-semibold text-center transition-transform active:scale-[.98]" style="width:5.25rem">
-        <span class="ms text-xl" aria-hidden="true">directions_walk</span>Other Activity
-      </button>
-      <button data-action="today-mark-recovery" class="card flex-shrink-0 flex flex-col items-center justify-center gap-1.5 p-3 text-slate-500 dark:text-slate-300 text-[11px] font-semibold text-center transition-transform active:scale-[.98]" style="width:5.25rem">
-        <span class="ms text-xl text-brand-500" aria-hidden="true">eco</span>Recovery Day
-      </button>
-    </div>`;
-}
-
-// Number of exercises in today's non-Recovery sessions whose weight today
-// is higher than the last weight logged for that exercise before today — a
-// real progression event, not just "an exercise was performed."
-function countExercisesProgressedToday(todaySessions) {
-  const today = todayStr();
-  const priorWeight = {};
-  Object.keys(sessions).filter(d => d < today).sort().forEach(d => {
-    Object.values(sessions[d] || {}).forEach(s => (s.exercises || []).forEach(ex => {
-      if (ex.exerciseId) priorWeight[ex.exerciseId] = +ex.weight;
-    }));
-  });
-  let count = 0;
-  Object.values(todaySessions).forEach(s => {
-    if (!s || s.sessionType === 'recovery') return;
-    (s.exercises || []).forEach(ex => {
-      if (ex.exerciseId && priorWeight[ex.exerciseId] != null && +ex.weight > priorWeight[ex.exerciseId]) count++;
-    });
-  });
-  return count;
-}
-
-// The one session today's mission summary reports on — the first real
-// workout/activity if one exists, otherwise the Recovery Day (never
-// silently picks a Recovery Day over a real workout logged the same day).
-function primaryTodaySummarySession(todaySessions) {
-  const list = Object.values(todaySessions);
-  return list.find(s => s && s.sessionType !== 'recovery') || list[0] || null;
-}
-
-// Section 3, Today's Mission — summarises today's workout only (task:
-// "this section should only summarise today's workout... Do NOT mention
-// the companion here. Do NOT repeat Bloom or Care"). Hidden entirely until
-// there's something real to summarise — Start Growing above already covers
-// "nothing logged yet."
-// A fixed style regardless of the session's own group color — "Completed"
-// is a status, not a group-color chip (the group color already shows up in
-// the workout's own history entry elsewhere).
-const TODAY_COMPLETED_PILL = `<span class="px-2.5 py-1 rounded-full bg-lavender-100 dark:bg-lavender-500/20 text-lavender-700 dark:text-lavender-300 text-xs font-semibold flex items-center gap-1 flex-shrink-0"><span class="ms text-sm" aria-hidden="true">check</span>Completed</span>`;
-
 function renderTodayMission() {
+  const body = document.getElementById('dash-mission-body');
   const today = todayStr();
   const todaySessions = sessions[today] || {};
-  if (!Object.keys(todaySessions).length || firstIncompletePlannedEntry(today)) { hide('dash-mission-card'); return; }
-  show('dash-mission-card');
+  const done = Object.keys(todaySessions).length > 0;
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
+  // A still-incomplete planned activity always takes priority over "done for
+  // today" — multiple planned activities advance one at a time (task spec:
+  // "after it is completed, automatically show the next planned activity").
+  const planned = firstIncompletePlannedEntry(today);
 
-  const s = primaryTodaySummarySession(todaySessions);
-  const body = document.getElementById('dash-mission-body');
-  const extraCount = Object.keys(todaySessions).length - 1;
-
-  if (s.sessionType === 'recovery') {
+  if (planned) {
+    body.innerHTML = renderHomeMissionPlannedCard(planned);
+  } else if (done) {
+    const s = Object.values(todaySessions)[0];
     body.innerHTML = `
-      <div class="flex items-center justify-between gap-2">
-        <p class="text-base font-bold text-slate-800 dark:text-white">Recovery Day</p>
-        ${TODAY_COMPLETED_PILL}
+      <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-semibold text-sm">
+        <span class="ms text-xl" aria-hidden="true">check_circle</span>Mission complete
       </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Rest and recover — it's part of growth.</p>`;
-    return;
+      <p class="text-sm text-slate-500 dark:text-slate-400">Your ${esc(plantName)} grew today.</p>
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <span class="px-2 py-0.5 rounded-lg text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
+        <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
+      </div>
+      <div class="flex items-center gap-4 pt-1 text-xs font-semibold">
+        <button data-action="view-workout" class="text-brand-500 hover:underline py-2">View workout</button>
+        <button data-action="log-another" class="text-slate-400 hover:underline py-2">Log another activity</button>
+      </div>`;
+  } else {
+    body.innerHTML = `
+      <p class="text-base font-semibold text-slate-700 dark:text-slate-200">Log any workout today</p>
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-slate-500 dark:text-slate-400">Reward</span>
+        <span class="text-base font-extrabold text-brand-600 dark:text-brand-400 flex items-center gap-1"><span class="ms text-base" aria-hidden="true">eco</span>${plantName !== 'plant' ? `Helps ${esc(plantName)} flourish` : 'Nurtures your plant'}</span>
+      </div>
+      <button data-action="start-growing" class="btn btn-green btn-pop w-full py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>
+      <div class="flex items-center justify-center gap-4 pt-1 text-xs font-semibold flex-wrap">
+        <button data-action="today-log-activity" class="text-slate-400 hover:underline py-2">Log other activity</button>
+        <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
+      </div>`;
   }
 
-  const progressedCount = countExercisesProgressedToday(todaySessions);
-  body.innerHTML = `
-    <div class="flex items-center justify-between gap-2">
-      <p class="text-base font-bold text-slate-800 dark:text-white truncate">${esc(sessionLabel(s))}</p>
-      ${TODAY_COMPLETED_PILL}
-    </div>
-    <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-      <span class="flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">schedule</span>${s.duration||0} min</span>
-      <span class="flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">fitness_center</span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
-      ${progressedCount ? `<span class="flex items-center gap-1 text-brand-600 dark:text-brand-400 font-semibold"><span class="ms text-sm" aria-hidden="true">eco</span>+${progressedCount} progressed</span>` : ''}
-    </div>
-    <p class="text-sm text-slate-500 dark:text-slate-400">Great work! Keep growing stronger.</p>
-    <div class="relative flex items-center gap-4 text-xs font-semibold">
-      <button data-action="view-workout" class="text-brand-500 hover:underline py-1 inline-flex items-center gap-0.5">View Workout <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
-      ${extraCount > 0 ? `<span class="text-slate-400">+${extraCount} more logged today</span>` : `<button data-action="log-another" class="text-slate-400 hover:underline py-1">Log Another Activity</button>`}
-    </div>`;
+  renderMissionStageIcon();
+}
+
+// The one plant-evolution icon in the app (mission card). Reads the exact
+// same getPlantGrowthState() result as the hero progress bar — see
+// currentGrowthState() — so the bar and the icon can never disagree.
+function renderMissionStageIcon() {
+  const growth = currentGrowthState();
+  const theme = PLANT_THEME[userProfile.plant] || DEFAULT_THEME;
+  const CIRCUMFERENCE = 2 * Math.PI * 28;
+
+  const ring = document.getElementById('mission-stage-ring');
+  ring.setAttribute('stroke', theme.primary);
+  ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
+  ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - growth.currentStageProgressPercent / 100));
+  document.getElementById('mission-stage-glow').style.background = `radial-gradient(circle, ${theme.glow}, transparent 70%)`;
+  startMissionSparkle();
+
+  const emojiEl = document.getElementById('mission-stage-emoji');
+  emojiEl.textContent = growth.selectedAsset;
+  emojiEl.style.opacity = growth.selectedAssetOpacity;
+  emojiEl.style.transform = `scale(${growth.selectedAssetScale})`;
+
+  document.getElementById('mission-stage-icon').setAttribute('aria-label',
+    `Plant growth stage ${growth.currentStage} of ${growth.totalStages}: ${growth.stageName}`);
+  document.getElementById('mission-stage-name').textContent = growth.stageName;
+
+  const wrap = document.getElementById('mission-stage-emoji-wrap');
+  wrap.classList.remove('stage-pop');
+  if (lastRenderedMissionStage !== null && lastRenderedMissionStage !== growth.currentStage) {
+    // Re-adding the class on the next frame restarts the animation reliably.
+    requestAnimationFrame(() => wrap.classList.add('stage-pop'));
+  }
+  lastRenderedMissionStage = growth.currentStage;
+}
+
+// Occasional sparkle on the mission-card growth icon — deliberately much
+// rarer than the glow's own 2.4s pulse (every 8-14s, one-shot, self-removing)
+// so it reads as "occasionally," not "every loop." Self-stops the moment the
+// dashboard isn't the visible view or the icon leaves the DOM, same
+// self-checking pattern as startPlantWatering()'s droplet loop — no need to
+// hook goView() explicitly.
+let missionSparkleHandle = null;
+function stopMissionSparkle() {
+  clearTimeout(missionSparkleHandle);
+  missionSparkleHandle = null;
+}
+function scheduleMissionSparkle() {
+  missionSparkleHandle = setTimeout(() => {
+    const icon = document.getElementById('mission-stage-icon');
+    const dashView = document.getElementById('dashboard-view');
+    if (!icon || !dashView || dashView.style.display === 'none') { stopMissionSparkle(); return; }
+    if (!document.hidden) {
+      const spark = document.createElement('span');
+      spark.className = 'mission-sparkle-once';
+      spark.setAttribute('aria-hidden', 'true');
+      spark.textContent = '✨';
+      spark.addEventListener('animationend', () => spark.remove());
+      icon.appendChild(spark);
+    }
+    scheduleMissionSparkle();
+  }, 8000 + Math.random() * 6000);
+}
+function startMissionSparkle() {
+  if (missionSparkleHandle) return; // already looping — never stack timers
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  scheduleMissionSparkle();
 }
 
 function renderClosestProgress() {
   const body = document.getElementById('dash-progress-body');
   const best = findClosestProgression();
   if (!best) {
-    body.innerHTML = `<p class="text-xs text-slate-400 pt-1">Your next progression will appear after your first workout.</p>`;
+    body.innerHTML = `
+      <div class="flex items-center justify-center gap-2 py-1" aria-hidden="true">
+        <span class="text-lg">🌰</span>
+        <span class="flex-1 max-w-8 border-t border-dashed border-slate-300 dark:border-slate-700"></span>
+        <span class="text-lg opacity-30">🌱</span>
+        <span class="flex-1 max-w-8 border-t border-dashed border-slate-300 dark:border-slate-700"></span>
+        <span class="text-lg opacity-30">🍃</span>
+      </div>
+      <p class="text-sm text-slate-400 text-center">Your next progression will appear after your first workout.</p>`;
     return;
   }
   const detail = best.ready
-    ? 'Ready to grow 🎉'
-    : `${best.remaining} rep${best.remaining===1?'':'s'} until next leaf`;
-  // A compact ring instead of the old rep-chain — how close lastSets came
-  // to each set's own maxReps ceiling, capped at 100% the moment the
-  // weight-up flag itself is ready.
-  const ringPercent = best.ready ? 100 : Math.round(
-    best.lastSets.reduce((sum, r) => sum + Math.min(r, best.maxReps), 0) / (best.lastSets.length * best.maxReps) * 100
-  );
-  const CIRCUMFERENCE = 2 * Math.PI * 20;
+    ? (best.weightIncrement ? `Ready to grow — try ${round1(best.weight + best.weightIncrement)} ${best.unit} next session 🎉` : 'Ready to increase next session 🎉')
+    : `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next leaf`;
+  const nodes = best.lastSets.map((r, i) => {
+    const filled = r >= 12;
+    const node = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
+    const branch = i < best.lastSets.length - 1 ? '<div class="flex-1 h-0.5 bg-brand-200 dark:bg-brand-800 rounded-full min-w-2"></div>' : '';
+    return node + branch;
+  }).join('');
   body.innerHTML = `
-    <div id="dash-progress-card" class="flex items-center gap-3 cursor-pointer pt-1" role="button" tabindex="0" aria-label="View ${esc(best.name)} progress">
-      <div class="min-w-0 flex-1">
-        <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate">${esc(best.name)}</p>
-        <p class="text-xs font-semibold text-brand-500 mt-1">${detail}</p>
+    <div id="dash-progress-card" class="space-y-2 cursor-pointer" role="button" tabindex="0" aria-label="View ${esc(best.name)} progress">
+      <div class="flex items-center justify-between">
+        <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate min-w-0">${esc(best.name)}</p>
+        <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
       </div>
-      <div class="relative w-12 h-12 flex-shrink-0">
-        <svg viewBox="0 0 48 48" class="w-12 h-12" style="transform:rotate(-90deg)" aria-hidden="true">
-          <circle cx="24" cy="24" r="20" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
-          <circle cx="24" cy="24" r="20" fill="none" stroke-width="4" stroke-linecap="round" stroke="#22c55e" stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="${CIRCUMFERENCE * (1 - ringPercent / 100)}"></circle>
-        </svg>
-        <span class="absolute inset-0 flex items-center justify-center text-base" aria-hidden="true">🍃</span>
+      <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
+      <div class="flex items-center gap-1.5 py-1">
+        ${nodes}
+        <span class="text-xl ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
       </div>
+      <p class="text-xs font-semibold text-brand-500">${detail}</p>
     </div>`;
   const card = document.getElementById('dash-progress-card');
   card.addEventListener('click', () => openExerciseDetail(best.exerciseId));
@@ -5976,11 +5550,12 @@ function renderClosestProgress() {
 // Bloom still gets recorded, it just never prompts a swap.
 
 function renderRecentWin() {
+  const iconEl = document.getElementById('dash-win-icon');
+  const textEl = document.getElementById('dash-win-text');
   const win = findRecentWin();
-  document.getElementById('dash-win-text').textContent = win ? win.title : 'Your first win will appear here.';
-  document.getElementById('dash-win-sub').textContent = win ? win.sub : 'Log a workout to get started.';
+  iconEl.textContent = win ? win.icon : '🌱';
+  textEl.textContent = win ? win.text : 'Your first win will appear here.';
 }
-document.getElementById('dash-win-view-all').addEventListener('click', () => { goView('workout'); switchWorkoutTab('history'); });
 
 function renderEncouragement() {
   const dayIndex = Math.floor(Date.now() / 86400000);
@@ -6058,7 +5633,6 @@ function renderDashboard() {
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
   renderPlantHero(sessionDates, hasHistory);
-  renderStartGrowing();
   renderDashStats(sessionDates, hasHistory);
   renderTodayMission();
   renderHomeTargetSection();
@@ -6123,18 +5697,25 @@ function renderProfile() {
 }
 
 // ── Garden: Companion card ──────────────────────────────────────────────────
-// Same currentGrowthState() the Home hero already reads — one growth
-// number, one function, never a second source of truth. Companion artwork
-// reuses the exact same companionArtHtml() Home's own hero renders (just at
-// the smaller, non-`big` size), so the Garden card always shows the same
-// mother plant, the same Care-stage offshoots and the same pot cosmetics
-// Home does.
+// Same currentGrowthState() the Home hero and mission-card icon already
+// read — one growth number, one function, never a second source of truth.
+// Post-bloom (Thriving/Flourishing/Legacy) is entirely new surface area
+// getPlantGrowthState() now provides (see its own comment) — Home is
+// intentionally left untouched and still only reads the pre-existing fields.
+// Companion artwork reuses the exact same asset Home's own hero already
+// shows (getPlantGrowthState()'s selectedAsset/selectedAssetOpacity — the
+// one plant-emoji lookup this app has, GROWTH_STAGE_FALLBACK_EMOJI pre-
+// reveal then the real species emoji from stage 4 on) rather than a second
+// illustration system, per "reuse existing components... wherever possible."
 function renderGardenCompanion() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
   const growth = currentGrowthState();
 
-  document.getElementById('garden-companion-art').innerHTML = companionArtHtml(growth);
+  const artEl = document.getElementById('garden-companion-art');
+  artEl.textContent = growth.selectedAsset;
+  artEl.style.opacity = growth.selectedAssetOpacity;
+  artEl.className = `text-6xl flex-shrink-0 ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
   document.getElementById('garden-companion-name').textContent = plant.name;
 
   const sessionDates = [];
@@ -6175,12 +5756,12 @@ function openGardenCompanionDetail() {
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
   const growth = currentGrowthState();
 
-  document.getElementById('gcd-art').innerHTML = companionArtHtml(growth);
+  const artEl = document.getElementById('gcd-art');
+  artEl.textContent = growth.selectedAsset;
+  artEl.style.opacity = growth.selectedAssetOpacity;
+  artEl.className = `text-6xl flex-shrink-0 ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
   document.getElementById('gcd-name').textContent = plant.name;
   document.getElementById('gcd-desc').textContent = plant.desc || '';
-  // Time together now lives here instead of on the Home hero — the hero's
-  // job is the emotional read, this sheet is where the numbers live.
-  document.getElementById('gcd-together').textContent = companionTimeTogetherLabel(userProfile.companion?.startedAt) || '';
   document.getElementById('gcd-stage').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
 
   // Every named stage this companion has already passed through, plus the
@@ -7465,8 +7046,8 @@ function classifyExerciseForGarden(id, ex) {
   const workingSetCount = dpResult ? dpResult.workingSetCount : Math.max(1, ex.defaultSets || (ex.targetReps || []).length || 3);
   const leavesMatured = dpResult ? dpResult.leavesMatured : 0;
   const cycleIndex = dpResult ? dpResult.cycleIndex : 0;
-  const stageIdx = Math.min(cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
-  const isFinal = cycleIndex >= EXERCISE_PLANT_TOTAL_STAGES - 1;
+  const stageIdx = Math.min(cycleIndex, GROWTH_TOTAL_STAGES - 1);
+  const isFinal = cycleIndex >= GROWTH_TOTAL_STAGES - 1;
   const hasReadyLeaf = dpPositions.some(p => !p.matured && p.status === DP_STATUS.READY_TO_INCREASE);
   const bucket = stageIdx === 0 ? 'sprout' : isFinal ? 'bloomed' : 'growing';
   const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : leavesMatured > 0 ? 'growing' : 'sprout';
@@ -7800,8 +7381,8 @@ function renderExerciseDetail(exerciseId) {
         <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
       </div>`;
   } else {
-    const stageIdx = Math.min(dpResult.cycleIndex, EXERCISE_PLANT_TOTAL_STAGES - 1);
-    const isFinal = dpResult.cycleIndex >= EXERCISE_PLANT_TOTAL_STAGES - 1;
+    const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+    const isFinal = dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
     const mastered = isExercisePlantMastered(dpResult);
     const cosmetics = exercisePlantCosmetics(dpResult);
     const species = mastered ? exercisePlantSpeciesFor(exerciseId) : null;
@@ -7815,7 +7396,7 @@ function renderExerciseDetail(exerciseId) {
             <p class="text-xs text-slate-400">Current stage</p>
             <div class="flex items-center gap-2 flex-wrap">
               <p class="font-display font-bold text-xl ${mastered ? 'text-amber-500' : 'text-slate-800 dark:text-white'}">${esc(stageName)}</p>
-              ${!mastered ? `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${EXERCISE_PLANT_TOTAL_STAGES}</span>` : ''}
+              ${!mastered ? `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>` : ''}
             </div>
             ${cosmetics.length ? `<p class="text-[11px] text-slate-400 mt-0.5">${cosmetics.join(' · ')}</p>` : ''}
           </div>
@@ -14416,11 +13997,7 @@ function openLogOtherActivityForToday() {
 }
 
 // ── Dashboard quick actions ─────────────────────────────────────────────────
-// Delegated on #dash-content (the shared wrapper around Start Growing,
-// Today's Mission and everything below it) rather than any one card,
-// since Start Growing's buttons and Today's Mission's "View workout"/"Log
-// another activity" links live in two separate sections now.
-document.getElementById('dash-content').addEventListener('click', async e => {
+document.getElementById('dash-mission-card').addEventListener('click', async e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
