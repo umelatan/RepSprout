@@ -271,8 +271,8 @@ body{font-family:'Inter',sans-serif}
    the companion is always grounded "in its pot," never floating loose (see
    the Home redesign task). Care-stage cosmetics (moss/stones) sit statically
    at the pot's rim. */
-.companion-pot{margin:-.1rem auto 0;border-radius:0 0 .65rem .65rem;background:linear-gradient(180deg,#c17a4d,#8a5a34)}
-.dark .companion-pot{background:linear-gradient(180deg,#a8663d,#6b4226)}
+.companion-pot{border-radius:0 0 40% 40%/0 0 55% 55%;background:linear-gradient(180deg,#4a3222 0%,#4a3222 22%,#d18a5c 22%,#c17a4d 55%,#8a5a34 100%);box-shadow:inset 0 -3px 6px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.12)}
+.dark .companion-pot{background:linear-gradient(180deg,#3a2718 0%,#3a2718 22%,#b0714f 22%,#a8663d 55%,#6b4226 100%)}
 .companion-cosmetic{position:absolute;font-size:.65rem;line-height:1;pointer-events:none;user-select:none}
 .companion-moss{bottom:.7rem;left:10%}
 .companion-stones{bottom:.65rem;right:10%}
@@ -3379,15 +3379,18 @@ function companionGardenOffshootCount(growth) {
   return [1, 2, 4, 5][growth.postBloomStageIndex] ?? 5;
 }
 
-// Deterministic offshoot placement (not reshuffled every render) — organic
-// scatter around the mother's base, each a little smaller and a little
-// later into its own gentle sway so the cluster never looks synchronized.
-const OFFSHOOT_LAYOUT = [
-  { left: '22%', bottom: '0%',  scale: 1,    delay: '.2s'  },
-  { left: '76%', bottom: '2%',  scale: .88,  delay: '.9s'  },
-  { left: '9%',  bottom: '18%', scale: .74,  delay: '1.6s' },
-  { left: '88%', bottom: '20%', scale: .8,   delay: '.5s'  },
-  { left: '50%', bottom: '26%', scale: .68,  delay: '1.1s' }
+// Deterministic offshoot placement (not reshuffled every render) — a tight
+// cluster right beside the mother's own pot, alternating sides and shrinking
+// a little further out, each with its own small pot on the exact same
+// baseline as the mother (never floating at a different height) and a
+// little later into its own gentle sway so the cluster never looks
+// synchronized.
+const OFFSHOOT_SLOTS = [
+  { dx: -1,    scale: .62, delay: '.2s'  },
+  { dx: 1,     scale: .58, delay: '.9s'  },
+  { dx: -1.85, scale: .5,  delay: '1.6s' },
+  { dx: 1.85,  scale: .48, delay: '.5s'  },
+  { dx: -2.6,  scale: .42, delay: '1.1s' }
 ];
 
 // The one companion artwork snippet — used identically by Home's hero, the
@@ -3397,31 +3400,48 @@ const OFFSHOOT_LAYOUT = [
 // in its pot"), with whichever Care-stage offshoots and pot cosmetics are
 // currently unlocked. `big` is Home's much larger hero treatment (task:
 // "the hero should occupy significantly more visual space") — Garden's card
-// and the detail sheet keep the original compact size.
+// and the detail sheet keep the original compact size. Every plant (mother
+// and each offshoot) sits on one shared baseline, in its own pot that's
+// sized to actually contain it (wide enough for the leaf splay, and
+// overlapping the stem slightly so there's no gap), plus a soft contact
+// shadow under the whole cluster so it reads as grounded even where emoji
+// glyphs themselves don't perfectly align.
 function companionArtHtml(growth, { big = false } = {}) {
   const cosmetics = companionCareCosmetics(growth);
   const offshootCount = companionGardenOffshootCount(growth);
   const motherRem = big ? 6.5 : 3.75;
-  const offshootBaseRem = big ? 2.3 : 1.25;
-  const potWidth = big ? '4.25rem' : '2.75rem';
-  const potHeight = big ? '1.3rem' : '.8rem';
-  const sceneWidth = big ? '13rem' : '7rem';
-  const sceneHeight = `${motherRem + (offshootCount ? 1.6 : 0.4)}rem`;
+  const motherPotW = big ? 5.4 : 3.1;
+  const motherPotH = big ? 1.5 : .95;
+  const unitRem = big ? 2.7 : 1.6; // horizontal spacing step between offshoot slots
 
-  const offshootsHtml = Array.from({ length: offshootCount }, (_, i) => {
-    const l = OFFSHOOT_LAYOUT[i % OFFSHOOT_LAYOUT.length];
-    return `<span class="absolute p-sway" style="left:${l.left};bottom:${l.bottom};font-size:${(offshootBaseRem * l.scale).toFixed(2)}rem;line-height:1;animation-delay:${l.delay}" aria-hidden="true">${growth.selectedAsset}</span>`;
+  const slots = OFFSHOOT_SLOTS.slice(0, offshootCount);
+  const offshootsHtml = slots.map(slot => {
+    const glyphRem = (motherRem * slot.scale).toFixed(2);
+    const potW = (motherPotW * slot.scale).toFixed(2);
+    const potH = (motherPotH * slot.scale).toFixed(2);
+    return `
+      <div class="absolute bottom-0 flex flex-col items-center" style="left:calc(50% + ${(slot.dx * unitRem).toFixed(2)}rem);transform:translateX(-50%)">
+        <span class="leading-none p-sway" style="font-size:${glyphRem}rem;animation-delay:${slot.delay}" aria-hidden="true">${growth.selectedAsset}</span>
+        <div class="companion-pot" style="width:${potW}rem;height:${potH}rem;margin-top:${(-0.4 * slot.scale).toFixed(2)}rem"></div>
+      </div>`;
   }).join('');
 
+  const farthestDx = slots.length ? Math.max(...slots.map(s => Math.abs(s.dx))) : 0;
+  const sceneWidthRem = Math.max(motherPotW, farthestDx * unitRem * 2 + motherPotW * 0.6);
+  const sceneHeightRem = motherRem + motherPotH;
+
   return `
-    <div class="relative inline-flex flex-col items-center">
-      <div class="relative" style="width:${sceneWidth};height:${sceneHeight}">
-        ${offshootsHtml}
-        <span class="absolute bottom-0 left-1/2 leading-none ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="font-size:${motherRem}rem;opacity:${growth.selectedAssetOpacity};transform:translateX(-50%) scale(${growth.selectedAssetScale})" aria-hidden="true">${growth.selectedAsset}</span>
+    <div class="relative" style="width:${sceneWidthRem.toFixed(2)}rem;height:${sceneHeightRem.toFixed(2)}rem;margin:0 auto">
+      <div class="absolute bottom-0 left-1/2 rounded-full pointer-events-none" style="width:${sceneWidthRem.toFixed(2)}rem;height:${(big?1:.6)}rem;transform:translateX(-50%);background:radial-gradient(ellipse closest-side, rgba(0,0,0,.4), transparent 75%)" aria-hidden="true"></div>
+      ${offshootsHtml}
+      <div class="absolute bottom-0 left-1/2 flex flex-col items-center" style="transform:translateX(-50%)">
+        <span style="display:inline-block;transform:scale(${growth.selectedAssetScale});transform-origin:bottom center">
+          <span class="leading-none ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="font-size:${motherRem}rem;opacity:${growth.selectedAssetOpacity}" aria-hidden="true">${growth.selectedAsset}</span>
+        </span>
+        <div class="companion-pot" style="width:${motherPotW}rem;height:${motherPotH}rem;margin-top:${big?'-.75rem':'-.5rem'}"></div>
+        ${cosmetics.moss ? `<span class="companion-cosmetic companion-moss" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🌾</span>` : ''}
+        ${cosmetics.stones ? `<span class="companion-cosmetic companion-stones" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🪨</span>` : ''}
       </div>
-      <div class="companion-pot" style="width:${potWidth};height:${potHeight}"></div>
-      ${cosmetics.moss ? `<span class="companion-cosmetic companion-moss" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🌾</span>` : ''}
-      ${cosmetics.stones ? `<span class="companion-cosmetic companion-stones" style="${big?'font-size:1.1rem':''}" aria-hidden="true">🪨</span>` : ''}
     </div>`;
 }
 
