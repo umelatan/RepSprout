@@ -4791,13 +4791,8 @@ function renderPlantHero(sessionDates, hasHistory) {
   }
   hide('dash-hero-empty'); show('dash-hero-body');
 
-  const today = todayStr();
-  const loggedToday = !!(sessions[today] && Object.keys(sessions[today]).length);
   const health = getPlantHealth(sessionDates);
-  let [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
-  if (loggedToday && health !== 'dormant' && health !== 'wilting') {
-    statusMsg = `${p.name} made progress today.`;
-  }
+  const [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
   emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
 }
