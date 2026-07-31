@@ -248,6 +248,11 @@ body{font-family:'Inter',sans-serif}
 .dark .mission-surface{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 .garden-shelf{background:#fdfcfa;border:1px solid #f1f5f9}
 .dark .garden-shelf{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
+/* Garden preview plants (Home) — the exercise/species name is hidden by
+   default and only reveals in this small tooltip when its plant is tapped
+   (see the ghp-plant-btn click delegation in JS). */
+.ghp-tip{position:absolute;left:50%;top:100%;margin-top:6px;transform:translate(-50%,-4px) scale(.92);opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;white-space:nowrap;font-size:10px;font-weight:600;color:#fff;background:#1e293b;padding:.25rem .5rem;border-radius:.5rem;box-shadow:0 4px 10px -2px rgba(0,0,0,.25);z-index:20}
+.ghp-plant-btn.ghp-tip-open .ghp-tip{opacity:1;transform:translate(-50%,0) scale(1)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
@@ -4939,37 +4944,41 @@ function renderClosestProgress() {
 function renderGardenPreview() {
   const wrap = document.getElementById('dash-garden-preview');
 
+  // Ordered by most recently trained, not by progress — "the latest
+  // exercise plant the user just worked out," even if it's still a seed.
   const growing = Object.entries(exercises)
     .filter(([, exDef]) => !exDef.archived && exDef.progressionEnabled !== false)
     .map(([exerciseId, exDef]) => {
       const dp = calculateExerciseDoubleProgression(exerciseId);
       if (!dp.configured) return null;
-      return { name: exDef.name, stageIdx: exercisePlantStageIdx(dp), cycleIndex: dp.cycleIndex };
+      const last = getLastLoggedSets(exerciseId);
+      return { name: exDef.name, stageIdx: exercisePlantStageIdx(dp), lastDate: last?.date || '' };
     })
     .filter(Boolean)
-    .sort((a, b) => b.cycleIndex - a.cycleIndex)
-    .slice(0, 3);
+    .sort((a, b) => b.lastDate.localeCompare(a.lastDate))
+    .slice(0, 5);
 
   const collected = Object.values(gardenCollection)
     .sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation))
-    .slice(0, 3);
+    .slice(0, 5);
 
+  // No background chip, no name label — the artwork alone carries it. The
+  // exercise/species name only reveals in a small tap-triggered tooltip
+  // (see the ghp-plant-btn/ghp-tip wiring below), never shown by default.
   const growingHtml = growing.length
     ? growing.map(g => `
-      <div class="flex flex-col items-center gap-2 flex-shrink-0" style="width:76px">
-        <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/70 flex items-center justify-center flex-shrink-0">
-          ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 36 })}
-        </div>
-        <span class="text-xs font-medium text-slate-600 dark:text-slate-300 text-center leading-tight">${esc(g.name)}</span>
-      </div>`).join('')
+      <button type="button" class="ghp-plant-btn relative flex-shrink-0" data-name="${esc(g.name)}" aria-label="${esc(g.name)}">
+        ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 44 })}
+        <span class="ghp-tip">${esc(g.name)}</span>
+      </button>`).join('')
     : `<p class="text-xs text-slate-400 text-center py-2">Start training to grow your first plant.</p>`;
 
   const collectedHtml = collected.length
     ? collected.map(c => `
-      <div class="flex flex-col items-center gap-2 flex-shrink-0" style="width:76px">
-        <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800/70 flex items-center justify-center flex-shrink-0 text-3xl leading-none" aria-hidden="true">${c.speciesEmoji}</div>
-        <span class="text-xs font-medium text-slate-600 dark:text-slate-300 text-center leading-tight">${esc(c.speciesName)}</span>
-      </div>`).join('')
+      <button type="button" class="ghp-plant-btn relative flex-shrink-0 flex items-center justify-center" style="width:44px;height:44px;font-size:36px;line-height:1" data-name="${esc(c.speciesName)}" aria-label="${esc(c.speciesName)}">
+        <span aria-hidden="true">${c.speciesEmoji}</span>
+        <span class="ghp-tip">${esc(c.speciesName)}</span>
+      </button>`).join('')
     : `
       <div class="flex items-center gap-4 py-1">
         <span class="relative flex-shrink-0 text-5xl leading-none" aria-hidden="true">
@@ -4992,6 +5001,22 @@ function renderGardenPreview() {
       <div class="flex items-center gap-4 overflow-x-auto">${collectedHtml}</div>
     </div>`;
 }
+// Tapping a Garden preview plant toggles its name tooltip; tapping any other
+// open one, or anywhere outside the grid, closes it — only one open at a
+// time. Delegated once here rather than rebound on every renderGardenPreview()
+// re-render, since #dash-garden-preview itself is a stable, never-replaced element.
+document.getElementById('dash-garden-preview').addEventListener('click', e => {
+  const btn = e.target.closest('.ghp-plant-btn');
+  if (!btn) return;
+  const wasOpen = btn.classList.contains('ghp-tip-open');
+  document.querySelectorAll('.ghp-plant-btn.ghp-tip-open').forEach(b => b.classList.remove('ghp-tip-open'));
+  if (!wasOpen) btn.classList.add('ghp-tip-open');
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ghp-plant-btn')) {
+    document.querySelectorAll('.ghp-plant-btn.ghp-tip-open').forEach(b => b.classList.remove('ghp-tip-open'));
+  }
+});
 
 function renderRecentWin() {
   const iconEl = document.getElementById('dash-win-icon');
