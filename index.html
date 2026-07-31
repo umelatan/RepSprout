@@ -236,8 +236,6 @@ body{font-family:'Inter',sans-serif}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
-.win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
-.dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
 .btn-pop:hover{box-shadow:0 8px 16px -6px rgba(34,197,94,.4)}
 .dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
@@ -588,7 +586,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <button id="mob-menu-btn" class="md:hidden p-2 rounded-xl text-slate-400 hover:text-brand-500 transition-colors">
           <span class="ms text-xl">menu</span>
         </button>
-        <h2 id="page-title" class="font-display font-extrabold text-slate-800 dark:text-white text-base sm:text-lg"></h2>
+        <div class="min-w-0">
+          <h2 id="page-title" class="font-display font-extrabold text-slate-800 dark:text-white text-base sm:text-lg"></h2>
+          <p id="page-subtitle" style="display:none" class="text-xs text-slate-400 -mt-0.5">Welcome back to your garden.</p>
+        </div>
       </div>
       <div class="flex items-center gap-2">
         <button id="theme-toggle" class="p-2 rounded-xl text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all">
@@ -616,41 +617,63 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
            renderPlantHero() below and openGardenCompanionDetail() in the
            Garden section, which this scene's tap reuses directly rather
            than opening a second detail surface. -->
-      <button type="button" id="dash-companion-card" class="relative w-full text-left block overflow-hidden">
+      <button type="button" id="dash-companion-card" class="relative w-full text-left block overflow-hidden" style="min-height:24rem">
+        <!-- A deliberately moody night-garden scene regardless of the app's
+             own light/dark toggle — same reasoning as a photo of a garden at
+             dusk not changing with the reader's theme. Set from
+             renderPlantHero() using the companion's own species tint. -->
+        <div class="absolute inset-0" id="dash-companion-vignette" aria-hidden="true"></div>
+        <!-- Decorative leaf framing + sparkles — static, never re-rendered,
+             so they're plain markup rather than part of companionArtHtml(). -->
+        <span class="absolute -top-5 -left-7 text-8xl opacity-25 pointer-events-none select-none" style="transform:rotate(-18deg)" aria-hidden="true">🌿</span>
+        <span class="absolute -top-8 -right-6 text-8xl opacity-20 pointer-events-none select-none" style="transform:rotate(24deg) scaleX(-1)" aria-hidden="true">🌿</span>
+        <span class="absolute -bottom-6 -left-6 text-7xl opacity-15 pointer-events-none select-none" style="transform:rotate(12deg)" aria-hidden="true">🍃</span>
+        <span class="absolute -bottom-4 -right-8 text-7xl opacity-15 pointer-events-none select-none" style="transform:rotate(-20deg) scaleX(-1)" aria-hidden="true">🍃</span>
+        <div id="dash-companion-sparkles" class="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <span class="sparkle-dot" style="top:14%;left:20%;right:auto;font-size:10px;opacity:.6;animation:sparklePulse 3.2s ease-in-out infinite" aria-hidden="true">✨</span>
+          <span class="sparkle-dot" style="top:26%;left:38%;right:auto;font-size:8px;opacity:.5;animation:sparklePulse 2.6s ease-in-out infinite .8s" aria-hidden="true">✨</span>
+          <span class="sparkle-dot" style="top:10%;left:8%;right:auto;font-size:9px;opacity:.45;animation:sparklePulse 3.6s ease-in-out infinite 1.4s" aria-hidden="true">✨</span>
+          <span class="sparkle-dot" style="top:40%;left:30%;right:auto;font-size:8px;opacity:.4;animation:sparklePulse 3s ease-in-out infinite .4s" aria-hidden="true">✨</span>
+        </div>
+
         <!-- Stable overlay for ambient butterfly/petal visits (see
              startCompanionAmbient()) — a sibling of #plant-emoji, not a
              child of it, so a visitor mid-flight is never wiped out by a
              routine renderPlantHero() re-render replacing #plant-emoji's
              own innerHTML. -->
-        <div id="dash-companion-scene" class="relative flex items-center justify-center pt-10 pb-3" style="min-height:13rem">
-          <div id="plant-emoji" class="relative" aria-hidden="true"></div>
-        </div>
-        <div class="relative px-6 pb-7 pt-1 text-center space-y-1.5 max-w-sm mx-auto">
-          <p id="plant-name-label" class="font-display font-extrabold text-2xl text-slate-800 dark:text-white"></p>
-          <p id="plant-level-label" class="text-sm font-bold"></p>
-
-          <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
-            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
-            <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+        <div class="relative flex items-center gap-1 px-4 py-8" style="min-height:24rem">
+          <div id="dash-companion-scene" class="relative flex-shrink-0 flex items-center justify-center h-full" style="width:46%" aria-hidden="true">
+            <div id="plant-emoji" class="relative" aria-hidden="true"></div>
           </div>
 
-          <div id="dash-hero-body" class="pt-1 space-y-3">
-            <p id="plant-time-together" class="text-xs text-slate-400"></p>
-            <div class="max-w-[15rem] mx-auto">
-              <div class="flex items-center justify-between gap-2">
-                <p id="growth-next-label" class="text-xs text-slate-400 truncate"></p>
-                <p id="growth-pct-label" class="text-xs font-bold text-brand-500 flex-shrink-0"></p>
-              </div>
-              <div class="h-1.5 bg-slate-200/60 dark:bg-slate-800 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
-                <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
-              </div>
+          <div class="relative flex-1 text-right space-y-2 min-w-0">
+            <p id="plant-level-label" class="text-sm font-bold flex items-center justify-end gap-1"></p>
+            <p id="plant-name-label" class="font-display font-extrabold text-4xl text-white leading-none truncate"></p>
+
+            <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
+              <p class="text-sm font-semibold text-slate-200" id="hero-empty-line1"></p>
+              <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
             </div>
-            <!-- Small rotating contextual message — the one line of copy in
-                 the whole scene (task: "Small rotating contextual message").
-                 No icon/chevron affordance: the entire scene above is
-                 already the tap target, so this stays purely a caption. -->
-            <p id="plant-subtitle-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
-            <div id="dash-companion-dots" class="flex items-center justify-center gap-1" aria-hidden="true"></div>
+
+            <div id="dash-hero-body" class="pt-1 space-y-3">
+              <p id="plant-time-together" class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200"></p>
+              <div>
+                <div class="flex items-center justify-between gap-2">
+                  <p id="growth-next-label" class="text-xs text-slate-300 truncate"></p>
+                  <p id="growth-pct-label" class="text-xs font-bold flex-shrink-0"></p>
+                </div>
+                <div class="h-1.5 bg-white/15 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
+                  <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
+                </div>
+              </div>
+              <!-- Small rotating contextual message — the one line of copy
+                   in the whole scene (task: "Small rotating contextual
+                   message"). No icon/chevron affordance: the entire scene
+                   above is already the tap target, so this stays purely a
+                   caption. -->
+              <p id="plant-subtitle-label" class="italic text-sm text-slate-300"></p>
+              <div id="dash-companion-dots" class="flex items-center justify-end gap-1" aria-hidden="true"></div>
+            </div>
           </div>
         </div>
       </button>
@@ -667,13 +690,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Today — summarises today's workout only, nothing about the
              companion (task: "Do NOT mention the companion here. Do NOT
-             repeat Bloom or Care."). Plain, no heavy card (task: "Avoid
-             making every section another heavy rounded card"); hidden
-             entirely until there's something to summarise — see
-             renderTodayMission(). -->
-        <div id="dash-mission-card" style="display:none" class="space-y-2">
-          <p class="text-xs font-semibold text-slate-400">Today</p>
+             repeat Bloom or Care."). A soft card, not the bright gradient
+             surface this used to be; hidden entirely until there's
+             something to summarise — see renderTodayMission(). -->
+        <div id="dash-mission-card" style="display:none" class="card relative overflow-hidden p-4 space-y-2">
+          <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Today</p>
           <div id="dash-mission-body" class="space-y-3"></div>
+          <span id="dash-mission-watermark" class="absolute pointer-events-none select-none leading-none" style="right:-.5rem;bottom:-1rem;font-size:6rem;opacity:.05;transform:rotate(-8deg)" aria-hidden="true"></span>
         </div>
 
         <!-- Targets — entirely optional. Exactly one of these two shows at a
@@ -705,32 +728,31 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <div id="dash-target-preview-body"></div>
         </div>
 
-        <!-- Consistency — merged from three separate numbers down to two
-             (task: "Merge or simplify other statistics where possible");
-             the old "last session" date is dropped as redundant with
-             Today above it (and with the hero's own "time together" when
-             nothing's logged yet). -->
-        <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
-          <p class="text-xs font-semibold text-slate-400 pt-3">Consistency</p>
-          <div id="dash-stats-row" class="flex items-center justify-center gap-10">
-            <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-amber-500" aria-hidden="true">local_fire_department</span> <span id="streak-val">0</span> day streak</p><p id="best-streak-val" class="text-[10px] text-slate-400"></p></div>
-            <div class="text-center"><p class="font-display font-bold text-base text-slate-600 dark:text-slate-300"><span class="ms text-sm align-middle text-brand-500" aria-hidden="true">fitness_center</span> <span id="total-sessions-val">0</span> workouts</p><p class="text-[10px] text-slate-400">this month</p></div>
+        <!-- Closest Progress / Consistency — two compact cards side by side.
+             Closest Progress keeps its original data (findClosestProgression())
+             just presented as a name + a small ring instead of the rep-chain;
+             Consistency merges the old three-number stats row down to two
+             plus a Mon-Sun activity dot grid. -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="card p-4 space-y-2 min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Closest Progress</p>
+            <div id="dash-progress-body"></div>
+          </div>
+          <div class="card p-4 space-y-2 min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Consistency</p>
+            <div id="dash-stats-row" class="space-y-2"></div>
           </div>
         </div>
 
-        <!-- Closest progress — open section, not a card -->
-        <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
-          <p class="text-xs font-semibold text-slate-400 pt-3">Closest progress</p>
-          <div id="dash-progress-body" class="space-y-2"></div>
-        </div>
-
-        <!-- Recent win — compact chip, not a card -->
-        <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
-          <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
-          <div class="min-w-0">
-            <p class="text-[10px] font-semibold text-brand-600 dark:text-brand-300">Recent win</p>
-            <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate"></p>
+        <!-- Recent win -->
+        <div class="card p-4 flex items-center gap-3">
+          <span class="text-3xl flex-shrink-0" aria-hidden="true">🏅</span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Recent Win</p>
+            <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200"></p>
+            <p id="dash-win-sub" class="text-xs text-slate-400"></p>
           </div>
+          <button id="dash-win-view-all" type="button" class="text-xs font-semibold text-brand-500 hover:underline flex-shrink-0 inline-flex items-center gap-0.5">View All <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
         </div>
 
         <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-2"></p>
@@ -5223,7 +5245,10 @@ function goView(v) {
   closeAllOpenWindows();
   // Nav feedback (highlight/title) is synchronous — a tap should register
   // instantly even though the page content below fades out/in.
-  document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
+  document.getElementById('page-title').innerHTML = v === 'dashboard'
+    ? `${esc(getGreeting())} <span class="text-lavender-400">✨</span>`
+    : esc(TITLES[v] || '');
+  document.getElementById('page-subtitle').style.display = v === 'dashboard' ? '' : 'none';
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
@@ -5326,7 +5351,7 @@ function findClosestProgression() {
       exerciseId: id, name: exDef.name, group: exDef.muscleGroup,
       weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
       weightIncrement: exDef.weightIncrement || 0,
-      targetReps, lastSets: last.sets.map(st => st.reps || 0),
+      targetReps, maxReps, lastSets: last.sets.map(st => st.reps || 0),
       remaining, ready: !!exDef.weightUpFlag
     };
     if (entry.ready) { if (!readyFallback) readyFallback = entry; continue; }
@@ -5358,21 +5383,22 @@ function findRecentWin() {
     if (!s || s.sessionType === 'recovery') continue;
     for (const ex of (s.exercises || [])) {
       const prior = ex.exerciseId != null ? priorWeight[ex.exerciseId] : null;
-      if (prior != null && +ex.weight > prior) return { icon: '🍃', text: `${ex.name} reached ${ex.weight}${ex.unit || 'kg'}` };
+      if (prior != null && +ex.weight > prior) return { title: 'New Personal Best', sub: `${ex.name} reached ${ex.weight}${ex.unit || 'kg'}` };
     }
   }
 
   const readyEntry = Object.values(exercises).find(ex => ex.weightUpFlag);
-  if (readyEntry) return { icon:'🍃', text: `${readyEntry.name} is ready for more weight` };
+  if (readyEntry) return { title: 'Ready to Grow', sub: `${readyEntry.name} is ready for more weight` };
 
   // First Bloom, the day it happens — the companion's own biggest milestone.
   const growth = currentGrowthState();
-  if (growth.isFinalStage && userProfile.companion?.bloomedAt === today) return { icon: '🌸', text: 'First Bloom.' };
+  const plantName = (PLANTS[userProfile.plant] || {}).name || 'companion';
+  if (growth.isFinalStage && userProfile.companion?.bloomedAt === today) return { title: 'First Bloom', sub: `Your ${plantName} has fully bloomed.` };
 
   // A streak milestone reached today.
   const sessionDates = allSessionDates();
   const streak = computeCurrentStreak(sessionDates);
-  if (sessionDates.includes(today) && [7, 14, 30, 60, 100].includes(streak)) return { icon: '🔥', text: `${streak}-day streak` };
+  if (sessionDates.includes(today) && [7, 14, 30, 60, 100].includes(streak)) return { title: `${streak}-Day Streak`, sub: 'Consistency is paying off.' };
 
   const history = {};
   Object.keys(sessions).sort().forEach(date => {
@@ -5385,15 +5411,43 @@ function findRecentWin() {
   for (const list of Object.values(history)) {
     if (list.length < 2) continue;
     const prev = list[list.length-2], last = list[list.length-1];
-    if (last.total > prev.total) return { icon:'💪', text: `+${last.total-prev.total} rep${last.total-prev.total>1?'s':''} on ${last.name}` };
+    if (last.total > prev.total) return { title: 'Rep PR', sub: `+${last.total-prev.total} rep${last.total-prev.total>1?'s':''} on ${last.name}` };
   }
+
+  // A weekly volume roundup — how much total weight has actually moved this
+  // week, a satisfying "big number" summary distinct from any single
+  // exercise's own progression.
+  const weeklyVolume = totalVolumeThisWeek();
+  if (weeklyVolume > 0) return { title: 'Volume Beast', sub: `Lifted a total of ${weeklyVolume.toLocaleString()} kg this week!` };
 
   const monthPrefix = todayStr().slice(0,7);
   const sessionsThisMonth = Object.keys(sessions).filter(d => d.startsWith(monthPrefix))
     .reduce((sum, d) => sum + Object.keys(sessions[d] || {}).length, 0);
-  if (sessionsThisMonth > 0) return { icon:'🌱', text: `${sessionsThisMonth} workout${sessionsThisMonth>1?'s':''} logged this month` };
+  if (sessionsThisMonth > 0) return { title: 'Showing Up', sub: `${sessionsThisMonth} workout${sessionsThisMonth>1?'s':''} logged this month` };
 
   return null;
+}
+
+// Total weight moved (weight x reps, completed working sets only) from this
+// calendar week's Monday through today — the Recent Win card's "Volume
+// Beast" roundup.
+function totalVolumeThisWeek() {
+  const today = new Date(todayStr() + 'T12:00:00');
+  const monday = new Date(today);
+  monday.setDate(monday.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+  let total = 0;
+  for (let i = 0; i < 7; i++) {
+    const dt = new Date(monday); dt.setDate(monday.getDate() + i);
+    if (dt > today) break;
+    const ds = dt.toISOString().slice(0, 10);
+    Object.values(sessions[ds] || {}).forEach(s => {
+      if (!s || s.sessionType === 'recovery') return;
+      (s.exercises || []).forEach(ex => (ex.sets || []).forEach(st => {
+        if (st.completed && !st.warmup) total += (+(st.weight ?? ex.weight) || 0) * (+st.reps || 0);
+      }));
+    });
+  }
+  return Math.round(total);
 }
 
 // Current daily streak (consecutive days with at least one logged session,
@@ -5445,11 +5499,12 @@ function renderPlantHero(sessionDates, hasHistory) {
   const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
 
   document.getElementById('plant-name-label').textContent = p.name;
-  // The whole hero's wash — a soft, species-tinted glow behind the scene
-  // rather than a bordered card (task: "the entire hero section IS the
-  // companion... no visible card border").
-  document.getElementById('dash-companion-card').style.background =
-    `radial-gradient(ellipse 90% 70% at 50% 8%, ${theme.soft} 0%, transparent 72%)`;
+  // A moody night-garden wash — deliberately dark regardless of the app's
+  // own light/dark toggle (a photo of a garden at dusk doesn't change with
+  // the reader's theme), tinted with the companion's own species glow so
+  // Lavender/Sunflower/etc. each still feel a little different.
+  document.getElementById('dash-companion-vignette').style.background =
+    `radial-gradient(circle at 32% 32%, ${theme.glow} 0%, transparent 55%), linear-gradient(165deg, #0b0f1c 0%, #12141f 55%, #0d1016 100%)`;
 
   const growth = currentGrowthState();
   // Dynamic artwork — companionArtHtml() reads the exact same
@@ -5464,7 +5519,7 @@ function renderPlantHero(sessionDates, hasHistory) {
   startCompanionAmbient();
 
   const levelLabel = document.getElementById('plant-level-label');
-  levelLabel.textContent = growth.displayStageName;
+  levelLabel.innerHTML = `<span class="ms text-sm" aria-hidden="true">eco</span>${esc(growth.displayStageName)}`;
   levelLabel.style.color = theme.primary;
 
   if (!hasHistory) {
@@ -5485,7 +5540,7 @@ function renderPlantHero(sessionDates, hasHistory) {
   const picked = pickCompanionMessage({ loggedToday, streak, growth, plantName: p.name });
   document.getElementById('plant-subtitle-label').textContent = picked.text;
   document.getElementById('dash-companion-dots').innerHTML = Array.from({ length: picked.dotCount }, (_, i) =>
-    `<span class="rounded-full ${i === picked.dotIndex ? 'bg-brand-500' : 'bg-slate-200 dark:bg-slate-700'}" style="width:5px;height:5px" aria-hidden="true"></span>`
+    `<span class="rounded-full" style="width:5px;height:5px;background:${i === picked.dotIndex ? theme.primary : 'rgba(255,255,255,.25)'}" aria-hidden="true"></span>`
   ).join('');
 
   // Time together — real, from the companion's own startedAt, never re-
@@ -5509,12 +5564,14 @@ function renderPlantHero(sessionDates, hasHistory) {
     nextLabel = 'Timeless';
   } else if (growth.isFinalStage) {
     pct = growth.postBloomProgressPercent;
-    nextLabel = 'Next Care Milestone';
+    nextLabel = 'Next care milestone';
   } else {
     pct = growth.overallProgressPercent;
     nextLabel = `Next: ${growth.nextStageName}`;
   }
-  document.getElementById('growth-pct-label').textContent = `${pct}%`;
+  const pctLabel = document.getElementById('growth-pct-label');
+  pctLabel.textContent = `${pct}%`;
+  pctLabel.style.color = theme.primary;
   document.getElementById('growth-next-label').textContent = nextLabel;
   bar.style.width = `${pct}%`;
   track.setAttribute('aria-valuenow', String(pct));
@@ -5526,11 +5583,47 @@ function renderPlantHero(sessionDates, hasHistory) {
 document.getElementById('dash-companion-card').addEventListener('click', () => openGardenCompanionDetail());
 
 function renderDashStats(sessionDates, hasHistory) {
-  if (!hasHistory) { hide('dash-stats-row'); return; }
-  show('dash-stats-row');
-  document.getElementById('streak-val').textContent = computeCurrentStreak(sessionDates);
-  document.getElementById('best-streak-val').textContent = `Best: ${computeBestStreak(sessionDates)} days`;
-  document.getElementById('total-sessions-val').textContent = workoutsThisMonthCount();
+  const el = document.getElementById('dash-stats-row');
+  if (!hasHistory) {
+    el.innerHTML = `<p class="text-xs text-slate-400 pt-1">Your streak will start with your first workout.</p>`;
+    return;
+  }
+  const streak = computeCurrentStreak(sessionDates);
+  const best = computeBestStreak(sessionDates);
+  const workouts = workoutsThisMonthCount();
+  el.innerHTML = `
+    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><span class="ms text-base text-amber-500" aria-hidden="true">local_fire_department</span>${streak} day streak</p>
+    <p class="text-[10px] text-slate-400 -mt-1">Best: ${best} days</p>
+    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 pt-1"><span class="ms text-base text-brand-500" aria-hidden="true">fitness_center</span>${workouts} workout${workouts!==1?'s':''} <span class="text-slate-400 font-normal">this month</span></p>
+    ${weekActivityGridHtml(sessionDates)}`;
+}
+
+// Mon-Sun activity dots — which days this calendar week already have at
+// least one logged session (any session type; a Recovery Day still keeps
+// the streak/week alive, same convention computeCurrentStreak() already
+// uses). Purely a compact "at a glance" companion to the streak number
+// above it, not a second streak calculation.
+function currentWeekActivityFlags(sessionDates) {
+  const today = new Date(todayStr() + 'T12:00:00');
+  const dow = today.getDay(); // 0=Sun..6=Sat
+  const monday = new Date(today);
+  monday.setDate(monday.getDate() - (dow === 0 ? 6 : dow - 1));
+  return ['M','T','W','T','F','S','S'].map((label, i) => {
+    const dt = new Date(monday); dt.setDate(monday.getDate() + i);
+    const ds = dt.toISOString().slice(0, 10);
+    return { label, active: sessionDates.includes(ds), isToday: ds === todayStr() };
+  });
+}
+function weekActivityGridHtml(sessionDates) {
+  const flags = currentWeekActivityFlags(sessionDates);
+  return `
+    <div class="flex items-center justify-between gap-1 pt-2">
+      ${flags.map(f => `
+        <span class="flex flex-col items-center gap-1">
+          <span class="text-[9px] font-semibold ${f.isToday ? 'text-brand-500' : 'text-slate-400'}">${f.label}</span>
+          <span class="rounded-full flex-shrink-0 ${f.active ? '' : 'bg-slate-200 dark:bg-slate-700'}" style="width:7px;height:7px;${f.active ? 'background:#22c55e' : ''}"></span>
+        </span>`).join('')}
+    </div>`;
 }
 
 // Longest daily streak on record, ever — distinct from the *current* streak
@@ -5615,11 +5708,19 @@ function renderStartGrowing() {
   }
   el.innerHTML = `
     <div class="flex items-stretch gap-3">
-      <button data-action="start-growing" class="btn btn-green btn-pop flex-1 py-3.5 text-base"><span class="ms text-lg" aria-hidden="true">fitness_center</span>Start Growing</button>
-      <div class="flex flex-col justify-center gap-0.5 flex-shrink-0 text-xs font-semibold text-slate-400 pr-1">
-        <button data-action="today-log-activity" class="hover:underline py-1 text-left whitespace-nowrap">Other activity</button>
-        <button data-action="today-mark-recovery" class="hover:underline py-1 text-left whitespace-nowrap">Recovery day</button>
-      </div>
+      <button data-action="start-growing" class="btn-pop flex-1 flex items-center gap-3 py-3 px-4 rounded-2xl text-left transition-transform active:scale-[.98]" style="background:linear-gradient(135deg,#4ade80,#16a34a)">
+        <span class="w-11 h-11 rounded-full bg-black/15 flex items-center justify-center flex-shrink-0"><span class="ms text-xl text-white" aria-hidden="true">eco</span></span>
+        <span class="leading-tight min-w-0">
+          <span class="block font-bold text-base text-white">Start Growing</span>
+          <span class="block text-xs text-white/80">Begin your workout</span>
+        </span>
+      </button>
+      <button data-action="today-log-activity" class="card flex-shrink-0 flex flex-col items-center justify-center gap-1.5 p-3 text-slate-500 dark:text-slate-300 text-[11px] font-semibold text-center transition-transform active:scale-[.98]" style="width:5.25rem">
+        <span class="ms text-xl" aria-hidden="true">directions_walk</span>Other Activity
+      </button>
+      <button data-action="today-mark-recovery" class="card flex-shrink-0 flex flex-col items-center justify-center gap-1.5 p-3 text-slate-500 dark:text-slate-300 text-[11px] font-semibold text-center transition-transform active:scale-[.98]" style="width:5.25rem">
+        <span class="ms text-xl text-brand-500" aria-hidden="true">eco</span>Recovery Day
+      </button>
     </div>`;
 }
 
@@ -5657,11 +5758,21 @@ function primaryTodaySummarySession(todaySessions) {
 // the companion here. Do NOT repeat Bloom or Care"). Hidden entirely until
 // there's something real to summarise — Start Growing above already covers
 // "nothing logged yet."
+// A fixed style regardless of the session's own group color — "Completed"
+// is a status, not a group-color chip (the group color already shows up in
+// the workout's own history entry elsewhere).
+const TODAY_COMPLETED_PILL = `<span class="px-2.5 py-1 rounded-full bg-lavender-100 dark:bg-lavender-500/20 text-lavender-700 dark:text-lavender-300 text-xs font-semibold flex items-center gap-1 flex-shrink-0"><span class="ms text-sm" aria-hidden="true">check</span>Completed</span>`;
+
 function renderTodayMission() {
   const today = todayStr();
   const todaySessions = sessions[today] || {};
   if (!Object.keys(todaySessions).length || firstIncompletePlannedEntry(today)) { hide('dash-mission-card'); return; }
   show('dash-mission-card');
+
+  // A faint watermark of the companion's own species, echoing the hero
+  // without repeating its numbers/copy (task: "Do NOT repeat Bloom or
+  // Care" — this is purely decorative, not a second growth readout).
+  document.getElementById('dash-mission-watermark').textContent = (PLANTS[userProfile.plant] || {}).emoji || '🌿';
 
   const s = primaryTodaySummarySession(todaySessions);
   const body = document.getElementById('dash-mission-body');
@@ -5671,7 +5782,7 @@ function renderTodayMission() {
     body.innerHTML = `
       <div class="flex items-center justify-between gap-2">
         <p class="text-base font-bold text-slate-800 dark:text-white">Recovery Day</p>
-        <span class="px-2 py-0.5 rounded-lg text-white text-xs font-semibold flex-shrink-0" style="background:${sessionColor(s)}">Complete</span>
+        ${TODAY_COMPLETED_PILL}
       </div>
       <p class="text-sm text-slate-500 dark:text-slate-400">Rest and recover — it's part of growth.</p>`;
     return;
@@ -5681,17 +5792,17 @@ function renderTodayMission() {
   body.innerHTML = `
     <div class="flex items-center justify-between gap-2">
       <p class="text-base font-bold text-slate-800 dark:text-white truncate">${esc(sessionLabel(s))}</p>
-      <span class="px-2 py-0.5 rounded-lg text-white text-xs font-semibold flex-shrink-0" style="background:${sessionColor(s)}">Complete</span>
+      ${TODAY_COMPLETED_PILL}
     </div>
     <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
       <span class="flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">schedule</span>${s.duration||0} min</span>
       <span class="flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">fitness_center</span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
-      ${progressedCount ? `<span class="flex items-center gap-1 text-brand-600 dark:text-brand-400 font-semibold"><span class="ms text-sm" aria-hidden="true">eco</span>+${progressedCount} exercise${progressedCount!==1?'s':''} progressed</span>` : ''}
+      ${progressedCount ? `<span class="flex items-center gap-1 text-brand-600 dark:text-brand-400 font-semibold"><span class="ms text-sm" aria-hidden="true">eco</span>+${progressedCount} progressed</span>` : ''}
     </div>
     <p class="text-sm text-slate-500 dark:text-slate-400">Great work! Keep growing stronger.</p>
-    <div class="flex items-center gap-4 text-xs font-semibold">
-      <button data-action="view-workout" class="text-brand-500 hover:underline py-1 inline-flex items-center gap-0.5">View workout <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
-      ${extraCount > 0 ? `<span class="text-slate-400">+${extraCount} more logged today</span>` : `<button data-action="log-another" class="text-slate-400 hover:underline py-1">Log another activity</button>`}
+    <div class="relative flex items-center gap-4 text-xs font-semibold">
+      <button data-action="view-workout" class="text-brand-500 hover:underline py-1 inline-flex items-center gap-0.5">View Workout <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
+      ${extraCount > 0 ? `<span class="text-slate-400">+${extraCount} more logged today</span>` : `<button data-action="log-another" class="text-slate-400 hover:underline py-1">Log Another Activity</button>`}
     </div>`;
 }
 
@@ -5699,38 +5810,32 @@ function renderClosestProgress() {
   const body = document.getElementById('dash-progress-body');
   const best = findClosestProgression();
   if (!best) {
-    body.innerHTML = `
-      <div class="flex items-center justify-center gap-2 py-1" aria-hidden="true">
-        <span class="text-lg">🌰</span>
-        <span class="flex-1 max-w-8 border-t border-dashed border-slate-300 dark:border-slate-700"></span>
-        <span class="text-lg opacity-30">🌱</span>
-        <span class="flex-1 max-w-8 border-t border-dashed border-slate-300 dark:border-slate-700"></span>
-        <span class="text-lg opacity-30">🍃</span>
-      </div>
-      <p class="text-sm text-slate-400 text-center">Your next progression will appear after your first workout.</p>`;
+    body.innerHTML = `<p class="text-xs text-slate-400 pt-1">Your next progression will appear after your first workout.</p>`;
     return;
   }
   const detail = best.ready
-    ? (best.weightIncrement ? `Ready to grow — try ${round1(best.weight + best.weightIncrement)} ${best.unit} next session 🎉` : 'Ready to increase next session 🎉')
-    : `${best.remaining} more rep${best.remaining===1?'':'s'} total until your next leaf`;
-  const nodes = best.lastSets.map((r, i) => {
-    const filled = r >= 12;
-    const node = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
-    const branch = i < best.lastSets.length - 1 ? '<div class="flex-1 h-0.5 bg-brand-200 dark:bg-brand-800 rounded-full min-w-2"></div>' : '';
-    return node + branch;
-  }).join('');
+    ? 'Ready to grow 🎉'
+    : `${best.remaining} rep${best.remaining===1?'':'s'} until next leaf`;
+  // A compact ring instead of the old rep-chain — how close lastSets came
+  // to each set's own maxReps ceiling, capped at 100% the moment the
+  // weight-up flag itself is ready.
+  const ringPercent = best.ready ? 100 : Math.round(
+    best.lastSets.reduce((sum, r) => sum + Math.min(r, best.maxReps), 0) / (best.lastSets.length * best.maxReps) * 100
+  );
+  const CIRCUMFERENCE = 2 * Math.PI * 20;
   body.innerHTML = `
-    <div id="dash-progress-card" class="space-y-2 cursor-pointer" role="button" tabindex="0" aria-label="View ${esc(best.name)} progress">
-      <div class="flex items-center justify-between">
-        <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate min-w-0">${esc(best.name)}</p>
-        <span class="px-2 py-0.5 rounded-lg border text-xs font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
+    <div id="dash-progress-card" class="flex items-center gap-3 cursor-pointer pt-1" role="button" tabindex="0" aria-label="View ${esc(best.name)} progress">
+      <div class="min-w-0 flex-1">
+        <p class="font-semibold text-sm text-slate-700 dark:text-slate-200 truncate">${esc(best.name)}</p>
+        <p class="text-xs font-semibold text-brand-500 mt-1">${detail}</p>
       </div>
-      <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
-      <div class="flex items-center gap-1.5 py-1">
-        ${nodes}
-        <span class="text-xl ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
+      <div class="relative w-12 h-12 flex-shrink-0">
+        <svg viewBox="0 0 48 48" class="w-12 h-12" style="transform:rotate(-90deg)" aria-hidden="true">
+          <circle cx="24" cy="24" r="20" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
+          <circle cx="24" cy="24" r="20" fill="none" stroke-width="4" stroke-linecap="round" stroke="#22c55e" stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="${CIRCUMFERENCE * (1 - ringPercent / 100)}"></circle>
+        </svg>
+        <span class="absolute inset-0 flex items-center justify-center text-base" aria-hidden="true">🍃</span>
       </div>
-      <p class="text-xs font-semibold text-brand-500">${detail}</p>
     </div>`;
   const card = document.getElementById('dash-progress-card');
   card.addEventListener('click', () => openExerciseDetail(best.exerciseId));
@@ -5754,12 +5859,11 @@ function renderClosestProgress() {
 // Bloom still gets recorded, it just never prompts a swap.
 
 function renderRecentWin() {
-  const iconEl = document.getElementById('dash-win-icon');
-  const textEl = document.getElementById('dash-win-text');
   const win = findRecentWin();
-  iconEl.textContent = win ? win.icon : '🌱';
-  textEl.textContent = win ? win.text : 'Your first win will appear here.';
+  document.getElementById('dash-win-text').textContent = win ? win.title : 'Your first win will appear here.';
+  document.getElementById('dash-win-sub').textContent = win ? win.sub : 'Log a workout to get started.';
 }
+document.getElementById('dash-win-view-all').addEventListener('click', () => { goView('workout'); switchWorkoutTab('history'); });
 
 function renderEncouragement() {
   const dayIndex = Math.floor(Date.now() / 86400000);
