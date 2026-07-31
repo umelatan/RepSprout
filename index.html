@@ -1474,8 +1474,8 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-4 space-y-1">
     <p id="qra-title" class="text-xs font-semibold text-slate-400 px-3 pb-1 truncate"></p>
     <button id="qra-start-now" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-brand-50 dark:hover:bg-brand-950/30 text-sm font-semibold text-brand-600 dark:text-brand-400 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">bolt</span>Start now</button>
-    <button id="qra-move-later" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">arrow_downward</span>Move later</button>
     <button id="qra-swap" style="display:none" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">swap_horiz</span>Swap exercise</button>
+    <button id="qra-move-later" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">arrow_downward</span>Move later</button>
     <button id="qra-skip" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-3"><span class="ms text-lg text-slate-400" aria-hidden="true">remove_circle</span><span id="qra-skip-label">Skip exercise</span></button>
     <button id="qra-remove" style="display:none" class="w-full text-left px-3 py-3.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-3"><span class="ms text-lg" aria-hidden="true">delete</span>Remove from today's session</button>
     <button id="qra-cancel" class="w-full text-center px-3 py-3 rounded-xl text-sm font-semibold text-slate-400">Cancel</button>
@@ -9892,7 +9892,7 @@ function renderQueueRow(ex, idx) {
         ${detail ? `<p class="text-xs ${detailColor} truncate">${esc(detail)}</p>` : ''}
       </button>
       ${canDrag ? `<span class="queue-drag-handle ms text-lg text-slate-300 dark:text-slate-500 flex-shrink-0 p-2 touch-none cursor-grab" data-idx="${idx}" aria-hidden="true" aria-label="Drag to reorder">drag_indicator</span>` : ''}
-      ${state !== 'current' ? `<button class="queue-row-menu p-2 text-slate-400 flex-shrink-0" data-idx="${idx}" aria-label="More actions"><span class="ms text-lg" aria-hidden="true">more_vert</span></button>` : ''}
+      <button class="queue-row-menu p-2 text-slate-400 flex-shrink-0" data-idx="${idx}" aria-label="More actions"><span class="ms text-lg" aria-hidden="true">more_vert</span></button>
     </div>`;
 }
 function renderQueue() {
@@ -9951,18 +9951,23 @@ let queueActionsIdx = null;
 function openQueueRowActions(idx) {
   queueActionsIdx = idx;
   const ex = activeSession.exercises[idx];
+  const isCurrent = idx === activeSession.currentExerciseIndex;
   document.getElementById('qra-title').textContent = ex.name;
-  // "Start now" is only ever a valid action for an unfinished exercise —
-  // this menu is never opened for the current exercise in the first place
-  // (its row has no overflow button at all), so the only case left to guard
-  // against here is an already-completed one.
-  document.getElementById('qra-start-now').style.display = exerciseIsDone(ex) ? 'none' : '';
+  // "Start now" is only ever a valid action for an unfinished, not-already-
+  // current exercise.
+  document.getElementById('qra-start-now').style.display = (isCurrent || exerciseIsDone(ex)) ? 'none' : '';
   document.getElementById('qra-skip-label').textContent = ex.skipped ? 'Unskip exercise' : 'Skip exercise';
+  // Move later/Skip/Remove don't make sense for the exercise you're
+  // actively in the middle of — only Swap is offered for it (see below).
+  document.getElementById('qra-move-later').style.display = isCurrent ? 'none' : '';
+  document.getElementById('qra-skip').style.display = isCurrent ? 'none' : '';
   // Swap replaces the whole entry (including any logged sets), so it's
   // only offered while there's nothing to lose — same guard as Remove.
+  // This is what lets the CURRENT exercise be swapped too (its row now
+  // shows this same "⋮" menu), as long as no set on it is logged yet.
   const noLoggedSets = !ex.sets.some(s => s.completed);
   document.getElementById('qra-swap').style.display = noLoggedSets ? '' : 'none';
-  document.getElementById('qra-remove').style.display = noLoggedSets ? '' : 'none';
+  document.getElementById('qra-remove').style.display = (isCurrent || !noLoggedSets) ? 'none' : '';
   document.getElementById('queue-row-actions-modal').style.display = '';
 }
 function closeQueueRowActions() {
