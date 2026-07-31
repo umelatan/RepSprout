@@ -623,12 +623,8 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
              dusk not changing with the reader's theme. Set from
              renderPlantHero() using the companion's own species tint. -->
         <div class="absolute inset-0" id="dash-companion-vignette" aria-hidden="true"></div>
-        <!-- Decorative leaf framing + sparkles — static, never re-rendered,
-             so they're plain markup rather than part of companionArtHtml(). -->
-        <span class="absolute -top-5 -left-7 text-8xl opacity-25 pointer-events-none select-none" style="transform:rotate(-18deg)" aria-hidden="true">🌿</span>
-        <span class="absolute -top-8 -right-6 text-8xl opacity-20 pointer-events-none select-none" style="transform:rotate(24deg) scaleX(-1)" aria-hidden="true">🌿</span>
-        <span class="absolute -bottom-6 -left-6 text-7xl opacity-15 pointer-events-none select-none" style="transform:rotate(12deg)" aria-hidden="true">🍃</span>
-        <span class="absolute -bottom-4 -right-8 text-7xl opacity-15 pointer-events-none select-none" style="transform:rotate(-20deg) scaleX(-1)" aria-hidden="true">🍃</span>
+        <!-- Ambient sparkles — static, never re-rendered, so they're plain
+             markup rather than part of companionArtHtml(). -->
         <div id="dash-companion-sparkles" class="absolute inset-0 pointer-events-none" aria-hidden="true">
           <span class="sparkle-dot" style="top:14%;left:20%;right:auto;font-size:10px;opacity:.6;animation:sparklePulse 3.2s ease-in-out infinite" aria-hidden="true">✨</span>
           <span class="sparkle-dot" style="top:26%;left:38%;right:auto;font-size:8px;opacity:.5;animation:sparklePulse 2.6s ease-in-out infinite .8s" aria-hidden="true">✨</span>
@@ -693,10 +689,9 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
              repeat Bloom or Care."). A soft card, not the bright gradient
              surface this used to be; hidden entirely until there's
              something to summarise — see renderTodayMission(). -->
-        <div id="dash-mission-card" style="display:none" class="card relative overflow-hidden p-4 space-y-2">
+        <div id="dash-mission-card" style="display:none" class="card p-4 space-y-2">
           <p class="text-xs font-bold uppercase tracking-wide text-lavender-500">Today</p>
           <div id="dash-mission-body" class="space-y-3"></div>
-          <span id="dash-mission-watermark" class="absolute pointer-events-none select-none leading-none" style="right:-.5rem;bottom:-1rem;font-size:6rem;opacity:.05;transform:rotate(-8deg)" aria-hidden="true"></span>
         </div>
 
         <!-- Targets — entirely optional. Exactly one of these two shows at a
@@ -5768,11 +5763,6 @@ function renderTodayMission() {
   const todaySessions = sessions[today] || {};
   if (!Object.keys(todaySessions).length || firstIncompletePlannedEntry(today)) { hide('dash-mission-card'); return; }
   show('dash-mission-card');
-
-  // A faint watermark of the companion's own species, echoing the hero
-  // without repeating its numbers/copy (task: "Do NOT repeat Bloom or
-  // Care" — this is purely decorative, not a second growth readout).
-  document.getElementById('dash-mission-watermark').textContent = (PLANTS[userProfile.plant] || {}).emoji || '🌿';
 
   const s = primaryTodaySummarySession(todaySessions);
   const body = document.getElementById('dash-mission-body');
