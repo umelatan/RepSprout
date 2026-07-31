@@ -11716,7 +11716,14 @@ let workoutSummaryCtx = null; // { date, sessionId } — only set while the page
 
 function closeWorkoutSummaryPage() {
   workoutSummaryCtx = null;
-  hide('workout-summary-view');
+  const el = document.getElementById('workout-summary-view');
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) { el.style.display = 'none'; return; }
+  // Same fade-out-then-hide pattern goView() uses for its own page
+  // transitions (rs-view-leaving, --rs-dur-quick) — .rs-view only gives this
+  // page an entrance animation on its own; the exit has to be driven here.
+  el.classList.add('rs-view-leaving');
+  setTimeout(() => { el.classList.remove('rs-view-leaving'); el.style.display = 'none'; }, 240);
 }
 
 function openWorkoutSummaryPage(date, sessionId) {
