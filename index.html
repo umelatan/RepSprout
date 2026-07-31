@@ -266,20 +266,6 @@ body{font-family:'Inter',sans-serif}
    "+1 Growth" cue, distinct from the personalized plant portrait next to it
    which already carries the selected plant's own theme color. */
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
-/* Companion artwork base — the Home hero, the Garden companion card and the
-   companion detail sheet all render the same companionArtHtml() markup, so
-   the companion is always grounded "in its pot," never floating loose (see
-   the Home redesign task). Care-stage cosmetics (moss/stones) sit statically
-   at the pot's rim. */
-.companion-pot{border-radius:0 0 40% 40%/0 0 55% 55%;background:linear-gradient(180deg,#4a3222 0%,#4a3222 22%,#d18a5c 22%,#c17a4d 55%,#8a5a34 100%);box-shadow:inset 0 -3px 6px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.12)}
-.dark .companion-pot{background:linear-gradient(180deg,#3a2718 0%,#3a2718 22%,#b0714f 22%,#a8663d 55%,#6b4226 100%)}
-.companion-cosmetic{position:absolute;font-size:.65rem;line-height:1;pointer-events:none;user-select:none}
-/* A shared soil bed instead of a pot per sprout (task: "look more like a
-   'garden' instead of a pot... we can see the sprouts etc growing too") —
-   one wide mound the mother's pot sits on and every sprout pokes directly
-   out of, with a visible darker soil line and an inset shadow for depth. */
-.companion-garden-bed{border-radius:50% 50% 20% 20%/100% 100% 25% 25%;background:linear-gradient(180deg,#6b4f30 0%,#5c4326 40%,#4a3520 100%);box-shadow:inset 0 4px 10px rgba(0,0,0,.35),inset 0 -2px 0 rgba(255,255,255,.05)}
-.dark .companion-garden-bed{background:linear-gradient(180deg,#5c4326 0%,#4a3520 40%,#3a2a18 100%)}
 /* Ambient life on the Home hero only — a butterfly that visits, lingers
    briefly, then leaves (never a permanent fixture: task "butterflies
    sometimes visit... land briefly then fly away... are NOT permanent"),
@@ -609,71 +595,60 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <!-- DASHBOARD -->
     <section id="dashboard-view" class="rs-view flex-1 pb-8">
 
-      <!-- The hero IS the companion — not a card containing it (task: "The
-           companion should NO LONGER live inside a card... the entire hero
-           section IS the companion... no visible card border"). Full-bleed
-           (no max-w/px wrapper, unlike everything below it) so the artwork
-           and its soft species-tinted wash can actually reach the edges of
-           the screen and own the top of the page, the way a scene does
-           rather than a UI component. Artwork/stage/Care all come from the
-           exact same currentGrowthState() the Garden companion card and
-           Companion Detail sheet already read — one source of truth, see
-           renderPlantHero() below and openGardenCompanionDetail() in the
-           Garden section, which this scene's tap reuses directly rather
-           than opening a second detail surface. -->
-      <button type="button" id="dash-companion-card" class="relative w-full text-left block overflow-hidden" style="min-height:24rem">
-        <!-- A deliberately moody night-garden scene regardless of the app's
-             own light/dark toggle — same reasoning as a photo of a garden at
+      <!-- The hero, redesigned from a blank page (task: "completely ignore
+           the existing hero... Forget cards. Forget left/right layouts.").
+           No card, no two-column split, no numeric stats — just the
+           companion's name (wordmark scale) with the mascot itself growing
+           up into the lower half of the letters, and one quiet line of
+           feeling underneath. Everything a number used to say here (stage
+           name, time together, % to next milestone) still lives one tap
+           away in openGardenCompanionDetail() — the hero's only job now is
+           the emotional read, not the data. The scene's own background
+           dissolves to transparent at its bottom edge (see
+           renderPlantHero()) rather than ending in a hard rectangle, so the
+           companion reads as stepping out into the page rather than being
+           boxed into a panel. -->
+      <button type="button" id="dash-companion-card" class="relative w-full text-left block overflow-hidden" style="transform-origin:top center;will-change:transform,opacity">
+        <!-- A deliberately moody night scene regardless of the app's own
+             light/dark toggle — same reasoning as a photo of a garden at
              dusk not changing with the reader's theme. Set from
              renderPlantHero() using the companion's own species tint. -->
         <div class="absolute inset-0" id="dash-companion-vignette" aria-hidden="true"></div>
         <!-- Ambient sparkles — static, never re-rendered, so they're plain
              markup rather than part of companionArtHtml(). -->
         <div id="dash-companion-sparkles" class="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <span class="sparkle-dot" style="top:14%;left:20%;right:auto;font-size:10px;opacity:.6;animation:sparklePulse 3.2s ease-in-out infinite" aria-hidden="true">✨</span>
-          <span class="sparkle-dot" style="top:26%;left:38%;right:auto;font-size:8px;opacity:.5;animation:sparklePulse 2.6s ease-in-out infinite .8s" aria-hidden="true">✨</span>
-          <span class="sparkle-dot" style="top:10%;left:8%;right:auto;font-size:9px;opacity:.45;animation:sparklePulse 3.6s ease-in-out infinite 1.4s" aria-hidden="true">✨</span>
-          <span class="sparkle-dot" style="top:40%;left:30%;right:auto;font-size:8px;opacity:.4;animation:sparklePulse 3s ease-in-out infinite .4s" aria-hidden="true">✨</span>
+          <span class="sparkle-dot" style="top:10%;left:14%;right:auto;font-size:10px;opacity:.6;animation:sparklePulse 3.2s ease-in-out infinite" aria-hidden="true">✨</span>
+          <span class="sparkle-dot" style="top:16%;left:78%;right:auto;font-size:8px;opacity:.5;animation:sparklePulse 2.6s ease-in-out infinite .8s" aria-hidden="true">✨</span>
+          <span class="sparkle-dot" style="top:8%;left:50%;right:auto;font-size:9px;opacity:.45;animation:sparklePulse 3.6s ease-in-out infinite 1.4s" aria-hidden="true">✨</span>
         </div>
 
-        <!-- Stable overlay for ambient butterfly/petal visits (see
-             startCompanionAmbient()) — a sibling of #plant-emoji, not a
-             child of it, so a visitor mid-flight is never wiped out by a
-             routine renderPlantHero() re-render replacing #plant-emoji's
-             own innerHTML. -->
-        <div class="relative flex items-center gap-1 px-4 py-8" style="min-height:24rem">
-          <div id="dash-companion-scene" class="relative flex-shrink-0 flex items-center justify-center h-full" style="width:46%" aria-hidden="true">
-            <div id="plant-emoji" class="relative" aria-hidden="true"></div>
+        <div class="relative pt-9 px-4">
+          <!-- The companion's name, wordmark-scale — the first thing read,
+               before any illustration detail. -->
+          <p id="plant-name-label" class="relative z-0 text-center font-display font-extrabold text-white truncate" style="font-size:clamp(2.75rem,15vw,4.25rem);line-height:.88"></p>
+
+          <!-- The mascot — pulled up into the name's own lower half via a
+               negative margin, so silhouette and typography genuinely
+               overlap instead of sitting side by side. A stable wrapper
+               (never itself re-rendered) hosts ambient butterfly/petal
+               visits as true siblings of #plant-emoji, so a visitor
+               mid-flight survives a routine renderPlantHero() re-render. -->
+          <div id="dash-companion-scene" class="relative z-10 flex items-end justify-center" style="margin-top:-1.9rem;min-height:6.5rem" aria-hidden="true">
+            <div id="plant-emoji" class="relative"></div>
           </div>
 
-          <div class="relative flex-1 text-right space-y-2 min-w-0">
-            <p id="plant-level-label" class="text-sm font-bold flex items-center justify-end gap-1"></p>
-            <p id="plant-name-label" class="font-display font-extrabold text-4xl text-white leading-none truncate"></p>
+          <div id="dash-hero-empty" style="display:none" class="relative z-10 text-center pb-8 pt-1 space-y-1">
+            <p class="text-sm font-semibold text-slate-200" id="hero-empty-line1"></p>
+            <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+          </div>
 
-            <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
-              <p class="text-sm font-semibold text-slate-200" id="hero-empty-line1"></p>
-              <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
-            </div>
-
-            <div id="dash-hero-body" class="pt-1 space-y-3">
-              <p id="plant-time-together" class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200"></p>
-              <div>
-                <div class="flex items-center justify-between gap-2">
-                  <p id="growth-next-label" class="text-xs text-slate-300 truncate"></p>
-                  <p id="growth-pct-label" class="text-xs font-bold flex-shrink-0"></p>
-                </div>
-                <div class="h-1.5 bg-white/15 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
-                  <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
-                </div>
-              </div>
-              <!-- Small rotating contextual message — the one line of copy
-                   in the whole scene (task: "Small rotating contextual
-                   message"). No icon/chevron affordance: the entire scene
-                   above is already the tap target, so this stays purely a
-                   caption. -->
-              <p id="plant-subtitle-label" class="italic text-sm text-slate-300"></p>
-              <div id="dash-companion-dots" class="flex items-center justify-end gap-1" aria-hidden="true"></div>
-            </div>
+          <div id="dash-hero-body" class="relative z-10 text-center pb-8">
+            <!-- The one line of copy in the whole scene (task: "Small
+                 rotating contextual message"). Everything else the old
+                 hero spelled out in numbers is now a visual discovery, or
+                 one tap away. -->
+            <p id="plant-subtitle-label" class="italic text-sm text-slate-300"></p>
+            <div id="dash-companion-dots" class="flex items-center justify-center gap-1 pt-2" aria-hidden="true"></div>
           </div>
         </div>
       </button>
@@ -1278,6 +1253,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div class="min-w-0">
           <p id="gcd-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           <p id="gcd-desc" class="text-xs text-slate-400"></p>
+          <p id="gcd-together" class="text-xs text-slate-400"></p>
           <p id="gcd-stage" class="text-xs font-semibold text-brand-500 mt-1"></p>
         </div>
       </div>
@@ -3359,17 +3335,6 @@ function companionTimeTogetherLabel(startedAt) {
   return `Growing with you for ${years} year${years !== 1 ? 's' : ''}`;
 }
 
-// Care-stage cosmetic unlocks — Home's hero mirrors exactly whatever the
-// Garden's own companion card/detail sheet shows (task: "If butterflies,
-// moss or decorative stones have been unlocked in the Garden, they should
-// appear here too"), so this reads postBloomStageIndex once and every
-// surface renders the same unlocks rather than three separate guesses.
-function companionCareCosmetics(growth) {
-  if (!growth.isFinalStage) return { moss: false, stones: false };
-  const depth = growth.postBloomStageIndex; // 0 Healthy, 1 Flourishing, 2 Well Established, 3 Timeless
-  return { moss: depth >= 1, stones: depth >= 2 };
-}
-
 // Care doesn't just make the one flower prettier forever — it becomes a
 // garden, one surprise sprout at a time (task: "on random time... a small
 // baby plant growing... the surprise factor of HEY there's another
@@ -3381,7 +3346,7 @@ function companionCareCosmetics(growth) {
 // same companion always produces the same sequence of surprises) rather
 // than reshuffling on every render, but not an evenly-spaced, predictable
 // cadence either. Each sprout genuinely re-plays the mother's own seed ->
-// full-bloom journey at its own pace — see plantArtForProgress().
+// full-bloom journey at its own pace — see mascotSvg().
 const GARDEN_SPROUT_GAP_MIN = 10, GARDEN_SPROUT_GAP_MAX = 26; // bonus points between one sprout starting and the next
 const GARDEN_SPROUT_BLOOM_MIN = 8, GARDEN_SPROUT_BLOOM_MAX = 18; // points a sprout itself needs to reach its own full bloom
 // A practical rendering ceiling — bonusGrowthPoints (and the Care stage
@@ -3406,18 +3371,115 @@ function gardenSprouts(growth) {
   return sprouts;
 }
 
-// Renders a plant at any point 0-1 through its own growth, reusing the same
-// seed -> real-species-emoji visual language the mother's own pre-Bloom
-// stages already use (GROWTH_SEED_EMOJI at the very start, then the real
-// species emoji growing in scale/opacity) — one shared "what does a plant
-// look like at fraction X of its growth" function for the mother and every
-// garden sprout, never a second art system.
-function plantArtForProgress(progress, speciesEmoji) {
-  const clamped = Math.max(0, Math.min(1, progress));
-  const stageCount = GROWTH_STAGE_SCALE.length;
-  if (clamped < 0.5 / stageCount) return { asset: GROWTH_SEED_EMOJI, opacity: 1, scale: 0.55 };
-  const idx = Math.min(stageCount - 1, Math.floor(clamped * stageCount));
-  return { asset: speciesEmoji, opacity: GROWTH_STAGE_OPACITY[idx], scale: GROWTH_STAGE_SCALE[idx] };
+// ── The mascot: a flat silhouette, not a botanical render ──────────────────
+// The companion redesign task calls out the old real-species-emoji artwork
+// directly: "The illustration should feel like a mascot. Not a botanical
+// render... Less detail. Stronger silhouette. Cleaner forms... simple
+// enough that it can naturally evolve through years of progression."
+// mascotSvg() draws every companion (mother and every garden sprout) as the
+// same small set of flat primitives — a stem, a foliage mass, and a
+// species-distinct crown accent — interpolated CONTINUOUSLY from a 0-1
+// growth fraction rather than snapping between fixed poses, so the
+// character is very slightly fuller today than yesterday, every single
+// day, not just at named stage boundaries. Two flat tones only (the
+// species' own primary + its lighter soft tint for the crown), no
+// gradients, no pot, no soil — one shared shape language, drawn at
+// whatever size/progress/species the caller needs.
+const MASCOT_SPECIES = {
+  lavender:  { body: 'round',     crown: 'spike'  },
+  sunflower: { body: 'round',     crown: 'radial' },
+  cactus:    { body: 'paddle',    crown: 'dot'    },
+  oak:       { body: 'canopy',    crown: 'none'   },
+  bamboo:    { body: 'segmented', crown: 'tuft'   }
+};
+
+function mascotSvg({ progress, theme, species, px = 96 }) {
+  const t = Math.max(0, Math.min(1, progress));
+  const cfg = MASCOT_SPECIES[species] || MASCOT_SPECIES.lavender;
+  const primary = theme.primary, soft = theme.soft;
+  const vbW = 100, vbH = 130, groundY = 122;
+
+  // The seed moment — nothing but a small dot resting on the ground yet.
+  if (t < 0.05) {
+    const r = round1(3 + (t / 0.05) * 3);
+    return `<svg viewBox="0 0 ${vbW} ${vbH}" width="${px}" height="${round1(px * vbH / vbW)}" aria-hidden="true">
+      <ellipse cx="50" cy="${groundY}" rx="13" ry="3" fill="rgba(0,0,0,.28)"/>
+      <circle cx="50" cy="${groundY - r}" r="${r}" fill="${primary}"/>
+    </svg>`;
+  }
+
+  const stemH = round1(6 + t * 42);
+  const stemTopY = round1(groundY - stemH);
+  const bodyR = round1(7 + t * 15);
+  const leafT = round1(Math.max(0, Math.min(1, (t - 0.22) / 0.45)));
+  const crownT = round1(Math.max(0, Math.min(1, (t - 0.68) / 0.32)));
+  const shadowRx = round1(15 + t * 8);
+
+  const parts = [`<ellipse cx="50" cy="${groundY}" rx="${shadowRx}" ry="3.5" fill="rgba(0,0,0,.3)"/>`];
+
+  // Stem — a single rounded bar for most species, or a segmented cane with
+  // two faint growth-ring notches for bamboo.
+  if (cfg.body === 'segmented') {
+    parts.push(`<rect x="46" y="${stemTopY}" width="8" height="${stemH}" rx="3" fill="${primary}"/>`);
+    if (stemH > 18) parts.push(`<rect x="45" y="${round1(groundY - stemH * 0.38)}" width="10" height="2" rx="1" fill="${soft}" opacity=".6"/>`);
+    if (stemH > 32) parts.push(`<rect x="45" y="${round1(groundY - stemH * 0.7)}" width="10" height="2" rx="1" fill="${soft}" opacity=".6"/>`);
+  } else {
+    parts.push(`<rect x="47" y="${stemTopY}" width="6" height="${stemH}" rx="3" fill="${primary}"/>`);
+  }
+
+  // Foliage mass — round blob (most species), a cactus's flatter paddle
+  // pair, or oak's oversized, slowly-thickening canopy.
+  const bodyCx = 50, bodyCy = round1(stemTopY - bodyR * 0.55);
+  if (cfg.body === 'paddle') {
+    parts.push(`<rect x="${round1(bodyCx - bodyR * 0.55)}" y="${round1(bodyCy - bodyR)}" width="${round1(bodyR * 1.1)}" height="${round1(bodyR * 1.9)}" rx="${round1(bodyR * 0.5)}" fill="${primary}"/>`);
+    if (t > 0.4) parts.push(`<rect x="${round1(bodyCx - bodyR * 1.55)}" y="${round1(bodyCy - bodyR * 0.55)}" width="${round1(bodyR * 0.8)}" height="${round1(bodyR * 1.3)}" rx="${round1(bodyR * 0.4)}" fill="${primary}" transform="rotate(-16 ${bodyCx} ${bodyCy})"/>`);
+  } else if (cfg.body === 'canopy') {
+    parts.push(`<circle cx="${bodyCx}" cy="${bodyCy}" r="${round1(bodyR * 1.2)}" fill="${primary}"/>`);
+    if (t > 0.5) parts.push(`<circle cx="${round1(bodyCx - bodyR * 0.95)}" cy="${round1(bodyCy + bodyR * 0.35)}" r="${round1(bodyR * 0.6)}" fill="${primary}"/><circle cx="${round1(bodyCx + bodyR * 0.95)}" cy="${round1(bodyCy + bodyR * 0.35)}" r="${round1(bodyR * 0.6)}" fill="${primary}"/>`);
+  } else if (cfg.body === 'segmented') {
+    // A small rounded node cap plus four fanning pointed leaves (two lean
+    // up, two droop out to the sides) — reads as a fuller bamboo crown even
+    // before the brighter bloom tuft layers on top of it.
+    parts.push(`<circle cx="50" cy="${stemTopY}" r="${round1(4 + t * 3)}" fill="${primary}"/>`);
+    if (leafT > 0) {
+      const op = round1(0.65 + leafT * 0.35);
+      parts.push(`<polygon points="50,${stemTopY} ${round1(50 - 3 - leafT * 4)},${round1(stemTopY - 9 - leafT * 8)} 51,${round1(stemTopY - 2)}" fill="${primary}" opacity="${op}"/>`);
+      parts.push(`<polygon points="50,${stemTopY} ${round1(50 + 3 + leafT * 4)},${round1(stemTopY - 10 - leafT * 8)} 49,${round1(stemTopY - 2)}" fill="${primary}" opacity="${op}"/>`);
+      parts.push(`<polygon points="50,${stemTopY} ${round1(50 - 8 - leafT * 5)},${round1(stemTopY + 6)} 50,${round1(stemTopY + 2)}" fill="${primary}" opacity="${round1(0.6 + leafT * 0.3)}"/>`);
+      parts.push(`<polygon points="50,${stemTopY} ${round1(50 + 8 + leafT * 5)},${round1(stemTopY + 6)} 50,${round1(stemTopY + 2)}" fill="${primary}" opacity="${round1(0.6 + leafT * 0.3)}"/>`);
+    }
+  } else {
+    parts.push(`<ellipse cx="${bodyCx}" cy="${bodyCy}" rx="${bodyR}" ry="${round1(bodyR * 0.85)}" fill="${primary}"/>`);
+  }
+
+  // Leaves — two simple flanking ellipses, for every species except the
+  // ones with their own foliage language (cactus's paddles, bamboo's tufts
+  // above).
+  if (leafT > 0 && cfg.body !== 'paddle' && cfg.body !== 'segmented') {
+    const ly = round1(groundY - stemH * 0.42);
+    parts.push(`<ellipse cx="${round1(50 - 9 - leafT * 4)}" cy="${ly}" rx="${round1(5.5 + leafT * 5)}" ry="${round1(3 + leafT * 2)}" fill="${primary}" opacity="${round1(0.7 + leafT * 0.3)}" transform="rotate(-35 ${round1(50 - 9)} ${ly})"/>`);
+    parts.push(`<ellipse cx="${round1(50 + 9 + leafT * 4)}" cy="${round1(ly - 4)}" rx="${round1(5.5 + leafT * 5)}" ry="${round1(3 + leafT * 2)}" fill="${primary}" opacity="${round1(0.7 + leafT * 0.3)}" transform="rotate(35 ${round1(50 + 9)} ${round1(ly - 4)})"/>`);
+  }
+
+  // Crown — the species-distinct bloom accent, in the lighter "soft" tone
+  // so it visibly pops against the darker foliage the moment it appears.
+  if (crownT > 0) {
+    const ccx = 50, ccy = round1(bodyCy - bodyR * 0.85);
+    if (cfg.crown === 'spike') {
+      for (let i = 0; i < 3; i++) parts.push(`<circle cx="${ccx}" cy="${round1(ccy - i * 6 * crownT)}" r="${round1(2.6 + crownT * 2.2)}" fill="${soft}" opacity="${crownT}"/>`);
+    } else if (cfg.crown === 'radial') {
+      const R = round1(6 + crownT * 7);
+      for (let i = 0; i < 8; i++) parts.push(`<ellipse cx="${ccx}" cy="${round1(ccy - R * 0.9)}" rx="3" ry="${round1(4.5 + crownT * 3)}" fill="${soft}" opacity="${crownT}" transform="rotate(${i * 45} ${ccx} ${ccy})"/>`);
+      parts.push(`<circle cx="${ccx}" cy="${ccy}" r="${round1(3.5 + crownT * 2.5)}" fill="${primary}"/>`);
+    } else if (cfg.crown === 'dot') {
+      parts.push(`<circle cx="${ccx}" cy="${round1(ccy + bodyR * 0.3)}" r="${round1(2.8 + crownT * 2.6)}" fill="${soft}" opacity="${crownT}"/>`);
+    } else if (cfg.crown === 'tuft') {
+      parts.push(`<polygon points="50,${stemTopY} ${round1(50 - 4 - crownT * 6)},${round1(stemTopY - 12 - crownT * 6)} 51,${round1(stemTopY - 2)}" fill="${soft}" opacity="${round1(0.55 + crownT * 0.45)}"/>`);
+      parts.push(`<polygon points="50,${stemTopY} ${round1(50 + 4 + crownT * 6)},${round1(stemTopY - 13 - crownT * 6)} 49,${round1(stemTopY - 2)}" fill="${soft}" opacity="${round1(0.55 + crownT * 0.45)}"/>`);
+    }
+  }
+
+  return `<svg viewBox="0 0 ${vbW} ${vbH}" width="${px}" height="${round1(px * vbH / vbW)}" aria-hidden="true">${parts.join('')}</svg>`;
 }
 
 // Deterministic sprout placement (not reshuffled every render) — a loose
@@ -3445,54 +3507,35 @@ const GARDEN_SPROUT_SLOTS_SMALL = [
   { dx: 2.3,   size: .28, delay: '1.9s' }
 ];
 
-// The one companion artwork snippet — used identically by Home's hero, the
-// Garden companion card and the companion detail sheet, so the companion
-// never looks different from one screen to the next. Always grounded on a
-// shared pot/bed (task: "never float... always presented as a living plant
-// in its pot"), with whichever Care-stage offshoots and pot cosmetics are
-// currently unlocked. `big` is Home's much larger hero treatment (task:
-// "the hero should occupy significantly more visual space") — Garden's card
-// and the detail sheet keep the original compact size. Every plant (mother
-// and each offshoot) sits on one shared baseline, in its own pot that's
-// sized to actually contain it (wide enough for the leaf splay, and
-// overlapping the stem slightly so there's no gap), plus a soft contact
-// shadow under the whole cluster so it reads as grounded even where emoji
-// glyphs themselves don't perfectly align.
+// The one companion scene — used identically by Home's hero, the Garden
+// card and the companion detail sheet, so the companion never looks
+// different from one screen to the next. Every plant (mother and every
+// garden sprout) is the same mascotSvg() silhouette at its own progress,
+// standing on its own soft shadow — no pot, no shared soil bed, nothing
+// beyond the character itself, matching the mascot redesign's "less
+// detail, stronger silhouette" directly.
 function companionArtHtml(growth, { big = false } = {}) {
-  const cosmetics = companionCareCosmetics(growth);
+  const plantKey = userProfile.plant || 'sprout';
+  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
   const sprouts = gardenSprouts(growth);
-  const speciesEmoji = (PLANTS[userProfile.plant] || {}).emoji || growth.selectedAsset;
-  const motherRem = big ? 6.5 : 3.75;
-  const motherPotW = big ? 4 : 2.3;
-  const motherPotH = big ? 1.5 : .95;
-  const sproutBaseRem = big ? 2.8 : 1.6; // each sprout's own "fully bloomed" size ceiling
-  const bedHeightRem = big ? 1.15 : .68;
+  const motherProgress = growth.isFinalStage ? 1 : growth.overallProgressPercent / 100;
+  const motherPx = big ? 112 : 66;
+  const sproutBasePx = big ? 92 : 54;
 
   const slots = (big ? GARDEN_SPROUT_SLOTS_BIG : GARDEN_SPROUT_SLOTS_SMALL).slice(0, sprouts.length);
   const sproutsHtml = slots.map((slot, i) => {
-    const art = plantArtForProgress(sprouts[i].progress, speciesEmoji);
-    const glyphRem = (sproutBaseRem * slot.size).toFixed(2);
-    return `
-      <span class="absolute leading-none p-sway" style="left:calc(50% + ${slot.dx}rem);bottom:${(bedHeightRem * 0.42).toFixed(2)}rem;font-size:${glyphRem}rem;opacity:${art.opacity};transform:translateX(-50%) scale(${art.scale});transform-origin:bottom center;animation-delay:${slot.delay}" aria-hidden="true">${art.asset}</span>`;
+    const svg = mascotSvg({ progress: sprouts[i].progress, theme, species: plantKey, px: Math.round(sproutBasePx * slot.size) });
+    return `<span class="absolute bottom-0 inline-block p-sway" style="left:calc(50% + ${slot.dx}rem);transform:translateX(-50%);transform-origin:bottom center;animation-delay:${slot.delay}" aria-hidden="true">${svg}</span>`;
   }).join('');
 
   const farthestDx = slots.length ? Math.max(...slots.map(s => Math.abs(s.dx))) : 0;
-  const bedWidthRem = Math.max(motherPotW * 1.15, farthestDx * 2 + sproutBaseRem * 0.7);
-  const sceneWidthRem = bedWidthRem;
-  const sceneHeightRem = motherRem + motherPotH * 0.6 + bedHeightRem;
+  const sceneWidthRem = Math.max(big ? 7 : 4.2, farthestDx * 2 + (big ? 3.2 : 2));
+  const motherSvg = mascotSvg({ progress: motherProgress, theme, species: plantKey, px: motherPx });
 
   return `
-    <div class="relative" style="width:${sceneWidthRem.toFixed(2)}rem;height:${sceneHeightRem.toFixed(2)}rem;margin:0 auto">
-      <div class="absolute bottom-0 left-1/2 companion-garden-bed" style="width:${bedWidthRem.toFixed(2)}rem;height:${bedHeightRem.toFixed(2)}rem;transform:translateX(-50%)" aria-hidden="true"></div>
+    <div class="relative" style="width:${sceneWidthRem.toFixed(2)}rem;margin:0 auto">
       ${sproutsHtml}
-      <div class="absolute left-1/2 flex flex-col items-center" style="bottom:${(bedHeightRem * 0.55).toFixed(2)}rem;transform:translateX(-50%)">
-        <span style="display:inline-block;transform:scale(${growth.selectedAssetScale});transform-origin:bottom center">
-          <span class="leading-none ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="font-size:${motherRem}rem;opacity:${growth.selectedAssetOpacity}" aria-hidden="true">${growth.selectedAsset}</span>
-        </span>
-        <div class="companion-pot" style="width:${motherPotW}rem;height:${motherPotH}rem;margin-top:${big?'-.75rem':'-.5rem'}"></div>
-      </div>
-      ${cosmetics.moss ? `<span class="companion-cosmetic companion-moss" style="bottom:${(bedHeightRem*0.5).toFixed(2)}rem;left:14%;${big?'font-size:1.1rem':''}" aria-hidden="true">🌾</span>` : ''}
-      ${cosmetics.stones ? `<span class="companion-cosmetic companion-stones" style="bottom:${(bedHeightRem*0.5).toFixed(2)}rem;right:14%;${big?'font-size:1.1rem':''}" aria-hidden="true">🪨</span>` : ''}
+      <span class="relative inline-block ${growth.isFinalStage ? 'p-sway-breathe' : 'p-sway'}" style="transform-origin:bottom center" aria-hidden="true">${motherSvg}</span>
     </div>`;
 }
 
@@ -3570,6 +3613,29 @@ function startCompanionAmbient() {
     }
   });
 }
+
+// A hero that shrinks while scrolling (task: "hero that shrinks while
+// scrolling" — one of the explicit new-layout examples). As the user
+// scrolls the companion out of view, it settles and fades slightly rather
+// than just vanishing the instant it crosses the top of the screen —
+// scroll-linked, rAF-throttled, and a no-op outside the dashboard/reduced-
+// motion so it never fights any other view's own scrolling.
+let heroScrollRaf = null;
+function updateHeroScrollShrink() {
+  const dashView = document.getElementById('dashboard-view');
+  const hero = document.getElementById('dash-companion-card');
+  if (!dashView || !hero || dashView.style.display === 'none') return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const rect = hero.getBoundingClientRect();
+  const progress = Math.max(0, Math.min(1, -rect.top / Math.max(1, rect.height * 0.85)));
+  hero.style.transform = `scale(${round1(1 - progress * 0.1)})`;
+  hero.style.opacity = String(round1(1 - progress * 0.55));
+}
+function onWindowScrollForHero() {
+  if (heroScrollRaf) return;
+  heroScrollRaf = requestAnimationFrame(() => { heroScrollRaf = null; updateHeroScrollShrink(); });
+}
+window.addEventListener('scroll', onWindowScrollForHero, { passive: true });
 
 // ── Plant growth: always derived fresh from remaining activity history ─────
 // userProfile.growthPoints is NOT a running counter that add/edit/delete
@@ -5340,7 +5406,13 @@ function goView(v) {
   // swapViews() below without a stale setTimeout re-asserting 'hub' after
   // the caller already chose a different sub-tab.
   if (v === 'workout') switchWorkoutTab('hub');
-  const swapViews = () => { VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none'); };
+  const swapViews = () => {
+    VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
+    // Re-apply the hero's scroll-shrink transform the moment it becomes
+    // visible again — otherwise it'd keep showing whatever shrink amount
+    // was last computed before the tab switch until the next scroll event.
+    if (v === 'dashboard') requestAnimationFrame(updateHeroScrollShrink);
+  };
   const current = VIEWS.find(x => x !== v && document.getElementById(x+'-view').style.display !== 'none');
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!current || reducedMotion) { swapViews(); return; }
@@ -5580,28 +5652,27 @@ function renderPlantHero(sessionDates, hasHistory) {
   const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
 
   document.getElementById('plant-name-label').textContent = p.name;
-  // A moody night-garden wash — deliberately dark regardless of the app's
-  // own light/dark toggle (a photo of a garden at dusk doesn't change with
-  // the reader's theme), tinted with the companion's own species glow so
-  // Lavender/Sunflower/etc. each still feel a little different.
+  // A moody night scene — deliberately dark regardless of the app's own
+  // light/dark toggle (a photo of a garden at dusk doesn't change with the
+  // reader's theme), tinted with the companion's own species glow so
+  // Lavender/Sunflower/etc. each still feel a little different. Fades to
+  // fully transparent at the very bottom instead of ending in a hard
+  // rectangle, so the mascot reads as stepping out into the page rather
+  // than being boxed into a panel (task: "companion breaking outside its
+  // container").
   document.getElementById('dash-companion-vignette').style.background =
-    `radial-gradient(circle at 32% 32%, ${theme.glow} 0%, transparent 55%), linear-gradient(165deg, #0b0f1c 0%, #12141f 55%, #0d1016 100%)`;
+    `radial-gradient(circle at 50% 28%, ${theme.glow} 0%, transparent 60%), linear-gradient(180deg, #0b0f1c 0%, #12141f 55%, rgba(13,16,22,0) 100%)`;
 
   const growth = currentGrowthState();
-  // Dynamic artwork — companionArtHtml() reads the exact same
-  // selectedAsset/selectedAssetOpacity/postBloomStageIndex fields Garden's
-  // companion card renders (see renderGardenCompanion()), so the companion
-  // always reflects its real progression (task: "The companion artwork
-  // should ALWAYS reflect its actual progression... Never display a fully
-  // bloomed Lavender if the user is still in Bud stage") and any Care-stage
-  // offshoots/cosmetics Garden shows appear here too, at Home's much larger
-  // `big` size — one artwork function, three surfaces, one of them bigger.
+  // Dynamic artwork — companionArtHtml() draws the mascot at the
+  // companion's real progress fraction (task: "The companion artwork
+  // should ALWAYS reflect its actual progression"), plus every garden
+  // sprout that's started so far, each independently — one artwork
+  // function, three surfaces (Home, Garden, detail sheet), one of them
+  // bigger.
   document.getElementById('plant-emoji').innerHTML = companionArtHtml(growth, { big: true });
   startCompanionAmbient();
-
-  const levelLabel = document.getElementById('plant-level-label');
-  levelLabel.innerHTML = `<span class="ms text-sm" aria-hidden="true">eco</span>${esc(growth.displayStageName)}`;
-  levelLabel.style.color = theme.primary;
+  updateHeroScrollShrink(); // apply immediately for the current scroll position, not just on the next scroll event
 
   if (!hasHistory) {
     document.getElementById('hero-empty-line1').textContent = `${p.name} is ready to grow.`;
@@ -5612,9 +5683,12 @@ function renderPlantHero(sessionDates, hasHistory) {
   }
   hide('dash-hero-empty'); show('dash-hero-body'); show('dash-companion-dots');
 
-  // Small rotating message + dot indicator (task: "Small rotating companion
-  // message... Rotate these messages so the Home page feels alive") — see
-  // COMPANION_MESSAGES/pickCompanionMessage() above.
+  // The one line of copy in the whole scene, rotating (task: "Small
+  // rotating contextual message... Rotate these messages so the Home page
+  // feels alive"). Everything the old hero spelled out in numbers — stage
+  // name, time together, % to next milestone — is now either a visual
+  // discovery in the mascot itself, or one tap away in the detail sheet
+  // this card already opens.
   const today = todayStr();
   const loggedToday = !!(sessions[today] && Object.keys(sessions[today]).length);
   const streak = computeCurrentStreak(sessionDates);
@@ -5623,39 +5697,6 @@ function renderPlantHero(sessionDates, hasHistory) {
   document.getElementById('dash-companion-dots').innerHTML = Array.from({ length: picked.dotCount }, (_, i) =>
     `<span class="rounded-full" style="width:5px;height:5px;background:${i === picked.dotIndex ? theme.primary : 'rgba(255,255,255,.25)'}" aria-hidden="true"></span>`
   ).join('');
-
-  // Time together — real, from the companion's own startedAt, never re-
-  // derived per render (task: "show how long the companion has been
-  // growing with the user... calculated from when the companion was first
-  // chosen").
-  document.getElementById('plant-time-together').textContent = companionTimeTogetherLabel(userProfile.companion?.startedAt) || '';
-
-  // One unified Care/growth bar, pre- or post-Bloom — no more separate
-  // "bloomed, choose a new companion" branch (task: "The companion is
-  // never replaced" / "Remove... Choose next companion. Any wording that
-  // implies the companion is finished after Bloom").
-  const bar = document.getElementById('growth-bar-fill');
-  bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
-  const track = bar.parentElement;
-  track.setAttribute('aria-valuemin', '0');
-  track.setAttribute('aria-valuemax', '100');
-  let pct, nextLabel;
-  if (growth.isFinalStage && growth.isTimeless) {
-    pct = growth.timelessCyclePercent;
-    nextLabel = 'Timeless';
-  } else if (growth.isFinalStage) {
-    pct = growth.postBloomProgressPercent;
-    nextLabel = 'Next care milestone';
-  } else {
-    pct = growth.overallProgressPercent;
-    nextLabel = `Next: ${growth.nextStageName}`;
-  }
-  const pctLabel = document.getElementById('growth-pct-label');
-  pctLabel.textContent = `${pct}%`;
-  pctLabel.style.color = theme.primary;
-  document.getElementById('growth-next-label').textContent = nextLabel;
-  bar.style.width = `${pct}%`;
-  track.setAttribute('aria-valuenow', String(pct));
 }
 // Tapping the card opens the exact same companion detail sheet the Garden
 // page's own companion card opens (openGardenCompanionDetail(), defined in
@@ -6137,6 +6178,9 @@ function openGardenCompanionDetail() {
   document.getElementById('gcd-art').innerHTML = companionArtHtml(growth);
   document.getElementById('gcd-name').textContent = plant.name;
   document.getElementById('gcd-desc').textContent = plant.desc || '';
+  // Time together now lives here instead of on the Home hero — the hero's
+  // job is the emotional read, this sheet is where the numbers live.
+  document.getElementById('gcd-together').textContent = companionTimeTogetherLabel(userProfile.companion?.startedAt) || '';
   document.getElementById('gcd-stage').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
 
   // Every named stage this companion has already passed through, plus the
