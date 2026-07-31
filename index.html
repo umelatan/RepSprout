@@ -4231,67 +4231,56 @@ function computeSessionVolume(sessionExercises) {
 // not sourced from any single authority, just representative real-world
 // ballpark figures chosen to give a legible spread from very light to very
 // heavy sessions.
-// emoji: the closest real-world match available in standard Unicode — a
-// few items (refrigerator, washing machine, vending machine, grand piano,
-// shipping container, speedboat for jet ski, pool table for billiards,
-// go-kart for a racing car, pinball machine for an arcade cabinet) have no
-// dedicated emoji, so these fall back to the nearest visually/conceptually
-// associated one rather than a generic icon.
-// Deliberately balanced across animals, vehicles, and everyday
-// objects/appliances — animals alone shouldn't dominate the fun facts.
+// Animals only, by request — no vehicles or appliances. Deliberately wide
+// variety across the whole weight spectrum (a hamster up to a blue whale)
+// so the light/heavy ends stay just as well covered as the old mixed list.
 const VOLUME_COMPARISONS = [
-  { id: 'bicycle', weightKg: 12, singular: 'bicycle', plural: 'bicycles', emoji: '🚲' },
-  { id: 'scooter', weightKg: 15, singular: 'scooter', plural: 'scooters', emoji: '🛴' },
-  { id: 'canoe', weightKg: 30, singular: 'canoe', plural: 'canoes', emoji: '🛶' },
-  { id: 'shopping-cart', weightKg: 30, singular: 'shopping cart', plural: 'shopping carts', emoji: '🛒' },
-  { id: 'washing-machine', weightKg: 70, singular: 'washing machine', plural: 'washing machines', emoji: '🧺' },
-  { id: 'mattress', weightKg: 70, singular: 'mattress', plural: 'mattresses', emoji: '🛏️' },
-  { id: 'sofa', weightKg: 90, singular: 'sofa', plural: 'sofas', emoji: '🛋️' },
+  { id: 'hamster', weightKg: .15, singular: 'hamster', plural: 'hamsters', emoji: '🐹' },
+  { id: 'parrot', weightKg: .4, singular: 'parrot', plural: 'parrots', emoji: '🦜' },
+  { id: 'owl', weightKg: 1.5, singular: 'owl', plural: 'owls', emoji: '🦉' },
+  { id: 'rabbit', weightKg: 2, singular: 'rabbit', plural: 'rabbits', emoji: '🐇' },
+  { id: 'chicken', weightKg: 2.5, singular: 'chicken', plural: 'chickens', emoji: '🐔' },
+  { id: 'cat', weightKg: 4.5, singular: 'cat', plural: 'cats', emoji: '🐈' },
+  { id: 'penguin', weightKg: 5, singular: 'penguin', plural: 'penguins', emoji: '🐧' },
+  { id: 'sloth', weightKg: 6, singular: 'sloth', plural: 'sloths', emoji: '🦥' },
+  { id: 'fox', weightKg: 7, singular: 'fox', plural: 'foxes', emoji: '🦊' },
+  { id: 'raccoon', weightKg: 8, singular: 'raccoon', plural: 'raccoons', emoji: '🦝' },
+  { id: 'turkey', weightKg: 10, singular: 'turkey', plural: 'turkeys', emoji: '🦃' },
+  { id: 'koala', weightKg: 11, singular: 'koala', plural: 'koalas', emoji: '🐨' },
+  { id: 'badger', weightKg: 13, singular: 'badger', plural: 'badgers', emoji: '🦡' },
+  { id: 'beaver', weightKg: 20, singular: 'beaver', plural: 'beavers', emoji: '🦫' },
+  { id: 'dog', weightKg: 25, singular: 'dog', plural: 'dogs', emoji: '🐕' },
+  { id: 'wolf', weightKg: 40, singular: 'wolf', plural: 'wolves', emoji: '🐺' },
+  { id: 'leopard', weightKg: 60, singular: 'leopard', plural: 'leopards', emoji: '🐆' },
+  { id: 'goat', weightKg: 65, singular: 'goat', plural: 'goats', emoji: '🐐' },
+  { id: 'sheep', weightKg: 80, singular: 'sheep', plural: 'sheep', emoji: '🐑' },
   { id: 'kangaroo', weightKg: 90, singular: 'kangaroo', plural: 'kangaroos', emoji: '🦘' },
-  { id: 'grandfather-clock', weightKg: 90, singular: 'grandfather clock', plural: 'grandfather clocks', emoji: '🕰️' },
-  { id: 'refrigerator', weightKg: 100, singular: 'refrigerator', plural: 'refrigerators', emoji: '🧊' },
-  { id: 'filing-cabinet', weightKg: 100, singular: 'filing cabinet', plural: 'filing cabinets', emoji: '🗄️' },
-  { id: 'go-kart', weightKg: 100, singular: 'go-kart', plural: 'go-karts', emoji: '🏎️' },
+  { id: 'pig', weightKg: 95, singular: 'pig', plural: 'pigs', emoji: '🐖' },
+  { id: 'seal', weightKg: 105, singular: 'seal', plural: 'seals', emoji: '🦭' },
   { id: 'panda', weightKg: 115, singular: 'panda', plural: 'pandas', emoji: '🐼' },
+  { id: 'llama', weightKg: 130, singular: 'llama', plural: 'llamas', emoji: '🦙' },
   { id: 'black-bear', weightKg: 135, singular: 'black bear', plural: 'black bears', emoji: '🐻' },
-  { id: 'bathtub', weightKg: 150, singular: 'bathtub', plural: 'bathtubs', emoji: '🛁' },
-  { id: 'traffic-light', weightKg: 150, singular: 'traffic light', plural: 'traffic lights', emoji: '🚦' },
-  { id: 'pinball-machine', weightKg: 140, singular: 'pinball machine', plural: 'pinball machines', emoji: '🕹️' },
+  { id: 'deer', weightKg: 150, singular: 'deer', plural: 'deer', emoji: '🦌' },
   { id: 'gorilla', weightKg: 180, singular: 'gorilla', plural: 'gorillas', emoji: '🦍' },
-  { id: 'barrel-of-oil', weightKg: 180, singular: 'barrel of oil', plural: 'barrels of oil', emoji: '🛢️' },
   { id: 'lion', weightKg: 190, singular: 'lion', plural: 'lions', emoji: '🦁' },
-  { id: 'motorcycle', weightKg: 200, singular: 'motorcycle', plural: 'motorcycles', emoji: '🏍️' },
   { id: 'young-elephant', weightKg: 200, singular: 'young elephant', plural: 'young elephants', emoji: '🐘' },
-  { id: 'church-bell', weightKg: 200, singular: 'church bell', plural: 'church bells', emoji: '🔔' },
   { id: 'tiger', weightKg: 220, singular: 'tiger', plural: 'tigers', emoji: '🐅' },
-  { id: 'pool-table', weightKg: 340, singular: 'pool table', plural: 'pool tables', emoji: '🎱' },
-  { id: 'speedboat', weightKg: 350, singular: 'speedboat', plural: 'speedboats', emoji: '🚤' },
-  { id: 'vending-machine', weightKg: 400, singular: 'vending machine', plural: 'vending machines', emoji: '🥤' },
-  { id: 'grand-piano', weightKg: 450, singular: 'grand piano', plural: 'grand pianos', emoji: '🎹' },
+  { id: 'zebra', weightKg: 300, singular: 'zebra', plural: 'zebras', emoji: '🦓' },
+  { id: 'shark', weightKg: 400, singular: 'shark', plural: 'sharks', emoji: '🦈' },
   { id: 'crocodile', weightKg: 450, singular: 'crocodile', plural: 'crocodiles', emoji: '🐊' },
   { id: 'polar-bear', weightKg: 450, singular: 'polar bear', plural: 'polar bears', emoji: '🐻‍❄️' },
   { id: 'horse', weightKg: 500, singular: 'horse', plural: 'horses', emoji: '🐴' },
-  { id: 'golf-cart', weightKg: 500, singular: 'golf cart', plural: 'golf carts', emoji: '🛺' },
   { id: 'camel', weightKg: 600, singular: 'camel', plural: 'camels', emoji: '🐫' },
+  { id: 'ox', weightKg: 700, singular: 'ox', plural: 'oxen', emoji: '🐂' },
   { id: 'cow', weightKg: 700, singular: 'cow', plural: 'cows', emoji: '🐄' },
+  { id: 'water-buffalo', weightKg: 800, singular: 'water buffalo', plural: 'water buffalo', emoji: '🐃' },
   { id: 'giraffe', weightKg: 800, singular: 'giraffe', plural: 'giraffes', emoji: '🦒' },
   { id: 'bison', weightKg: 900, singular: 'bison', plural: 'bison', emoji: '🦬' },
-  { id: 'pallet-of-bricks', weightKg: 1000, singular: 'pallet of bricks', plural: 'pallets of bricks', emoji: '🧱' },
-  { id: 'small-airplane', weightKg: 1100, singular: 'small airplane', plural: 'small airplanes', emoji: '✈️' },
-  { id: 'compact-car', weightKg: 1300, singular: 'compact car', plural: 'compact cars', emoji: '🚗' },
   { id: 'hippo', weightKg: 1500, singular: 'hippo', plural: 'hippos', emoji: '🦛' },
-  { id: 'helicopter', weightKg: 1800, singular: 'helicopter', plural: 'helicopters', emoji: '🚁' },
-  { id: 'sailboat', weightKg: 2000, singular: 'sailboat', plural: 'sailboats', emoji: '⛵' },
-  { id: 'shipping-container', weightKg: 2200, singular: 'empty shipping container', plural: 'empty shipping containers', emoji: '📦' },
-  { id: 'pickup-truck', weightKg: 2200, singular: 'pickup truck', plural: 'pickup trucks', emoji: '🛻' },
   { id: 'rhino', weightKg: 2300, singular: 'rhino', plural: 'rhinos', emoji: '🦏' },
   { id: 'orca', weightKg: 3600, singular: 'orca', plural: 'orcas', emoji: '🐋' },
   { id: 'elephant', weightKg: 4000, singular: 'elephant', plural: 'elephants', emoji: '🐘' },
-  { id: 'tractor', weightKg: 4500, singular: 'tractor', plural: 'tractors', emoji: '🚜' },
-  { id: 'delivery-truck', weightKg: 5000, singular: 'delivery truck', plural: 'delivery trucks', emoji: '🚚' },
-  { id: 'school-bus', weightKg: 8000, singular: 'school bus', plural: 'school buses', emoji: '🚌' },
-  { id: 'fire-truck', weightKg: 12000, singular: 'fire truck', plural: 'fire trucks', emoji: '🚒' },
-  { id: 'train-carriage', weightKg: 30000, singular: 'train carriage', plural: 'train carriages', emoji: '🚃' }
+  { id: 'blue-whale', weightKg: 100000, singular: 'blue whale', plural: 'blue whales', emoji: '🐳' }
 ];
 
 // Scores every comparison object and returns the single best-fitting one —
