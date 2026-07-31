@@ -617,26 +617,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
 
         <div id="dash-hero-body" class="relative space-y-2 pt-2">
-          <span id="plant-level-label" class="inline-block text-[11px] font-bold rounded-full px-2.5 py-0.5"></span>
           <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
-
-          <!-- Shown only once this Companion has fully bloomed and the user
-               hasn't chosen a next one yet — replaces the in-progress Care
-               bar (there's no "next stage" to show a bloomed plant working
-               toward). See renderPlantHero() / openChooseCompanionModal(). -->
-          <div id="dash-hero-bloomed" style="display:none" class="max-w-xs mx-auto px-2 pt-1 space-y-2">
-            <p class="text-xs text-slate-500 dark:text-slate-400">It now lives in your Garden forever. A new chapter is ready to grow.</p>
-            <button id="dash-choose-companion-btn" type="button" class="btn btn-green text-sm px-4 py-2 w-full">Choose next companion</button>
-          </div>
-
-          <div id="dash-hero-progress" class="text-left max-w-xs mx-auto px-2 pt-1">
-            <p class="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500">Plant Progress</p>
-            <p id="growth-pct-label" class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"></p>
-            <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Plant Progress toward next stage">
-              <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
-            </div>
-            <p id="growth-next-label" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
-          </div>
         </div>
       </div>
 
@@ -646,13 +627,12 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <!-- Today's mission — the one strong card on the page -->
         <div id="dash-mission-card" class="mission-surface rounded-3xl p-5 shadow-sm">
           <div class="flow-root">
-            <!-- The one plant-evolution icon in the app — same growth state as the
-                 hero progress bar above, via getPlantGrowthState(). Not a second
-                 growth system, just a second view of the same numbers. Floated
-                 (not a flex sibling) so the label and "Mission complete" text
-                 actually wrap alongside it instead of starting only below a
-                 full-width icon row; flow-root on the parent contains the float
-                 so the card doesn't collapse short of it. -->
+            <!-- Static Companion badge — the mascot's emoji in a plain ring,
+                 no progress indicator. Floated (not a flex sibling) so the
+                 label and "Mission complete" text actually wrap alongside it
+                 instead of starting only below a full-width icon row;
+                 flow-root on the parent contains the float so the card
+                 doesn't collapse short of it. -->
             <div class="float-right ml-4 mb-2 flex flex-col items-center gap-1 flex-shrink-0">
               <div id="mission-stage-icon" class="relative w-14 h-14 flex-shrink-0" role="img" aria-label="">
                 <span id="mission-stage-glow" class="stage-glow" aria-hidden="true"></span>
@@ -719,7 +699,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
             <p class="text-xs font-semibold text-slate-400">Garden</p>
             <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-2">View Garden →</button>
           </div>
-          <div id="dash-garden-preview" class="flex items-center justify-center gap-4"></div>
+          <div id="dash-garden-preview" class="space-y-3"></div>
         </div>
 
         <!-- Recent win — compact chip, not a card -->
@@ -911,9 +891,8 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </div>
 
       <!-- Targets — entirely optional habit tracking, kept visually and
-           architecturally separate from Groups/Exercises (see
-           calculateTargetGrowth()'s note on why Targets can never touch
-           Double Progression or Exercise Plant state). -->
+           architecturally separate from Groups/Exercises: Targets never
+           touch Double Progression or Exercise Plant state. -->
       <div id="wt-targets" style="display:none" class="rs-view space-y-4">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
         <div class="flex items-center justify-between gap-2">
@@ -981,10 +960,9 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
     <!-- GARDEN / PROFILE -->
     <section id="profile-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
-      <!-- Companion card — the emotionally-important, permanent journey.
-           Never a settings block: artwork + name + current state + progress
-           toward its next milestone + a plain "Stage N · Name" line. See
-           renderGardenCompanion(). Tapping opens a small detail sheet
+      <!-- Companion card — the emotional mascot, permanent and unchanging.
+           Never a progression surface: artwork + name + current mood only.
+           See renderGardenCompanion(). Tapping opens a small detail sheet
            (garden-companion-modal), never a settings page. -->
       <button type="button" id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
         <div id="garden-companion-art" class="flex-shrink-0" aria-hidden="true"></div>
@@ -992,11 +970,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Your Companion</p>
           <p id="garden-companion-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           <p id="garden-companion-status" class="text-sm text-slate-400 mt-0.5"></p>
-          <p id="garden-companion-milestone" class="text-xs font-semibold text-brand-500 mt-2"></p>
-          <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1.5" role="progressbar" id="garden-companion-bar-track" aria-label="Companion growth">
-            <div id="garden-companion-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:0%"></div>
-          </div>
-          <p id="garden-companion-stage-label" class="text-xs text-slate-400 mt-1.5"></p>
         </div>
       </button>
 
@@ -1255,29 +1228,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div class="min-w-0">
           <p id="gcd-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           <p id="gcd-desc" class="text-xs text-slate-400"></p>
-          <p id="gcd-stage" class="text-xs font-semibold text-brand-500 mt-1"></p>
         </div>
       </div>
       <button id="gcd-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <div>
-      <p class="text-xs font-semibold text-slate-400 mb-1">Journey</p>
-      <div id="gcd-timeline" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
-    </div>
-  </div>
-</div>
-
-<!-- "Choose next companion" — shown once the active Companion has fully
-     bloomed. Not a random/gacha pick: the same five species onboarding
-     offers, always fully visible, no locking. See selectNextCompanion(). -->
-<div id="choose-companion-modal" style="display:none" class="fixed inset-0 z-[78] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
-    <div class="flex items-center justify-between">
-      <h3 class="font-display font-bold text-slate-800 dark:text-white">Choose your next companion</h3>
-      <button id="choose-companion-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
-    <p id="choose-companion-subtitle" class="text-xs text-slate-400"></p>
-    <div id="choose-companion-list" class="space-y-2"></div>
   </div>
 </div>
 
@@ -3019,7 +2973,7 @@ const db   = getDatabase(app);
 const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
-let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, collectedCompanions = {}, targets = {}, targetLogs = {};
+let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, gardenCollection = {}, exercisePlantGenerations = {}, targets = {}, targetLogs = {};
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'hub';
 let dataRefs = [];
@@ -3164,364 +3118,55 @@ const HEALTH_ANIM = {
   blooming:'p-hero-bloom', wilting:'p-hero-still', dormant:'p-hero-still'
 };
 
-// ── Growth / home page helpers ───────────────────────────────────────────────
-const GROWTH_PER_LEVEL = 5; // legacy "leaves per level" divisor — reused below as the post-bloom prestige pace, not deleted
-
-// ── Plant evolution stages ───────────────────────────────────────────────────
-// growthPoints is one cumulative, never-resets number persisted at
-// userProfile.growthPoints (0-100 == overall progress percent toward full
-// bloom, capped for stage purposes; points earned beyond 100 become
-// "bonus growth" once bloomed — see getPlantGrowthState()). This is the one
-// growth number in the app: the Home progress bar, the mission-card icon,
-// the Garden page, and the stage-change celebration all read it through
-// getPlantGrowthState() below, never independently.
-const GROWTH_STAGE_NAMES = ['Sprout', 'Seedling', 'Young Plant', 'Bud', 'Bloom'];
-const GROWTH_STAGE_THRESHOLDS = [0, 20, 40, 60, 80]; // percent at which each stage begins
-const GROWTH_TOTAL_STAGES = GROWTH_STAGE_NAMES.length;
-const GROWTH_POINTS_FOR_BLOOM = 100;
-
-// No per-species, per-stage art exists yet (PLANTS only carries one emoji per
-// plant — its final form). Stages 1-3 use a genuinely species-agnostic
-// fallback progression (seed -> sprout -> fuller plant) rather than inventing
-// fake species-specific art. Stages 4-5 use the REAL selected-plant emoji —
-// stage 4 ("Bud") renders it at reduced scale/opacity as a partial reveal of
-// the plant's true form, stage 5 at full scale/opacity. This is reported as
-// a known asset gap in the implementation summary, not hidden.
-const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
-
-// Post-bloom Companion stages — growth doesn't stop at Bloom (see the
-// Garden redesign task: "Continued workouts should keep improving its
-// stage and appearance," "Companion growth should continue beyond full
-// bloom"). Same 20-point-wide pacing as the five pre-bloom stages
-// (GROWTH_STAGE_THRESHOLDS' own spacing) so post-bloom growth feels like
-// the same rhythm rather than a sudden grind-wall or a freebie. Legacy is
-// the terminal named stage — growth past it still accumulates
-// (bonusGrowthPoints keeps climbing, surfaced via legacyCyclePercent below)
-// but never claims a fourth, undefined "next milestone" name.
-const POST_BLOOM_STAGE_NAMES = ['Thriving', 'Flourishing', 'Legacy'];
-const POST_BLOOM_STAGE_WIDTH = 20;
-
-// ── Three connected but distinct plant systems ──────────────────────────────
-// 1. COMPANION PLANT (this section, GROWTH_AWARD/recalculatePlantGrowth/
-//    getPlantGrowthState below) — the Home hero. Represents overall care and
-//    consistency: Move (any completed movement activity), Recover
-//    (intentional rest), Show Up (participation). Never reads strength
-//    performance or Double Progression data.
-// 2. EXERCISE PLANTS (calculateExerciseDoubleProgression(), DoubleProgressionStrategy,
-//    the Exercise Progress Detail page) — one per Double-Progression-enabled
-//    exercise, entirely self-contained, grows only from that exercise's own
-//    working-set weight progression. Never reads growthPoints/Companion state.
-// 3. GARDEN COLLECTION (collectedCompanions/{uid}, ensureCompanionRecord(),
-//    completeCompanionBloom()) — permanent record of every Companion Plant
-//    that has fully bloomed. Populated only by #1 blooming, never by #2.
-// These three never derive from one shared generic "growth number," and nothing
-// here increments any of them independently of its own engine — see each
-// system's own recalculate function for its single source of truth.
-
-// Plant Progress point values — Move/Recover/Show-Up participation only.
-// Deliberately contains nothing strength-performance-related: no rep
-// improvement, no "ready to increase," no weight-unlock, no Double
-// Progression leaf/cycle data. Those live entirely inside the Exercise Plant
-// system (the legacy exercise-level ratchet's weightUpFlag badge and
-// calculateExerciseDoubleProgression()), which never reads growthPoints and
-// is never read by it. Tune freely; nothing else depends on these exact numbers.
-const GROWTH_AWARD = {
-  completedWorkingSet: 0.4,
-  completedExercise: 0.6,
-  completedWorkout: 2,
-  // A completed Target period (see calculateTargetGrowth()) — sized like a
-  // completed workout, since finishing a personal daily/weekly habit is a
-  // comparable "you showed up for yourself today" signal, not a bigger or
-  // smaller one.
-  targetCompleted: 2
-};
-
-// ── The single source of truth for plant growth state ───────────────────────
-// Every UI surface that shows growth (Home progress bar + label, mission-card
-// icon, Garden page, stage-change celebration) calls this and only this —
-// see section 2 of the implementing task for the full list. Pure function:
-// no DOM reads, no persistence side effects.
-function getPlantGrowthState({ plantId, growthPoints }) {
-  const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Plant' };
-  const gp = Math.max(0, growthPoints || 0);
-  const overallProgressPercent = Math.min(100, Math.round(gp));
-  const isFinalStage = overallProgressPercent >= 100;
-
-  let currentStage = 1;
-  for (let i = GROWTH_STAGE_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (overallProgressPercent >= GROWTH_STAGE_THRESHOLDS[i]) { currentStage = i + 1; break; }
-  }
-  const stageName = GROWTH_STAGE_NAMES[currentStage - 1];
-  const stageStart = GROWTH_STAGE_THRESHOLDS[currentStage - 1];
-  const stageEnd = currentStage < GROWTH_TOTAL_STAGES ? GROWTH_STAGE_THRESHOLDS[currentStage] : 100;
-  const stageSpan = stageEnd - stageStart;
-  const currentStageProgressPercent = stageSpan > 0 ? Math.round(((overallProgressPercent - stageStart) / stageSpan) * 100) : 100;
-  const nextStage = currentStage < GROWTH_TOTAL_STAGES ? currentStage + 1 : null;
-  // Once currentStage reaches the last named stage (Bloom), there's no next
-  // named stage to point at, but the plant isn't isFinalStage yet either —
-  // it's still climbing from 80% to 100% within Bloom itself. Point at "full
-  // bloom" instead of leaving nextStageName null (was rendering literally as
-  // "0% until null" on Home/Garden — see task).
-  const nextStageName = nextStage ? GROWTH_STAGE_NAMES[nextStage - 1] : (isFinalStage ? null : 'full bloom');
-  const remainingToNextStage = nextStage ? Math.max(0, stageEnd - overallProgressPercent) : (isFinalStage ? 0 : Math.max(0, 100 - overallProgressPercent));
-
-  // Stage 4 shows the real plant emoji as a dim, partial reveal; stage 5 is
-  // the real plant emoji at full strength; stages 1-3 use the generic fallback.
-  const selectedAsset = currentStage >= 4 ? plant.emoji : (GROWTH_STAGE_FALLBACK_EMOJI[currentStage - 1] || plant.emoji);
-  const selectedAssetOpacity = currentStage === 4 ? 0.55 : 1;
-  const selectedAssetScale = currentStage === 4 ? 0.82 : 0.7 + (currentStage - 1) * 0.075;
-
-  const bonusGrowthPoints = Math.max(0, gp - GROWTH_POINTS_FOR_BLOOM);
-
-  const growthReason = isFinalStage
-    ? `${plant.name} is in full bloom.`
-    : nextStage === GROWTH_TOTAL_STAGES
-      ? 'A bud is beginning to form.'
-      : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'New leaves are forming.';
-
-  // Post-bloom: only meaningful once isFinalStage. postBloomStageIndex is
-  // 0-based (0=Thriving, 1=Flourishing, 2=Legacy); isLegacy marks the
-  // terminal stage, past which there is no further named milestone —
-  // postBloomRemainingToNext/postBloomNextStageName are null there instead
-  // of ever repeating the "Stage 5 of 5 / X% to full bloom" contradiction
-  // the Garden redesign task calls out. displayStageNumber/displayStageName
-  // give callers one combined pre+post-bloom stage identity to render
-  // ("Stage 6 · Thriving") without re-deriving this arithmetic themselves.
-  let postBloomStageIndex = null, postBloomStageName = null, postBloomProgressPercent = null,
-    postBloomRemainingToNext = null, postBloomNextStageName = null, isLegacy = false, legacyCyclePercent = null;
-  if (isFinalStage) {
-    const stageIdx = Math.min(Math.floor(bonusGrowthPoints / POST_BLOOM_STAGE_WIDTH), POST_BLOOM_STAGE_NAMES.length - 1);
-    postBloomStageIndex = stageIdx;
-    postBloomStageName = POST_BLOOM_STAGE_NAMES[stageIdx];
-    isLegacy = stageIdx === POST_BLOOM_STAGE_NAMES.length - 1;
-    const withinStage = bonusGrowthPoints - stageIdx * POST_BLOOM_STAGE_WIDTH;
-    if (isLegacy) {
-      legacyCyclePercent = Math.round(((withinStage % POST_BLOOM_STAGE_WIDTH) / POST_BLOOM_STAGE_WIDTH) * 100);
-    } else {
-      postBloomProgressPercent = Math.round((withinStage / POST_BLOOM_STAGE_WIDTH) * 100);
-      postBloomRemainingToNext = Math.max(0, round1(POST_BLOOM_STAGE_WIDTH - withinStage));
-      postBloomNextStageName = POST_BLOOM_STAGE_NAMES[stageIdx + 1];
+// ── Exercise Plant bloom -> Garden archive ──────────────────────────────────
+// The single choke point every session/target mutation funnels through
+// (replacing the old Companion-growth equivalent) — so an exercise that
+// just crossed into a new generation can never be missed by some call site
+// that forgot to check. For every Double-Progression-configured exercise,
+// works out how many FULL lifecycles (Seed->Bloom) its real history has
+// completed so far, archives any that haven't been archived yet (each one
+// permanently, keyed by its own generation), and leaves the exercise's
+// currently active plant sitting fresh at whatever stage its own leftover
+// cycleIndex implies. Idempotent via exercisePlantGenerations: recalculating
+// twice in a row (or three times) archives each generation exactly once.
+// Returns which exercises (if any) newly bloomed THIS call, for celebration
+// — see bloomMessage().
+async function syncExercisePlantsAfterChange() {
+  const newlyBloomed = [];
+  for (const [exerciseId, exDef] of Object.entries(exercises)) {
+    if (exDef.archived || exDef.progressionEnabled === false) continue;
+    const dpResult = calculateExerciseDoubleProgression(exerciseId);
+    if (!dpResult.configured) continue;
+    const completedGenerations = exercisePlantGeneration(dpResult);
+    const alreadyArchived = exercisePlantGenerations[exerciseId] || 0;
+    if (completedGenerations <= alreadyArchived) continue;
+    for (let gen = alreadyArchived; gen < completedGenerations; gen++) {
+      const species = exercisePlantSpeciesForGeneration(exerciseId, gen);
+      const recordId = push(ref(db, `users/${uid()}/gardenCollection`)).key;
+      const record = { id: recordId, exerciseId, exerciseName: exDef.name, speciesName: species.name, speciesEmoji: species.emoji, generation: gen, bloomedAt: todayStr() };
+      gardenCollection[recordId] = record; // optimistic; onValue confirms shortly after
+      await set(ref(db, `users/${uid()}/gardenCollection/${recordId}`), record);
+      newlyBloomed.push(record);
     }
+    exercisePlantGenerations[exerciseId] = completedGenerations; // optimistic
+    await set(ref(db, `users/${uid()}/exercisePlantGenerations/${exerciseId}`), completedGenerations);
   }
-  const displayStageNumber = isFinalStage ? GROWTH_TOTAL_STAGES + postBloomStageIndex + 1 : currentStage;
-  const displayStageName = isFinalStage ? postBloomStageName : stageName;
-
-  return {
-    currentStage, totalStages: GROWTH_TOTAL_STAGES, stageName,
-    overallProgressPercent, currentStageProgressPercent,
-    nextStage, nextStageName, remainingToNextStage,
-    selectedAsset, selectedAssetOpacity, selectedAssetScale,
-    isFinalStage, bonusGrowthPoints, growthReason,
-    postBloomStageIndex, postBloomStageName, postBloomProgressPercent,
-    postBloomRemainingToNext, postBloomNextStageName, isLegacy, legacyCyclePercent,
-    displayStageNumber, displayStageName
-  };
-}
-
-// Convenience wrapper reading the current user's own plant + growth points —
-// every render call site below uses this instead of calling
-// getPlantGrowthState() with hand-assembled arguments, so there's exactly one
-// place that decides which plant/points belong to "the current growth state."
-function currentGrowthState() {
-  return getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: userProfile.growthPoints || 0 });
-}
-
-// ── Plant growth: always derived fresh from remaining activity history ─────
-// userProfile.growthPoints is NOT a running counter that add/edit/delete
-// nudge up or down — that drifts the moment a deletion, edit, or duplicate
-// can't be perfectly reversed. Instead it is always the OUTPUT of replaying
-// every currently-existing session chronologically (see recalculatePlantGrowth()
-// below). Add, edit, and delete all funnel through the same
-// recalculateAndPersistPlantGrowth() — none of them increments or
-// decrements the stored value directly. This means growthPoints can never
-// drift regardless of how many times a session is added, edited, deleted,
-// or restored, or in what order.
-//
-// Canonical source of truth: `sessions/{uid}/{date}/{id}` — the exact same
-// records History, the Calendar day sheet, streaks, and Closest Progress
-// already treat as canonical. Nothing else (not plantProgressEvents, not a
-// cached total) is ever consulted to compute the number itself.
-//
-// Deliberately does NOT read Double Progression (calculateExerciseDoubleProgression())
-// or the legacy exercise-level ratchet (nextProgression()/weightUpFlag) —
-// those are strength-performance signals that belong entirely to the
-// Exercise Plant system. A completed session contributes Plant Progress
-// purely for having happened (Move/Recover participation), regardless of
-// what weight, reps, or progression state any exercise inside it was at.
-//
-// Scoped to the ACTIVE companion's own journey: sessions dated before
-// userProfile.companion.startedAt (a previous companion's era) or after
-// today (nothing future-dated) never contribute. This is what makes
-// selectNextCompanion() a clean "start a new journey" rather than needing to
-// reset/delete anything — moving startedAt forward is the entire mechanism.
-function recalculatePlantGrowth() {
-  const companionStartedAt = userProfile.companion?.startedAt || '';
-  const today = todayStr();
-  const allSessions = [];
-  Object.entries(sessions).forEach(([date, daySessions]) => {
-    if (date > today || date < companionStartedAt) return;
-    Object.entries(daySessions || {}).forEach(([id, s]) => { if (s) allSessions.push({ date, id, session: s }); });
-  });
-  // Chronological by the date the activity is attributed to (matching
-  // getLastLoggedSets()/every other "most recent" reading in the app),
-  // then by completedAt as a same-day tiebreak.
-  allSessions.sort((a, b) => a.date === b.date
-    ? (a.session.completedAt || 0) - (b.session.completedAt || 0)
-    : a.date.localeCompare(b.date));
-
-  let total = 0;
-  const perSession = [];
-
-  for (const { date, id, session: s } of allSessions) {
-    let progressValue = 0, pillar = null;
-
-    if (s.sessionType === 'recovery') {
-      progressValue = RECOVERY_DAY_GROWTH; pillar = 'recover';
-    } else if (s.sessionType === 'other') {
-      progressValue = OTHER_ACTIVITY_GROWTH; pillar = 'move';
-    } else {
-      // group or quick — a strength session. Only whether working sets were
-      // completed matters here; weight/reps/progression are never consulted.
-      let anyWorkingSetCompleted = false;
-      for (const ex of (s.exercises || [])) {
-        if (ex.skipped) continue;
-        const completedWorkingSets = workingSetsFor(ex).filter(st => st.completed).length;
-        if (completedWorkingSets > 0) {
-          anyWorkingSetCompleted = true;
-          progressValue += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise;
-        }
-      }
-      if (anyWorkingSetCompleted) { progressValue += GROWTH_AWARD.completedWorkout; pillar = 'move'; }
-    }
-
-    progressValue = round1(progressValue);
-    total = round1(total + progressValue);
-    if (progressValue > 0) {
-      perSession.push({ date, id, progressValue, pillar, eventType: pillar === 'recover' ? 'recovery_completed' : 'movement_completed' });
-    }
-  }
-
-  return { totalGrowthPoints: total, perSession };
-}
-
-// The only function that writes users/{uid}/growthPoints. Called after
-// every mutation that can change growth (add, edit, delete, restore) instead
-// of adding/subtracting a delta — see recalculatePlantGrowth() above for why.
-// Also the single place bloom is detected: every growth-changing path in the
-// app funnels through here, so checking "did the active Companion just
-// reach full bloom" once, right here, is what guarantees
-// completeCompanionBloom() can never be missed by some call site that
-// forgot to check — see the Companion Plant Growth Engine note at GROWTH_AWARD.
-async function recalculateAndPersistPlantGrowth() {
-  const previousGrowth = currentGrowthState();
-  const { totalGrowthPoints: sessionPoints, perSession } = recalculatePlantGrowth();
-  // Targets are a sibling contributor to the SAME growthPoints number, not a
-  // second growth system — see calculateTargetGrowth()'s own note.
-  const { totalGrowthPoints: targetPoints, perTargetPeriod } = calculateTargetGrowth();
-  const totalGrowthPoints = round1(sessionPoints + targetPoints);
-  userProfile.growthPoints = totalGrowthPoints; // optimistic; onValue confirms shortly after
-  const newGrowth = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: totalGrowthPoints });
-  await set(ref(db, `users/${uid()}/growthPoints`), totalGrowthPoints);
-  // Audit trail only — regenerated fresh from the same replay every time, so
-  // a session (or target period) that no longer qualifies can never leave a
-  // stale/orphaned event behind, and recalculatePlantGrowth()/
-  // calculateTargetGrowth() never read this back in.
-  syncGrowthEvents(perSession, perTargetPeriod).catch(e => console.error('Failed to sync growth event audit trail:', e));
   syncDoubleProgressionEvents().catch(e => console.error('Failed to sync Double Progression event audit trail:', e));
-  if (newGrowth.isFinalStage && userProfile.companion && userProfile.companion.status !== 'bloomed') {
-    await completeCompanionBloom().catch(e => console.error('Failed to complete Companion bloom:', e));
-  }
-  return { previousGrowth, newGrowth };
+  return { newlyBloomed };
 }
 
-// ── Companion bloom → Garden collection ─────────────────────────────────────
-// Idempotent via companion.status: a duplicate save or recalculation can
-// never write a second collectedCompanions record for the same journey,
-// because the guard in recalculateAndPersistPlantGrowth() above only calls
-// this once status flips away from 'growing'. Never deletes or overwrites a
-// PRIOR collected companion — each bloom gets its own record, keyed by that
-// journey's own companion.id.
-async function completeCompanionBloom() {
-  const companion = userProfile.companion;
-  if (!companion || companion.status === 'bloomed') return;
-  const bloomedAt = todayStr();
-  const record = {
-    id: companion.id, speciesId: companion.speciesId,
-    startedAt: companion.startedAt, bloomedAt,
-    // A real count from this journey's own Plant Progress history, not a
-    // guess — recalculatePlantGrowth() already scopes its replay to
-    // [companion.startedAt, today], which is exactly this companion's era.
-    activitiesCompletedDuringJourney: recalculatePlantGrowth().perSession.length + calculateTargetGrowth().perTargetPeriod.length
-  };
-  await addBloomedCompanionToGarden(record);
-  const bloomedCompanion = { ...companion, status: 'bloomed', bloomedAt };
-  userProfile.companion = bloomedCompanion; // optimistic; onValue confirms shortly after
-  await set(ref(db, `users/${uid()}/companion`), bloomedCompanion);
-}
-
-async function addBloomedCompanionToGarden(record) {
-  await set(ref(db, `users/${uid()}/collectedCompanions/${record.id}`), record);
-}
-
-function getCollectedCompanions() {
-  return Object.values(collectedCompanions).sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || ''));
-}
-
-function getActiveCompanion() {
-  return userProfile.companion || null;
-}
-
-// Starts a fresh Companion journey. A new id/startedAt/status is the entire
-// mechanism — recalculatePlantGrowth()'s startedAt-scoped replay naturally
-// stops counting older sessions toward this new companion without touching
-// any session data or the previous companion's now-permanent Garden record
-// (see completeCompanionBloom() above, which already ran before this is
-// ever reachable from the UI).
-async function selectNextCompanion(speciesId) {
-  if (!PLANTS[speciesId]) return;
-  const companion = {
-    id: push(ref(db, `users/${uid()}/companion`)).key,
-    speciesId, startedAt: todayStr(), status: 'growing', bloomedAt: null
-  };
-  userProfile.companion = companion;
-  userProfile.plant = speciesId;
-  userProfile.growthPoints = 0;
-  await set(ref(db, `users/${uid()}/companion`), companion);
-  await set(ref(db, `users/${uid()}/plant`), speciesId);
-  await set(ref(db, `users/${uid()}/growthPoints`), 0);
-  renderDashboard(); renderProfile();
-}
-
-// Plant Progress audit trail (PlantProgressEvent records) — regenerated
-// wholesale from the same replay every time (never read back in by
-// recalculatePlantGrowth() itself), so a session that's since been edited or
-// deleted can never leave a stale event behind. Deterministic id
-// (companionPlantId + eventType + sourceType + sourceId) is what makes this
-// idempotent: recalculating twice in a row always produces byte-identical
-// records, never a duplicate award.
-async function syncGrowthEvents(perSession, perTargetPeriod = []) {
-  const companionId = userProfile.companion?.id || 'legacy';
-  const events = {};
-  for (const p of perSession) {
-    const id = `${companionId}_${p.eventType}_session_${p.id}`;
-    events[id] = {
-      id, userId: uid(), companionPlantId: companionId,
-      eventType: p.eventType, sourceType: 'session', sourceId: p.id,
-      progressValue: p.progressValue, occurredAt: p.date, metadata: { pillar: p.pillar },
-      createdAt: Date.now()
-    };
-  }
-  // Suggested unique key from the task spec: targetId + periodStart + eventType.
-  for (const p of perTargetPeriod) {
-    const id = `${companionId}_${p.eventType}_${p.targetId}_${p.periodStart}`;
-    events[id] = {
-      id, userId: uid(), companionPlantId: companionId,
-      eventType: p.eventType, sourceType: 'target_period', sourceId: `${p.targetId}_${p.periodStart}`,
-      progressValue: p.progressValue, occurredAt: p.date, metadata: { targetId: p.targetId, periodStart: p.periodStart },
-      createdAt: Date.now()
-    };
-  }
-  await set(ref(db, `users/${uid()}/plantProgressEvents`), events);
+// One per-load catch-up sweep, the same "runs once, only once a real signal
+// has actually loaded" pattern the old Companion-growth consistency check
+// used — this is what backfills any exercise whose real history already
+// implies generations that haven't been archived yet (e.g. an exercise
+// that was already deep into Double Progression before this system
+// existed), without needing a special one-time migration script.
+let exercisePlantsSyncChecked = false;
+function ensureExercisePlantsSynced() {
+  if (exercisePlantsSyncChecked) return;
+  if (!totalLoggedSessions() && !Object.keys(exercises).length) return;
+  exercisePlantsSyncChecked = true;
+  syncExercisePlantsAfterChange().catch(e => console.error('Failed to sync exercise plants:', e));
 }
 
 // Double Progression's own structured-event audit trail, kept separate from
@@ -3532,7 +3177,7 @@ async function syncGrowthEvents(perSession, perTargetPeriod = []) {
 // deterministic event ids — so a duplicate save or an idle re-recalculation
 // can never award (or record) the same leaf/cycle milestone twice. Never
 // read back in by the growth calculation itself; DoubleProgressionStrategy
-// always re-derives fresh from `sessions`, exactly like growthPoints does.
+// always re-derives fresh from `sessions`.
 async function syncDoubleProgressionEvents() {
   const events = {};
   Object.keys(exercises).forEach(exerciseId => {
@@ -3622,48 +3267,6 @@ function currentTargetProgress(target, logs, today) {
   return calculateTargetPeriodProgress(target, logs, periodStart, periodEnd);
 }
 
-// ── Targets' contribution to Plant Progress — sibling to
-// recalculatePlantGrowth(), NOT a second growth system: both feed the exact
-// same growthPoints number, through the exact same
-// recalculateAndPersistPlantGrowth()/syncGrowthEvents() pipeline. Walks
-// every period from each target's startDate to today and awards once per
-// COMPLETED period (daily: once per calendar day; weekly: once per calendar
-// week) — never for partial progress. Idempotent by construction: nothing
-// here is a stored counter, so recalculating twice (or after editing/
-// deleting a log) always reflects exactly what the remaining logs support,
-// with no separate "already awarded" flag to keep in sync.
-function calculateTargetGrowth() {
-  const companionStartedAt = userProfile.companion?.startedAt || '';
-  const today = todayStr();
-  let total = 0;
-  const perTargetPeriod = [];
-
-  Object.entries(targets).forEach(([targetId, target]) => {
-    if (!target || !target.startDate) return;
-    const logs = getTargetLogsFor(targetId);
-    if (!logs.length) return;
-    const step = target.frequency === 'weekly' ? 7 : 1;
-    let cursor = target.frequency === 'weekly' ? isoWeekStartFor(target.startDate) : target.startDate;
-    let guard = 0; // sane upper bound (~5.5 years of daily periods) — never an infinite loop
-    while (cursor <= today && guard < 2000) {
-      const { periodStart, periodEnd } = getCurrentTargetPeriod(target, cursor);
-      guard++;
-      if (periodStart < companionStartedAt) { cursor = addDaysToDateStr(cursor, step); continue; }
-      const progress = calculateTargetPeriodProgress(target, logs, periodStart, periodEnd);
-      if (progress.isCompleted) {
-        total = round1(total + GROWTH_AWARD.targetCompleted);
-        perTargetPeriod.push({
-          targetId, periodStart, date: periodStart,
-          progressValue: GROWTH_AWARD.targetCompleted, eventType: 'target_completion'
-        });
-      }
-      cursor = addDaysToDateStr(cursor, step);
-    }
-  });
-
-  return { totalGrowthPoints: total, perTargetPeriod };
-}
-
 async function createTarget({ exerciseId, name, targetType, targetAmount, unit, frequency, startDate }) {
   const targetId = push(ref(db, `users/${uid()}/targets`)).key;
   const target = {
@@ -3686,27 +3289,22 @@ async function updateTarget(targetId, patch) {
 // Every logged entry is its own record (never merged into a running total),
 // per the task's explicit "store each entry individually so the daily or
 // weekly total can be recalculated" — see calculateTargetPeriodProgress().
-// Logging is the only Target action that can change Plant Progress, so it's
-// the only one that calls recalculateAndPersistPlantGrowth().
+// Targets never touch exercises/sessions (see the Targets note above), so
+// logging one never has anything for syncExercisePlantsAfterChange() to
+// find — nothing else to recalculate here.
 async function logTargetProgress(targetId, amount) {
   const logId = push(ref(db, `users/${uid()}/targetLogs`)).key;
   const log = { id: logId, targetId, amount, occurredAt: Date.now(), createdAt: Date.now(), updatedAt: Date.now() };
   await set(ref(db, `users/${uid()}/targetLogs/${logId}`), log);
   targetLogs[logId] = log; // optimistic mirror
-  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
-  return { logId, previousGrowth, newGrowth };
+  return { logId };
 }
 
-// Deleting a log recalculates completion (and Plant Progress) from whatever
-// remains — the same "always fully re-derived, never a ledger to patch"
-// policy recalculatePlantGrowth() already uses for edited/deleted workout
-// sessions. If a log that had pushed a period over its target is removed,
-// that period's earlier reward is simply absent from the next recalculation
-// — never a punitive clawback message, just a correction.
+// Deleting a log recalculates completion from whatever remains — always
+// fully re-derived, never a ledger to patch.
 async function deleteTargetLog(logId) {
   await remove(ref(db, `users/${uid()}/targetLogs/${logId}`));
   delete targetLogs[logId];
-  return await recalculateAndPersistPlantGrowth();
 }
 
 // Edits ONE log entry's amount — never the day's/period's total, which has
@@ -3722,7 +3320,6 @@ async function updateTargetLog(logId, amount) {
   const updated = { ...existing, amount, updatedAt: Date.now() };
   await set(ref(db, `users/${uid()}/targetLogs/${logId}`), updated);
   targetLogs[logId] = updated;
-  return await recalculateAndPersistPlantGrowth();
 }
 
 // Every log this target has ever received, bucketed by the calendar day it
@@ -3814,23 +3411,21 @@ async function deleteTarget(targetId) {
   await Promise.all(logs.map(l => remove(ref(db, `users/${uid()}/targetLogs/${l.id}`))));
   delete targets[targetId];
   logs.forEach(l => delete targetLogs[l.id]);
-  return await recalculateAndPersistPlantGrowth();
 }
 
-// Neutral, non-judgmental copy either direction — growth moving down when
-// history is edited/deleted is a correction, never a punishment. Returns
-// null when the stage didn't change, so callers can skip a toast entirely.
-function stageChangeMessage(previousGrowth, newGrowth) {
-  if (newGrowth.currentStage === previousGrowth.currentStage) return null;
-  const plantName = (PLANTS[userProfile.plant] || {}).name || 'plant';
-  if (newGrowth.currentStage > previousGrowth.currentStage) {
-    return newGrowth.isFinalStage ? `🌸 Your ${plantName} is in full bloom!` : `🌱 Your ${plantName} grew into a ${newGrowth.stageName}!`;
-  }
-  return 'Plant progress updated';
+// One line celebrating whichever exercise plants just bloomed this call —
+// null (skip the toast entirely) when nothing did. Names the new species
+// (the one moment it's ever revealed) and makes the endless-lifecycle
+// mechanic explicit, rather than reading like a terminal "you're done."
+function bloomMessage(newlyBloomed) {
+  if (!newlyBloomed || !newlyBloomed.length) return null;
+  const [first, ...rest] = newlyBloomed;
+  const suffix = rest.length ? ` (+${rest.length} more)` : '';
+  return `🌸 ${first.exerciseName}'s plant bloomed into a ${first.speciesName}!${suffix} A new seed is already sprouting.`;
 }
 
-function celebrateStageChangeIfNeeded(previousGrowth, newGrowth) {
-  const msg = stageChangeMessage(previousGrowth, newGrowth);
+function celebrateExerciseBloomsIfAny(newlyBloomed) {
+  const msg = bloomMessage(newlyBloomed);
   if (msg) showToast(msg);
 }
 
@@ -3869,16 +3464,15 @@ function round1(n) { return Math.round(n * 10) / 10; }
 // increase" badge and Home's Closest Progress widget, unchanged. This is a
 // new, independent, more precise layer that tracks each WORKING SET as its
 // own progression path (per the product requirement that one set can be
-// ready to add weight while its siblings are still building reps) and feeds
-// the plant's existing growthPoints pipeline through its own clearly
-// separate award category — see the allSetsProgressed bonus wired into
-// recalculatePlantGrowth() below.
+// ready to add weight while its siblings are still building reps). Its
+// cycleIndex is the single number that drives the entire Exercise Plant
+// lifecycle (see exercisePlantGeneration()/exercisePlantStageIdx() below).
 //
-// Nothing here is persisted as new per-set state. Like growthPoints itself,
-// every value below is *derived fresh* from sessions/{uid} — the same
-// history every other growth calculation already treats as canonical. That
-// is what makes edit/delete/duplicate-save recalculation automatic and
-// idempotent: replay the same history, get the same answer, every time.
+// Nothing here is persisted as new per-set state — every value below is
+// *derived fresh* from sessions/{uid}, the same history every other
+// calculation already treats as canonical. That is what makes edit/delete/
+// duplicate-save recalculation automatic and idempotent: replay the same
+// history, get the same answer, every time.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const DP_STATUS = {
@@ -3979,8 +3573,7 @@ function calculateExerciseDoubleProgression(exerciseId, pendingSession = null) {
   const workingSetCount = Math.max(1, exDef.defaultSets || (exDef.targetReps || []).length || 3);
   const { minReps, maxReps, configured } = resolveActiveRepTarget(null, exDef);
 
-  // Chronological, real (non-planned) sessions only — the exact same source
-  // recalculatePlantGrowth() already treats as canonical. Calendar plans and
+  // Chronological, real (non-planned) sessions only. Calendar plans and
   // in-progress/incomplete drafts never live in `sessions`, so they can't
   // leak into progression by construction.
   const timeline = [];
@@ -4174,7 +3767,7 @@ const DP_LEAF_STATE_LABEL = { matured: 'Matured', ready: 'Ready', growing: 'Grow
 // One leaf per working set — the existing "eco" glyph already used for
 // growth elsewhere in the app (Advanced badge, mission label), not a new
 // emoji. This is the micro-progress overlay INSIDE the plant's existing
-// macro stage — it never renames or replaces GROWTH_STAGE_NAMES.
+// macro stage — it never renames or replaces EXERCISE_PLANT_STAGE_NAMES.
 function renderDoubleProgressionLeaves(positions, unit, sizeClass = 'text-2xl') {
   return positions.map(p => {
     const label = describeSetAriaLabel(p, unit);
@@ -4213,51 +3806,40 @@ const DoubleProgressionStrategy = {
   }
 };
 
-// One representative emoji per plant stage, indexed the same way as
-// GROWTH_STAGE_NAMES — used only by the per-exercise Double Progression mini
-// plant on the Exercise Progress Detail page. This is a display-only lookup;
-// it never renames or reorders the stages themselves, and it has no
-// relationship to PLANTS/userProfile.plant (the Home companion, which stays
-// entirely separate per the task spec).
-const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷', '🌸'];
+// One representative emoji per exercise-plant stage, indexed the same way
+// as EXERCISE_PLANT_STAGE_NAMES — a display-only lookup, unrelated to
+// PLANTS/userProfile.plant (the Companion, a separate, non-progressing
+// identity).
+const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷'];
 
-// ── Exercise Plant "Mastered" state (Garden) ────────────────────────────────
-// Reached once cycleIndex has climbed through every named stage — the same
-// "the moment the threshold is crossed, not one cycle later" rule the
-// Companion's own Bloom/isFinalStage already uses, so the two systems read
-// consistently. Continued progression past mastery never resets or swaps
-// to a different species/plant identity (per the task's explicit "do not
-// replace the mature exercise plant with a different species") — it only
-// unlocks small cosmetic tiers, one per additional full cycle completed.
-function isExercisePlantMastered(dpResult) {
-  return !!dpResult && dpResult.configured && dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+// ── Exercise Plant lifecycle: the ONLY progression system in RepSprout ─────
+// (product simplification: "The Companion is no longer a progression
+// system... All plant progression now belongs exclusively to individual
+// exercises... every exercise has an endless lifecycle"). Each exercise
+// owns one active plant, cycling Seed -> Sprout -> Young Plant -> Growing
+// -> Bloom forever — the moment it reaches Bloom it's archived permanently
+// into the Garden (see syncExercisePlantsAfterChange()) and the SAME
+// exercise immediately starts a brand new plant from Seed. There is no
+// terminal "Mastered" state anymore; cycleIndex just keeps climbing and
+// generation just keeps advancing.
+const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing'];
+const EXERCISE_PLANT_CYCLE_LENGTH = EXERCISE_PLANT_STAGE_NAMES.length; // full cycles per lifecycle, before Bloom
+function exercisePlantGeneration(dpResult) {
+  return dpResult ? Math.floor(dpResult.cycleIndex / EXERCISE_PLANT_CYCLE_LENGTH) : 0;
 }
 function exercisePlantStageIdx(dpResult) {
-  return Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
-}
-// 0 the moment mastery is first reached, 1 after one more full cycle
-// completes beyond that, 2 after two more, etc.
-function exercisePlantMasteryDepth(dpResult) {
-  return isExercisePlantMastered(dpResult) ? dpResult.cycleIndex - (GROWTH_TOTAL_STAGES - 1) : 0;
-}
-// Ordered, cumulative cosmetic tiers — purely decorative, never a growth
-// signal of their own (real growth still only ever comes from
-// calculateExerciseDoubleProgression()'s own leaf/cycle math). The
-// "Mastered" badge itself shows immediately on mastery (see
-// exercisePlantVisual() below) rather than being gated behind one of
-// these, so it isn't duplicated as its own tier here.
-const MASTERY_COSMETIC_TIERS = ['Premium pot', 'Decorative stones', 'Seasonal flowers', 'Extra fullness'];
-function exercisePlantCosmetics(dpResult) {
-  return MASTERY_COSMETIC_TIERS.slice(0, Math.min(exercisePlantMasteryDepth(dpResult), MASTERY_COSMETIC_TIERS.length));
+  return dpResult ? dpResult.cycleIndex % EXERCISE_PLANT_CYCLE_LENGTH : 0;
 }
 
 // ── Garden artwork ───────────────────────────────────────────────────────────
-// Exercise plant species — revealed ONLY once bloomed (task: "I DO NOT
-// want users to know what plant they are growing until it blooms...
-// Only when the exercise reaches the Bloom stage should the final plant
-// species be revealed"). A distinct, non-overlapping pool from the five
-// Companion species (PLANTS) — visually separate systems, never the same
-// identity.
+// A real variety pool (task: "We already have a large collection of plant
+// species... Do NOT reduce this into a small fixed set"), distinct from
+// the five Companion species (PLANTS) — visually separate systems, never
+// the same identity. Species stay unrevealed until Bloom, exactly as
+// before ("I DO NOT want users to know what plant they are growing until
+// it blooms") — the only difference now is that Bloom archives the plant
+// and hands the exercise a fresh Seed, rather than the same plant just
+// sitting there mastered forever.
 const EXERCISE_PLANT_SPECIES = [
   { name: 'Rose', emoji: '🌹' },
   { name: 'Hibiscus', emoji: '🌺' },
@@ -4266,50 +3848,61 @@ const EXERCISE_PLANT_SPECIES = [
   { name: 'Palm', emoji: '🌴' },
   { name: 'Evergreen', emoji: '🌲' },
   { name: 'Bamboo Shoot', emoji: '🎍' },
-  { name: 'House Plant', emoji: '🪴' }
+  { name: 'House Plant', emoji: '🪴' },
+  { name: 'Tulip', emoji: '🌷' },
+  { name: 'Cherry Blossom', emoji: '🌸' },
+  { name: 'Maple', emoji: '🍁' },
+  { name: 'Mushroom', emoji: '🍄' },
+  { name: 'Wheat', emoji: '🌾' },
+  { name: 'Lotus', emoji: '🪷' },
+  { name: 'Monstera', emoji: '🍃' },
+  { name: 'Chestnut', emoji: '🌰' },
+  { name: 'Herb', emoji: '🌿' }
 ];
-// Deterministic, stable per exerciseId forever (task: "The exercise keeps
-// the same plant identity forever... do not replace the mature exercise
-// plant with a different species") — same seeded-hash technique
-// selectVolumeComparison() already uses for its own stable-per-id pick,
-// never persisted as a new field.
-function exercisePlantSpeciesFor(exerciseId) {
-  const idx = Math.floor(seededRandom01(exerciseId) * EXERCISE_PLANT_SPECIES.length);
-  return EXERCISE_PLANT_SPECIES[Math.min(idx, EXERCISE_PLANT_SPECIES.length - 1)];
+// Each exercise gets its own fixed, deterministic shuffle through the
+// ENTIRE species pool (a seeded Fisher-Yates keyed only by exerciseId) —
+// task: "prioritising variety before repeating recently collected
+// species." No species repeats for a given exercise until every other one
+// has already appeared once; generation N (0-indexed) just reads position
+// N of that exercise's own shuffled tour, wrapping back to the start only
+// once the whole pool has cycled through.
+function exercisePlantSpeciesOrder(exerciseId) {
+  let seed = 0;
+  for (let i = 0; i < exerciseId.length; i++) seed = (seed * 31 + exerciseId.charCodeAt(i)) | 0;
+  const rand = () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const order = EXERCISE_PLANT_SPECIES.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
 }
-
-// Exercise plants' own stage labels — deliberately separate from
-// GROWTH_STAGE_NAMES (the Companion's own wording); the two systems' names
-// were never required to match, and this task gives exercise plants their
-// own vocabulary.
-const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Seedling', 'Growing'];
+function exercisePlantSpeciesForGeneration(exerciseId, generation) {
+  const order = exercisePlantSpeciesOrder(exerciseId);
+  const n = order.length;
+  const safeGen = ((generation % n) + n) % n;
+  return EXERCISE_PLANT_SPECIES[order[safeGen]];
+}
 
 // The ONE exercise plant visual — Exercise Library cards, the Exercise
 // Progress Detail hero, and the Garden page all call this and only this,
 // so "what does this exercise's plant look like" never has two answers.
-// Pre-bloom (stageIdx 0-3) is the exact same DP_STAGE_EMOJI glyph every
-// exercise already used before this task — genuinely unrevealed, not a
-// per-exercise recolor of anything. Only once bloomed does this exercise's
-// own deterministic species (see exercisePlantSpeciesFor() above) appear.
-// Reuses the exact glow-behind-glyph, no-tile-background treatment the
-// Exercise Garden cards already established (no emoji-in-a-square-tile
-// look) — see the removed exgPlantVisual() this replaces.
-function exercisePlantVisual({ exerciseId, stageIdx, mastered = false, cosmetics = [], accent, size = 64 }) {
-  const bloomed = stageIdx != null && stageIdx >= GROWTH_TOTAL_STAGES - 1;
-  const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : bloomed ? exercisePlantSpeciesFor(exerciseId).emoji : DP_STAGE_EMOJI[stageIdx];
-  const hasPremiumPot = cosmetics.includes('Premium pot');
-  const hasStones = cosmetics.includes('Decorative stones');
-  const hasFlowers = cosmetics.includes('Seasonal flowers');
-  const hasFullness = cosmetics.includes('Extra fullness');
-  const glow = hasPremiumPot ? 'rgba(245,158,11,.3)' : (accent || EXG_ACCENT.brand).glow;
-  const fontSize = size * (hasFullness ? 0.92 : 0.84);
+// Always the generic, unrevealed DP_STAGE_EMOJI glyph for whichever of the
+// four named stages it's currently at — the species itself only ever
+// appears once archived into the Garden collection (gardenCollectionCardHtml()).
+function exercisePlantVisual({ stageIdx, accent, size = 64 }) {
+  const emoji = stageIdx == null ? DP_STAGE_EMOJI[0] : (DP_STAGE_EMOJI[stageIdx] || DP_STAGE_EMOJI[0]);
+  const glow = (accent || EXG_ACCENT.brand).glow;
   return `
     <div class="relative flex-shrink-0 flex items-center justify-center" style="width:${size}px;height:${size}px" aria-hidden="true">
       <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${glow} 0%,rgba(0,0,0,0) 70%);filter:blur(6px)"></div>
-      <span class="relative leading-none" style="font-size:${fontSize}px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))">${emoji}</span>
-      ${hasFlowers ? `<span class="absolute" style="top:-2px;left:0;font-size:${size * 0.22}px" aria-hidden="true">🌸</span>` : ''}
-      ${hasStones ? `<span class="absolute" style="bottom:-2px;font-size:${size * 0.2}px" aria-hidden="true">🪨</span>` : ''}
-      ${mastered ? `<span class="absolute" style="top:-3px;right:-3px;font-size:${size * 0.28}px" aria-hidden="true">⭐</span>` : ''}
+      <span class="relative leading-none" style="font-size:${size * 0.84}px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))">${emoji}</span>
     </div>`;
 }
 
@@ -4564,30 +4157,18 @@ function exercisePersonalBestsHtml(exerciseId, unit) {
     </div>`;
 }
 
-// Pure — computes this workout's Plant Progress contribution (participation
-// only: completed working sets/exercises/workout — never rep improvement,
-// "ready to increase," or a weight unlock, which are strength-performance
-// signals that belong to the Exercise Plant system, not the Companion),
-// plus the per-exercise legacy-ratchet updates (targetReps/weightUpFlag/
-// currentWeight — still powers the Exercise Library "Ready to increase"
-// badge and Home's Closest Progress widget) the caller should persist.
-// Reuses nextProgression()'s own weightUp/reps result for that ratchet
-// update; never re-derives the increase/hold call independently. Safe to
-// call twice (finish-summary preview + the real save) since it has no side
-// effects of its own — see finish-save-btn.
+// Pure — computes the per-exercise legacy-ratchet updates (targetReps/
+// weightUpFlag/currentWeight — still powers the Exercise Library "Ready to
+// increase" badge and Home's Closest Progress widget) the caller should
+// persist. Reuses nextProgression()'s own weightUp/reps result for that
+// ratchet update; never re-derives the increase/hold call independently.
+// Safe to call twice (finish-summary preview + the real save) since it has
+// no side effects of its own — see finish-save-btn.
 function computeWorkoutGrowth(sessionExercises) {
-  let participationGrowth = 0;
   const perExerciseUpdates = [];
-  let anyWorkingSetCompleted = false;
 
   for (const ex of sessionExercises) {
     if (ex.skipped) continue;
-    const completedWorkingSets = workingSetsFor(ex).filter(s => s.completed).length;
-    if (completedWorkingSets > 0) {
-      anyWorkingSetCompleted = true;
-      participationGrowth += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise;
-    }
-
     if (!ex.exerciseId || !ex.progressionEnabled) continue;
     const gateWorkingSets = workingSetsFor(ex);
     if (!gateWorkingSets.length || !gateWorkingSets.every(s => s.completed)) continue;
@@ -4604,10 +4185,8 @@ function computeWorkoutGrowth(sessionExercises) {
     const { reps: nextReps, weightUp } = nextProgression(targetReps, completedReps, minReps, maxReps);
     perExerciseUpdates.push({ exerciseId: ex.exerciseId, targetReps: nextReps, weightUp, weight: ex.weight });
   }
-  if (anyWorkingSetCompleted) participationGrowth += GROWTH_AWARD.completedWorkout;
 
-  participationGrowth = round1(participationGrowth);
-  return { participationGrowth, totalGrowthAwarded: participationGrowth, perExerciseUpdates };
+  return { perExerciseUpdates };
 }
 
 // ── Post-workout summary: total volume ──────────────────────────────────────
@@ -4797,7 +4376,7 @@ function computeSessionPlantProgress(sessionExercises) {
     const dp = calculateExerciseDoubleProgression(ex.exerciseId, pending);
     const leafCount = dp.events.filter(e => e.workoutSessionId === 'pending' && e.eventType === 'set_weight_increased').length;
     if (leafCount > 0) {
-      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+      const stageIdx = exercisePlantStageIdx(dp);
       exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
       totalLeaves += leafCount;
     }
@@ -4821,7 +4400,7 @@ function computeHistoricalSessionPlantProgress(sessionId, sessionExercises) {
     const dp = calculateExerciseDoubleProgression(ex.exerciseId);
     const leafCount = dp.events.filter(e => e.workoutSessionId === sessionId && e.eventType === 'set_weight_increased').length;
     if (leafCount > 0) {
-      const stageIdx = Math.min(dp.cycleIndex, GROWTH_TOTAL_STAGES - 1);
+      const stageIdx = exercisePlantStageIdx(dp);
       exerciseLeaves.push({ exerciseId: ex.exerciseId, name: ex.name, leafCount, stageIdx });
       totalLeaves += leafCount;
     }
@@ -4829,57 +4408,6 @@ function computeHistoricalSessionPlantProgress(sessionId, sessionExercises) {
   return { totalLeaves, exerciseLeaves };
 }
 
-// Reconstructs the Companion's growth-percent BEFORE and AFTER one specific
-// already-saved session, by replaying the same chronological accumulation
-// recalculatePlantGrowth() uses for the live total (kept in sync with it —
-// same GROWTH_AWARD values, same companion-journey scoping — but stopping
-// to read the running total right around the target session instead of only
-// returning the final number). Never reads today's live growthPoints; a past
-// workout's own growth contribution shouldn't change because of what
-// happened since. Returns null if the session falls outside the active
-// companion's journey (before its startedAt, or somehow after today) —
-// callers already treat growthDelta<=0 as "nothing to show," matching the
-// live finish screen's own companion-journey scoping limitation.
-function computeHistoricalGrowthDelta(targetDate, targetSessionId) {
-  const companionStartedAt = userProfile.companion?.startedAt || '';
-  const today = todayStr();
-  if (targetDate > today || targetDate < companionStartedAt) return { beforePoints: 0, afterPoints: 0 };
-
-  const allSessions = [];
-  Object.entries(sessions).forEach(([date, daySessions]) => {
-    if (date > today || date < companionStartedAt) return;
-    Object.entries(daySessions || {}).forEach(([id, s]) => { if (s) allSessions.push({ date, id, session: s }); });
-  });
-  allSessions.sort((a, b) => a.date === b.date
-    ? (a.session.completedAt || 0) - (b.session.completedAt || 0)
-    : a.date.localeCompare(b.date));
-
-  let running = 0, beforePoints = 0, afterPoints = 0, found = false;
-  for (const { date, id, session: s } of allSessions) {
-    let progressValue = 0;
-    if (s.sessionType === 'recovery') progressValue = RECOVERY_DAY_GROWTH;
-    else if (s.sessionType === 'other') progressValue = OTHER_ACTIVITY_GROWTH;
-    else {
-      let anyWorkingSetCompleted = false;
-      for (const ex of (s.exercises || [])) {
-        if (ex.skipped) continue;
-        const completedWorkingSets = workingSetsFor(ex).filter(st => st.completed).length;
-        if (completedWorkingSets > 0) { anyWorkingSetCompleted = true; progressValue += completedWorkingSets * GROWTH_AWARD.completedWorkingSet + GROWTH_AWARD.completedExercise; }
-      }
-      if (anyWorkingSetCompleted) progressValue += GROWTH_AWARD.completedWorkout;
-    }
-    progressValue = round1(progressValue);
-    if (date === targetDate && id === targetSessionId) {
-      beforePoints = running;
-      afterPoints = round1(running + progressValue);
-      found = true;
-      break;
-    }
-    running = round1(running + progressValue);
-  }
-  if (!found) { beforePoints = running; afterPoints = running; }
-  return { beforePoints, afterPoints };
-}
 
 // ── OpenAI ────────────────────────────────────────────────────────────────
 async function callAI(prompt, imageBase64 = null) {
@@ -4979,18 +4507,25 @@ function subscribeData() {
   onValue(rActivities, snap => { customActivities = snap.val() || {}; }, e => console.error(e));
   dataRefs.push(rActivities);
 
-  // Garden collection — permanent record of every Companion Plant that has
-  // fully bloomed. Never written to by anything except completeCompanionBloom();
-  // see that function for the single write path.
-  const rCollected = ref(db, `users/${uid()}/collectedCompanions`);
-  onValue(rCollected, snap => { collectedCompanions = snap.val() || {}; renderProfile(); }, e => console.error(e));
-  dataRefs.push(rCollected);
+  // Garden collection — one permanent record per exercise plant that has
+  // ever fully bloomed, forever. Never written to by anything except
+  // syncExercisePlantsAfterChange(); see that function for the single
+  // write path. exercisePlantGenerations tracks, per exercise, how many of
+  // those lifecycles have already been archived — the exercise's currently
+  // ACTIVE (unarchived) plant is always generation === that stored count.
+  const rGardenCollection = ref(db, `users/${uid()}/gardenCollection`);
+  onValue(rGardenCollection, snap => { gardenCollection = snap.val() || {}; renderProfile(); renderDashboard(); }, e => console.error(e));
+  dataRefs.push(rGardenCollection);
+
+  const rExercisePlantGenerations = ref(db, `users/${uid()}/exercisePlantGenerations`);
+  onValue(rExercisePlantGenerations, snap => { exercisePlantGenerations = snap.val() || {}; renderProfile(); renderDashboard(); }, e => console.error(e));
+  dataRefs.push(rExercisePlantGenerations);
 
   // Targets — an entirely optional habit-tracking layer, kept in its own
   // top-level collections (never inside exercises/sessions) so it can never
-  // influence Double Progression or Exercise Plant state by construction —
-  // see calculateTargetGrowth()'s own note on this. Both listeners re-render
-  // Home (the compact preview/invitation) and the Targets tab.
+  // influence Double Progression or Exercise Plant state by construction.
+  // Both listeners re-render Home (the compact preview/invitation) and the
+  // Targets tab.
   const rTargets = ref(db, `users/${uid()}/targets`);
   onValue(rTargets, snap => { targets = snap.val() || {}; renderTargetsTab(); renderDashboard(); refreshTargetDetailIfOpen(); }, e => console.error(e));
   dataRefs.push(rTargets);
@@ -5075,7 +4610,7 @@ function closeAllOpenWindows() {
   closeEditSessionModal();
   closeCalendarAddModal(); // its own class-based open/close state, not a plain hide()
   [
-    'choose-companion-modal', 'resume-session-modal',
+    'resume-session-modal',
     'create-target-modal', 'log-target-modal', 'target-actions-modal', 'exg-actions-modal',
     'edit-target-modal', 'target-full-history-modal',
     'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal',
@@ -5247,10 +4782,6 @@ function renderPlantHero(sessionDates, hasHistory) {
   subtitleEl.textContent = subtitle;
   subtitleEl.style.display = subtitle ? '' : 'none';
 
-  const levelBadge = document.getElementById('plant-level-label');
-  levelBadge.style.color = theme.primary;
-  levelBadge.style.background = theme.soft;
-
   if (!hasHistory) {
     emoji.className = 'relative text-[10rem] leading-none p-hero-float';
     document.getElementById('hero-empty-line1').textContent = `${p.name} is ready to grow.`;
@@ -5269,42 +4800,6 @@ function renderPlantHero(sessionDates, hasHistory) {
   }
   emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
-
-  const growth = currentGrowthState();
-  levelBadge.textContent = growth.isFinalStage ? `${growth.stageName} 🌸` : `Stage ${growth.currentStage} · ${growth.stageName}`;
-
-  // Once bloomed, there's no "next stage" to show a Care bar working toward —
-  // swap the in-progress bar for the "choose next companion" invitation
-  // instead. The bloomed Companion stays the Home hero (name/emoji/status
-  // above are unaffected) until the user actually picks a new one.
-  const bloomed = userProfile.companion && userProfile.companion.status === 'bloomed';
-  document.getElementById('dash-hero-bloomed').style.display = bloomed ? '' : 'none';
-  document.getElementById('dash-hero-progress').style.display = bloomed ? 'none' : '';
-  if (bloomed) return;
-
-  document.getElementById('growth-pct-label').textContent = growth.isFinalStage ? 'Fully bloomed' : `${growth.overallProgressPercent}% grown`;
-  const bar = document.getElementById('growth-bar-fill');
-  bar.style.width = `${growth.overallProgressPercent}%`;
-  bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
-  bar.parentElement.setAttribute('aria-valuenow', String(growth.overallProgressPercent));
-  bar.parentElement.setAttribute('aria-valuemin', '0');
-  bar.parentElement.setAttribute('aria-valuemax', '100');
-  if (growth.isFinalStage) {
-    // Fully bloomed plants stay in their final form permanently (section 16)
-    // — extra growth keeps counting toward the pre-existing "leaf" prestige
-    // track instead of a second, disconnected stage system. (This branch is
-    // unreachable once completeCompanionBloom() has run, since bloomed is
-    // true by then and we've already returned above — it stays here as a
-    // one-render safety net for the instant between reaching 100% and that
-    // write confirming.)
-    const inLevel = growth.bonusGrowthPoints % GROWTH_PER_LEVEL;
-    const prestigeLevel = Math.floor(growth.bonusGrowthPoints / GROWTH_PER_LEVEL) + 1;
-    document.getElementById('growth-next-label').textContent =
-      `Prestige leaf ${prestigeLevel} · ${round1(GROWTH_PER_LEVEL - inLevel)} until the next one 🍃`;
-  } else {
-    document.getElementById('growth-next-label').textContent =
-      `${growth.remainingToNextStage}% until ${growth.nextStageName}`;
-  }
 }
 
 function renderDashStats(sessionDates, hasHistory) {
@@ -5336,14 +4831,10 @@ function lastWorkoutSessionDate() {
   return dates.length ? dates.sort().reverse()[0] : null;
 }
 
-// Tracks the stage shown on the previous call so the mission-card icon only
-// plays its stage-change pop on an actual transition, never on a routine
-// re-render at the same stage (which would falsely "celebrate" every refresh).
-let lastRenderedMissionStage = null;
 // Today's Mission, when the calendar has something planned for today —
-// same data currentGrowthState()-style single source as the Calendar day
-// sheet (firstIncompletePlannedEntry()), just rendered with data-action
-// buttons instead of ids since this card uses event delegation.
+// same single source as the Calendar day sheet (firstIncompletePlannedEntry()),
+// just rendered with data-action buttons instead of ids since this card
+// uses event delegation.
 // Shared by the Home mission card and the Calendar day sheet — a planned
 // Quick Workout links to the same saved exercise library either way, so
 // both surfaces describe it the same way instead of two separate strings.
@@ -5429,37 +4920,29 @@ function renderTodayMission() {
   renderMissionStageIcon();
 }
 
-// The one plant-evolution icon in the app (mission card). Reads the exact
-// same getPlantGrowthState() result as the hero progress bar — see
-// currentGrowthState() — so the bar and the icon can never disagree.
+// The mission card's Companion badge — a plain, static ring around the
+// user's chosen companion's emoji. Not a progress indicator: the Companion
+// no longer grows, so this always shows a full ring and the same emoji.
 function renderMissionStageIcon() {
-  const growth = currentGrowthState();
-  const theme = PLANT_THEME[userProfile.plant] || DEFAULT_THEME;
+  const plantKey = userProfile.plant || 'sprout';
+  const p = PLANTS[plantKey] || { emoji: '🌱' };
+  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
   const CIRCUMFERENCE = 2 * Math.PI * 28;
 
   const ring = document.getElementById('mission-stage-ring');
   ring.setAttribute('stroke', theme.primary);
   ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
-  ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - growth.currentStageProgressPercent / 100));
+  ring.style.strokeDashoffset = '0';
   document.getElementById('mission-stage-glow').style.background = `radial-gradient(circle, ${theme.glow}, transparent 70%)`;
   startMissionSparkle();
 
   const emojiEl = document.getElementById('mission-stage-emoji');
-  emojiEl.textContent = growth.selectedAsset;
-  emojiEl.style.opacity = growth.selectedAssetOpacity;
-  emojiEl.style.transform = `scale(${growth.selectedAssetScale})`;
+  emojiEl.textContent = p.emoji;
+  emojiEl.style.opacity = '';
+  emojiEl.style.transform = '';
 
-  document.getElementById('mission-stage-icon').setAttribute('aria-label',
-    `Plant growth stage ${growth.currentStage} of ${growth.totalStages}: ${growth.stageName}`);
-  document.getElementById('mission-stage-name').textContent = growth.stageName;
-
-  const wrap = document.getElementById('mission-stage-emoji-wrap');
-  wrap.classList.remove('stage-pop');
-  if (lastRenderedMissionStage !== null && lastRenderedMissionStage !== growth.currentStage) {
-    // Re-adding the class on the next frame restarts the animation reliably.
-    requestAnimationFrame(() => wrap.classList.add('stage-pop'));
-  }
-  lastRenderedMissionStage = growth.currentStage;
+  document.getElementById('mission-stage-icon').setAttribute('aria-label', 'Companion');
+  document.getElementById('mission-stage-name').textContent = 'Companion';
 }
 
 // Occasional sparkle on the mission-card growth icon — deliberately much
@@ -5537,57 +5020,54 @@ function renderClosestProgress() {
   card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openExerciseDetail(best.exerciseId); } });
 }
 
+// The Home page's Garden preview — a taste of the user's actual exercise
+// plants, not the Companion (which no longer progresses). Two rows: the
+// active plants currently growing, and the most recently archived blooms.
 function renderGardenPreview() {
   const wrap = document.getElementById('dash-garden-preview');
-  const current = userProfile.plant;
-  wrap.innerHTML = Object.entries(PLANTS).map(([key, p]) => {
-    const isCurrent = key === current;
-    const theme = PLANT_THEME[key] || DEFAULT_THEME;
-    const potStyle = isCurrent
-      ? `background-color:${theme.soft};box-shadow:0 0 0 2px ${theme.primary}55`
-      : `background-color:${theme.soft};opacity:.35`;
-    const scale = isCurrent ? 'scale-110' : '';
-    return `<div class="flex flex-col items-center gap-1.5 ${scale}">
-      <div class="relative w-14 h-14 flex items-end justify-center" role="img" aria-label="${esc(p.name)}${isCurrent ? '' : ', available when you choose your next companion'}">
-        <div class="pot-base w-9 h-5" style="${potStyle}"></div>
-        <span class="absolute bottom-3 text-2xl ${isCurrent ? 'p-sway' : 'opacity-40 grayscale'}" aria-hidden="true">${isCurrent ? p.emoji : '🌱'}</span>
-        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5" aria-hidden="true">eco</span>' : ''}
-      </div>
-      <span class="text-[10px] ${isCurrent ? 'font-semibold' : 'text-slate-400'}" ${isCurrent ? `style="color:${theme.primary}"` : ''} aria-hidden="true">${isCurrent ? p.name : '???'}</span>
-    </div>`;
-  }).join('');
-}
 
-// Not a random/gacha pick — always the same five defined species, always
-// fully visible, exactly like onboarding's own choice set. Selecting one
-// calls selectNextCompanion(), which is the only thing that ever writes a
-// new active Companion.
-function openChooseCompanionModal() {
-  const active = getActiveCompanion();
-  const bloomedName = active ? (PLANTS[active.speciesId] || {}).name : '';
-  document.getElementById('choose-companion-subtitle').textContent = bloomedName
-    ? `${bloomedName} has fully bloomed and now lives in your Garden forever.`
-    : 'Pick the companion that will grow with you next.';
-  document.getElementById('choose-companion-list').innerHTML = Object.entries(PLANTS).map(([key, p]) => {
-    const theme = PLANT_THEME[key] || DEFAULT_THEME;
-    return `
-      <button type="button" class="choose-companion-opt w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 text-left transition-all" data-species="${key}">
-        <span class="w-11 h-11 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style="background:${theme.soft}" aria-hidden="true">${p.emoji}</span>
-        <div class="min-w-0">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(p.name)}</p>
-          <p class="text-xs text-slate-400">${esc(p.desc)}</p>
-        </div>
-      </button>`;
-  }).join('');
-  document.querySelectorAll('.choose-companion-opt').forEach(btn => btn.addEventListener('click', async () => {
-    rsHideModal('choose-companion-modal');
-    await selectNextCompanion(btn.dataset.species);
-    showToast('A new chapter is ready to grow');
-  }));
-  show('choose-companion-modal');
+  const growing = Object.entries(exercises)
+    .filter(([, exDef]) => !exDef.archived && exDef.progressionEnabled !== false)
+    .map(([exerciseId, exDef]) => {
+      const dp = calculateExerciseDoubleProgression(exerciseId);
+      if (!dp.configured) return null;
+      return { name: exDef.name, stageIdx: exercisePlantStageIdx(dp), cycleIndex: dp.cycleIndex };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.cycleIndex - a.cycleIndex)
+    .slice(0, 3);
+
+  const collected = Object.values(gardenCollection)
+    .sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation))
+    .slice(0, 3);
+
+  const growingHtml = growing.length
+    ? growing.map(g => `
+      <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:64px">
+        ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 40 })}
+        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate w-full text-center">${esc(g.name)}</span>
+        <span class="text-[9px] text-slate-400">${esc(EXERCISE_PLANT_STAGE_NAMES[g.stageIdx])}</span>
+      </div>`).join('')
+    : `<p class="text-xs text-slate-400 text-center py-2">Set up progression on an exercise to start your first plant.</p>`;
+
+  const collectedHtml = collected.length
+    ? collected.map(c => `
+      <div class="flex flex-col items-center gap-1 flex-shrink-0" style="width:64px">
+        <span class="text-3xl leading-none" aria-hidden="true">${c.speciesEmoji}</span>
+        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate w-full text-center">${esc(c.speciesName)}</span>
+      </div>`).join('')
+    : `<p class="text-xs text-slate-400 text-center py-2">No blooms collected yet — keep training to earn your first.</p>`;
+
+  wrap.innerHTML = `
+    <div class="space-y-1.5">
+      <p class="text-[10px] font-bold tracking-wider text-slate-400">CURRENTLY GROWING</p>
+      <div class="flex items-center gap-3 overflow-x-auto">${growingHtml}</div>
+    </div>
+    <div class="space-y-1.5">
+      <p class="text-[10px] font-bold tracking-wider text-slate-400">LATEST COLLECTED</p>
+      <div class="flex items-center gap-3 overflow-x-auto">${collectedHtml}</div>
+    </div>`;
 }
-document.getElementById('choose-companion-close').addEventListener('click', () => rsHideModal('choose-companion-modal'));
-document.getElementById('dash-choose-companion-btn').addEventListener('click', openChooseCompanionModal);
 
 function renderRecentWin() {
   const iconEl = document.getElementById('dash-win-icon');
@@ -5602,74 +5082,8 @@ function renderEncouragement() {
   document.getElementById('dash-encouragement').textContent = ENCOURAGEMENT[dayIndex % ENCOURAGEMENT.length];
 }
 
-// ── Companion lifecycle record (migration) ──────────────────────────────────
-// Before this feature shipped, "the plant" was just a bare species key
-// (userProfile.plant) with no journey metadata — no start date, no bloom
-// tracking, no way to tell one companion's era from the next. This
-// synthesizes the missing wrapper exactly once, from the user's existing
-// data: species comes from userProfile.plant (unchanged, still the
-// authoritative "what does the active companion look like" field — nothing
-// about it changes here), startedAt from the earliest session on record (so
-// existing accumulated Plant Progress is preserved rather than reset — see
-// recalculatePlantGrowth()'s startedAt-scoped replay). Runs once per page
-// load, same pattern as ensureGrowthConsistency() below. After migration,
-// only selectNextCompanion()/completeCompanionBloom() ever write this.
-let companionRecordChecked = false;
-function ensureCompanionRecord() {
-  if (companionRecordChecked) return;
-  if (userProfile.companion && userProfile.companion.id) { companionRecordChecked = true; return; }
-  // Same "0 could mean not-loaded-yet" ambiguity as ensureGrowthConsistency() —
-  // wait for a real signal before locking in a migrated record.
-  if (!totalLoggedSessions() && userProfile.growthPoints == null) return;
-  companionRecordChecked = true;
-
-  const allDates = Object.keys(sessions).sort();
-  const companion = {
-    id: push(ref(db, `users/${uid()}/companion`)).key,
-    speciesId: userProfile.plant || 'sprout',
-    startedAt: allDates[0] || todayStr(),
-    status: 'growing',
-    bloomedAt: null
-  };
-  userProfile.companion = companion; // optimistic; onValue confirms shortly after
-  set(ref(db, `users/${uid()}/companion`), companion)
-    .catch(e => console.error('Failed to migrate Companion record:', e));
-}
-
-// Repairs two situations with the same fix: a user who has never had
-// growthPoints stored (old accounts from before this existed), and a user
-// whose stored growthPoints no longer matches what recalculatePlantGrowth()
-// derives from their current history (stale from the old add/subtract
-// behavior, or from any past bug — including this Plant Progress/Exercise
-// Plant separation, which changes what counts). Both are "the stored value
-// disagrees with the canonical records" — recalculating and overwriting is
-// the same repair either way. Runs once per page load; does not touch
-// personality-plant selection or collectible-plant data, only
-// growthPoints/plantProgressEvents.
-let growthConsistencyChecked = false;
-function ensureGrowthConsistency() {
-  if (growthConsistencyChecked) return;
-  const totalSessions = totalLoggedSessions();
-  const totalTargetLogs = Object.keys(targetLogs).length;
-  // 0 is ambiguous — a genuinely brand-new user, or sessions/targetLogs just
-  // haven't loaded yet (profile and both arrive via independent, unordered
-  // onValue listeners). If growthPoints is already unset, treat "nothing
-  // loaded yet" as "nothing to repair yet" and recheck on the next render
-  // rather than locking in growthPoints = 0 prematurely.
-  if (!totalSessions && !totalTargetLogs && userProfile.growthPoints == null) return;
-  growthConsistencyChecked = true;
-  const { totalGrowthPoints: sessionPoints } = recalculatePlantGrowth();
-  const { totalGrowthPoints: targetPoints } = calculateTargetGrowth();
-  const totalGrowthPoints = round1(sessionPoints + targetPoints);
-  if (Math.abs((userProfile.growthPoints ?? -1) - totalGrowthPoints) < 0.05) return; // already consistent
-  userProfile.growthPoints = totalGrowthPoints;
-  set(ref(db, `users/${uid()}/growthPoints`), totalGrowthPoints)
-    .catch(e => console.error('Failed to repair growth points:', e));
-}
-
 function renderDashboard() {
-  ensureCompanionRecord();
-  ensureGrowthConsistency();
+  ensureExercisePlantsSynced();
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
   renderPlantHero(sessionDates, hasHistory);
@@ -5738,25 +5152,17 @@ function renderProfile() {
 }
 
 // ── Garden: Companion card ──────────────────────────────────────────────────
-// Same currentGrowthState() the Home hero and mission-card icon already
-// read — one growth number, one function, never a second source of truth.
-// Post-bloom (Thriving/Flourishing/Legacy) is entirely new surface area
-// getPlantGrowthState() now provides (see its own comment) — Home is
-// intentionally left untouched and still only reads the pre-existing fields.
-// Companion artwork reuses the exact same asset Home's own hero already
-// shows (getPlantGrowthState()'s selectedAsset/selectedAssetOpacity — the
-// one plant-emoji lookup this app has, GROWTH_STAGE_FALLBACK_EMOJI pre-
-// reveal then the real species emoji from stage 4 on) rather than a second
-// illustration system, per "reuse existing components... wherever possible."
+// The Companion is the permanent mascot, not a progression surface — just
+// its art, name, and a streak/recency-based mood message (getPlantHealth()),
+// the same status text the Home hero shows.
 function renderGardenCompanion() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
-  const growth = currentGrowthState();
 
   const artEl = document.getElementById('garden-companion-art');
-  artEl.textContent = growth.selectedAsset;
-  artEl.style.opacity = growth.selectedAssetOpacity;
-  artEl.className = `text-6xl flex-shrink-0 ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
+  artEl.textContent = plant.emoji;
+  artEl.style.opacity = '';
+  artEl.className = 'text-6xl flex-shrink-0 p-sway';
   document.getElementById('garden-companion-name').textContent = plant.name;
 
   const sessionDates = [];
@@ -5766,62 +5172,23 @@ function renderGardenCompanion() {
   const health = getPlantHealth(sessionDates);
   const [, hl2] = HEALTH_LABELS[health] || ['', ''];
   document.getElementById('garden-companion-status').textContent = hl2;
-
-  const bar = document.getElementById('garden-companion-bar');
-  const milestoneEl = document.getElementById('garden-companion-milestone');
-  // Never the "Stage 5 of 5" + "X% to full bloom" contradiction the task
-  // calls out: once fully bloomed the next milestone is always a real
-  // post-bloom stage name, and once at Legacy (no further named stage)
-  // this says so instead of dangling a fake percentage.
-  if (growth.isFinalStage && growth.isLegacy) {
-    milestoneEl.textContent = 'Growing eternally';
-    bar.style.width = `${growth.legacyCyclePercent}%`;
-  } else if (growth.isFinalStage) {
-    milestoneEl.textContent = `${growth.postBloomRemainingToNext}% until next milestone`;
-    bar.style.width = `${growth.postBloomProgressPercent}%`;
-  } else {
-    milestoneEl.textContent = `${growth.remainingToNextStage}% until next milestone`;
-    bar.style.width = `${growth.currentStageProgressPercent}%`;
-  }
-  document.getElementById('garden-companion-stage-label').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
 }
 
 document.getElementById('garden-companion-card').addEventListener('click', openGardenCompanionDetail);
 
-// A small detail sheet, not a settings page or a second Home — see the
-// task's "Tap companion → companion detail page or sheet." Reuses the same
-// companion artwork/growth numbers the card above already computed; no
-// second growth calculation.
+// A small detail sheet, not a settings page or a second Home — just the
+// Companion's own art, name, and personality description. The Companion is
+// permanent and doesn't progress, so there's no stage/timeline to show here.
 function openGardenCompanionDetail() {
   const plantId = userProfile.plant || 'sprout';
   const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
-  const growth = currentGrowthState();
 
   const artEl = document.getElementById('gcd-art');
-  artEl.textContent = growth.selectedAsset;
-  artEl.style.opacity = growth.selectedAssetOpacity;
-  artEl.className = `text-6xl flex-shrink-0 ${growth.isFinalStage ? 'p-bloom' : 'p-sway'}`;
+  artEl.textContent = plant.emoji;
+  artEl.style.opacity = '';
+  artEl.className = 'text-6xl flex-shrink-0 p-sway';
   document.getElementById('gcd-name').textContent = plant.name;
   document.getElementById('gcd-desc').textContent = plant.desc || '';
-  document.getElementById('gcd-stage').textContent = `Stage ${growth.displayStageNumber} · ${growth.displayStageName}`;
-
-  // Every named stage this companion has already passed through, plus the
-  // ones still ahead — a real timeline, never a hardcoded list of names
-  // (GROWTH_STAGE_NAMES/POST_BLOOM_STAGE_NAMES are the same arrays every
-  // other stage computation already reads).
-  const allStageNames = [...GROWTH_STAGE_NAMES, ...POST_BLOOM_STAGE_NAMES];
-  const reachedCount = growth.displayStageNumber;
-  document.getElementById('gcd-timeline').innerHTML = allStageNames.map((name, i) => {
-    const stageNum = i + 1;
-    const reached = stageNum <= reachedCount;
-    const isCurrent = stageNum === reachedCount;
-    return `
-      <div class="flex items-center gap-2.5 py-1.5">
-        <span class="ms text-base flex-shrink-0 ${reached ? 'text-brand-500' : 'text-slate-300 dark:text-slate-600'}" aria-hidden="true">${reached ? 'check_circle' : 'radio_button_unchecked'}</span>
-        <span class="text-sm ${isCurrent ? 'font-bold text-slate-800 dark:text-white' : reached ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}">${esc(name)}</span>
-        ${isCurrent ? '<span class="text-[10px] font-bold text-brand-500 ml-auto flex-shrink-0">Current</span>' : ''}
-      </div>`;
-  }).join('');
 
   document.getElementById('garden-companion-modal').style.display = '';
 }
@@ -5904,21 +5271,22 @@ function renderGardenFilters() {
 
 // A plant card is deliberately simple (task: "Cards should be minimal") —
 // artwork, exercise name, its body-part tag (plain text, never an
-// equipment icon or muscle diagram), current stage/Mastered, and the same
-// leaf-row component the Exercise Summary/finish screens already use,
-// never a second leaf-rendering implementation. Species stays hidden
-// pre-bloom — see exercisePlantVisual()'s own note.
-function gardenPlantCardHtml({ exerciseId, ex, dpResult, mastered, cosmetics, stageIdx }) {
+// equipment icon or muscle diagram), current stage, lifetime bloom count,
+// and the same leaf-row component the Exercise Summary/finish screens
+// already use, never a second leaf-rendering implementation. Species stays
+// hidden pre-bloom — see exercisePlantVisual()'s own note.
+function gardenPlantCardHtml({ exerciseId, ex, dpResult, stageIdx, generation }) {
   const positions = DoubleProgressionStrategy.calculateSetResults(exerciseId);
   const leavesHtml = renderDoubleProgressionLeaves(positions, ex.unit, 'text-sm');
-  const stageLabel = mastered ? `${exercisePlantSpeciesFor(exerciseId).name} · Mastered` : EXERCISE_PLANT_STAGE_NAMES[stageIdx];
-  const accent = exgAccentFor(mastered ? 'bloomed' : dpResult.leavesMatured > 0 ? 'growing' : 'sprout');
+  const stageLabel = EXERCISE_PLANT_STAGE_NAMES[stageIdx];
+  const accent = exgAccentFor(dpResult.leavesMatured > 0 ? 'growing' : 'sprout');
   return `
     <button type="button" class="garden-plant-card card p-3 text-center flex flex-col items-center gap-1" data-exercise-id="${exerciseId}">
-      <div class="flex-shrink-0">${exercisePlantVisual({ exerciseId, stageIdx, mastered, cosmetics, accent, size: 60 })}</div>
+      <div class="flex-shrink-0">${exercisePlantVisual({ stageIdx, accent, size: 60 })}</div>
       <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate w-full">${esc(ex.name)}</p>
       ${MG_LABEL[ex.muscleGroup] ? `<p class="text-[11px] text-slate-400 -mt-0.5">${esc(MG_LABEL[ex.muscleGroup])}</p>` : ''}
-      <p class="text-[11px] font-semibold ${mastered ? 'text-amber-500' : 'text-brand-500'}">${esc(stageLabel)}</p>
+      <p class="text-[11px] font-semibold text-brand-500">${esc(stageLabel)}</p>
+      ${generation > 0 ? `<p class="text-[10px] text-slate-400">${generation} bloom${generation === 1 ? '' : 's'} collected</p>` : ''}
       <div class="flex items-center justify-center gap-0.5 flex-wrap">${leavesHtml}</div>
     </button>`;
 }
@@ -5933,7 +5301,7 @@ function gardenLockedCardHtml({ name, tag, reason, isCreate }) {
   return `
     <button type="button" class="garden-locked-card card p-3 text-center flex flex-col items-center gap-1" data-reason="${esc(reason)}" data-create="${isCreate ? '1' : '0'}">
       <div class="flex-shrink-0 relative" style="filter:grayscale(1) brightness(.6)">
-        ${exercisePlantVisual({ exerciseId: 'locked', stageIdx: 0, accent: EXG_ACCENT.brand, size: 60 })}
+        ${exercisePlantVisual({ stageIdx: 0, accent: EXG_ACCENT.brand, size: 60 })}
         <span class="ms text-sm text-slate-400 absolute top-0 right-0" aria-hidden="true">lock</span>
       </div>
       <p class="font-display font-bold text-sm text-slate-500 dark:text-slate-400 truncate w-full">${isCreate ? 'Unknown Plant' : esc(name)}</p>
@@ -5954,8 +5322,7 @@ function renderGardenGrid() {
   const grid = document.getElementById('garden-grid');
   grid.innerHTML = active.map(p => gardenPlantCardHtml({
     exerciseId: p.exerciseId, ex: p.ex, dpResult: p.dpResult,
-    mastered: isExercisePlantMastered(p.dpResult), cosmetics: exercisePlantCosmetics(p.dpResult),
-    stageIdx: exercisePlantStageIdx(p.dpResult)
+    stageIdx: exercisePlantStageIdx(p.dpResult), generation: exercisePlantGeneration(p.dpResult)
   })).join('');
   grid.querySelectorAll('.garden-plant-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
 
@@ -6745,7 +6112,7 @@ document.getElementById('lt-save-btn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     const wasCompletedBefore = currentTargetProgress(target, getTargetLogsFor(ltTargetId)).isCompleted;
-    const { newGrowth, previousGrowth } = await logTargetProgress(ltTargetId, amount);
+    await logTargetProgress(ltTargetId, amount);
     rsHideModal('log-target-modal');
     const nowCompleted = currentTargetProgress(targets[ltTargetId] || target, getTargetLogsFor(ltTargetId)).isCompleted;
     if (nowCompleted && !wasCompletedBefore) {
@@ -6753,7 +6120,6 @@ document.getElementById('lt-save-btn').addEventListener('click', async () => {
     } else {
       showToast('Logged');
     }
-    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
   } catch (e) {
     console.error('Failed to log target progress:', e);
     errEl.textContent = 'Could not save this log. Please try again.';
@@ -6860,7 +6226,6 @@ document.getElementById('et-save-btn').addEventListener('click', async () => {
     // bug — see calculateTargetPeriodProgress().
     await updateTarget(taTargetId, { name, targetAmount: amount, frequency: freqBtn ? freqBtn.dataset.freq : targets[taTargetId].frequency });
     rsHideModal('edit-target-modal');
-    await recalculateAndPersistPlantGrowth();
     showToast('Target updated');
   } catch (e) {
     console.error('Failed to update target:', e);
@@ -7067,19 +6432,19 @@ function exgAccentFor(sectionKey) {
 }
 
 // Classifies one exercise using the real Double Progression engine — every
-// exercise falls into EXACTLY ONE of the four page sections, in priority
-// order: Bloomed (isFinal) > Ready to progress (a non-matured leaf hit
-// READY_TO_INCREASE) > Growing (has progressed at least one working set
-// this cycle) > Sprout (exists, has planned working sets, has not yet
-// progressed any of them, and meets none of the above — never excluded for
-// having 0 progress). `bucket` is the separate coarse macro-stage grouping
-// the summary card counts (Sprout/Growing/Bloomed, straight from
-// GROWTH_STAGE_NAMES/cycleIndex — the same stage the Exercise Progress
-// Detail hero shows); it intentionally does not have to match `section`,
-// since a "Ready" exercise can still be macro-stage Sprout. Disabled
-// (progressionEnabled === false) exercises skip the DP engine entirely,
-// same as the Exercise Progress Detail page's neutral treatment, and land
-// in Sprout since they have never progressed anything.
+// exercise falls into EXACTLY ONE of the three page sections, in priority
+// order: Ready to progress (a non-matured leaf hit READY_TO_INCREASE) >
+// Growing (has progressed at least one working set this cycle) > Sprout
+// (exists, has planned working sets, has not yet progressed any of them,
+// and meets none of the above — never excluded for having 0 progress).
+// There is no terminal "Bloomed" bucket here: each exercise's plant has an
+// endless lifecycle (see EXERCISE_PLANT_STAGE_NAMES/exercisePlantStageIdx) —
+// the moment it blooms it's archived into the Garden collection and this
+// exercise's active plant is already back at Seed, so `stageIdx` always
+// wraps 0..EXERCISE_PLANT_CYCLE_LENGTH-1 and never sits at a "final" value.
+// Disabled (progressionEnabled === false) exercises skip the DP engine
+// entirely, same as the Exercise Progress Detail page's neutral treatment,
+// and land in Sprout since they have never progressed anything.
 function classifyExerciseForGarden(id, ex) {
   const disabled = ex.progressionEnabled === false;
   const dpResult = disabled ? null : calculateExerciseDoubleProgression(id);
@@ -7087,12 +6452,12 @@ function classifyExerciseForGarden(id, ex) {
   const workingSetCount = dpResult ? dpResult.workingSetCount : Math.max(1, ex.defaultSets || (ex.targetReps || []).length || 3);
   const leavesMatured = dpResult ? dpResult.leavesMatured : 0;
   const cycleIndex = dpResult ? dpResult.cycleIndex : 0;
-  const stageIdx = Math.min(cycleIndex, GROWTH_TOTAL_STAGES - 1);
-  const isFinal = cycleIndex >= GROWTH_TOTAL_STAGES - 1;
+  const stageIdx = dpResult ? exercisePlantStageIdx(dpResult) : 0;
+  const generation = dpResult ? exercisePlantGeneration(dpResult) : 0;
   const hasReadyLeaf = dpPositions.some(p => !p.matured && p.status === DP_STATUS.READY_TO_INCREASE);
-  const bucket = stageIdx === 0 ? 'sprout' : isFinal ? 'bloomed' : 'growing';
-  const section = isFinal ? 'bloomed' : hasReadyLeaf ? 'ready' : leavesMatured > 0 ? 'growing' : 'sprout';
-  return { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, bucket, section, cycleIndex, configured: !disabled };
+  const bucket = stageIdx === 0 ? 'sprout' : 'growing';
+  const section = hasReadyLeaf ? 'ready' : leavesMatured > 0 ? 'growing' : 'sprout';
+  return { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, generation, hasReadyLeaf, bucket, section, cycleIndex, configured: !disabled };
 }
 
 // "Last used {today|yesterday|N days ago|N week(s) ago}" / "Not used yet" —
@@ -7232,7 +6597,7 @@ function toggleExgGroupSection(key) {
 // tag. Edit stays a direct action; Delete moves behind the overflow menu
 // (see openExerciseActionsSheet()).
 function renderExgCard(entry) {
-  const { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, isFinal, hasReadyLeaf, section } = entry;
+  const { id, ex, disabled, dpPositions, workingSetCount, leavesMatured, stageIdx, generation, hasReadyLeaf, section } = entry;
   // NB: EXG_ACCENT is keyed by color name (brand/blue/purple), not by
   // section key — always resolve through exgAccentFor(), never index
   // EXG_ACCENT directly with a section string here.
@@ -7244,26 +6609,24 @@ function renderExgCard(entry) {
   const tag = exerciseTagLabel(id, ex);
   const lastUsed = exgLastUsedLabel(id);
   const readyPill = !disabled && hasReadyLeaf ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full ${EXG_ACCENT.brand.soft} flex-shrink-0">Ready!</span>` : '';
-  const mastered = isExercisePlantMastered(entry);
-  // Species stays hidden until Bloom — the stage label is the generic
-  // EXERCISE_PLANT_STAGE_NAMES wording pre-bloom, and only the exercise's
-  // own revealed species name once mastered (task: "the artwork itself
-  // should communicate the stage... only when the exercise reaches the
-  // Bloom stage should the final plant species be revealed").
-  const stageLabel = mastered ? `${exercisePlantSpeciesFor(id).name} · Mastered` : EXERCISE_PLANT_STAGE_NAMES[stageIdx];
+  // Species stays hidden pre-bloom — the stage label is always the generic
+  // EXERCISE_PLANT_STAGE_NAMES wording. Each exercise's plant has an endless
+  // lifecycle now, so there's no terminal "Mastered" state; a lifetime bloom
+  // count (generation) is shown instead once it's earned at least one.
+  const stageLabel = EXERCISE_PLANT_STAGE_NAMES[stageIdx];
 
   const stageBlock = disabled
     ? `<p class="text-[11px] text-slate-400 mt-1">Double-progression suggestions are off for this exercise.</p>`
     : `<div class="flex items-center gap-1.5 flex-wrap mt-1">
-        <span class="text-xs font-bold ${mastered ? 'text-amber-500' : accent.text}">${esc(stageLabel)}</span>
+        <span class="text-xs font-bold ${accent.text}">${esc(stageLabel)}</span>
         <span class="flex items-center gap-0.5">${renderDoubleProgressionLeaves(dpPositions, unit, 'text-lg')}</span>
         ${readyPill}
       </div>
-      <p class="text-[11px] text-slate-400 mt-0.5">${leavesMatured} / ${workingSetCount} sets</p>`;
+      <p class="text-[11px] text-slate-400 mt-0.5">${leavesMatured} / ${workingSetCount} sets${generation > 0 ? ` · ${generation} bloom${generation === 1 ? '' : 's'} collected` : ''}</p>`;
 
   return `
     <div class="exg-card card p-3.5 flex items-start gap-3 w-full text-left hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer" data-id="${id}" role="button" tabindex="0" aria-label="View ${esc(ex.name)} progress">
-      ${exercisePlantVisual({ exerciseId: id, stageIdx: disabled ? null : stageIdx, mastered, cosmetics: exercisePlantCosmetics(entry), accent, size: 68 })}
+      ${exercisePlantVisual({ stageIdx: disabled ? null : stageIdx, accent, size: 68 })}
       <div class="min-w-0 flex-1">
         <p class="font-semibold text-sm text-slate-800 dark:text-white truncate">${esc(ex.name)}</p>
         <p class="text-xs text-slate-400 mt-0.5">${weightText} · ${repRangeText}</p>
@@ -7418,28 +6781,25 @@ function renderExerciseDetail(exerciseId) {
       : 'Add a maximum rep target to enable Double Progression.';
     heroHtml = `
       <div class="card p-4 text-center space-y-2">
-        <div class="flex justify-center">${exercisePlantVisual({ exerciseId, stageIdx: null, accent: exdAccent, size: 88 })}</div>
+        <div class="flex justify-center">${exercisePlantVisual({ stageIdx: null, accent: exdAccent, size: 88 })}</div>
         <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
       </div>`;
   } else {
-    const stageIdx = Math.min(dpResult.cycleIndex, GROWTH_TOTAL_STAGES - 1);
-    const isFinal = dpResult.cycleIndex >= GROWTH_TOTAL_STAGES - 1;
-    const mastered = isExercisePlantMastered(dpResult);
-    const cosmetics = exercisePlantCosmetics(dpResult);
-    const species = mastered ? exercisePlantSpeciesFor(exerciseId) : null;
-    const stageName = mastered ? `${species.name} · Mastered` : EXERCISE_PLANT_STAGE_NAMES[stageIdx];
+    const stageIdx = exercisePlantStageIdx(dpResult);
+    const generation = exercisePlantGeneration(dpResult);
+    const stageName = EXERCISE_PLANT_STAGE_NAMES[stageIdx];
     const pct = dpResult.workingSetCount ? Math.round((dpResult.leavesMatured / dpResult.workingSetCount) * 100) : 0;
     heroHtml = `
       <div class="card p-4 space-y-3">
         <div class="flex items-center gap-4">
-          ${exercisePlantVisual({ exerciseId, stageIdx, mastered, cosmetics, accent: exdAccent, size: 88 })}
+          ${exercisePlantVisual({ stageIdx, accent: exdAccent, size: 88 })}
           <div class="min-w-0 flex-1">
             <p class="text-xs text-slate-400">Current stage</p>
             <div class="flex items-center gap-2 flex-wrap">
-              <p class="font-display font-bold text-xl ${mastered ? 'text-amber-500' : 'text-slate-800 dark:text-white'}">${esc(stageName)}</p>
-              ${!mastered ? `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${GROWTH_TOTAL_STAGES}</span>` : ''}
+              <p class="font-display font-bold text-xl text-slate-800 dark:text-white">${esc(stageName)}</p>
+              <span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${EXERCISE_PLANT_CYCLE_LENGTH}</span>
             </div>
-            ${cosmetics.length ? `<p class="text-[11px] text-slate-400 mt-0.5">${cosmetics.join(' · ')}</p>` : ''}
+            ${generation > 0 ? `<p class="text-[11px] text-slate-400 mt-0.5">${generation} bloom${generation === 1 ? '' : 's'} collected</p>` : ''}
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -7448,7 +6808,7 @@ function renderExerciseDetail(exerciseId) {
           </div>
           <span class="text-sm font-bold text-brand-500 flex-shrink-0">${pct}%</span>
         </div>
-        <p class="text-xs text-slate-400">${isFinal ? 'Fully bloomed — sets keep progressing.' : `All ${dpResult.workingSetCount} set${dpResult.workingSetCount!==1?'s':''} must progress to evolve to the next stage!`}</p>
+        <p class="text-xs text-slate-400">All ${dpResult.workingSetCount} set${dpResult.workingSetCount!==1?'s':''} must progress to evolve to the next stage!</p>
       </div>`;
 
     // Standalone "Set progress (current stage)" leaf row — the three-state
@@ -7757,8 +7117,7 @@ function openExerciseModal(id = null) {
   document.getElementById('ex-modal-title').textContent = id ? 'Edit exercise' : 'Create Exercise';
   document.getElementById('ex-modal-subtitle').textContent = id ? "Update this exercise's details." : 'Build your exercise library.';
   document.getElementById('ex-modal-save').textContent = id ? 'Save changes' : 'Create Exercise';
-  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
-  document.getElementById('ex-modal-footer-text').textContent = `Every exercise you create can help ${plantName} grow.`;
+  document.getElementById('ex-modal-footer-text').textContent = 'Every exercise you create starts its own plant to grow.';
   document.getElementById('ex-name').value    = ex?.name || '';
   renderExTargetChips(ex?.muscleGroup || 'upper');
   renderExEquipmentChips(ex?.equipment || '');
@@ -9039,7 +8398,7 @@ function openGroupPicker(onSelect = startWorkoutSession) {
   const list = document.getElementById('group-picker-list');
   const items = Object.entries(groups).filter(([,g]) => !g.archived);
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plants';
-  document.getElementById('gp-footer-text').textContent = `Every workout helps ${plantName} grow.`;
+  document.getElementById('gp-footer-text').textContent = `Every workout is time well spent with ${plantName}.`;
 
   if (!hasAnyExercise()) {
     list.innerHTML = `
@@ -10018,28 +9377,29 @@ document.getElementById('cr-exercise-mode-btn').addEventListener('click', async 
 });
 
 // ── Set logging sheet ────────────────────────────────────────────────────────
-// ── Log-set sheet: growth panel (dynamic, current selected plant/stage) ────
-// Reads the exact same getPlantGrowthState() result as the Home hero, the
-// Mission-card ring, and the Garden page — see currentGrowthState() — so
-// this sheet can never show a different plant/stage than the rest of the
-// app. Purely a presentation layer: no growth points are computed or
-// persisted here (that stays in recalculatePlantGrowth(), untouched).
+// ── Log-set sheet: growth panel (dynamic, current exercise/stage) ──────────
+// Shows the CURRENT exercise's own plant — not the Companion, which no
+// longer progresses. Reads the same Double Progression cycle position the
+// Exercise Library and Garden page already read (calculateExerciseDoubleProgression()).
 function renderLsPlantPanel() {
-  const growth = currentGrowthState();
-  const plantKey = userProfile.plant || 'sprout';
-  const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const dp = ex && ex.exerciseId ? calculateExerciseDoubleProgression(ex.exerciseId) : { configured: false };
+  const stageIdx = dp.configured ? exercisePlantStageIdx(dp) : 0;
+  const progressPercent = dp.configured && dp.workingSetCount
+    ? Math.round((dp.leavesMatured / dp.workingSetCount) * 100)
+    : 0;
   const CIRCUMFERENCE = 2 * Math.PI * 28;
 
   const emojiEl = document.getElementById('ls-plant-emoji');
-  emojiEl.textContent = growth.selectedAsset;
-  emojiEl.style.opacity = growth.selectedAssetOpacity;
-  emojiEl.style.transform = `scale(${growth.selectedAssetScale})`;
+  emojiEl.textContent = DP_STAGE_EMOJI[stageIdx] || DP_STAGE_EMOJI[0];
+  emojiEl.style.opacity = '';
+  emojiEl.style.transform = '';
 
   const ring = document.getElementById('ls-plant-ring');
-  ring.setAttribute('stroke', theme.primary);
+  ring.setAttribute('stroke', '#22c55e');
   ring.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
-  ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - growth.currentStageProgressPercent / 100));
-  document.getElementById('ls-plant-glow').style.background = `radial-gradient(circle, ${theme.glow}, transparent 70%)`;
+  ring.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progressPercent / 100));
+  document.getElementById('ls-plant-glow').style.background = 'radial-gradient(circle, rgba(34,197,94,.22), transparent 70%)';
 
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.getElementById('ls-plant-emoji-wrap').className = 'absolute inset-0 flex items-center justify-center' + (reducedMotion ? '' : ' p-sway-breathe');
@@ -10084,6 +9444,7 @@ function setLsWarmup(isWarmup) {
   document.getElementById('ls-mark-warmup').setAttribute('aria-pressed', String(isWarmup));
   const headline = document.getElementById('ls-growth-headline');
   const detail = document.getElementById('ls-growth-detail');
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
   if (isWarmup) {
     headline.textContent = 'Warm-up set';
     headline.className = 'text-sm font-bold text-slate-500 dark:text-slate-400';
@@ -10091,7 +9452,7 @@ function setLsWarmup(isWarmup) {
   } else {
     headline.textContent = '+1 Growth';
     headline.className = 'text-sm font-bold text-brand-600 dark:text-brand-400';
-    detail.textContent = 'This set waters ' + ((PLANTS[userProfile.plant] || {}).name || 'your plant') + '.';
+    detail.textContent = 'This set grows ' + (ex && ex.name ? `${ex.name}'s` : "this exercise's") + ' plant.';
   }
 }
 document.getElementById('ls-mark-working').addEventListener('click', () => setLsWarmup(false));
@@ -10927,9 +10288,9 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
         // uses — writes to sessions/{uid}/{today} independent of
         // activeSession, so it nurtures the Companion Plant without creating
         // or progressing an Exercise Plant (exercises: [] on this record).
-        const { previousGrowth, newGrowth } = await logOtherActivitySession(todayStr(), activityId, details);
+        const { newlyBloomed } = await logOtherActivitySession(todayStr(), activityId, details);
         closeAddToWorkoutSheet();
-        finishActivityAdded(todayStr(), stageChangeMessage(previousGrowth, newGrowth));
+        finishActivityAdded(todayStr(), bloomMessage(newlyBloomed));
       }
     });
   });
@@ -11087,36 +10448,19 @@ function histExerciseSummaryRowHtml(ex, idx, sessionId) {
     </div>`;
 }
 
-// Shared "Plant progress" HTML — the Companion hero block (name, this
-// workout's growth gain, progress bar) plus the exercise-plants one-line
-// summary with its "View all" expandable list. Used by both the live finish
-// screen (leaf/growth PREVIEW for a not-yet-saved session, animated bar,
-// unfurl-in leaf icons) and the historical Workout Summary page (real,
-// already-happened numbers for a saved session, no animation) — idPrefix
-// keeps each caller's element ids unique, animateIn controls whether the
-// leaf icons play their entrance animation (skipped on the historical page
-// per "don't replay the completion animation").
-function plantProgressBlocksHtml({ idPrefix, totalLeaves, exerciseLeaves, growthDelta, beforeState, afterState, animateIn }) {
+// Shared "Plant progress" HTML — the exercise-plants one-line summary with
+// its "View all" expandable list. Used by both the live finish screen
+// (leaf PREVIEW for a not-yet-saved session, unfurl-in leaf icons) and the
+// historical Workout Summary page (real, already-happened numbers for a
+// saved session, no animation) — idPrefix keeps each caller's element ids
+// unique, animateIn controls whether the leaf icons play their entrance
+// animation (skipped on the historical page per "don't replay the
+// completion animation"). The Companion no longer has a growth number of
+// its own to show here (product simplification: exercise plants are the
+// only progression system) — this section is exercise plants only now.
+function plantProgressBlocksHtml({ idPrefix, totalLeaves, exerciseLeaves, animateIn }) {
   const blocks = [];
   const leafInClass = animateIn ? 'finish-leaf-in ' : '';
-
-  // The Companion is the hero of this section — its name, this workout's
-  // growth gain, and the progress bar, kept visually apart from the
-  // exercise plants below rather than listed alongside them as one of many.
-  if (growthDelta > 0) {
-    const plant = PLANTS[userProfile.plant] || { emoji: '🌱', name: 'Companion' };
-    blocks.push(`
-      <div class="p-3 flex items-center gap-3">
-        <span class="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-xl leading-none" aria-hidden="true">${plant.emoji}</span>
-        <div class="min-w-0 flex-1">
-          <p class="font-display font-bold text-base text-slate-800 dark:text-white">${esc(plant.name)}</p>
-          <p class="text-xs text-brand-500 font-semibold mb-1.5">+${growthDelta}% growth</p>
-          <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-label="${esc(plant.name)} growth" aria-valuenow="${afterState.overallProgressPercent}" aria-valuemin="0" aria-valuemax="100">
-            <div id="${idPrefix}-plant-bar" class="h-full bg-brand-500 transition-all duration-700" style="width:${(animateIn ? beforeState : afterState).overallProgressPercent}%" data-target="${afterState.overallProgressPercent}"></div>
-          </div>
-        </div>
-      </div>`);
-  }
 
   // Exercise plants — a one-line summary instead of an itemized list;
   // "View all" expands in place (same .exg-mg-body accordion the Exercise
@@ -11171,52 +10515,24 @@ function wirePlantProgressBlocks(idPrefix, onRowTap) {
 }
 
 // "Plant progress" — real leaf-earning events this session would create
-// (computeSessionPlantProgress(), the same pendingSession preview as
-// above) plus the Companion's own growth-percent delta, previewed the same
-// side-effect-free way computeWorkoutGrowth() itself already documents.
-// Quiet fallback message when neither happened; never fabricated.
+// (computeSessionPlantProgress(), the same pendingSession preview
+// elsewhere). Quiet fallback message when nothing happened; never
+// fabricated.
 function renderFinishPlantProgress(sessionExercises) {
   const el = document.getElementById('finish-plant-progress');
   const { totalLeaves, exerciseLeaves } = computeSessionPlantProgress(sessionExercises);
-
-  const preview = computeWorkoutGrowth(sessionExercises);
-  const beforeState = currentGrowthState();
-  const previewPoints = round1((userProfile.growthPoints || 0) + preview.participationGrowth);
-  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: previewPoints });
-  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
-
-  el.innerHTML = plantProgressBlocksHtml({ idPrefix: 'finish', totalLeaves, exerciseLeaves, growthDelta, beforeState, afterState, animateIn: true });
+  el.innerHTML = plantProgressBlocksHtml({ idPrefix: 'finish', totalLeaves, exerciseLeaves, animateIn: true });
   wirePlantProgressBlocks('finish', exerciseId => { rsHideModal('finish-modal'); openExerciseDetail(exerciseId); });
-
-  // Fill the bar from its BEFORE state (set above) to the real AFTER state
-  // once the Plant Progress section itself has faded in (finish-reveal-4,
-  // 950ms) — reusing the same width-transition pattern the Exercise Plant
-  // stage bar already uses elsewhere, just triggered after a delay instead
-  // of on render. Reduced motion jumps straight to the target, matching
-  // the rest of this page's reduced-motion handling.
-  const bar = document.getElementById('finish-plant-bar');
-  if (bar) {
-    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) bar.style.width = `${bar.dataset.target}%`;
-    else setTimeout(() => { bar.style.width = `${bar.dataset.target}%`; }, 1000);
-  }
 }
 
-// Historical counterpart for the Workout Summary page — real before/after
-// growth (computeHistoricalGrowthDelta()) and real leaf events
+// Historical counterpart for the Workout Summary page — real leaf events
 // (computeHistoricalSessionPlantProgress()) for one already-saved session,
-// rendered at its final state immediately (no bar animation, no leaf
-// unfurl-in) since this page revisits a past workout rather than
-// celebrating one just finished.
+// rendered at its final state immediately (no leaf unfurl-in) since this
+// page revisits a past workout rather than celebrating one just finished.
 function renderHistPlantProgress(date, sessionId, sessionExercises) {
   const el = document.getElementById('wsum-plant-progress');
   const { totalLeaves, exerciseLeaves } = computeHistoricalSessionPlantProgress(sessionId, sessionExercises);
-  const { beforePoints, afterPoints } = computeHistoricalGrowthDelta(date, sessionId);
-  const beforeState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: beforePoints });
-  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: afterPoints });
-  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
-
-  el.innerHTML = plantProgressBlocksHtml({ idPrefix: 'wsum', totalLeaves, exerciseLeaves, growthDelta, beforeState, afterState, animateIn: false });
+  el.innerHTML = plantProgressBlocksHtml({ idPrefix: 'wsum', totalLeaves, exerciseLeaves, animateIn: false });
   wirePlantProgressBlocks('wsum', exerciseId => openExerciseDetail(exerciseId));
   return totalLeaves;
 }
@@ -11395,10 +10711,10 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
       exerciseId: ex.exerciseId, name: ex.name, muscleGroup: ex.category,
       weight: ex.weight, unit: ex.unit,
       // minReps/maxReps/weightIncrement/progressionEnabled are snapshotted
-      // here (not just targetReps) so a future full growth recalculation —
-      // see recalculatePlantGrowth() — can replay this exact session
-      // correctly without depending on whatever the exercise library's rep
-      // range happens to be at recalculation time.
+      // here (not just targetReps) so a future full Double Progression
+      // recalculation can replay this exact session correctly without
+      // depending on whatever the exercise library's rep range happens to
+      // be at recalculation time.
       minReps: ex.minReps, maxReps: ex.maxReps, weightIncrement: ex.weightIncrement, progressionEnabled: ex.progressionEnabled,
       targetReps: ex.targetReps, skipped: ex.skipped, notes: ex.notes || null,
       sets: ex.sets.map(s => ({
@@ -11410,17 +10726,17 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   try {
     const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
     await set(sessionRef, sessionData);
-    // Optimistic local mirror — recalculateAndPersistPlantGrowth() reads
+    // Optimistic local mirror — syncExercisePlantsAfterChange() reads
     // `sessions` directly and would otherwise race the onValue listener that
     // normally keeps it in sync (which fires asynchronously, after this write).
     (sessions[today] ??= {})[sessionRef.key] = sessionData;
 
-    // computeWorkoutGrowth() here is only used to decide the per-exercise
-    // progression update (targetReps/weightUpFlag/currentWeight) — the
-    // actual growthPoints value is never taken from its totalGrowthAwarded.
-    // recalculateAndPersistPlantGrowth() below re-derives growth from scratch
-    // from every remaining session (including the one just saved), which is
-    // what makes it agree with the state after any future edit or deletion.
+    // computeWorkoutGrowth() here only decides the per-exercise legacy-ratchet
+    // update (targetReps/weightUpFlag/currentWeight) — Exercise Plant state
+    // itself comes entirely from syncExercisePlantsAfterChange() below, which
+    // re-derives growth from scratch from every remaining session (including
+    // the one just saved), so it always agrees with the state after any
+    // future edit or deletion.
     const result = computeWorkoutGrowth(activeSession.exercises);
 
     // Warm-up sets never reach the progression engine — progressionInputFor()
@@ -11429,7 +10745,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     for (const upd of result.perExerciseUpdates) {
       await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
     }
-    const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
+    const { newlyBloomed } = await syncExercisePlantsAfterChange();
 
     // If today's calendar had this workout planned (via the Calendar or via
     // Home's "today's mission" already reading that plan), mark it completed
@@ -11444,7 +10760,7 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     rsHideModal('finish-modal');
     hide('active-workout-view'); show('app-view');
 
-    celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+    celebrateExerciseBloomsIfAny(newlyBloomed);
 
     if (sessionType === 'quick') {
       // The completed session is already safely saved at this point — offer
@@ -11744,32 +11060,24 @@ function histMonthlyMetrics(year, month) {
 }
 
 // Only ever surfaces a milestone with a real stored date behind it —
-// collectedCompanions' own bloomedAt, or the active companion's own
-// startedAt (see completeCompanionBloom()/selectNextCompanion()). There is
-// no persisted "reached Stage N on date X" record anywhere in the app, so
-// stage-reached milestones are deliberately not attempted here — only
-// bloom/new-plant events, which genuinely have a date to check against.
+// gardenCollection's own bloomedAt (see syncExercisePlantsAfterChange()).
+// There is no persisted "reached Stage N on date X" record anywhere in the
+// app, so stage-reached milestones are deliberately not attempted here —
+// only bloom events, which genuinely have a date to check against.
 function histGardenMilestone(year, month) {
   const inMonth = ds => { if (!ds) return false; const d = new Date(ds + 'T12:00:00'); return d.getFullYear() === year && d.getMonth() === month; };
-  const collected = Object.values(collectedCompanions || {}).sort((a, b) => (a.bloomedAt || '').localeCompare(b.bloomedAt || ''));
+  const collected = Object.values(gardenCollection || {}).sort((a, b) => (a.bloomedAt || '').localeCompare(b.bloomedAt || ''));
   const bloomedThisMonth = collected.filter(c => inMonth(c.bloomedAt));
-  if (bloomedThisMonth.length) {
-    const isFirstBloomEver = collected[0] === bloomedThisMonth[0];
-    if (isFirstBloomEver) return 'First bloom 🌸';
-    const plantName = (PLANTS[bloomedThisMonth[0].speciesId] || {}).name || 'Your plant';
-    return `${plantName} reached full bloom 🌸`;
-  }
-  const active = userProfile.companion;
-  if (active && active.status !== 'bloomed' && inMonth(active.startedAt) && collected.length > 0) {
-    const plantName = (PLANTS[active.speciesId] || {}).name || 'A new plant';
-    return `New plant unlocked — ${plantName}`;
-  }
-  return null;
+  if (!bloomedThisMonth.length) return null;
+  const isFirstBloomEver = collected[0] === bloomedThisMonth[0];
+  if (isFirstBloomEver) return 'First bloom 🌸';
+  if (bloomedThisMonth.length > 1) return `${bloomedThisMonth.length} plants bloomed this month 🌸`;
+  const first = bloomedThisMonth[0];
+  return `${first.exerciseName}'s plant bloomed into a ${first.speciesName} 🌸`;
 }
 
 function histMonthFooterHtml(year, month) {
-  const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
-  return `<p class="text-xs text-slate-400 text-center py-3">Every completed activity helped ${esc(plantName)} grow this month.</p>`;
+  return `<p class="text-xs text-slate-400 text-center py-3">Every completed workout keeps your exercise plants growing this month.</p>`;
 }
 
 // ── Latest Milestones ────────────────────────────────────────────────────────
@@ -12096,7 +11404,7 @@ async function deleteHistorySession(date, sessionId) {
   try {
     await remove(ref(db, `sessions/${uid()}/${date}/${sessionId}`));
     if (sessions[date]) delete sessions[date][sessionId];
-    await recalculateAndPersistPlantGrowth();
+    await syncExercisePlantsAfterChange();
     // Can't keep showing a Workout Summary page for a session that no
     // longer exists — back out to the History list it came from.
     if (workoutSummaryCtx && workoutSummaryCtx.date === date && workoutSummaryCtx.sessionId === sessionId) closeWorkoutSummaryPage();
@@ -12105,7 +11413,7 @@ async function deleteHistorySession(date, sessionId) {
       try {
         await set(ref(db, `sessions/${uid()}/${date}/${sessionId}`), snapshot);
         (sessions[date] ??= {})[sessionId] = snapshot;
-        await recalculateAndPersistPlantGrowth();
+        await syncExercisePlantsAfterChange();
         renderHistory(); renderDashboard();
         showToast('Activity restored');
       } catch (err) {
@@ -12363,12 +11671,6 @@ async function linkPlannedEntryToCompletedSession(date, type, workoutGroupId, wo
 }
 
 // ── Logging non-strength activities & Recovery Days ──────────────────────────
-// Neither of these ever touches computeWorkoutGrowth() / the double-
-// progression engine — only a flat participation-sized growth award, per
-// "other activities contribute to consistency, not double progression."
-const OTHER_ACTIVITY_GROWTH = GROWTH_AWARD.completedWorkout;
-const RECOVERY_DAY_GROWTH = GROWTH_AWARD.completedExercise;
-
 async function logOtherActivitySession(date, activityId, { duration, calories, notes } = {}) {
   const activity = getActivity(activityId);
   if (!activity) throw new Error('Unknown activity.');
@@ -12383,21 +11685,19 @@ async function logOtherActivitySession(date, activityId, { duration, calories, n
   const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
   await set(sessionRef, sessionData);
   (sessions[date] ??= {})[sessionRef.key] = sessionData; // see finish-save-btn's identical mirror for why
-  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
+  const { newlyBloomed } = await syncExercisePlantsAfterChange();
   await linkPlannedEntryToCompletedSession(date, 'activity', null, sessionRef.key, mins);
-  return { sessionId: sessionRef.key, previousGrowth, newGrowth };
+  return { sessionId: sessionRef.key, newlyBloomed };
 }
 
 async function logRecoveryDaySession(date, { notes } = {}) {
-  // One meaningful Plant Progress contribution per calendar day — repeatedly
-  // tapping "Mark Recovery Day" (double-tap, re-opening the flow, a second
-  // Calendar entry point) must never create a second recovery session for
-  // the same date, which would otherwise award progress twice for one day
-  // of rest. Return the existing record as a no-op instead.
+  // One meaningful entry per calendar day — repeatedly tapping "Mark
+  // Recovery Day" (double-tap, re-opening the flow, a second Calendar
+  // entry point) must never create a second recovery session for the same
+  // date. Return the existing record as a no-op instead.
   const existing = Object.entries(sessions[date] || {}).find(([, s]) => s?.sessionType === 'recovery');
   if (existing) {
-    const growth = currentGrowthState();
-    return { sessionId: existing[0], previousGrowth: growth, newGrowth: growth, alreadyLogged: true };
+    return { sessionId: existing[0], newlyBloomed: [], alreadyLogged: true };
   }
   const sessionData = {
     sessionType: 'recovery', muscleGroup: 'recovery', startedAt: Date.now(), completedAt: Date.now(),
@@ -12407,9 +11707,9 @@ async function logRecoveryDaySession(date, { notes } = {}) {
   const sessionRef = push(ref(db, `sessions/${uid()}/${date}`));
   await set(sessionRef, sessionData);
   (sessions[date] ??= {})[sessionRef.key] = sessionData;
-  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
+  const { newlyBloomed } = await syncExercisePlantsAfterChange();
   await linkPlannedEntryToCompletedSession(date, 'recovery', null, sessionRef.key, 0);
-  return { sessionId: sessionRef.key, previousGrowth, newGrowth };
+  return { sessionId: sessionRef.key, newlyBloomed };
 }
 
 // ── Retroactive strength logging for a past date ─────────────────────────────
@@ -12450,9 +11750,9 @@ async function logPastStrengthSession(date, meta, exList, { duration, calories, 
   for (const upd of result.perExerciseUpdates) {
     await set(ref(db, `exercises/${uid()}/${upd.exerciseId}`), { ...exercises[upd.exerciseId], targetReps: upd.targetReps, currentWeight: upd.weight, weightUpFlag: upd.weightUp });
   }
-  const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
+  const { newlyBloomed } = await syncExercisePlantsAfterChange();
   await linkPlannedEntryToCompletedSession(date, meta.sessionType, meta.groupId || null, sessionRef.key, mins);
-  return { sessionId: sessionRef.key, previousGrowth, newGrowth };
+  return { sessionId: sessionRef.key, newlyBloomed };
 }
 
 async function logPastWorkoutGroup(date, groupId, opts = {}) {
@@ -12651,21 +11951,6 @@ function calPreviewIconHtml(s) {
   return `<span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:${accent}26" aria-hidden="true"><span class="ms text-lg" style="color:${accent}">${glyph}</span></span>`;
 }
 
-// The Companion-growth teaser next to the primary entry — same real
-// before/after growth reconstruction the Workout Summary page's Plant
-// Progress section uses (computeHistoricalGrowthDelta()), never a live
-// "today" number. Omitted entirely when this session contributed none
-// (matches Plant Progress's own growthDelta<=0 gate).
-function calPreviewGrowthBadgeHtml(date, sessionId) {
-  const { beforePoints, afterPoints } = computeHistoricalGrowthDelta(date, sessionId);
-  const beforeState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: beforePoints });
-  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: afterPoints });
-  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
-  if (growthDelta <= 0) return '';
-  const plant = PLANTS[userProfile.plant] || { emoji: '🌱', name: 'Companion' };
-  return `<div class="text-center flex-shrink-0 pl-2"><span class="text-xl leading-none" aria-hidden="true">${plant.emoji}</span><p class="text-xs font-bold text-brand-500 mt-0.5">+${growthDelta}%</p><p class="text-[10px] text-slate-400 truncate" style="max-width:3.5rem">${esc(plant.name)}</p></div>`;
-}
-
 function calPreviewPlannedLabel(planned) {
   if (planned.type === 'group') return groups[planned.workoutGroupId]?.name || 'Workout Group';
   if (planned.type === 'quick') return 'Quick Workout';
@@ -12688,7 +11973,6 @@ function calPreviewCompletedHtml(date, completedList, planned, dateLabel, isToda
   const isPrimaryWorkout = histSessionKind(primaryS) === 'workout';
 
   const highlight = isPrimaryWorkout ? histSessionHighlight(date, primaryId, primaryS) : null;
-  const growthBadge = calPreviewGrowthBadgeHtml(date, primaryId);
   const primaryMeta = calPreviewMetaLine(primaryS);
 
   const primaryRowHtml = `
@@ -12699,7 +11983,6 @@ function calPreviewCompletedHtml(date, completedList, planned, dateLabel, isToda
         ${primaryMeta ? `<p class="text-xs text-slate-400 mt-0.5">${esc(primaryMeta)}</p>` : ''}
         ${highlight ? `<p class="text-xs text-brand-500 font-semibold mt-1 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">check_circle</span>${esc(highlight.text)}</p>` : ''}
       </div>
-      ${growthBadge}
     </button>`;
 
   const othersHtml = others.map(([id, s]) => {
@@ -12828,7 +12111,7 @@ function openCalendarDaySheet(date) {
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
 
   document.getElementById('cds-date-label').textContent = fmtDateWithWeekday(date);
-  document.getElementById('cds-footer-text').textContent = `Every plan helps ${plantName} grow.`;
+  document.getElementById('cds-footer-text').textContent = `Every plan is time well spent with ${plantName}.`;
   let html = '';
   if (completedList.length) html += `<div class="space-y-2">${completedList.map(([id, s]) => renderCalDaySessionCard(date, id, s)).join('')}</div>`;
 
@@ -12865,13 +12148,13 @@ function openCalendarDaySheet(date) {
       // No stage-change toast here: "Activity deleted" (with Undo) already
       // owns this moment: the bar/icon updating on the next render is
       // feedback enough without a second, competing toast.
-      await recalculateAndPersistPlantGrowth();
+      await syncExercisePlantsAfterChange();
       closeCalendarActivityWindows(date);
       showToast('Activity deleted', snapshot ? async () => {
         try {
           await set(ref(db, `sessions/${uid()}/${delDate}/${delId}`), snapshot);
           (sessions[delDate] ??= {})[delId] = snapshot;
-          await recalculateAndPersistPlantGrowth();
+          await syncExercisePlantsAfterChange();
           renderDashboard(); renderCalendar();
           showToast('Activity restored');
         } catch (err) {
@@ -12922,8 +12205,8 @@ async function removePlannedEntry(date, entryId) {
 // ── Editing a completed workout's exercises/sets ─────────────────────────────
 // A history-correction tool, not a re-log: saving here only overwrites the
 // stored exercises array for this exact session — it never touches
-// growthPoints, weightUpFlag/targetReps, or streaks. Those were already
-// settled at the time this session was originally saved.
+// weightUpFlag/targetReps or streaks. Those were already settled at the
+// time this session was originally saved.
 let esmDraft = null, esmDate = null, esmSessionId = null;
 
 // Shapes a freshly-picked library exercise into the same per-session record
@@ -13238,11 +12521,11 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
     // recommendations aren't cached anywhere either — they're always
     // derived fresh from `sessions` at render time, so the renders below
     // are all it takes to pick up any weight/rep change too.
-    const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
+    const { newlyBloomed } = await syncExercisePlantsAfterChange();
     rsHideModal('edit-session-modal');
     renderDashboard(); renderHistory(); renderCalendar(); renderProfile(); refreshWorkoutSummaryIfOpen();
     if (esmOpenedFromDaySheet) openCalendarDaySheet(esmDate);
-    showToast(stageChangeMessage(previousGrowth, newGrowth) || 'Workout updated');
+    showToast(bloomMessage(newlyBloomed) || 'Workout updated');
   } catch (e) {
     console.error('Failed to save workout edits:', e);
     const errEl = document.getElementById('esm-error');
@@ -13278,10 +12561,10 @@ function closeCalendarActivityWindows(date) {
 // clears this instead, leaving the original plan untouched.
 let calendarChangeReplacingEntryId = null;
 
-// Shown only after a save has actually succeeded. A stage-change message
-// (see stageChangeMessage()) takes priority over the generic confirmation
-// when one is worth showing — there's only one toast slot, and a stage
-// change is more noteworthy than "Activity added."
+// Shown only after a save has actually succeeded. A bloom message (see
+// bloomMessage()) takes priority over the generic confirmation when one is
+// worth showing — there's only one toast slot, and a bloom is more
+// noteworthy than "Activity added."
 async function finishActivityAdded(date, message) {
   const replacingId = calendarChangeReplacingEntryId;
   calendarChangeReplacingEntryId = null;
@@ -13312,16 +12595,16 @@ function wireCalDaySheetActions(date) {
         title: `Log ${act?.name || 'Activity'}`, subtitle: 'Mark this as done for today.',
         initialDuration: entry.plannedDuration || act?.defaultDuration, confirmLabel: 'Mark Complete',
         onConfirm: async details => {
-          const { previousGrowth, newGrowth } = await logOtherActivitySession(date, entry.activityId, details);
-          finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
+          const { newlyBloomed } = await logOtherActivitySession(date, entry.activityId, details);
+          finishActivityAdded(date, bloomMessage(newlyBloomed));
         }
       });
     } else {
       const prevLabel = btn.textContent;
       btn.disabled = true; btn.textContent = 'Saving…';
       try {
-        const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
-        finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
+        const { newlyBloomed } = await logRecoveryDaySession(date);
+        finishActivityAdded(date, bloomMessage(newlyBloomed));
       } catch (err) {
         console.error('Failed to save Recovery Day:', err);
         alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -13363,8 +12646,8 @@ function wireCalDaySheetActions(date) {
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
       } else {
-        const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
-        message = stageChangeMessage(previousGrowth, newGrowth);
+        const { newlyBloomed } = await logRecoveryDaySession(date);
+        message = bloomMessage(newlyBloomed);
       }
       finishActivityAdded(date, message);
     } catch (err) {
@@ -13467,7 +12750,7 @@ function openCalendarAddPicker(date) {
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
   document.getElementById('cap-recovery-desc').textContent = `Plan a rest day to help ${plantName} recover.`;
   document.getElementById('cap-recovery-btn').setAttribute('aria-label', `Recovery Day — plan a rest day to help ${plantName} recover.`);
-  document.getElementById('cap-footer-text').textContent = `Every plan helps ${plantName} grow.`;
+  document.getElementById('cap-footer-text').textContent = `Every plan is time well spent with ${plantName}.`;
   rsHideModal('calendar-day-sheet');
   openCalendarAddModal();
 
@@ -13497,8 +12780,8 @@ function openCalendarAddPicker(date) {
           // keeps this form open with the entered data and shows the message —
           // "Activity added" only ever appears once logPastWorkoutGroup resolves.
           onConfirm: async details => {
-            const { previousGrowth, newGrowth } = await logPastWorkoutGroup(date, groupId, details);
-            finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
+            const { newlyBloomed } = await logPastWorkoutGroup(date, groupId, details);
+            finishActivityAdded(date, bloomMessage(newlyBloomed));
           }
         });
       } else {
@@ -13538,8 +12821,8 @@ function openCalendarAddPicker(date) {
           openActivityDetailModal({
             title: 'Log Quick Workout', subtitle: fmtDate(date), initialDuration: 30, confirmLabel: 'Log Workout',
             onConfirm: async details => {
-              const { previousGrowth, newGrowth } = await logPastQuickWorkout(date, ids, details);
-              finishActivityAdded(date, stageChangeMessage(previousGrowth, newGrowth));
+              const { newlyBloomed } = await logPastQuickWorkout(date, ids, details);
+              finishActivityAdded(date, bloomMessage(newlyBloomed));
             }
           });
         }
@@ -13568,8 +12851,8 @@ function openCalendarAddPicker(date) {
           if (relation === 'future') {
             await saveCalendarEntry(date, null, { type: 'activity', status: 'planned', activityId, plannedDuration: details.duration, notes: details.notes });
           } else {
-            const { previousGrowth, newGrowth } = await logOtherActivitySession(date, activityId, details);
-            message = stageChangeMessage(previousGrowth, newGrowth);
+            const { newlyBloomed } = await logOtherActivitySession(date, activityId, details);
+            message = bloomMessage(newlyBloomed);
           }
           finishActivityAdded(date, message);
         }
@@ -13592,8 +12875,8 @@ function openCalendarAddPicker(date) {
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
       } else {
-        const { previousGrowth, newGrowth } = await logRecoveryDaySession(date);
-        message = stageChangeMessage(previousGrowth, newGrowth);
+        const { newlyBloomed } = await logRecoveryDaySession(date);
+        message = bloomMessage(newlyBloomed);
       }
       closeCalendarAddModal();
       finishActivityAdded(date, message);
@@ -13742,7 +13025,7 @@ function openActivityDetailModal({ title, subtitle, showCalories = true, initial
   document.getElementById('actdetail-title').textContent = title || 'Details';
   document.getElementById('actdetail-subtitle').textContent = subtitle || '';
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plants';
-  document.getElementById('actdetail-footer-text').textContent = `Every activity helps ${plantName} grow.`;
+  document.getElementById('actdetail-footer-text').textContent = `Every activity is time well spent with ${plantName}.`;
   document.getElementById('actdetail-duration-h').value = initialDuration ? Math.floor(initialDuration / 60) : 0;
   document.getElementById('actdetail-duration-m').value = initialDuration ? initialDuration % 60 : 0;
   document.getElementById('actdetail-duration-s').value = 0;
@@ -13980,7 +13263,7 @@ function openMultiExercisePicker({ title, subtitle, initialSelectedIds = [], con
   mepSelectedIds = new Set(initialSelectedIds);
   mepOnConfirm = onConfirm;
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
-  document.getElementById('mep-footer-text').textContent = `Every plan helps ${plantName} grow.`;
+  document.getElementById('mep-footer-text').textContent = `Every plan is time well spent with ${plantName}.`;
   renderMepFilters();
   renderMultiExercisePickerList('');
   updateMepSelectedCounter();
@@ -14030,8 +13313,8 @@ function openLogOtherActivityForToday() {
       title: `Log ${act?.name || 'Activity'}`, subtitle: fmtDate(today), showCalories: true,
       initialDuration: act?.defaultDuration, confirmLabel: 'Log Activity',
       onConfirm: async details => {
-        const { previousGrowth, newGrowth } = await logOtherActivitySession(today, activityId, details);
-        finishActivityAdded(today, stageChangeMessage(previousGrowth, newGrowth));
+        const { newlyBloomed } = await logOtherActivitySession(today, activityId, details);
+        finishActivityAdded(today, bloomMessage(newlyBloomed));
       }
     });
   });
@@ -14064,17 +13347,17 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
       title: `Log ${act?.name || 'Activity'}`, subtitle: 'Mark this as done for today.',
       initialDuration: entry?.plannedDuration || act?.defaultDuration, confirmLabel: 'Mark Complete',
       onConfirm: async details => {
-        const { previousGrowth, newGrowth } = await logOtherActivitySession(today, entry.activityId, details);
-        celebrateStageChangeIfNeeded(previousGrowth, newGrowth);
+        const { newlyBloomed } = await logOtherActivitySession(today, entry.activityId, details);
+        celebrateExerciseBloomsIfAny(newlyBloomed);
         renderDashboard();
       }
     });
   }
   if (action === 'today-mark-recovery-complete' || action === 'today-mark-recovery') {
     const plantName = (PLANTS[userProfile.plant] || {}).name || 'Your companion';
-    const { previousGrowth, newGrowth, alreadyLogged } = await logRecoveryDaySession(today);
+    const { newlyBloomed, alreadyLogged } = await logRecoveryDaySession(today);
     if (alreadyLogged) showToast(`${plantName} already rested with you today`);
-    else { showToast(`${plantName} is resting with you`); celebrateStageChangeIfNeeded(previousGrowth, newGrowth); }
+    else { showToast(`${plantName} is resting with you`); celebrateExerciseBloomsIfAny(newlyBloomed); }
     renderDashboard();
   }
   if (action === 'today-change-workout') {
@@ -14143,7 +13426,6 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
 // shouldn't do that) and queue-modal (its own queue-backdrop already does this).
 [
   ['dp-how-it-works-modal', () => rsHideModal('dp-how-it-works-modal')],
-  ['choose-companion-modal', () => rsHideModal('choose-companion-modal')],
   ['log-set-modal', () => { closeLogSetSheet(); handleAwAction('cancel-set'); }],
   ['duration-picker-modal', closeDurationPicker],
   ['rest-scope-modal', closeRestScopeModal],
