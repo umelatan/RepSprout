@@ -12059,23 +12059,20 @@ function calPreviewPlannedHtml(date, planned, dateLabel, isToday) {
     <button type="button" id="cal-preview-manage-plan-btn" class="btn btn-outline text-sm w-full py-2.5">${isToday ? 'Start / Manage' : 'Manage plan'}</button>`;
 }
 
-// Nothing logged and nothing planned — the empty state, with three one-tap
-// shortcuts straight into the existing Add to Calendar picker (task: "This
-// makes it easy to log something directly from the calendar"). All three
-// open the same full picker rather than deep-linking to one sub-screen,
-// since "Workout" alone doesn't disambiguate Workout Group vs. Quick
-// Workout — a deliberate, minor simplification from the mockup's implied
-// direct jump.
+// Nothing logged and nothing planned — the empty state, with a single
+// one-tap shortcut straight into the existing Add to Calendar picker
+// (task: "This makes it easy to log something directly from the
+// calendar"). Opens the same full picker rather than deep-linking to one
+// sub-screen, since "Workout" alone doesn't disambiguate Workout Group vs.
+// Quick Workout — a deliberate, minor simplification from the mockup's
+// implied direct jump.
 function calPreviewEmptyHtml(date, dateLabel, isToday) {
   return `
     <div class="flex items-center justify-between gap-2">
       <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">${esc(dateLabel)}${isToday ? '<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[10px] font-bold">Today</span>' : ''}</p>
     </div>
     <p class="text-sm text-slate-400">No activity logged</p>
-    <div class="grid grid-cols-2 gap-2">
-      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Activity</button>
-      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Recovery</button>
-    </div>`;
+    <button type="button" class="cal-preview-quick-add btn btn-outline text-sm w-full py-2.5 flex items-center justify-center gap-1 whitespace-nowrap"><span class="ms text-base" aria-hidden="true">add</span>Add to calendar</button>`;
 }
 
 function calPreviewCardHtml(date) {
