@@ -949,15 +949,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <section id="profile-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
       <!-- Companion card — the emotional mascot, permanent and unchanging.
            Never a progression surface: artwork + name + current mood only.
-           See renderGardenCompanion(). Tapping opens a small detail sheet
-           (garden-companion-modal), never a settings page. -->
-      <button type="button" id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
+           Purely informational, not tappable — see renderGardenCompanion(). -->
+      <div id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
         <div id="garden-companion-art" class="flex-shrink-0" aria-hidden="true"></div>
         <div class="min-w-0 flex-1">
           <p id="garden-companion-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           <p id="garden-companion-status" class="text-sm text-slate-400 mt-0.5"></p>
         </div>
-      </button>
+      </div>
 
       <!-- My Garden / Locked Plants tabs — one flat, scrollable collection
            grid per tab (see renderGardenGrid()). No large "+ New Plant"
@@ -1200,24 +1199,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_4</span>Moving that set to a heavier weight matures its leaf.</li>
       <li class="flex gap-2"><span class="ms text-brand-500 flex-shrink-0" aria-hidden="true">looks_5</span>Once every set's leaf has matured, the plant evolves to its next stage and a new cycle begins.</li>
     </ul>
-  </div>
-</div>
-
-<!-- Companion detail sheet — see openGardenCompanionDetail(). A small
-     sheet, not a full page (task: "Tap companion → companion detail page
-     or sheet"), and never a settings surface. -->
-<div id="garden-companion-modal" style="display:none" class="fixed inset-0 z-[77] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-    <div class="flex items-start justify-between gap-2">
-      <div class="flex items-center gap-3">
-        <div id="gcd-art" class="flex-shrink-0" aria-hidden="true"></div>
-        <div class="min-w-0">
-          <p id="gcd-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
-          <p id="gcd-desc" class="text-xs text-slate-400"></p>
-        </div>
-      </div>
-      <button id="gcd-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
-    </div>
   </div>
 </div>
 
@@ -5174,26 +5155,6 @@ function renderGardenCompanion() {
   document.getElementById('garden-companion-name').textContent = plant.name;
   document.getElementById('garden-companion-status').textContent = plant.desc || '';
 }
-
-document.getElementById('garden-companion-card').addEventListener('click', openGardenCompanionDetail);
-
-// A small detail sheet, not a settings page or a second Home — just the
-// Companion's own art, name, and personality description. The Companion is
-// permanent and doesn't progress, so there's no stage/timeline to show here.
-function openGardenCompanionDetail() {
-  const plantId = userProfile.plant || 'sprout';
-  const plant = PLANTS[plantId] || { emoji: '🌱', name: 'Companion' };
-
-  const artEl = document.getElementById('gcd-art');
-  artEl.textContent = plant.emoji;
-  artEl.style.opacity = '';
-  artEl.className = 'text-6xl flex-shrink-0 p-sway';
-  document.getElementById('gcd-name').textContent = plant.name;
-  document.getElementById('gcd-desc').textContent = plant.desc || '';
-
-  document.getElementById('garden-companion-modal').style.display = '';
-}
-document.getElementById('gcd-close').addEventListener('click', () => rsHideModal('garden-companion-modal'));
 
 // ── Garden: exercise plant collection ───────────────────────────────────────
 // Every Double-Progression-configured, non-archived exercise is a plant —
