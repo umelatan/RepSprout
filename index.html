@@ -3849,9 +3849,15 @@ const EXERCISE_PLANT_SPECIES = [
 // has already appeared once; generation N (0-indexed) just reads position
 // N of that exercise's own shuffled tour, wrapping back to the start only
 // once the whole pool has cycled through.
-function exercisePlantSpeciesOrder(exerciseId) {
+// Deterministic Fisher-Yates shuffle of [0..length-1], seeded by an
+// arbitrary string (mulberry32-style stream from a char-code hash of the
+// seed) — same seed always produces the same order, different seeds
+// produce independent orders. Shared by exercisePlantSpeciesOrder() below
+// (seeded per-exercise, permanent) and dailyRandomSample() (seeded
+// per-day, rotates).
+function seededShuffledIndices(seedStr, length) {
   let seed = 0;
-  for (let i = 0; i < exerciseId.length; i++) seed = (seed * 31 + exerciseId.charCodeAt(i)) | 0;
+  for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) | 0;
   const rand = () => {
     seed = (seed + 0x6D2B79F5) | 0;
     let t = seed;
@@ -3859,12 +3865,24 @@ function exercisePlantSpeciesOrder(exerciseId) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  const order = EXERCISE_PLANT_SPECIES.map((_, i) => i);
+  const order = Array.from({ length }, (_, i) => i);
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
   return order;
+}
+// Picks `count` items from `arr`, randomized but stable for the whole day
+// (same seed suffix + today's date -> same picks on every re-render/reload
+// today; a different, still-random set tomorrow) — so a collection bigger
+// than the preview's slot count doesn't always show the same few forever.
+function dailyRandomSample(arr, count, seedSuffix) {
+  if (arr.length <= count) return arr;
+  const order = seededShuffledIndices(`${todayStr()}-${seedSuffix}`, arr.length);
+  return order.slice(0, count).map(i => arr[i]);
+}
+function exercisePlantSpeciesOrder(exerciseId) {
+  return seededShuffledIndices(exerciseId, EXERCISE_PLANT_SPECIES.length);
 }
 function exercisePlantSpeciesForGeneration(exerciseId, generation) {
   const order = exercisePlantSpeciesOrder(exerciseId);
@@ -4958,9 +4976,12 @@ function renderGardenPreview() {
     .sort((a, b) => b.lastDate.localeCompare(a.lastDate))
     .slice(0, 5);
 
-  const collected = Object.values(gardenCollection)
-    .sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation))
-    .slice(0, 5);
+  // A collection bigger than 5 rotates which ones are featured once per
+  // day (dailyRandomSample()), so the preview doesn't freeze on the same
+  // handful forever — 5 or fewer just shows everything, no shuffling needed.
+  const allCollected = Object.values(gardenCollection)
+    .sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation));
+  const collected = dailyRandomSample(allCollected, 5, 'garden-preview-bloomed');
 
   // No background chip, no name label — the artwork alone carries it. The
   // exercise/species name only reveals in a small tap-triggered tooltip
