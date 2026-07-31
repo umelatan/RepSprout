@@ -236,13 +236,24 @@ body{font-family:'Inter',sans-serif}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
+.hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
+.dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
+.hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
+.dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
+.hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.2),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
+.dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.12),rgba(251,191,36,0) 55%)}
+.hero-surface{box-shadow:0 24px 40px -34px rgba(15,23,42,.18)}
+.dark .hero-surface{box-shadow:0 24px 40px -30px rgba(0,0,0,.4)}
 .mission-surface{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%)}
 .dark .mission-surface{background:linear-gradient(135deg,rgba(20,83,45,.4) 0%,rgba(5,46,22,.6) 100%)}
+.garden-shelf{background:linear-gradient(180deg,rgba(253,230,138,.25) 0%,rgba(253,230,138,0) 100%)}
+.dark .garden-shelf{background:linear-gradient(180deg,rgba(120,53,15,.2) 0%,rgba(120,53,15,0) 100%)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
 .btn-pop:hover{box-shadow:0 8px 16px -6px rgba(34,197,94,.4)}
 .dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
+.pot-base{border-radius:0 0 .85rem .85rem}
 .aw-input{padding:.4rem .3rem;text-align:center;font-weight:600}
 @keyframes toastIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 #toast.show{display:flex!important;animation:toastIn var(--rs-dur-standard) var(--rs-ease-settle)}
@@ -585,57 +596,48 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <!-- DASHBOARD -->
     <section id="dashboard-view" class="rs-view flex-1 pb-8">
 
-      <!-- Companion card — the emotional centerpiece of Home (see the Home
-           Companion redesign task). Replaces the old full-bleed floating-
-           emoji hero: no more giant floating artwork, no "Choose next
-           companion" (the companion is never replaced), just a calm card
-           matching the rest of RepSprout's dark-surface card language.
-           Artwork/stage/Care all come from the exact same
-           currentGrowthState() the Garden companion card and Companion
-           Detail sheet already read — one source of truth, see
-           renderPlantHero() below and openGardenCompanionDetail() in the
-           Garden section, which this card's tap reuses directly rather
-           than opening a second detail surface. -->
-      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 pt-3">
-        <button type="button" id="dash-companion-card" class="card w-full text-left p-5 relative overflow-hidden">
-          <!-- Ambient butterfly — only shown once the companion is in a
-               Care stage (see renderPlantHero()); reuses the exact same
-               .leaf-particle drift animation as the leaf particles
-               elsewhere, just a different glyph, so it's covered by the
-               same prefers-reduced-motion disable rule for free. -->
-          <span id="dash-companion-particle" class="leaf-particle text-base" style="display:none;top:8%;right:14%;animation-delay:.6s" aria-hidden="true">🦋</span>
-          <div class="relative flex items-start gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1"><span class="ms text-xs text-lavender-400" aria-hidden="true">favorite</span>Your Companion</p>
-              <p id="plant-name-label" class="font-display font-extrabold text-xl text-slate-800 dark:text-white mt-1 truncate"></p>
-              <p id="plant-level-label" class="text-sm font-bold mt-0.5"></p>
+      <!-- Plant companion hero — full-bleed, the one true hero of the page -->
+      <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-8 text-center">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-glow-warm" aria-hidden="true"></div>
+        <span class="leaf-particle text-2xl" style="top:6%;left:12%;animation-delay:0s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-xl" style="top:12%;right:14%;animation-delay:1.8s" aria-hidden="true">🍃</span>
+        <span class="leaf-particle text-lg" style="top:32%;right:6%;animation-delay:3.2s" aria-hidden="true">🍃</span>
 
-              <div id="dash-hero-empty" style="display:none" class="pt-2 space-y-1">
-                <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
-                <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
-              </div>
+        <div id="plant-emoji" class="relative text-[10rem] leading-none p-hero-float" aria-hidden="true">🌱</div>
 
-              <div id="dash-hero-body" class="pt-3 space-y-3">
-                <p id="plant-time-together" class="text-xs text-slate-400"></p>
-                <div>
-                  <div class="flex items-center justify-between gap-2">
-                    <p id="growth-next-label" class="text-xs text-slate-400 truncate"></p>
-                    <p id="growth-pct-label" class="text-xs font-bold text-brand-500 flex-shrink-0"></p>
-                  </div>
-                  <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1" role="progressbar" aria-label="Companion growth">
-                    <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
-                  </div>
-                </div>
-              </div>
+        <div class="relative space-y-0.5 -mt-1">
+          <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white" id="plant-name-label"></p>
+          <p id="plant-subtitle-label" class="text-xs text-slate-500 dark:text-slate-400"></p>
+        </div>
+
+        <div id="dash-hero-empty" style="display:none" class="relative space-y-1 pt-3 max-w-xs mx-auto">
+          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
+          <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
+        </div>
+
+        <div id="dash-hero-body" class="relative space-y-2 pt-2">
+          <span id="plant-level-label" class="inline-block text-[11px] font-bold rounded-full px-2.5 py-0.5"></span>
+          <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
+
+          <!-- Shown only once this Companion has fully bloomed and the user
+               hasn't chosen a next one yet — replaces the in-progress Care
+               bar (there's no "next stage" to show a bloomed plant working
+               toward). See renderPlantHero() / openChooseCompanionModal(). -->
+          <div id="dash-hero-bloomed" style="display:none" class="max-w-xs mx-auto px-2 pt-1 space-y-2">
+            <p class="text-xs text-slate-500 dark:text-slate-400">It now lives in your Garden forever. A new chapter is ready to grow.</p>
+            <button id="dash-choose-companion-btn" type="button" class="btn btn-green text-sm px-4 py-2 w-full">Choose next companion</button>
+          </div>
+
+          <div id="dash-hero-progress" class="text-left max-w-xs mx-auto px-2 pt-1">
+            <p class="text-[10px] font-bold tracking-wider text-slate-400 dark:text-slate-500">Plant Progress</p>
+            <p id="growth-pct-label" class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1"></p>
+            <div class="h-2.5 bg-white/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner" role="progressbar" aria-label="Plant Progress toward next stage">
+              <div id="growth-bar-fill" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
             </div>
-            <div id="plant-emoji" class="relative flex-shrink-0 text-6xl leading-none p-sway" aria-hidden="true">🌱</div>
+            <p id="growth-next-label" class="text-xs text-slate-500 dark:text-slate-400 mt-1.5"></p>
           </div>
-          <div id="dash-companion-message-row" class="relative flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <span class="ms text-base text-brand-500 flex-shrink-0" aria-hidden="true">eco</span>
-            <p id="plant-subtitle-label" class="text-sm text-slate-600 dark:text-slate-300 flex-1 min-w-0"></p>
-            <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
-          </div>
-        </button>
+        </div>
       </div>
 
       <!-- Content below the hero, with breathing room before Today's Mission -->
@@ -709,6 +711,15 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
           <p class="text-xs font-semibold text-slate-400 pt-3">Closest progress</p>
           <div id="dash-progress-body" class="space-y-2"></div>
+        </div>
+
+        <!-- Garden preview — wide, soft-tinted, collectible -->
+        <div class="garden-shelf rounded-3xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold text-slate-400">Garden</p>
+            <button id="dash-view-garden" class="text-xs font-semibold text-brand-500 hover:underline py-2">View Garden →</button>
+          </div>
+          <div id="dash-garden-preview" class="flex items-center justify-center gap-4"></div>
         </div>
 
         <!-- Recent win — compact chip, not a card -->
@@ -1256,8 +1267,19 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- "Choose next companion" modal removed — see the Home Companion
-     redesign task's "The companion is never replaced." -->
+<!-- "Choose next companion" — shown once the active Companion has fully
+     bloomed. Not a random/gacha pick: the same five species onboarding
+     offers, always fully visible, no locking. See selectNextCompanion(). -->
+<div id="choose-companion-modal" style="display:none" class="fixed inset-0 z-[78] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3 max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h3 class="font-display font-bold text-slate-800 dark:text-white">Choose your next companion</h3>
+      <button id="choose-companion-close" class="text-slate-400 p-1" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+    </div>
+    <p id="choose-companion-subtitle" class="text-xs text-slate-400"></p>
+    <div id="choose-companion-list" class="space-y-2"></div>
+  </div>
+</div>
 
 <!-- Mobile drawer -->
 <div id="mob-drawer" style="display:none" class="fixed inset-0 z-50 md:hidden">
@@ -3137,6 +3159,11 @@ const HEALTH_LABELS = {
   dormant:  ['Welcome back 🌱', 'Let\'s keep growing.']
 };
 
+const HEALTH_ANIM = {
+  seed:'p-hero-still', sprout:'p-hero-float', growing:'p-hero-float', thriving:'p-hero-float',
+  blooming:'p-hero-bloom', wilting:'p-hero-still', dormant:'p-hero-still'
+};
+
 // ── Growth / home page helpers ───────────────────────────────────────────────
 const GROWTH_PER_LEVEL = 5; // legacy "leaves per level" divisor — reused below as the post-bloom prestige pace, not deleted
 
@@ -3148,7 +3175,7 @@ const GROWTH_PER_LEVEL = 5; // legacy "leaves per level" divisor — reused belo
 // growth number in the app: the Home progress bar, the mission-card icon,
 // the Garden page, and the stage-change celebration all read it through
 // getPlantGrowthState() below, never independently.
-const GROWTH_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing', 'Bloom'];
+const GROWTH_STAGE_NAMES = ['Sprout', 'Seedling', 'Young Plant', 'Bud', 'Bloom'];
 const GROWTH_STAGE_THRESHOLDS = [0, 20, 40, 60, 80]; // percent at which each stage begins
 const GROWTH_TOTAL_STAGES = GROWTH_STAGE_NAMES.length;
 const GROWTH_POINTS_FOR_BLOOM = 100;
@@ -3156,27 +3183,22 @@ const GROWTH_POINTS_FOR_BLOOM = 100;
 // No per-species, per-stage art exists yet (PLANTS only carries one emoji per
 // plant — its final form). Stages 1-3 use a genuinely species-agnostic
 // fallback progression (seed -> sprout -> fuller plant) rather than inventing
-// fake species-specific art — the species itself stays hidden until Bloom
-// (see the Home Companion redesign task: "Do NOT use a generic Lavender
-// image... Only when the exercise/companion reaches the Bloom stage should
-// the final plant species be revealed"). Stage 4 ("Growing") renders the
-// real selected-plant emoji at reduced scale/opacity as a partial reveal of
-// its true form, stage 5 ("Bloom") at full scale/opacity — the actual
-// reveal moment. This is reported as a known asset gap in the
-// implementation summary, not hidden.
+// fake species-specific art. Stages 4-5 use the REAL selected-plant emoji —
+// stage 4 ("Bud") renders it at reduced scale/opacity as a partial reveal of
+// the plant's true form, stage 5 at full scale/opacity. This is reported as
+// a known asset gap in the implementation summary, not hidden.
 const GROWTH_STAGE_FALLBACK_EMOJI = ['🌱', '🌿', '🪴'];
 
-// Post-bloom Companion stages — growth doesn't stop at Bloom (see the Home
-// Companion redesign task: "After Bloom: Do NOT replace the plant... continue
-// evolving the SAME companion through Care" — Healthy -> Flourishing ->
-// Well Established -> Timeless). Same 20-point-wide pacing as the five
-// pre-bloom stages (GROWTH_STAGE_THRESHOLDS' own spacing) so Care growth
-// feels like the same rhythm rather than a sudden grind-wall or a freebie.
-// Timeless is the terminal named stage — growth past it still accumulates
-// (bonusGrowthPoints keeps climbing, surfaced via timelessCyclePercent
-// below) but never claims a fifth, undefined "next milestone" name, and
-// never anything game-like (no "Mastered II"/"Level 27"/"Legendary").
-const POST_BLOOM_STAGE_NAMES = ['Healthy', 'Flourishing', 'Well Established', 'Timeless'];
+// Post-bloom Companion stages — growth doesn't stop at Bloom (see the
+// Garden redesign task: "Continued workouts should keep improving its
+// stage and appearance," "Companion growth should continue beyond full
+// bloom"). Same 20-point-wide pacing as the five pre-bloom stages
+// (GROWTH_STAGE_THRESHOLDS' own spacing) so post-bloom growth feels like
+// the same rhythm rather than a sudden grind-wall or a freebie. Legacy is
+// the terminal named stage — growth past it still accumulates
+// (bonusGrowthPoints keeps climbing, surfaced via legacyCyclePercent below)
+// but never claims a fourth, undefined "next milestone" name.
+const POST_BLOOM_STAGE_NAMES = ['Thriving', 'Flourishing', 'Legacy'];
 const POST_BLOOM_STAGE_WIDTH = 20;
 
 // ── Three connected but distinct plant systems ──────────────────────────────
@@ -3257,25 +3279,24 @@ function getPlantGrowthState({ plantId, growthPoints }) {
       ? 'A bud is beginning to form.'
       : currentStage === 1 ? `Your ${plant.name} is taking root.` : 'New leaves are forming.';
 
-  // Post-bloom ("Care"): only meaningful once isFinalStage. postBloomStageIndex
-  // is 0-based (0=Healthy, 1=Flourishing, 2=Well Established, 3=Timeless);
-  // isTimeless marks the terminal stage, past which there is no further
-  // named milestone — postBloomRemainingToNext/postBloomNextStageName are
-  // null there instead of ever repeating the "Stage 5 of 5 / X% to full
-  // bloom" contradiction the Garden redesign task calls out.
-  // displayStageNumber/displayStageName give callers one combined pre+post-
-  // bloom stage identity to render ("Stage 6 · Healthy") without re-deriving
-  // this arithmetic themselves.
+  // Post-bloom: only meaningful once isFinalStage. postBloomStageIndex is
+  // 0-based (0=Thriving, 1=Flourishing, 2=Legacy); isLegacy marks the
+  // terminal stage, past which there is no further named milestone —
+  // postBloomRemainingToNext/postBloomNextStageName are null there instead
+  // of ever repeating the "Stage 5 of 5 / X% to full bloom" contradiction
+  // the Garden redesign task calls out. displayStageNumber/displayStageName
+  // give callers one combined pre+post-bloom stage identity to render
+  // ("Stage 6 · Thriving") without re-deriving this arithmetic themselves.
   let postBloomStageIndex = null, postBloomStageName = null, postBloomProgressPercent = null,
-    postBloomRemainingToNext = null, postBloomNextStageName = null, isTimeless = false, timelessCyclePercent = null;
+    postBloomRemainingToNext = null, postBloomNextStageName = null, isLegacy = false, legacyCyclePercent = null;
   if (isFinalStage) {
     const stageIdx = Math.min(Math.floor(bonusGrowthPoints / POST_BLOOM_STAGE_WIDTH), POST_BLOOM_STAGE_NAMES.length - 1);
     postBloomStageIndex = stageIdx;
     postBloomStageName = POST_BLOOM_STAGE_NAMES[stageIdx];
-    isTimeless = stageIdx === POST_BLOOM_STAGE_NAMES.length - 1;
+    isLegacy = stageIdx === POST_BLOOM_STAGE_NAMES.length - 1;
     const withinStage = bonusGrowthPoints - stageIdx * POST_BLOOM_STAGE_WIDTH;
-    if (isTimeless) {
-      timelessCyclePercent = Math.round(((withinStage % POST_BLOOM_STAGE_WIDTH) / POST_BLOOM_STAGE_WIDTH) * 100);
+    if (isLegacy) {
+      legacyCyclePercent = Math.round(((withinStage % POST_BLOOM_STAGE_WIDTH) / POST_BLOOM_STAGE_WIDTH) * 100);
     } else {
       postBloomProgressPercent = Math.round((withinStage / POST_BLOOM_STAGE_WIDTH) * 100);
       postBloomRemainingToNext = Math.max(0, round1(POST_BLOOM_STAGE_WIDTH - withinStage));
@@ -3292,7 +3313,7 @@ function getPlantGrowthState({ plantId, growthPoints }) {
     selectedAsset, selectedAssetOpacity, selectedAssetScale,
     isFinalStage, bonusGrowthPoints, growthReason,
     postBloomStageIndex, postBloomStageName, postBloomProgressPercent,
-    postBloomRemainingToNext, postBloomNextStageName, isTimeless, timelessCyclePercent,
+    postBloomRemainingToNext, postBloomNextStageName, isLegacy, legacyCyclePercent,
     displayStageNumber, displayStageName
   };
 }
@@ -3303,21 +3324,6 @@ function getPlantGrowthState({ plantId, growthPoints }) {
 // place that decides which plant/points belong to "the current growth state."
 function currentGrowthState() {
   return getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: userProfile.growthPoints || 0 });
-}
-
-// "Together for N days" / "Growing with you for N years" — the Home
-// Companion card's replacement for endless post-bloom levels (task: "show
-// how long the companion has been growing with the user... calculated from
-// when the companion was first chosen"). Always real, from the companion's
-// own startedAt (never re-derived per call site) — under a year reads in
-// days, a year or more switches to years, matching the task's own two
-// examples exactly.
-function companionTimeTogetherLabel(startedAt) {
-  if (!startedAt) return null;
-  const days = Math.max(0, Math.round((new Date(todayStr() + 'T12:00:00') - new Date(startedAt + 'T12:00:00')) / 86400000));
-  if (days < 365) return `Together for ${days} day${days !== 1 ? 's' : ''}`;
-  const years = round1(days / 365);
-  return `Growing with you for ${years} year${years !== 1 ? 's' : ''}`;
 }
 
 // ── Plant growth: always derived fresh from remaining activity history ─────
@@ -3457,18 +3463,34 @@ async function addBloomedCompanionToGarden(record) {
   await set(ref(db, `users/${uid()}/collectedCompanions/${record.id}`), record);
 }
 
-// getCollectedCompanions()/getActiveCompanion() were removed here — both
-// had lost their only callers (the Bloomed Companions scrapbook and the
-// Choose Next Companion modal, removed in earlier passes of this
-// redesign) and had nothing left reading them. addBloomedCompanionToGarden()
-// still writes collectedCompanions on every real Bloom exactly as before —
-// this only removes the now-dead read side.
+function getCollectedCompanions() {
+  return Object.values(collectedCompanions).sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || ''));
+}
 
-// selectNextCompanion() (started a fresh Companion journey on a new
-// species) was removed here per the Home Companion redesign task: "The
-// companion is never replaced." completeCompanionBloom() below still runs
-// exactly as before — reaching Bloom is still a real, permanent milestone
-// — it just never offers a swap afterward.
+function getActiveCompanion() {
+  return userProfile.companion || null;
+}
+
+// Starts a fresh Companion journey. A new id/startedAt/status is the entire
+// mechanism — recalculatePlantGrowth()'s startedAt-scoped replay naturally
+// stops counting older sessions toward this new companion without touching
+// any session data or the previous companion's now-permanent Garden record
+// (see completeCompanionBloom() above, which already ran before this is
+// ever reachable from the UI).
+async function selectNextCompanion(speciesId) {
+  if (!PLANTS[speciesId]) return;
+  const companion = {
+    id: push(ref(db, `users/${uid()}/companion`)).key,
+    speciesId, startedAt: todayStr(), status: 'growing', bloomedAt: null
+  };
+  userProfile.companion = companion;
+  userProfile.plant = speciesId;
+  userProfile.growthPoints = 0;
+  await set(ref(db, `users/${uid()}/companion`), companion);
+  await set(ref(db, `users/${uid()}/plant`), speciesId);
+  await set(ref(db, `users/${uid()}/growthPoints`), 0);
+  renderDashboard(); renderProfile();
+}
 
 // Plant Progress audit trail (PlantProgressEvent records) — regenerated
 // wholesale from the same replay every time (never read back in by
@@ -5053,7 +5075,7 @@ function closeAllOpenWindows() {
   closeEditSessionModal();
   closeCalendarAddModal(); // its own class-based open/close state, not a plain hide()
   [
-    'resume-session-modal',
+    'choose-companion-modal', 'resume-session-modal',
     'create-target-modal', 'log-target-modal', 'target-actions-modal', 'exg-actions-modal',
     'edit-target-modal', 'target-full-history-modal',
     'group-modal', 'pick-ex-modal', 'exercise-modal', 'save-as-group-modal',
@@ -5208,100 +5230,82 @@ function findRecentWin() {
   return null;
 }
 
-// The Home Companion card — see the Home Companion redesign task. Every
-// number/label here comes from currentGrowthState(), the exact same single
-// source of truth the Garden companion card and openGardenCompanionDetail()
-// already read — never a second growth computation, and this card's own
-// artwork/stage/Care state can never drift from what Garden shows for the
-// same companion.
 function renderPlantHero(sessionDates, hasHistory) {
   const plantKey = userProfile.plant || 'sprout';
   const p = PLANTS[plantKey] || { emoji:'🌱', name:'RepSprout', desc:'' };
   const theme = PLANT_THEME[plantKey] || DEFAULT_THEME;
 
-  document.getElementById('plant-name-label').textContent = p.name;
+  const hero = document.getElementById('dash-hero');
+  hero.style.setProperty('--plant-glow', theme.glow);
 
-  const growth = currentGrowthState();
-  // Dynamic artwork — selectedAsset/selectedAssetOpacity are the exact same
-  // fields Garden's companion card renders (see renderGardenCompanion()),
-  // so the real species image only ever appears once Bloom is actually
-  // reached (task: "Do NOT use a generic Lavender image... render the
-  // current companion based on its actual state"), never a moment sooner
-  // here than anywhere else. Gentle sway only (task: "Leaves gently
-  // sway") — the old vertical-bob float animation (.p-hero-float) is gone
-  // per "Remove: Floating plant artwork."
   const emoji = document.getElementById('plant-emoji');
-  emoji.textContent = growth.selectedAsset;
-  emoji.style.opacity = growth.selectedAssetOpacity;
-  emoji.className = 'relative flex-shrink-0 text-6xl leading-none p-sway';
+  emoji.textContent = p.emoji;
 
-  const levelLabel = document.getElementById('plant-level-label');
-  levelLabel.textContent = growth.displayStageName;
-  levelLabel.style.color = theme.primary;
+  document.getElementById('plant-name-label').textContent = p.name;
+  const subtitleEl = document.getElementById('plant-subtitle-label');
+  const subtitle = p.desc ? p.desc.split('.')[0].trim() + '.' : '';
+  subtitleEl.textContent = subtitle;
+  subtitleEl.style.display = subtitle ? '' : 'none';
+
+  const levelBadge = document.getElementById('plant-level-label');
+  levelBadge.style.color = theme.primary;
+  levelBadge.style.background = theme.soft;
 
   if (!hasHistory) {
+    emoji.className = 'relative text-[10rem] leading-none p-hero-float';
     document.getElementById('hero-empty-line1').textContent = `${p.name} is ready to grow.`;
     document.getElementById('hero-empty-line2').textContent = 'Your first leaf is one workout away.';
     show('dash-hero-empty'); hide('dash-hero-body');
-    hide('dash-companion-message-row'); hide('dash-companion-particle');
     return;
   }
-  hide('dash-hero-empty'); show('dash-hero-body'); show('dash-companion-message-row');
+  hide('dash-hero-empty'); show('dash-hero-body');
 
-  // Short encouraging message — the exact same "logged something today /
-  // how long since the last session" mood detection as before
-  // (getPlantHealth()/HEALTH_LABELS), just worded to name the companion
-  // and its current Care/growth stage directly.
   const today = todayStr();
   const loggedToday = !!(sessions[today] && Object.keys(sessions[today]).length);
   const health = getPlantHealth(sessionDates);
-  const message = loggedToday && health !== 'dormant' && health !== 'wilting'
-    ? `Thanks for showing up today. Your ${p.name} is ${growth.displayStageName.toLowerCase()} with you.`
-    : (HEALTH_LABELS[health] || ['', ''])[1];
-  document.getElementById('plant-subtitle-label').textContent = message;
-
-  // Time together — real, from the companion's own startedAt, never re-
-  // derived per render (task: "show how long the companion has been
-  // growing with the user... calculated from when the companion was first
-  // chosen").
-  document.getElementById('plant-time-together').textContent = companionTimeTogetherLabel(userProfile.companion?.startedAt) || '';
-
-  // One unified Care/growth bar, pre- or post-Bloom — no more separate
-  // "bloomed, choose a new companion" branch (task: "The companion is
-  // never replaced" / "Remove... Choose next companion. Any wording that
-  // implies the companion is finished after Bloom").
-  const bar = document.getElementById('growth-bar-fill');
-  bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
-  const track = bar.parentElement;
-  track.setAttribute('aria-valuemin', '0');
-  track.setAttribute('aria-valuemax', '100');
-  let pct, nextLabel;
-  if (growth.isFinalStage && growth.isTimeless) {
-    pct = growth.timelessCyclePercent;
-    nextLabel = 'Timeless';
-  } else if (growth.isFinalStage) {
-    pct = growth.postBloomProgressPercent;
-    nextLabel = 'Next Care Milestone';
-  } else {
-    pct = growth.overallProgressPercent;
-    nextLabel = `Next: ${growth.nextStageName}`;
+  let [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
+  if (loggedToday && health !== 'dormant' && health !== 'wilting') {
+    statusMsg = `${p.name} made progress today.`;
   }
-  document.getElementById('growth-pct-label').textContent = `${pct}%`;
-  document.getElementById('growth-next-label').textContent = nextLabel;
-  bar.style.width = `${pct}%`;
-  track.setAttribute('aria-valuenow', String(pct));
+  emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
+  document.getElementById('plant-status-label').textContent = statusMsg;
 
-  // Butterflies only once the companion has reached a Care stage (task:
-  // "Butterflies occasionally appear once the companion is mature") —
-  // reuses the exact .leaf-particle drift animation everywhere else in the
-  // app already uses, just a different glyph.
-  document.getElementById('dash-companion-particle').style.display = growth.isFinalStage ? '' : 'none';
+  const growth = currentGrowthState();
+  levelBadge.textContent = growth.isFinalStage ? `${growth.stageName} 🌸` : `Stage ${growth.currentStage} · ${growth.stageName}`;
+
+  // Once bloomed, there's no "next stage" to show a Care bar working toward —
+  // swap the in-progress bar for the "choose next companion" invitation
+  // instead. The bloomed Companion stays the Home hero (name/emoji/status
+  // above are unaffected) until the user actually picks a new one.
+  const bloomed = userProfile.companion && userProfile.companion.status === 'bloomed';
+  document.getElementById('dash-hero-bloomed').style.display = bloomed ? '' : 'none';
+  document.getElementById('dash-hero-progress').style.display = bloomed ? 'none' : '';
+  if (bloomed) return;
+
+  document.getElementById('growth-pct-label').textContent = growth.isFinalStage ? 'Fully bloomed' : `${growth.overallProgressPercent}% grown`;
+  const bar = document.getElementById('growth-bar-fill');
+  bar.style.width = `${growth.overallProgressPercent}%`;
+  bar.style.background = `linear-gradient(90deg, ${theme.soft}, ${theme.primary})`;
+  bar.parentElement.setAttribute('aria-valuenow', String(growth.overallProgressPercent));
+  bar.parentElement.setAttribute('aria-valuemin', '0');
+  bar.parentElement.setAttribute('aria-valuemax', '100');
+  if (growth.isFinalStage) {
+    // Fully bloomed plants stay in their final form permanently (section 16)
+    // — extra growth keeps counting toward the pre-existing "leaf" prestige
+    // track instead of a second, disconnected stage system. (This branch is
+    // unreachable once completeCompanionBloom() has run, since bloomed is
+    // true by then and we've already returned above — it stays here as a
+    // one-render safety net for the instant between reaching 100% and that
+    // write confirming.)
+    const inLevel = growth.bonusGrowthPoints % GROWTH_PER_LEVEL;
+    const prestigeLevel = Math.floor(growth.bonusGrowthPoints / GROWTH_PER_LEVEL) + 1;
+    document.getElementById('growth-next-label').textContent =
+      `Prestige leaf ${prestigeLevel} · ${round1(GROWTH_PER_LEVEL - inLevel)} until the next one 🍃`;
+  } else {
+    document.getElementById('growth-next-label').textContent =
+      `${growth.remainingToNextStage}% until ${growth.nextStageName}`;
+  }
 }
-// Tapping the card opens the exact same companion detail sheet the Garden
-// page's own companion card opens (openGardenCompanionDetail(), defined in
-// the Garden section below) — one detail surface, not a second one built
-// for Home.
-document.getElementById('dash-companion-card').addEventListener('click', () => openGardenCompanionDetail());
 
 function renderDashStats(sessionDates, hasHistory) {
   if (!hasHistory) { hide('dash-stats-row'); return; }
@@ -5533,21 +5537,57 @@ function renderClosestProgress() {
   card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openExerciseDetail(best.exerciseId); } });
 }
 
-// renderGardenPreview() (the Home page's "other 4 locked companion
-// species" shelf) was removed here per request — it showed the other four
-// species as "???" locked pots, which read as "you could switch to one of
-// these," directly at odds with the Home Companion redesign's "the
-// companion is never replaced."
+function renderGardenPreview() {
+  const wrap = document.getElementById('dash-garden-preview');
+  const current = userProfile.plant;
+  wrap.innerHTML = Object.entries(PLANTS).map(([key, p]) => {
+    const isCurrent = key === current;
+    const theme = PLANT_THEME[key] || DEFAULT_THEME;
+    const potStyle = isCurrent
+      ? `background-color:${theme.soft};box-shadow:0 0 0 2px ${theme.primary}55`
+      : `background-color:${theme.soft};opacity:.35`;
+    const scale = isCurrent ? 'scale-110' : '';
+    return `<div class="flex flex-col items-center gap-1.5 ${scale}">
+      <div class="relative w-14 h-14 flex items-end justify-center" role="img" aria-label="${esc(p.name)}${isCurrent ? '' : ', available when you choose your next companion'}">
+        <div class="pot-base w-9 h-5" style="${potStyle}"></div>
+        <span class="absolute bottom-3 text-2xl ${isCurrent ? 'p-sway' : 'opacity-40 grayscale'}" aria-hidden="true">${isCurrent ? p.emoji : '🌱'}</span>
+        ${!isCurrent ? '<span class="ms absolute -top-0.5 -right-0.5 text-xs text-slate-400 bg-white dark:bg-slate-900 rounded-full p-0.5" aria-hidden="true">eco</span>' : ''}
+      </div>
+      <span class="text-[10px] ${isCurrent ? 'font-semibold' : 'text-slate-400'}" ${isCurrent ? `style="color:${theme.primary}"` : ''} aria-hidden="true">${isCurrent ? p.name : '???'}</span>
+    </div>`;
+  }).join('');
+}
 
-// openChooseCompanionModal()/selectNextCompanion() (species-swap-on-bloom)
-// were removed here — the Home Companion redesign task makes this
-// explicit: "The companion is never replaced... Remove: Choose next
-// companion." Their last two triggers (the Garden page's own button, and
-// dash-choose-companion-btn here) are both gone now, so the modal HTML and
-// selectNextCompanion() itself were removed too rather than left as dead
-// code with no caller anywhere in the app. completeCompanionBloom() (the
-// passive "you reached Bloom" milestone record) is untouched — reaching
-// Bloom still gets recorded, it just never prompts a swap.
+// Not a random/gacha pick — always the same five defined species, always
+// fully visible, exactly like onboarding's own choice set. Selecting one
+// calls selectNextCompanion(), which is the only thing that ever writes a
+// new active Companion.
+function openChooseCompanionModal() {
+  const active = getActiveCompanion();
+  const bloomedName = active ? (PLANTS[active.speciesId] || {}).name : '';
+  document.getElementById('choose-companion-subtitle').textContent = bloomedName
+    ? `${bloomedName} has fully bloomed and now lives in your Garden forever.`
+    : 'Pick the companion that will grow with you next.';
+  document.getElementById('choose-companion-list').innerHTML = Object.entries(PLANTS).map(([key, p]) => {
+    const theme = PLANT_THEME[key] || DEFAULT_THEME;
+    return `
+      <button type="button" class="choose-companion-opt w-full flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 text-left transition-all" data-species="${key}">
+        <span class="w-11 h-11 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style="background:${theme.soft}" aria-hidden="true">${p.emoji}</span>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${esc(p.name)}</p>
+          <p class="text-xs text-slate-400">${esc(p.desc)}</p>
+        </div>
+      </button>`;
+  }).join('');
+  document.querySelectorAll('.choose-companion-opt').forEach(btn => btn.addEventListener('click', async () => {
+    rsHideModal('choose-companion-modal');
+    await selectNextCompanion(btn.dataset.species);
+    showToast('A new chapter is ready to grow');
+  }));
+  show('choose-companion-modal');
+}
+document.getElementById('choose-companion-close').addEventListener('click', () => rsHideModal('choose-companion-modal'));
+document.getElementById('dash-choose-companion-btn').addEventListener('click', openChooseCompanionModal);
 
 function renderRecentWin() {
   const iconEl = document.getElementById('dash-win-icon');
@@ -5637,6 +5677,7 @@ function renderDashboard() {
   renderTodayMission();
   renderHomeTargetSection();
   renderClosestProgress();
+  renderGardenPreview();
   renderRecentWin();
   renderEncouragement();
 }
@@ -5730,11 +5771,11 @@ function renderGardenCompanion() {
   const milestoneEl = document.getElementById('garden-companion-milestone');
   // Never the "Stage 5 of 5" + "X% to full bloom" contradiction the task
   // calls out: once fully bloomed the next milestone is always a real
-  // Care stage name, and once at Timeless (no further named stage) this
-  // says so instead of dangling a fake percentage.
-  if (growth.isFinalStage && growth.isTimeless) {
+  // post-bloom stage name, and once at Legacy (no further named stage)
+  // this says so instead of dangling a fake percentage.
+  if (growth.isFinalStage && growth.isLegacy) {
     milestoneEl.textContent = 'Growing eternally';
-    bar.style.width = `${growth.timelessCyclePercent}%`;
+    bar.style.width = `${growth.legacyCyclePercent}%`;
   } else if (growth.isFinalStage) {
     milestoneEl.textContent = `${growth.postBloomRemainingToNext}% until next milestone`;
     bar.style.width = `${growth.postBloomProgressPercent}%`;
@@ -14047,6 +14088,8 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
   if (action === 'today-add-another') openCalendarAddPicker(today);
   if (action === 'today-log-activity') openLogOtherActivityForToday();
 });
+document.getElementById('dash-view-garden').addEventListener('click', () => goView('profile'));
+
 // ── Utility ────────────────────────────────────────────────────────────────
 function show(id){ document.getElementById(id).style.display = ''; }
 function hide(id){ document.getElementById(id).style.display = 'none'; }
@@ -14100,6 +14143,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
 // shouldn't do that) and queue-modal (its own queue-backdrop already does this).
 [
   ['dp-how-it-works-modal', () => rsHideModal('dp-how-it-works-modal')],
+  ['choose-companion-modal', () => rsHideModal('choose-companion-modal')],
   ['log-set-modal', () => { closeLogSetSheet(); handleAwAction('cancel-set'); }],
   ['duration-picker-modal', closeDurationPicker],
   ['rest-scope-modal', closeRestScopeModal],
