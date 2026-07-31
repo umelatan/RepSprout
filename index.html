@@ -803,7 +803,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
              renderWorkoutHub()), never a hardcoded species; hidden entirely
              until the name is known. Plain text, no card/border/shadow, so
              it never reads as a fifth tappable card. -->
-        <div id="wt-hub-plant-card" style="display:none" class="text-center pt-8 md:pt-10">
+        <div id="wt-hub-plant-card" style="display:none" class="text-center pt-4 md:pt-6">
           <div class="flex items-center justify-center gap-1.5">
             <span class="text-2xl leading-none" aria-hidden="true">🌱</span>
             <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200">Keep showing up.</p>
@@ -945,7 +945,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <button type="button" id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
         <div id="garden-companion-art" class="flex-shrink-0" aria-hidden="true"></div>
         <div class="min-w-0 flex-1">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Your Companion</p>
           <p id="garden-companion-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
           <p id="garden-companion-status" class="text-sm text-slate-400 mt-0.5"></p>
         </div>
@@ -1581,14 +1580,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <h3 id="sw-title" class="font-display font-bold text-lg text-slate-800 dark:text-white flex-1 truncate"></h3>
       <button id="sw-close" class="text-slate-400 p-1 -mr-1 flex-shrink-0 ml-auto" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
-    <button id="sw-group-btn" type="button" class="w-full flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
+    <button id="sw-group-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">🏋️</span>
       <div class="min-w-0">
         <p class="text-sm font-bold text-slate-800 dark:text-white">Workout Group</p>
         <p class="text-xs text-slate-400">Log one of your saved workout groups.</p>
       </div>
     </button>
-    <button id="sw-build-btn" type="button" class="w-full flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
+    <button id="sw-build-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">✨</span>
       <div class="min-w-0">
         <p class="text-sm font-bold text-slate-800 dark:text-white">Build a Workout</p>
@@ -1597,7 +1596,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </button>
     <!-- A third, equal option — not visually emphasized over the two
          workout choices above (same border/padding/icon-size treatment). -->
-    <button id="sw-target-btn" type="button" class="w-full flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-lavender-400 dark:hover:border-lavender-600 text-left transition-all">
+    <button id="sw-target-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-lavender-400 dark:hover:border-lavender-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">🎯</span>
       <div class="min-w-0">
         <p class="text-sm font-bold text-slate-800 dark:text-white">Create Target</p>
@@ -4601,6 +4600,10 @@ function closeAllOpenWindows() {
 
 function goView(v) {
   closeAllOpenWindows();
+  // Release the Workout hub's scroll lock (see switchWorkoutTab()) the
+  // moment any other view takes over — v === 'workout' re-locks it itself,
+  // via the switchWorkoutTab('hub') call below.
+  if (v !== 'workout') { document.documentElement.style.overflow = ''; document.body.style.overflow = ''; }
   // Nav feedback (highlight/title) is synchronous — a tap should register
   // instantly even though the page content below fades out/in.
   document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
@@ -4908,22 +4911,22 @@ function renderClosestProgress() {
     : [`${best.remaining} more rep${best.remaining===1?'':'s'}`, ' total until your next leaf'];
   const nodes = best.lastSets.map((r, i) => {
     const filled = r >= 12;
-    const node = `<div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
+    const node = `<div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
     const branch = i < best.lastSets.length - 1 ? '<div class="flex-1 h-0.5 bg-brand-200 dark:bg-brand-800 rounded-full min-w-2"></div>' : '';
     return node + branch;
   }).join('');
   body.innerHTML = `
     <div id="dash-progress-card" class="space-y-2 cursor-pointer" role="button" tabindex="0" aria-label="View ${esc(best.name)} progress">
       <div class="flex items-center justify-between gap-2">
-        <p class="font-display font-bold text-xl text-slate-800 dark:text-white truncate min-w-0">${esc(best.name)}</p>
-        <span class="px-3 py-1 rounded-full border text-sm font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
+        <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate min-w-0">${esc(best.name)}</p>
+        <span class="px-2.5 py-0.5 rounded-full border text-xs font-semibold mg-${best.group} flex-shrink-0">${MG_LABEL[best.group]||best.group}</span>
       </div>
-      <p class="text-sm text-slate-400">${best.weight} ${best.unit}</p>
+      <p class="text-xs text-slate-400">${best.weight} ${best.unit}</p>
       <div class="flex items-center gap-2 py-1">
         ${nodes}
-        <span class="text-xl ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
+        <span class="text-lg ml-1 flex-shrink-0">${best.ready ? '🍃' : '🌱'}</span>
       </div>
-      <p class="text-sm"><span class="font-bold text-brand-500">${detailLead}</span><span class="text-slate-400">${detailRest}</span></p>
+      <p class="text-xs"><span class="font-bold text-brand-500">${detailLead}</span><span class="text-slate-400">${detailRest}</span></p>
     </div>`;
   const card = document.getElementById('dash-progress-card');
   card.addEventListener('click', () => openExerciseDetail(best.exerciseId));
@@ -4986,7 +4989,7 @@ function renderGardenPreview() {
     </div>
     <div class="border-t border-slate-200/70 dark:border-slate-800/70"></div>
     <div class="space-y-2.5">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Collected</p>
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bloomed</p>
       <div class="flex items-center gap-4 overflow-x-auto">${collectedHtml}</div>
     </div>`;
 }
@@ -5360,6 +5363,12 @@ function switchWorkoutTab(tab) {
   ['hub','groups','exercises','targets','history'].forEach(t => {
     document.getElementById('wt-'+t).style.display = t === tab ? '' : 'none';
   });
+  // The hub landing screen (4 short cards, never a long list) is a fixed
+  // menu, not a scrolling page — locked here, released the moment any
+  // sub-tab (which DOES need to scroll) or a different view takes over
+  // (see goView()'s own release for the latter).
+  document.documentElement.style.overflow = tab === 'hub' ? 'hidden' : '';
+  document.body.style.overflow = tab === 'hub' ? 'hidden' : '';
   if (tab === 'hub')       renderWorkoutHub();
   if (tab === 'groups')    renderGroupsList();
   if (tab === 'history')   renderHistory();
