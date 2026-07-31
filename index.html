@@ -12379,9 +12379,8 @@ function calPreviewEmptyHtml(date, dateLabel, isToday) {
       <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">${esc(dateLabel)}${isToday ? '<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[10px] font-bold">Today</span>' : ''}</p>
     </div>
     <p class="text-sm text-slate-400">No activity logged</p>
-    <div class="grid grid-cols-3 gap-2">
-      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Workout</button>
-      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Activity</button>
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Workout or Activity</button>
       <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Recovery</button>
     </div>`;
 }
