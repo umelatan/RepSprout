@@ -23,6 +23,7 @@ tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{body:['Inter','syst
    needs it — narrower than viewport-meta's user-scalable=no, which would
    kill pinch-zoom too. */
 html{touch-action:manipulation}
+#cal-preview-card{transition:opacity var(--rs-dur-quick) var(--rs-ease-standard)}
 /* Shared motion tokens — every interaction-driven transition/animation in the
    app should reference these instead of hardcoding its own duration/easing,
    so the whole app moves with one consistent, calm feel and
@@ -965,6 +966,16 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
         <div id="cal-grid" class="grid grid-cols-7 gap-1"></div>
       </div>
+
+      <!-- Selected Day Preview — replaces the old calendar-day-sheet popup
+           for VIEWING a day's entries entirely (see renderCalPreviewCard()).
+           Always visible, updates in place with a crossfade
+           (selectCalendarDate()) instead of being dismissed/recreated —
+           the calendar itself never disappears. Managing a still-incomplete
+           PLANNED workout (Start/Resume/Change/Mark recovery) still opens
+           the existing calendar-day-sheet — that's a multi-step action
+           flow, not "viewing," and reusing it here avoids duplicating it. -->
+      <div id="cal-preview-card" class="card p-4 space-y-3"></div>
     </section>
 
     <!-- GARDEN / PROFILE -->
@@ -2580,8 +2591,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
-<!-- Calendar day sheet — bottom sheet (modal on desktop) opened by tapping any
-     calendar date. Content varies by past/today/future — see openCalendarDaySheet(). -->
+<!-- Calendar day sheet — no longer opened by tapping a date (see the
+     persistent #cal-preview-card / renderCalPreviewCard() below the
+     calendar grid instead). Only still used for managing a still-incomplete
+     PLANNED workout (Start/Resume/Change/Mark recovery) via the preview
+     card's "Manage plan" — see openCalendarDaySheet(). -->
 <!-- Calendar day sheet — bottom-sheet shell (drag handle + rounded-t-3xl)
      matching the "Add to Calendar" sheet's own language, so it inherits the
      same entrance/exit motion automatically. The date itself (see
@@ -11873,6 +11887,10 @@ function renderDayIndicators(date) {
 let calendarSelectedDate = null;
 
 function renderCalendar() {
+  // Always a real selected date once the Calendar page exists — defaults to
+  // today on first load, same as the mockup, so the preview card is never
+  // empty/missing before the user taps anything.
+  if (calendarSelectedDate === null) calendarSelectedDate = todayStr();
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-title').textContent = `${MONTHS[calMonth]} ${calYear}`;
   const grid   = document.getElementById('cal-grid');
@@ -11889,9 +11907,10 @@ function renderCalendar() {
     if (ds === today) cell.classList.add('ring-2', 'ring-brand-500');
     else if (ds === calendarSelectedDate) cell.classList.add('ring-2', 'ring-slate-400', 'dark:ring-slate-500');
     cell.innerHTML = `<span>${d}</span>${renderDayIndicators(ds)}`;
-    cell.addEventListener('click', () => openCalendarDayEntry(ds));
+    cell.addEventListener('click', () => selectCalendarDate(ds));
     grid.appendChild(cell);
   }
+  renderCalPreviewCard(calendarSelectedDate);
 }
 
 // ── Calendar entries: planning + completion status ──────────────────────────
@@ -12182,19 +12201,222 @@ function renderCdsActionArea(planned, relation) {
     </section>`;
 }
 
-// Tapping an empty future date on the calendar grid — nothing planned yet —
-// skips the "Plan this day" intermediate sheet (which only ever showed one
-// "Add To This Day" button) and opens the Add to Calendar picker directly.
-// Only the initial grid tap takes this shortcut; openCalendarDaySheet()
-// itself is unchanged, so backing out of the picker (dismissCalendarAddModal)
-// still lands on the real day sheet rather than looping straight back here.
-function openCalendarDayEntry(date) {
-  if (dateRelation(date) === 'future' && !firstIncompletePlannedEntry(date)) {
-    calendarSelectedDate = date;
-    openCalendarAddPicker(date);
-    return;
+// Tapping a date cell just updates the selection and crossfades the
+// persistent preview card below the calendar — never opens a popup. Only a
+// genuine change of date animates; re-tapping the already-selected date
+// just re-renders (nothing visually changes, so no fade needed).
+function selectCalendarDate(date) {
+  if (date === calendarSelectedDate) { renderCalendar(); return; }
+  const card = document.getElementById('cal-preview-card');
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const apply = () => { calendarSelectedDate = date; renderCalendar(); card.style.opacity = '1'; };
+  if (reducedMotion) { apply(); return; }
+  card.style.opacity = '0';
+  setTimeout(apply, 130);
+}
+
+// ── Selected Day Preview card ────────────────────────────────────────────────
+// Replaces calendar-day-sheet as the way to VIEW a day's entries — this
+// renders in place below the calendar (see renderCalendar()'s own call to
+// this at the end of every render) instead of opening a popup. A day with a
+// still-incomplete PLANNED workout is the one case that still opens
+// calendar-day-sheet (via "Manage plan" below) — Start/Resume/Change/Mark
+// recovery is a real multi-step action flow, not a "viewing" surface, and
+// reusing that existing, already-correct sheet here avoids rebuilding it
+// as a second copy inline.
+// Same fixed-format date labeller the Workout Summary page uses
+// (WSUM_WEEKDAY_ABBR/WSUM_MONTH_ABBR), just without the year — the
+// calendar's own month/year header already gives that context.
+function calPreviewDateLabel(date) {
+  const d = new Date(date + 'T12:00:00');
+  return `${WSUM_WEEKDAY_ABBR[d.getDay()]}, ${d.getDate()} ${WSUM_MONTH_ABBR[d.getMonth()]}`;
+}
+
+function calPreviewMetaLine(s) {
+  const kind = histSessionKind(s);
+  if (kind === 'workout') { const exCount = (s.exercises||[]).length; return `${s.duration||0} min • ${exCount} exercise${exCount!==1?'s':''}`; }
+  if (kind === 'activity') return `${s.duration||0} min${s.caloriesBurned ? ` • ${s.caloriesBurned.toLocaleString()} kcal` : ''}`;
+  return ''; // recovery — no meta line, matches the task's own example
+}
+
+function calPreviewIconHtml(s) {
+  const accent = sessionColor(s);
+  const kind = histSessionKind(s);
+  if (kind === 'activity' && s.activityIcon) {
+    return `<span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-lg leading-none" style="background:${accent}26" aria-hidden="true">${s.activityIcon}</span>`;
   }
-  openCalendarDaySheet(date);
+  const glyph = kind === 'recovery' ? 'eco' : 'fitness_center';
+  return `<span class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:${accent}26" aria-hidden="true"><span class="ms text-lg" style="color:${accent}">${glyph}</span></span>`;
+}
+
+// The Companion-growth teaser next to the primary entry — same real
+// before/after growth reconstruction the Workout Summary page's Plant
+// Progress section uses (computeHistoricalGrowthDelta()), never a live
+// "today" number. Omitted entirely when this session contributed none
+// (matches Plant Progress's own growthDelta<=0 gate).
+function calPreviewGrowthBadgeHtml(date, sessionId) {
+  const { beforePoints, afterPoints } = computeHistoricalGrowthDelta(date, sessionId);
+  const beforeState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: beforePoints });
+  const afterState = getPlantGrowthState({ plantId: userProfile.plant || 'sprout', growthPoints: afterPoints });
+  const growthDelta = round1(afterState.overallProgressPercent - beforeState.overallProgressPercent);
+  if (growthDelta <= 0) return '';
+  const plant = PLANTS[userProfile.plant] || { emoji: '🌱', name: 'Companion' };
+  return `<div class="text-center flex-shrink-0 pl-2"><span class="text-xl leading-none" aria-hidden="true">${plant.emoji}</span><p class="text-xs font-bold text-brand-500 mt-0.5">+${growthDelta}%</p><p class="text-[10px] text-slate-400 truncate" style="max-width:3.5rem">${esc(plant.name)}</p></div>`;
+}
+
+function calPreviewPlannedLabel(planned) {
+  if (planned.type === 'group') return groups[planned.workoutGroupId]?.name || 'Workout Group';
+  if (planned.type === 'quick') return 'Quick Workout';
+  if (planned.type === 'activity') return getActivity(planned.activityId)?.name || 'Activity';
+  return 'Recovery Day';
+}
+
+// Has at least one completed entry that day — the primary, richest state.
+// Primary = the first workout-type (group/quick) session if one exists
+// (only those have a Workout Journal page to link to), otherwise just the
+// earliest entry. Any OTHER same-day entries render as a compact list
+// below it (task: "keep this concise, do not display the full workout
+// summary here").
+function calPreviewCompletedHtml(date, completedList, planned, dateLabel, isToday) {
+  const sorted = completedList.slice().sort((a, b) => (a[1].completedAt||0) - (b[1].completedAt||0));
+  const workoutIdx = sorted.findIndex(([, s]) => histSessionKind(s) === 'workout');
+  const primaryIdx = workoutIdx !== -1 ? workoutIdx : 0;
+  const [primaryId, primaryS] = sorted[primaryIdx];
+  const others = sorted.filter((_, i) => i !== primaryIdx);
+  const isPrimaryWorkout = histSessionKind(primaryS) === 'workout';
+
+  const highlight = isPrimaryWorkout ? histSessionHighlight(date, primaryId, primaryS) : null;
+  const growthBadge = calPreviewGrowthBadgeHtml(date, primaryId);
+  const primaryMeta = calPreviewMetaLine(primaryS);
+
+  const primaryRowHtml = `
+    <button type="button" class="cal-preview-primary-row w-full flex items-start gap-3 text-left py-1" data-date="${date}" data-id="${primaryId}" data-workout="${isPrimaryWorkout ? '1' : '0'}">
+      ${calPreviewIconHtml(primaryS)}
+      <div class="min-w-0 flex-1">
+        <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(sessionLabel(primaryS))}</p>
+        ${primaryMeta ? `<p class="text-xs text-slate-400 mt-0.5">${esc(primaryMeta)}</p>` : ''}
+        ${highlight ? `<p class="text-xs text-brand-500 font-semibold mt-1 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">check_circle</span>${esc(highlight.text)}</p>` : ''}
+      </div>
+      ${growthBadge}
+    </button>`;
+
+  const othersHtml = others.map(([id, s]) => {
+    const meta = calPreviewMetaLine(s);
+    return `
+      <button type="button" class="cal-preview-row w-full flex items-center gap-3 py-2 text-left border-t border-slate-100 dark:border-slate-800" data-date="${date}" data-id="${id}">
+        ${calPreviewIconHtml(s)}
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(sessionLabel(s))}</p>
+          ${meta ? `<p class="text-xs text-slate-400 mt-0.5">${esc(meta)}</p>` : ''}
+        </div>
+        <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+      </button>`;
+  }).join('');
+
+  // A workout can coexist with a still-incomplete plan for the same day
+  // (e.g. planned "Leg Day" but logged a Quick Workout instead) — rare, but
+  // this keeps that plan reachable instead of silently hiding it once a
+  // completed entry takes over the card.
+  const plannedHintHtml = planned ? `
+    <button type="button" id="cal-preview-planned-hint" class="w-full flex items-center gap-2 text-xs text-lavender-500 dark:text-lavender-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-800" data-date="${date}">
+      <span class="ms text-sm" aria-hidden="true">event</span>Also planned: ${esc(calPreviewPlannedLabel(planned))}<span class="ms text-sm ml-auto" aria-hidden="true">chevron_right</span>
+    </button>` : '';
+
+  return `
+    <div class="flex items-center justify-between gap-2">
+      <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">${esc(dateLabel)}${isToday ? '<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[10px] font-bold">Today</span>' : ''}</p>
+      <button type="button" id="cal-preview-more-btn" class="text-slate-400 p-1 -mr-1 flex-shrink-0" data-date="${date}" data-id="${primaryId}" aria-label="More actions"><span class="ms text-lg" aria-hidden="true">more_horiz</span></button>
+    </div>
+    <div>
+      ${primaryRowHtml}
+      ${othersHtml}
+    </div>
+    ${plannedHintHtml}
+    <div class="flex items-center justify-between gap-2 pt-1">
+      ${isPrimaryWorkout ? `<button type="button" id="cal-preview-view-details" class="text-sm font-bold text-brand-500 flex items-center gap-1" data-date="${date}" data-id="${primaryId}">View Details<span class="ms text-base" aria-hidden="true">arrow_forward</span></button>` : '<span></span>'}
+      <button type="button" id="cal-preview-add-btn" class="btn btn-outline text-xs px-3 py-2 flex items-center gap-1 flex-shrink-0" data-date="${date}"><span class="ms text-base" aria-hidden="true">add</span>Add activity</button>
+    </div>`;
+}
+
+// A still-incomplete planned entry, nothing completed yet. Shows identity
+// only (name/meta/"Planned") — the actual Start/Resume/Change/Mark-recovery
+// actions live behind "Manage plan," which opens the existing
+// calendar-day-sheet unchanged.
+function calPreviewPlannedHtml(date, planned, dateLabel, isToday) {
+  const visual = PLANNED_TYPE_VISUAL[planned.type] || PLANNED_TYPE_VISUAL.activity;
+  const label = calPreviewPlannedLabel(planned);
+  let meta;
+  if (planned.type === 'group') { const g = groups[planned.workoutGroupId]; meta = `${(g?.exercises||[]).length} exercise${(g?.exercises||[]).length!==1?'s':''} planned`; }
+  else if (planned.type === 'quick') meta = describePlannedQuickWorkout(planned.plannedExerciseIds);
+  else if (planned.type === 'activity') { const act = getActivity(planned.activityId); meta = `${planned.plannedDuration || act?.defaultDuration || 30} min planned`; }
+  else meta = 'Planned rest day';
+
+  return `
+    <div class="flex items-center justify-between gap-2">
+      <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">${esc(dateLabel)}${isToday ? '<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[10px] font-bold">Today</span>' : ''}</p>
+    </div>
+    <button type="button" id="cal-preview-manage-plan" class="w-full flex items-center gap-3 text-left">
+      <span class="cap-icon-pod ${visual.pod} flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms cap-icon text-xl ${visual.text}">${visual.icon}</span></span>
+      <div class="min-w-0 flex-1">
+        <p class="font-display font-bold text-base text-slate-800 dark:text-white truncate">${esc(label)}</p>
+        <p class="text-xs text-slate-400 mt-0.5">${esc(meta)} · Planned</p>
+      </div>
+      <span class="ms text-slate-300 dark:text-slate-600 flex-shrink-0" aria-hidden="true">chevron_right</span>
+    </button>
+    <button type="button" id="cal-preview-manage-plan-btn" class="btn btn-outline text-sm w-full py-2.5">${isToday ? 'Start / Manage' : 'Manage plan'}</button>`;
+}
+
+// Nothing logged and nothing planned — the empty state, with three one-tap
+// shortcuts straight into the existing Add to Calendar picker (task: "This
+// makes it easy to log something directly from the calendar"). All three
+// open the same full picker rather than deep-linking to one sub-screen,
+// since "Workout" alone doesn't disambiguate Workout Group vs. Quick
+// Workout — a deliberate, minor simplification from the mockup's implied
+// direct jump.
+function calPreviewEmptyHtml(date, dateLabel, isToday) {
+  return `
+    <div class="flex items-center justify-between gap-2">
+      <p class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 flex items-center gap-2">${esc(dateLabel)}${isToday ? '<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[10px] font-bold">Today</span>' : ''}</p>
+    </div>
+    <p class="text-sm text-slate-400">No activity logged</p>
+    <div class="grid grid-cols-3 gap-2">
+      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Workout</button>
+      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Activity</button>
+      <button type="button" class="cal-preview-quick-add btn btn-outline text-xs py-2.5 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">add</span>Recovery</button>
+    </div>`;
+}
+
+function calPreviewCardHtml(date) {
+  const completedList = Object.entries(sessions[date] || {});
+  const planned = firstIncompletePlannedEntry(date);
+  const dateLabel = calPreviewDateLabel(date);
+  const isToday = date === todayStr();
+  if (completedList.length) return calPreviewCompletedHtml(date, completedList, planned, dateLabel, isToday);
+  if (planned) return calPreviewPlannedHtml(date, planned, dateLabel, isToday);
+  return calPreviewEmptyHtml(date, dateLabel, isToday);
+}
+
+function wireCalPreviewCard(date) {
+  const card = document.getElementById('cal-preview-card');
+  card.querySelector('#cal-preview-more-btn')?.addEventListener('click', e => { e.stopPropagation(); openHistActionsSheet(date, e.currentTarget.dataset.id); });
+  card.querySelector('.cal-preview-primary-row')?.addEventListener('click', e => {
+    const row = e.currentTarget;
+    if (row.dataset.workout === '1') openWorkoutSummaryPage(date, row.dataset.id);
+    else openHistActionsSheet(date, row.dataset.id);
+  });
+  card.querySelectorAll('.cal-preview-row').forEach(b => b.addEventListener('click', () => openHistActionsSheet(date, b.dataset.id)));
+  card.querySelector('#cal-preview-view-details')?.addEventListener('click', e => openWorkoutSummaryPage(date, e.currentTarget.dataset.id));
+  card.querySelector('#cal-preview-planned-hint')?.addEventListener('click', () => openCalendarDaySheet(date));
+  card.querySelector('#cal-preview-add-btn')?.addEventListener('click', () => openCalendarAddPicker(date));
+  card.querySelectorAll('.cal-preview-quick-add').forEach(b => b.addEventListener('click', () => openCalendarAddPicker(date)));
+  card.querySelector('#cal-preview-manage-plan')?.addEventListener('click', () => openCalendarDaySheet(date));
+  card.querySelector('#cal-preview-manage-plan-btn')?.addEventListener('click', () => openCalendarDaySheet(date));
+}
+
+function renderCalPreviewCard(date) {
+  const card = document.getElementById('cal-preview-card');
+  card.innerHTML = calPreviewCardHtml(date);
+  wireCalPreviewCard(date);
 }
 
 function openCalendarDaySheet(date) {
@@ -12528,9 +12750,17 @@ function wireEsmExListEvents() {
   }));
 }
 
+// Tracks whether calendar-day-sheet was the thing open when Edit was
+// tapped (its own cds-edit-session button, only reachable from the "planned
+// + completed coexist" edge case — see calPreviewCompletedHtml()) so the
+// save handler below can restore it, without also reopening it for the far
+// more common case of editing via the persistent preview card's own row ->
+// the shared Edit/Share/Delete sheet (openHistActionsSheet()).
+let esmOpenedFromDaySheet = false;
 function openEditSessionModal(date, sessionId) {
   const s = sessions[date]?.[sessionId];
   if (!s) return;
+  esmOpenedFromDaySheet = document.getElementById('calendar-day-sheet').style.display !== 'none';
   esmDate = date; esmSessionId = sessionId;
   esmDraft = JSON.parse(JSON.stringify(s)); // deep clone so closing without saving discards edits cleanly
   if (!Array.isArray(esmDraft.exercises)) esmDraft.exercises = [];
@@ -12610,7 +12840,7 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
     const { previousGrowth, newGrowth } = await recalculateAndPersistPlantGrowth();
     rsHideModal('edit-session-modal');
     renderDashboard(); renderHistory(); renderCalendar(); renderProfile(); refreshWorkoutSummaryIfOpen();
-    if (calendarSelectedDate === esmDate) openCalendarDaySheet(esmDate);
+    if (esmOpenedFromDaySheet) openCalendarDaySheet(esmDate);
     showToast(stageChangeMessage(previousGrowth, newGrowth) || 'Workout updated');
   } catch (e) {
     console.error('Failed to save workout edits:', e);
@@ -12765,26 +12995,23 @@ function closeCalendarAddModal() {
   setTimeout(() => { modal.style.display = 'none'; }, reducedMotion ? 0 : 300);
 }
 // Backing out WITHOUT picking anything (backdrop tap, swipe-down) should
-// return to the day's detail sheet underneath — the same place the removed
-// Cancel button used to land on. Picking an option instead flows through
-// finishActivityAdded()/closeCalendarActivityWindows(), which never reopens
-// that sheet, so this stays a separate function from the plain
-// closeCalendarAddModal() every card's own flow uses.
+// return to wherever this picker was actually opened FROM: the
+// calendar-day-sheet's own Change/Add-another/plan-management buttons still
+// expect to land back on that sheet, but the persistent preview card's own
+// Add activity/quick-add buttons open this picker directly with no sheet
+// underneath — reopening one there would resurrect the popup this task
+// removed. calendarAddPickerFromDaySheet (set by openCalendarAddPicker())
+// tells these two cases apart automatically. Picking an option instead
+// flows through finishActivityAdded()/closeCalendarActivityWindows(), which
+// never reopens the sheet either way.
 function dismissCalendarAddModal() {
   // Backing out without picking anything means any "Change workout" plan
   // swap in progress is abandoned too — the original plan stays put.
   calendarChangeReplacingEntryId = null;
   closeCalendarAddModal();
-  // Same shortcut as openCalendarDayEntry(): an empty future date's day
-  // sheet has nothing on it but a single "Add To This Day" button, so
-  // backing out of the picker for one just closes everything instead of
-  // reopening that button-only sheet.
   const date = calendarAddPickerDate;
-  if (date && dateRelation(date) === 'future' && !firstIncompletePlannedEntry(date)) {
-    closeCalendarActivityWindows(date);
-  } else if (date) {
-    openCalendarDaySheet(date);
-  }
+  if (date && calendarAddPickerFromDaySheet) openCalendarDaySheet(date);
+  else if (date) renderCalendar();
 }
 // A short pause between tapping a card and actually navigating, so the press
 // state (native :active — always self-clearing on release, never a class we
@@ -12826,7 +13053,14 @@ document.getElementById('calendar-add-modal').addEventListener('click', e => {
 });
 
 let calendarAddPickerDate = null;
+// Whether calendar-day-sheet was actually open when this picker was
+// launched — decides where dismissCalendarAddModal() should return to. Set
+// automatically here rather than by each caller, so every existing
+// call site (cds-add-btn, cds-change-btn, cds-add-another-btn) keeps
+// working unchanged.
+let calendarAddPickerFromDaySheet = false;
 function openCalendarAddPicker(date) {
+  calendarAddPickerFromDaySheet = document.getElementById('calendar-day-sheet').style.display !== 'none';
   calendarAddPickerDate = date;
   const relation = dateRelation(date);
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
