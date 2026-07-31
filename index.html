@@ -250,9 +250,13 @@ body{font-family:'Inter',sans-serif}
 .dark .garden-shelf{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Garden preview plants (Home) — the exercise/species name is hidden by
    default and only reveals in this small tooltip when its plant is tapped
-   (see the ghp-plant-btn click delegation in JS). */
-.ghp-tip{position:absolute;left:50%;top:100%;margin-top:6px;transform:translate(-50%,-4px) scale(.92);opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;white-space:nowrap;font-size:10px;font-weight:600;color:#fff;background:#1e293b;padding:.25rem .5rem;border-radius:.5rem;box-shadow:0 4px 10px -2px rgba(0,0,0,.25);z-index:20}
-.ghp-plant-btn.ghp-tip-open .ghp-tip{opacity:1;transform:translate(-50%,0) scale(1)}
+   (see the ghp-plant-btn click delegation in JS). A single shared element
+   positioned fixed to the viewport (not an absolutely-positioned child of
+   the plant row) so it's never clipped by the row's own overflow-x-auto
+   (which forces overflow-y to clip too) and always paints above the
+   Growing/Bloomed divider below it, instead of being cut off. */
+.ghp-tip-floating{position:fixed;transform:translate(-50%,-4px) scale(.92);opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;white-space:nowrap;font-size:10px;font-weight:600;color:#fff;background:#1e293b;padding:.25rem .5rem;border-radius:.5rem;box-shadow:0 4px 10px -2px rgba(0,0,0,.25);z-index:200}
+.ghp-tip-floating.ghp-tip-visible{opacity:1;transform:translate(-50%,0) scale(1)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
@@ -4985,20 +4989,18 @@ function renderGardenPreview() {
 
   // No background chip, no name label — the artwork alone carries it. The
   // exercise/species name only reveals in a small tap-triggered tooltip
-  // (see the ghp-plant-btn/ghp-tip wiring below), never shown by default.
+  // (see the ghp-plant-btn/ghp-tip-floating wiring below), never shown by default.
   const growingHtml = growing.length
     ? growing.map(g => `
-      <button type="button" class="ghp-plant-btn relative flex-shrink-0" data-name="${esc(g.name)}" aria-label="${esc(g.name)}">
+      <button type="button" class="ghp-plant-btn flex-shrink-0" data-name="${esc(g.name)}" aria-label="${esc(g.name)}">
         ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 44 })}
-        <span class="ghp-tip">${esc(g.name)}</span>
       </button>`).join('')
     : `<p class="text-xs text-slate-400 text-center py-2">Start training to grow your first plant.</p>`;
 
   const collectedHtml = collected.length
     ? collected.map(c => `
-      <button type="button" class="ghp-plant-btn relative flex-shrink-0 flex items-center justify-center" style="width:44px;height:44px;font-size:36px;line-height:1" data-name="${esc(c.speciesName)}" aria-label="${esc(c.speciesName)}">
+      <button type="button" class="ghp-plant-btn flex-shrink-0 flex items-center justify-center" style="width:44px;height:44px;font-size:36px;line-height:1" data-name="${esc(c.speciesName)}" aria-label="${esc(c.speciesName)}">
         <span aria-hidden="true">${c.speciesEmoji}</span>
-        <span class="ghp-tip">${esc(c.speciesName)}</span>
       </button>`).join('')
     : `
       <div class="flex items-center gap-4 py-1">
@@ -5022,22 +5024,59 @@ function renderGardenPreview() {
       <div class="flex items-center gap-4 overflow-x-auto">${collectedHtml}</div>
     </div>`;
 }
-// Tapping a Garden preview plant toggles its name tooltip; tapping any other
-// open one, or anywhere outside the grid, closes it — only one open at a
-// time. Delegated once here rather than rebound on every renderGardenPreview()
-// re-render, since #dash-garden-preview itself is a stable, never-replaced element.
+// Tapping a Garden preview plant shows its name in a single shared tooltip
+// positioned via getBoundingClientRect() and `position:fixed` — deliberately
+// NOT an absolutely-positioned child of the plant row, since that row's
+// overflow-x-auto forces overflow-y to clip too (a standard browser quirk),
+// which would cut the tooltip off right where the Growing/Bloomed divider
+// sits. Fixed positioning escapes that clipping entirely and always paints
+// above the divider. Tapping the same plant, a different one, or anywhere
+// outside closes/moves it; only one shown at a time.
+let ghpTipEl = null, ghpTipOpenBtn = null, ghpTipShownAt = 0;
+function ghpTipElement() {
+  if (!ghpTipEl) {
+    ghpTipEl = document.createElement('div');
+    ghpTipEl.className = 'ghp-tip-floating';
+    ghpTipEl.setAttribute('role', 'tooltip');
+    document.body.appendChild(ghpTipEl);
+  }
+  return ghpTipEl;
+}
+function showGhpTip(btn) {
+  const tip = ghpTipElement();
+  const rect = btn.getBoundingClientRect();
+  tip.textContent = btn.dataset.name;
+  tip.style.left = `${rect.left + rect.width / 2}px`;
+  tip.style.top = `${rect.bottom + 6}px`;
+  tip.classList.add('ghp-tip-visible');
+  ghpTipOpenBtn = btn;
+  ghpTipShownAt = Date.now();
+}
+function hideGhpTip() {
+  if (ghpTipEl) ghpTipEl.classList.remove('ghp-tip-visible');
+  ghpTipOpenBtn = null;
+}
 document.getElementById('dash-garden-preview').addEventListener('click', e => {
   const btn = e.target.closest('.ghp-plant-btn');
   if (!btn) return;
-  const wasOpen = btn.classList.contains('ghp-tip-open');
-  document.querySelectorAll('.ghp-plant-btn.ghp-tip-open').forEach(b => b.classList.remove('ghp-tip-open'));
-  if (!wasOpen) btn.classList.add('ghp-tip-open');
+  if (btn === ghpTipOpenBtn) { hideGhpTip(); return; }
+  showGhpTip(btn);
 });
 document.addEventListener('click', e => {
-  if (!e.target.closest('.ghp-plant-btn')) {
-    document.querySelectorAll('.ghp-plant-btn.ghp-tip-open').forEach(b => b.classList.remove('ghp-tip-open'));
-  }
+  if (!e.target.closest('.ghp-plant-btn')) hideGhpTip();
 });
+// A fixed-position tooltip doesn't track its button while scrolling — hide
+// it rather than let it drift. Capture phase on window is what catches
+// scroll from a descendant scrollable container (like the plant row's own
+// overflow-x-auto), since scroll events don't bubble. Ignored for a brief
+// moment right after opening: focusing the tapped button can itself
+// trigger a native "scroll into view" nudge inside that same horizontally-
+// scrollable row, which would otherwise immediately hide the tooltip this
+// very click just opened.
+window.addEventListener('scroll', () => {
+  if (Date.now() - ghpTipShownAt < 250) return;
+  hideGhpTip();
+}, { passive: true, capture: true });
 
 function renderRecentWin() {
   const iconEl = document.getElementById('dash-win-icon');
