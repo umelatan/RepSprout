@@ -108,7 +108,7 @@ body{font-family:'Inter',sans-serif}
 .bnav-active{color:#22c55e!important}
 .bnav-active .ms{font-variation-settings:'FILL' 1}
 .ms{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300;font-size:inherit;line-height:1;vertical-align:middle;user-select:none}
-.card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card{background:#fffdf7;border:1px solid rgba(17,24,39,.08);border-radius:1rem;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Tappable cards (.card combined with cursor-pointer) get the same press
    feedback language as buttons, for free, via attribute match — no per-card
@@ -162,7 +162,7 @@ body{font-family:'Inter',sans-serif}
    the whole card itself reads as the tap target ("beautiful object", not a
    navigation row). Press is a plain interaction-driven transition, not an
    infinite loop, so it's left out of the prefers-reduced-motion list below. */
-.wt-hub-card{background:#fdfcfa;border:1px solid #f1f5f9;border-radius:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.05);padding:1.15rem 1.25rem;transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
+.wt-hub-card{background:#fffdf7;border:1px solid rgba(17,24,39,.08);border-radius:1.5rem;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08);padding:1.15rem 1.25rem;transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .wt-hub-card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 .wt-hub-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .wt-hub-icon{width:3.75rem;height:3.75rem;flex-shrink:0}
@@ -172,7 +172,7 @@ body{font-family:'Inter',sans-serif}
    language as .wt-hub-card, min-height 44px+ touch target already satisfied
    by the icon + padding. Workout Group gets a subtle purple-tinted surface
    (never a heavier fill) for its "most common option" emphasis. */
-.cap-card{background:#fdfcfa;border:1px solid #f1f5f9;box-shadow:0 1px 3px rgba(0,0,0,.05);transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-standard) both}
+.cap-card{background:#fffdf7;border:1px solid rgba(17,24,39,.08);box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08);transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-standard) both}
 .dark .cap-card{background:rgba(30,41,59,.6);border-color:rgba(51,65,85,.5)}
 .cap-card:active{transform:scale(.985);background-color:#f6f4fb;border-color:#ded6f0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .dark .cap-card:active{background-color:rgba(124,58,237,.16);border-color:rgba(124,58,237,.4)}
@@ -192,7 +192,7 @@ body{font-family:'Inter',sans-serif}
 /* Soft rounded "pod" the icon sits in — no shadow/gradient, just a flat
    tinted surface a shade lighter than the card so it reads as a gentle
    anchor rather than a boxy tile. */
-.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#f1f5f9;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#efe9db;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .cap-icon-pod{background:rgba(51,65,85,.5)}
 /* Same "Start Growing" logic (start-workout-modal) — each option's own
    distinct color instead of one uniform neutral tone, so the sheet reads
@@ -218,7 +218,7 @@ body{font-family:'Inter',sans-serif}
    for growth/success/recovery elsewhere), toggled by adding/removing
    .mep-selected on the card itself so every child's transition below can
    react to one class change. */
-.mep-ex-card{border:1px solid #f1f5f9;background:#fff;border-radius:1rem;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.mep-ex-card{border:1px solid rgba(17,24,39,.08);background:#fffdf7;border-radius:1rem;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .mep-ex-card{border-color:#1e293b;background:rgba(30,41,59,.4)}
 .mep-ex-card.mep-selected{border-color:#c4b5fd;background:#f5f3ff}
 .dark .mep-ex-card.mep-selected{border-color:#7c3aed;background:rgba(124,58,237,.16)}
@@ -240,17 +240,17 @@ body{font-family:'Inter',sans-serif}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
-.hero-surface{background:linear-gradient(180deg,#eefdf3 0%,#fbf9f4 65%,#f8fafc 100%)}
+.hero-surface{background:linear-gradient(180deg,#dff5e4 0%,#faf3e6 60%,#f4efe4 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
 .dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
 .hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.2),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
 .dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.12),rgba(251,191,36,0) 55%)}
-.hero-surface{box-shadow:0 24px 40px -34px rgba(15,23,42,.18)}
+.hero-surface{box-shadow:0 24px 44px -28px rgba(31,41,55,.22)}
 .dark .hero-surface{box-shadow:0 24px 40px -30px rgba(0,0,0,.4)}
-.mission-surface{background:#fdfcfa;border:1px solid #f1f5f9}
+.mission-surface{background:#fffdf7;border:1px solid rgba(17,24,39,.08);box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
 .dark .mission-surface{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
-.garden-shelf{background:#fdfcfa;border:1px solid #f1f5f9}
+.garden-shelf{background:#fffdf7;border:1px solid rgba(17,24,39,.08);box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
 .dark .garden-shelf{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Garden preview plants (Home) — the exercise/species name is hidden by
    default and only reveals in this small tooltip when its plant is tapped
@@ -495,7 +495,7 @@ input:focus,textarea:focus,select:focus{border-color:#22c55e}
 body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) var(--rs-ease-standard),border-color var(--rs-dur-standard) var(--rs-ease-standard),color var(--rs-dur-standard) var(--rs-ease-standard)}
 </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
+<body class="bg-[#f4efe4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 
 <!-- cfg banner -->
 <div id="cfg-banner" style="display:none" class="fixed top-0 inset-x-0 z-[999] bg-red-500 text-white text-xs text-center py-2 font-semibold">
@@ -1104,7 +1104,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 </div>
 
 <!-- ══════════ ACTIVE WORKOUT ══════════ -->
-<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-slate-50 dark:bg-slate-950 flex flex-col">
+<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
     <button id="aw-end-btn" class="p-2 text-slate-400 hover:text-red-400 flex-shrink-0" title="End workout" aria-label="End workout"><span class="ms text-xl" aria-hidden="true">close</span></button>
     <div class="text-center min-w-0 flex-1">
@@ -1130,7 +1130,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      hides this overlay and reveals whatever was already showing (Exercises
      tab, History, Home, or the active workout), so no explicit "return to"
      routing state is needed. See openExerciseDetail()/closeExerciseDetail(). -->
-<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-slate-50 dark:bg-slate-950 flex flex-col">
+<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="exd-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
@@ -1156,7 +1156,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Reuses the finish screen's own Session overview / Today's highlight /
      Plant progress / Exercise summary components wherever the underlying
      data supports it — see renderWorkoutSummaryPage(). -->
-<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-slate-50 dark:bg-slate-950 flex flex-col">
+<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center justify-between flex-shrink-0">
     <button id="wsum-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <button id="wsum-more-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More actions"><span class="ms text-xl" aria-hidden="true">more_horiz</span></button>
@@ -2012,7 +2012,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Last Activity (the most recent COMPLETED day/week, reusing the same
      calculateTargetPeriodProgress() the current-period progress already
      uses — never a second completion rule). -->
-<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-slate-50 dark:bg-slate-950 flex flex-col">
+<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="tgd-back-btn" class="p-2 text-slate-400 hover:text-lavender-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
@@ -2091,7 +2091,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      scrollable main, plain show()/hide(). Group identity is name + a chosen
      colour (see gm-color-row/gm-color-sheet) only — no cover image, no
      icon. -->
-<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-slate-50 dark:bg-slate-950 flex flex-col">
+<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-start gap-3 flex-shrink-0">
     <button id="group-modal-close" class="p-1.5 -ml-1.5 text-slate-400 hover:text-brand-500 flex-shrink-0 mt-0.5" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
