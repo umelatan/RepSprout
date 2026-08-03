@@ -969,17 +969,18 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
       </div>
 
-      <!-- My Garden / Locked Plants tabs — one flat, scrollable collection
+      <!-- Growing / Bloomed / Locked tabs — one flat, scrollable collection
            grid per tab (see renderGardenGrid()). No large "+ New Plant"
            card; plants are unlocked by training, never manually created. -->
       <div class="flex items-center gap-5 border-b border-slate-100 dark:border-slate-800">
-        <button type="button" id="garden-tab-active" class="garden-tab pb-2.5 text-sm font-bold border-b-2" aria-selected="true">My Garden</button>
-        <button type="button" id="garden-tab-locked" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Locked Plants</button>
+        <button type="button" id="garden-tab-active" class="garden-tab pb-2.5 text-sm font-bold border-b-2" aria-selected="true">Growing</button>
+        <button type="button" id="garden-tab-bloomed" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Bloomed</button>
+        <button type="button" id="garden-tab-locked" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Locked</button>
       </div>
 
       <!-- Body-part filter chips — reuses the Exercise Library's own
            MG_LABEL grouping (see renderGardenFilters()), narrowed to the
-           four the task asks for. Filters both tabs' grids. -->
+           four the task asks for. Filters all three tabs' grids. -->
       <div id="garden-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
 
       <div id="garden-active-panel">
@@ -989,6 +990,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <button type="button" id="garden-create-exercise-btn" class="btn btn-green text-sm px-4 py-2 mt-1">Create Exercise</button>
         </div>
         <div id="garden-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+      </div>
+
+      <div id="garden-bloomed-panel" style="display:none">
+        <div id="garden-bloomed-empty-state" style="display:none" class="card p-6 text-center space-y-2">
+          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No blooms yet.</p>
+          <p class="text-sm text-slate-400">Keep training an exercise plant through all its stages to bloom it.</p>
+        </div>
+        <div id="garden-bloomed-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
       </div>
 
       <div id="garden-locked-panel" style="display:none">
@@ -3805,13 +3814,14 @@ const DoubleProgressionStrategy = {
 // One representative emoji per exercise-plant stage, indexed the same way
 // as EXERCISE_PLANT_STAGE_NAMES — a display-only lookup, unrelated to
 // PLANTS/userProfile.plant (the Companion, a separate, non-progressing
-// identity). Seed uses 🌰 rather than 🌱 — Unicode's "seedling" glyph
+// identity). Seed uses 🫘 rather than 🌱 — Unicode's "seedling" glyph
 // already looks like a sprouted two-leaf shoot, not an actual seed, so
 // it's shifted one stage later to where it visually belongs (Sprout).
-// 🌰's own species entry ("Chestnut") was removed from EXERCISE_PLANT_SPECIES
-// below specifically so this reuse is never ambiguous — a plant can never
-// actually bloom into the same glyph it showed while still a Seed.
-const DP_STAGE_EMOJI = ['🌰', '🌱', '🌿', '🪴', '🌷'];
+// (🌰 was tried here too, but it renders noticeably larger/heavier than
+// the other four stage glyphs at this size, so it's back to 🫘 — and
+// "Chestnut" is back in EXERCISE_PLANT_SPECIES below since nothing needs
+// to reserve 🌰 anymore.)
+const DP_STAGE_EMOJI = ['🫘', '🌱', '🌿', '🪴', '🌷'];
 
 // ── Exercise Plant lifecycle: the ONLY progression system in RepSprout ─────
 // (product simplification: "The Companion is no longer a progression
@@ -3857,10 +3867,8 @@ const EXERCISE_PLANT_SPECIES = [
   { name: 'Wheat', emoji: '🌾' },
   { name: 'Lotus', emoji: '🪷' },
   { name: 'Monstera', emoji: '🍃' },
+  { name: 'Chestnut', emoji: '🌰' },
   { name: 'Herb', emoji: '🌿' }
-  // No "Chestnut" (🌰) here — that glyph is reserved for the generic Seed
-  // stage icon (see DP_STAGE_EMOJI), so a plant can never bloom into the
-  // same glyph it showed while unrevealed.
 ];
 // Each exercise gets its own fixed, deterministic shuffle through the
 // ENTIRE species pool (a seeded Fisher-Yates keyed only by exerciseId) —
@@ -5223,23 +5231,25 @@ function gardenArchivedPlants() {
 let gardenActiveTab = 'active';
 function setGardenTab(tab) {
   gardenActiveTab = tab;
-  const isActive = tab === 'active';
-  const activeBtn = document.getElementById('garden-tab-active');
-  const lockedBtn = document.getElementById('garden-tab-locked');
-  activeBtn.classList.toggle('text-brand-500', isActive);
-  activeBtn.classList.toggle('border-brand-500', isActive);
-  activeBtn.classList.toggle('text-slate-400', !isActive);
-  activeBtn.classList.toggle('border-transparent', !isActive);
-  activeBtn.setAttribute('aria-selected', String(isActive));
-  lockedBtn.classList.toggle('text-brand-500', !isActive);
-  lockedBtn.classList.toggle('border-brand-500', !isActive);
-  lockedBtn.classList.toggle('text-slate-400', isActive);
-  lockedBtn.classList.toggle('border-transparent', isActive);
-  lockedBtn.setAttribute('aria-selected', String(!isActive));
-  document.getElementById('garden-active-panel').style.display = isActive ? '' : 'none';
-  document.getElementById('garden-locked-panel').style.display = isActive ? 'none' : '';
+  const tabs = [
+    { key: 'active', btn: document.getElementById('garden-tab-active'), panel: document.getElementById('garden-active-panel') },
+    { key: 'bloomed', btn: document.getElementById('garden-tab-bloomed'), panel: document.getElementById('garden-bloomed-panel') },
+    { key: 'locked', btn: document.getElementById('garden-tab-locked'), panel: document.getElementById('garden-locked-panel') }
+  ];
+  tabs.forEach(({ key, btn, panel }) => {
+    const on = key === tab;
+    btn.classList.toggle('text-brand-500', on);
+    btn.classList.toggle('border-brand-500', on);
+    btn.classList.toggle('font-bold', on);
+    btn.classList.toggle('text-slate-400', !on);
+    btn.classList.toggle('border-transparent', !on);
+    btn.classList.toggle('font-semibold', !on);
+    btn.setAttribute('aria-selected', String(on));
+    panel.style.display = on ? '' : 'none';
+  });
 }
 document.getElementById('garden-tab-active').addEventListener('click', () => setGardenTab('active'));
+document.getElementById('garden-tab-bloomed').addEventListener('click', () => setGardenTab('bloomed'));
 document.getElementById('garden-tab-locked').addEventListener('click', () => setGardenTab('locked'));
 
 // Body-part filter — reuses the Exercise Library's own MG_LABEL grouping
@@ -5302,6 +5312,24 @@ function gardenLockedCardHtml({ name, tag, reason, isCreate }) {
     </button>`;
 }
 
+// Bloomed cards reveal the permanent gardenCollection archive — the
+// species emoji/name a plant's generation was revealed as, plus which
+// exercise grew it and when. Tapping one opens that exercise's own detail
+// page (the source of truth for its current, still-growing plant),
+// there's nothing else to "manage" about a past bloom.
+function gardenBloomedCardHtml(c) {
+  return `
+    <button type="button" class="garden-bloomed-card card p-3 text-center flex flex-col items-center gap-1" data-exercise-id="${esc(c.exerciseId)}">
+      <div class="relative flex-shrink-0 flex items-center justify-center" style="width:60px;height:60px" aria-hidden="true">
+        <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${EXG_ACCENT.brand.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(6px)"></div>
+        <span class="relative leading-none" style="font-size:50px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))">${c.speciesEmoji}</span>
+      </div>
+      <p class="font-display font-bold text-sm text-slate-800 dark:text-white truncate w-full">${esc(c.speciesName)}</p>
+      <p class="text-[11px] text-slate-400 -mt-0.5 truncate w-full">${esc(c.exerciseName)}</p>
+      <p class="text-[10px] text-slate-400">${histRelativeDate(c.bloomedAt)}</p>
+    </button>`;
+}
+
 function renderGardenGrid() {
   renderGardenFilters();
   const matchesFilter = ex => !gardenGroupFilter || ex.muscleGroup === gardenGroupFilter;
@@ -5309,8 +5337,12 @@ function renderGardenGrid() {
   const active = all.filter(p => p.everTrained && matchesFilter(p.ex));
   const untrained = all.filter(p => !p.everTrained && matchesFilter(p.ex));
   const archived = gardenArchivedPlants().filter(p => matchesFilter(p.ex));
+  const bloomed = Object.values(gardenCollection || {})
+    .filter(c => !gardenGroupFilter || exercises[c.exerciseId]?.muscleGroup === gardenGroupFilter)
+    .sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation));
 
   document.getElementById('garden-empty-state').style.display = all.length === 0 ? '' : 'none';
+  document.getElementById('garden-bloomed-empty-state').style.display = bloomed.length === 0 ? '' : 'none';
 
   const grid = document.getElementById('garden-grid');
   grid.innerHTML = active.map(p => gardenPlantCardHtml({
@@ -5318,6 +5350,10 @@ function renderGardenGrid() {
     stageIdx: exercisePlantStageIdx(p.dpResult), generation: exercisePlantGeneration(p.dpResult)
   })).join('');
   grid.querySelectorAll('.garden-plant-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
+
+  const bloomedGrid = document.getElementById('garden-bloomed-grid');
+  bloomedGrid.innerHTML = bloomed.map(gardenBloomedCardHtml).join('');
+  bloomedGrid.querySelectorAll('.garden-bloomed-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
 
   const lockedCards = [];
   untrained.forEach(p => lockedCards.push(gardenLockedCardHtml({ name: p.ex.name, tag: 'Locked', reason: `Progress ${p.ex.name} to unlock.` })));
