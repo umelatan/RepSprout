@@ -108,43 +108,92 @@ body{font-family:'Inter',sans-serif}
 .bnav-active{color:#22c55e!important}
 .bnav-active .ms{font-variation-settings:'FILL' 1}
 .ms{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300;font-size:inherit;line-height:1;vertical-align:middle;user-select:none}
-/* Light mode's entire neutral language, recolored as one coordinated system
-   instead of a patchwork of one-off overrides — the same relationship dark
-   mode already has with `slate` (one consistent cool-neutral family used
-   for every ambient surface/border/text), just warm instead of cool, using
-   Tailwind's own `stone` scale hex-for-hex so every step keeps its correct
-   relative lightness. Every rule below maps a bare (unprefixed) slate-N
-   utility to its stone-N equivalent, scoped behind `html:not(.dark)` so it
-   only ever touches light mode — dark mode keeps rendering the exact same
-   `slate` classes untouched, including the many places that reuse a bare
-   slate-N with no dark: pair at all (e.g. a footer's text-slate-400) and so
-   would otherwise have shifted in BOTH themes if these were edited
-   directly instead of overridden. Deliberately excludes slate-900/950
-   (only ever used by the always-dark login/onboarding gradient, never part
-   of the light/dark surface system) and the handful of intentionally
-   inverted "pill" components (toast, filter-chip selected state, discard-
-   changes button) that use bg-slate-700/800/900 as a deliberate dark fill
-   regardless of theme — recoloring those would mute the one place in the
-   app that's supposed to look like a bold, high-contrast accent. */
-html:not(.dark) .text-slate-300{color:#d6d3d1}
-html:not(.dark) .text-slate-400{color:#a8a29e}
-html:not(.dark) .text-slate-500{color:#78716c}
-html:not(.dark) .text-slate-600{color:#57534e}
-html:not(.dark) .text-slate-700{color:#44403c}
-html:not(.dark) .text-slate-800{color:#292524}
-html:not(.dark) .text-slate-900{color:#1c1917}
-html:not(.dark) .bg-slate-50{background-color:#fafaf9}
-html:not(.dark) .bg-slate-100{background-color:#f5f5f4}
-html:not(.dark) .bg-slate-200{background-color:#e7e5e4}
-html:not(.dark) .bg-slate-300{background-color:#d6d3d1}
-html:not(.dark) .border-slate-100{border-color:#f5f5f4}
-html:not(.dark) .border-slate-200{border-color:#e7e5e4}
-html:not(.dark) .border-slate-300{border-color:#d6d3d1}
-html:not(.dark) .divide-slate-100>:not([hidden])~:not([hidden]){border-color:#f5f5f4}
-html:not(.dark) .divide-slate-200>:not([hidden])~:not([hidden]){border-color:#e7e5e4}
-html:not(.dark) .ring-slate-400{--tw-ring-color:#a8a29e}
-html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
-.card{background:#fdfbf5;border:1px solid #e8e2d3;border-radius:1rem;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
+/* ── "Morning Garden" light theme ────────────────────────────────────────────
+   Dark mode ("Night Garden") is one coordinated cool-neutral system —
+   `slate` for every surface/border/text, vivid brand green/lavender popping
+   hard against near-black. Light mode should be its warm daytime mirror,
+   not an inverted clone: a soft, warm-neutral "paper" system (hand-tuned,
+   not stock Tailwind `stone` — a touch softer/warmer at every step so
+   headings never read as harsh black) + botanical, desaturated green and
+   dusty lavender, so the actual plant artwork stays the most colourful
+   thing on screen rather than competing with neon UI chrome.
+   Every rule below is scoped behind `html:not(.dark)`, overriding a bare
+   (unprefixed) Tailwind utility's computed value — never the HTML, never
+   dark mode's own rendering of that same class (including the many
+   elements that reuse a bare slate/brand/lavender-N with no dark: pair at
+   all, which would otherwise have shifted in BOTH themes if edited
+   directly). Deliberately excludes: slate-900/950 (only the always-dark
+   login/onboarding gradient), the intentionally-inverted "pill" components
+   (toast, selected filter chip, discard-changes button) that use a dark
+   fill regardless of theme, and the semantic multi-colour palettes (Workout
+   Group colours, activity-type/calendar colours) — those are functional
+   colour-coding, not ambient theme chrome, and muting only their "green"
+   entry would leave them mismatched against the others. */
+html:not(.dark) .text-slate-300{color:#cdc4b3}
+html:not(.dark) .text-slate-400{color:#a89d8c}
+html:not(.dark) .text-slate-500{color:#8a8071}
+html:not(.dark) .text-slate-600{color:#6f6656}
+html:not(.dark) .text-slate-700{color:#5c5548}
+html:not(.dark) .text-slate-800{color:#4a443a}
+html:not(.dark) .text-slate-900{color:#3d382f}
+html:not(.dark) .bg-slate-50{background-color:#f8f4ea}
+html:not(.dark) .bg-slate-100{background-color:#f1ece0}
+html:not(.dark) .bg-slate-200{background-color:#e8e1d2}
+html:not(.dark) .bg-slate-300{background-color:#cdc4b3}
+html:not(.dark) .border-slate-100{border-color:#f1ece0}
+html:not(.dark) .border-slate-200{border-color:#e8e1d2}
+html:not(.dark) .border-slate-300{border-color:#cdc4b3}
+html:not(.dark) .divide-slate-100>:not([hidden])~:not([hidden]){border-color:#f1ece0}
+html:not(.dark) .divide-slate-200>:not([hidden])~:not([hidden]){border-color:#e8e1d2}
+html:not(.dark) .ring-slate-400{--tw-ring-color:#a89d8c}
+html:not(.dark) .\!bg-slate-100{background-color:#f1ece0!important}
+html:not(.dark) .bg-white{background-color:#fbf8f0}
+html:not(.dark) .bg-white\/90{background-color:rgb(251 248 240 / .9)}
+html:not(.dark) .bg-white\/95{background-color:rgb(251 248 240 / .95)}
+/* Botanical green — Tailwind's stock `brand` scale (bg-brand-500:#22c55e) is
+   a vivid, almost neon emerald; desaturated into a muted moss/sage so the
+   UI's own accent never out-competes the plant artwork's colour. */
+html:not(.dark) .text-brand-300{color:#a9c084}
+html:not(.dark) .text-brand-400{color:#8aab6c}
+html:not(.dark) .text-brand-500{color:#6f9450}
+html:not(.dark) .text-brand-600{color:#587a3d}
+html:not(.dark) .text-brand-700{color:#47632f}
+html:not(.dark) .bg-brand-50{background-color:#f2f5ec}
+html:not(.dark) .bg-brand-100{background-color:#e3e9d4}
+html:not(.dark) .bg-brand-200{background-color:#cbd9ae}
+html:not(.dark) .bg-brand-500{background-color:#6f9450}
+html:not(.dark) .border-brand-200{border-color:#cbd9ae}
+html:not(.dark) .border-brand-300{border-color:#a9c084}
+html:not(.dark) .border-brand-400{border-color:#8aab6c}
+html:not(.dark) .border-brand-500{border-color:#6f9450}
+html:not(.dark) .border-brand-600{border-color:#587a3d}
+html:not(.dark) .border-brand-700{border-color:#47632f}
+/* Same treatment for lavender — dustier, less saturated, still clearly the
+   app's secondary accent (Targets, group-picker highlight) rather than a
+   bright-violet competitor to the green. */
+html:not(.dark) .text-lavender-500{color:#8a76ad}
+html:not(.dark) .text-lavender-600{color:#715f92}
+html:not(.dark) .bg-lavender-50{background-color:#f3f1f7}
+html:not(.dark) .bg-lavender-100{background-color:#e6e1ee}
+html:not(.dark) .bg-lavender-500{background-color:#8a76ad}
+html:not(.dark) .border-lavender-200{border-color:#d6cee3}
+html:not(.dark) .border-lavender-300{border-color:#bfb3d6}
+html:not(.dark) .border-lavender-400{border-color:#a393c2}
+html:not(.dark) .border-lavender-500{border-color:#8a76ad}
+/* Custom (non-Tailwind-utility) CSS classes/rules that hardcode the same
+   vivid brand/lavender hex directly, with no dark: counterpart of their own
+   — same guard, same reasoning, since editing them unconditionally would
+   shift dark mode's identical rendering too. */
+html:not(.dark) .nav-active{color:#6f9450!important;background:rgba(111,148,80,.12)!important}
+html:not(.dark) .bnav-active{color:#6f9450!important}
+html:not(.dark) .btn-green{background:#6f9450}
+html:not(.dark) #ls-mark-working[aria-pressed="true"]{background:#6f9450}
+html:not(.dark) .gm-ex-row-dragging .gm-ex-drag-handle{color:#6f9450!important}
+html:not(.dark) input:focus,html:not(.dark) textarea:focus,html:not(.dark) select:focus{border-color:#6f9450}
+html:not(.dark) .btn:focus-visible,html:not(.dark) button:focus-visible,html:not(.dark) a:focus-visible{outline-color:#587a3d}
+html:not(.dark) .mg-full{background:rgba(111,148,80,.14);color:#587a3d;border-color:rgba(111,148,80,.3)}
+html:not(.dark) .mep-ex-card.mep-selected .mep-checkbox{background:#8a76ad;border-color:#8a76ad}
+.card{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);border-radius:1rem;box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Tappable cards (.card combined with cursor-pointer) get the same press
    feedback language as buttons, for free, via attribute match — no per-card
@@ -198,7 +247,7 @@ html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
    the whole card itself reads as the tap target ("beautiful object", not a
    navigation row). Press is a plain interaction-driven transition, not an
    infinite loop, so it's left out of the prefers-reduced-motion list below. */
-.wt-hub-card{background:#fdfbf5;border:1px solid #e8e2d3;border-radius:1.5rem;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08);padding:1.15rem 1.25rem;transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
+.wt-hub-card{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);border-radius:1.5rem;box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10);padding:1.15rem 1.25rem;transition:transform var(--rs-dur-press) var(--rs-ease-settle),box-shadow var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .wt-hub-card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 .wt-hub-card:active{transform:scale(.98);box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .wt-hub-icon{width:3.75rem;height:3.75rem;flex-shrink:0}
@@ -208,11 +257,11 @@ html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
    language as .wt-hub-card, min-height 44px+ touch target already satisfied
    by the icon + padding. Workout Group gets a subtle purple-tinted surface
    (never a heavier fill) for its "most common option" emphasis. */
-.cap-card{background:#fdfbf5;border:1px solid #e8e2d3;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08);transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-standard) both}
+.cap-card{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10);transition:transform var(--rs-dur-press) var(--rs-ease-settle),background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard),box-shadow var(--rs-dur-quick) var(--rs-ease-standard);min-height:44px;animation:capCardIn var(--rs-dur-standard) var(--rs-ease-standard) both}
 .dark .cap-card{background:rgba(30,41,59,.6);border-color:rgba(51,65,85,.5)}
-.cap-card:active{transform:scale(.985);background-color:#f6f4fb;border-color:#ded6f0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.cap-card:active{transform:scale(.985);background-color:#f2effa;border-color:#d6cee3;box-shadow:0 1px 2px rgba(61,56,47,.06)}
 .dark .cap-card:active{background-color:rgba(124,58,237,.16);border-color:rgba(124,58,237,.4)}
-.cap-card-primary{background:#f8f5ff;border-color:#ede4fb}
+.cap-card-primary{background:#f3f1f7;border-color:#e6e1ee}
 .dark .cap-card-primary{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.35)}
 /* Only two visual states on this menu: default and (browser-native, always
    transient) :active press — no persistent "selected" class. Tapping a
@@ -228,7 +277,7 @@ html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
 /* Soft rounded "pod" the icon sits in — no shadow/gradient, just a flat
    tinted surface a shade lighter than the card so it reads as a gentle
    anchor rather than a boxy tile. */
-.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#ece5d3;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#ede4d0;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .cap-icon-pod{background:rgba(51,65,85,.5)}
 /* Same "Start Growing" logic (start-workout-modal) — each option's own
    distinct color instead of one uniform neutral tone, so the sheet reads
@@ -254,11 +303,11 @@ html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
    for growth/success/recovery elsewhere), toggled by adding/removing
    .mep-selected on the card itself so every child's transition below can
    react to one class change. */
-.mep-ex-card{border:1px solid #e8e2d3;background:#fdfbf5;border-radius:1rem;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.mep-ex-card{border:1px solid rgba(61,56,47,.05);background:#fbf8f0;border-radius:1rem;box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10);transition:border-color var(--rs-dur-quick) var(--rs-ease-standard),background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .mep-ex-card{border-color:#1e293b;background:rgba(30,41,59,.4)}
-.mep-ex-card.mep-selected{border-color:#c4b5fd;background:#f5f3ff}
+.mep-ex-card.mep-selected{border-color:#bfb3d6;background:#f3f1f7}
 .dark .mep-ex-card.mep-selected{border-color:#7c3aed;background:rgba(124,58,237,.16)}
-.mep-checkbox{border:2px solid #cbd5e1;background:transparent;border-radius:.375rem;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.mep-checkbox{border:2px solid #d6cfc0;background:transparent;border-radius:.375rem;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard),border-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .mep-checkbox{border-color:#475569}
 .mep-checkbox .ms{opacity:0;transform:scale(.4);transition:opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-quick) var(--rs-ease-settle)}
 .mep-ex-card.mep-selected .mep-checkbox{background:#8b5cf6;border-color:#8b5cf6}
@@ -276,17 +325,17 @@ html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
-.hero-surface{background:linear-gradient(180deg,#dcf2e3 0%,#f8f2e6 60%,#f3efe4 100%)}
+.hero-surface{background:linear-gradient(180deg,#e9efdd 0%,#f7ecd8 45%,#f3eee2 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
 .dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
-.hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.2),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
+.hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.3),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
 .dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.12),rgba(251,191,36,0) 55%)}
-.hero-surface{box-shadow:0 24px 44px -28px rgba(31,41,55,.22)}
+.hero-surface{box-shadow:0 24px 48px -28px rgba(61,56,47,.16)}
 .dark .hero-surface{box-shadow:0 24px 40px -30px rgba(0,0,0,.4)}
-.mission-surface{background:#fdfbf5;border:1px solid #e8e2d3;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
+.mission-surface{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
 .dark .mission-surface{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
-.garden-shelf{background:#fdfbf5;border:1px solid #e8e2d3;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
+.garden-shelf{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
 .dark .garden-shelf{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Garden preview plants (Home) — the exercise/species name is hidden by
    default and only reveals in this small tooltip when its plant is tapped
@@ -299,8 +348,8 @@ html:not(.dark) .\!bg-slate-100{background-color:#f5f5f4!important}
 .ghp-tip-floating.ghp-tip-visible{opacity:1;transform:translate(-50%,0) scale(1)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
-.btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(34,197,94,.35)}
-.btn-pop:hover{box-shadow:0 8px 16px -6px rgba(34,197,94,.4)}
+.btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(111,148,80,.35)}
+.btn-pop:hover{box-shadow:0 8px 16px -6px rgba(111,148,80,.4)}
 .dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
 .pot-base{border-radius:0 0 .85rem .85rem}
 .aw-input{padding:.4rem .3rem;text-align:center;font-weight:600}
@@ -520,7 +569,7 @@ input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;padding:.625rem 1.25rem;border-radius:.75rem;font-weight:600;font-size:.875rem;cursor:pointer;transition:opacity var(--rs-dur-quick) var(--rs-ease-standard),transform var(--rs-dur-press) var(--rs-ease-settle);border:none;font-family:inherit}
 .btn:active{transform:scale(.98)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-green{background:#22c55e;color:white}.btn-green:hover{opacity:.9}
-.btn-outline{background:transparent;color:#64748b;border:1px solid #e2e8f0}
+.btn-outline{background:transparent;color:#8a8071;border:1px solid #e8e1d2}
 .dark .btn-outline{color:#94a3b8;border-color:#334155}.btn-outline:hover{background:rgba(100,116,139,.08)}
 .mg-upper{background:rgba(59,130,246,.15);color:#3b82f6;border-color:rgba(59,130,246,.3)}
 .mg-lower{background:rgba(249,115,22,.15);color:#f97316;border-color:rgba(249,115,22,.3)}
@@ -531,7 +580,7 @@ input:focus,textarea:focus,select:focus{border-color:#22c55e}
 body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) var(--rs-ease-standard),border-color var(--rs-dur-standard) var(--rs-ease-standard),color var(--rs-dur-standard) var(--rs-ease-standard)}
 </style>
 </head>
-<body class="bg-[#f3efe4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
+<body class="bg-[#f3eee2] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 
 <!-- cfg banner -->
 <div id="cfg-banner" style="display:none" class="fixed top-0 inset-x-0 z-[999] bg-red-500 text-white text-xs text-center py-2 font-semibold">
@@ -1140,7 +1189,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 </div>
 
 <!-- ══════════ ACTIVE WORKOUT ══════════ -->
-<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-[#f3efe4] dark:bg-slate-950 flex flex-col">
+<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
     <button id="aw-end-btn" class="p-2 text-slate-400 hover:text-red-400 flex-shrink-0" title="End workout" aria-label="End workout"><span class="ms text-xl" aria-hidden="true">close</span></button>
     <div class="text-center min-w-0 flex-1">
@@ -1166,7 +1215,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      hides this overlay and reveals whatever was already showing (Exercises
      tab, History, Home, or the active workout), so no explicit "return to"
      routing state is needed. See openExerciseDetail()/closeExerciseDetail(). -->
-<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-[#f3efe4] dark:bg-slate-950 flex flex-col">
+<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="exd-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
@@ -1192,7 +1241,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Reuses the finish screen's own Session overview / Today's highlight /
      Plant progress / Exercise summary components wherever the underlying
      data supports it — see renderWorkoutSummaryPage(). -->
-<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-[#f3efe4] dark:bg-slate-950 flex flex-col">
+<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center justify-between flex-shrink-0">
     <button id="wsum-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <button id="wsum-more-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More actions"><span class="ms text-xl" aria-hidden="true">more_horiz</span></button>
@@ -2048,7 +2097,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Last Activity (the most recent COMPLETED day/week, reusing the same
      calculateTargetPeriodProgress() the current-period progress already
      uses — never a second completion rule). -->
-<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-[#f3efe4] dark:bg-slate-950 flex flex-col">
+<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="tgd-back-btn" class="p-2 text-slate-400 hover:text-lavender-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
@@ -2127,7 +2176,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      scrollable main, plain show()/hide(). Group identity is name + a chosen
      colour (see gm-color-row/gm-color-sheet) only — no cover image, no
      icon. -->
-<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-[#f3efe4] dark:bg-slate-950 flex flex-col">
+<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-start gap-3 flex-shrink-0">
     <button id="group-modal-close" class="p-1.5 -ml-1.5 text-slate-400 hover:text-brand-500 flex-shrink-0 mt-0.5" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
