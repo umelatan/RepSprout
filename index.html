@@ -307,17 +307,28 @@ body{font-family:'Inter',sans-serif}
    progress -> highlight -> exercise summary), each section just fading/
    scaling in at a hardcoded delay along that ~1.5s timeline. The count-up
    numbers inside the overview card are separately driven by
-   animateCountUp() in JS, not by these CSS delays. */
-@keyframes finishRevealUp{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
-.finish-reveal{opacity:0;animation:finishRevealUp var(--rs-dur-standard) var(--rs-ease-settle) both}
-.finish-reveal-1{animation-delay:120ms}
-.finish-reveal-2{animation-delay:220ms}
-.finish-reveal-3{animation-delay:320ms}
-.finish-reveal-4{animation-delay:950ms}
-.finish-reveal-5{animation-delay:1150ms}
-.finish-reveal-6{animation-delay:1300ms}
-@keyframes finishLeafUnfurl{0%{opacity:0;transform:scale(.5) rotate(-12deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
-.finish-leaf-in{opacity:0;animation:finishLeafUnfurl var(--rs-dur-standard) var(--rs-ease-settle) both}
+   animateCountUp() in JS, not by these CSS delays.
+   Deliberately a *transition* armed by JS toggling .fr-in (see
+   openFinishSummary()'s double-requestAnimationFrame, the same technique
+   openAddToWorkoutSheet()/openAddExercisePlacementSheet() already use to
+   show their own sheets) rather than a `display:none -> block`-triggered
+   CSS `animation`. A previous version used the latter and could get stuck
+   at opacity:0 forever on iOS Safari after a long-running session (screen
+   lock/backgrounding mid-workout, more likely the longer a session runs —
+   e.g. after adding an extra exercise mid-session) left WebKit's animation
+   scheduler in a state where it never detected the display change as a
+   fresh animation start. An explicit class toggle can't silently fail to
+   fire the same way. */
+.finish-reveal{opacity:0;transform:translateY(8px);transition:opacity var(--rs-dur-standard) var(--rs-ease-settle),transform var(--rs-dur-standard) var(--rs-ease-settle)}
+.finish-reveal.fr-in{opacity:1;transform:translateY(0)}
+.finish-reveal-1{transition-delay:120ms}
+.finish-reveal-2{transition-delay:220ms}
+.finish-reveal-3{transition-delay:320ms}
+.finish-reveal-4{transition-delay:950ms}
+.finish-reveal-5{transition-delay:1150ms}
+.finish-reveal-6{transition-delay:1300ms}
+.finish-leaf-in{opacity:0;transform:scale(.5) rotate(-12deg);transition:opacity var(--rs-dur-standard) var(--rs-ease-settle),transform var(--rs-dur-standard) var(--rs-ease-settle)}
+.finish-leaf-in.fr-in{opacity:1;transform:scale(1) rotate(0)}
 @keyframes finishSaveLeafPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
 .finish-save-leaf{display:inline-block;animation:finishSaveLeafPulse 1s var(--rs-ease-standard) infinite}
 /* A handful of small colour-dot "confetti" around the header leaf —
@@ -10791,6 +10802,18 @@ function openFinishSummary() {
   document.getElementById('finish-more-icon').textContent = 'expand_more';
   document.getElementById('finish-more-toggle').setAttribute('aria-expanded', 'false');
   document.getElementById('finish-modal').style.display = '';
+
+  // Arms the .finish-reveal/.finish-leaf-in entrance transitions (see their
+  // own CSS comment) via an explicit class toggle, same double-rAF
+  // technique openAddToWorkoutSheet()/openAddExercisePlacementSheet() use
+  // to show their sheets — reliably detected by every engine, unlike a
+  // `display:none -> block`-triggered CSS animation. Removed first in case
+  // this modal is reopened for a second workout in the same page load.
+  const finishRevealEls = document.querySelectorAll('#finish-modal .finish-reveal, #finish-modal .finish-leaf-in');
+  finishRevealEls.forEach(el => el.classList.remove('fr-in'));
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    finishRevealEls.forEach(el => el.classList.add('fr-in'));
+  }));
 }
 
 document.getElementById('finish-more-toggle').addEventListener('click', () => {
