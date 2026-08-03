@@ -7728,6 +7728,24 @@ document.getElementById('gmes-save').addEventListener('click', async () => {
   ge.minReps = gmesDraft.min;
   ge.maxReps = gmesDraft.max;
   ge.restSeconds = gmesDraft.rest;
+  // Rest is a genuine per-group override — it doesn't get written back to
+  // exercises/{uid} the way Sets/Rep range does below — but if this exact
+  // group is the one the CURRENT active session was started from, that
+  // session's own copy of this exercise already has restSecondsOverride
+  // frozen at whatever it was when the session began (see
+  // buildSessionExercise()/resolveRestForSessionExercise() — a session
+  // override always wins over any live lookup). Patch it here too, or an
+  // in-progress workout would keep resting for the old duration even after
+  // saving a new one.
+  if (activeSession && activeSession.groupId === groupModalId) {
+    const sessionEx = activeSession.exercises.find(e => e.exerciseId === ge.exerciseId);
+    if (sessionEx) {
+      if (gmesDraft.rest != null) sessionEx.restSecondsOverride = gmesDraft.rest;
+      else delete sessionEx.restSecondsOverride;
+      renderGuidedWorkout();
+      saveActiveSessionDraft();
+    }
+  }
   // Sets/rep range are the exercise's own core definition, not really a
   // per-group override (Rest is the one field that's genuinely meant to
   // vary by group — untouched here) — so saving from inside a group also
