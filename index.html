@@ -3786,20 +3786,22 @@ const DoubleProgressionStrategy = {
 // One representative emoji per exercise-plant stage, indexed the same way
 // as EXERCISE_PLANT_STAGE_NAMES — a display-only lookup, unrelated to
 // PLANTS/userProfile.plant (the Companion, a separate, non-progressing
-// identity).
-const DP_STAGE_EMOJI = ['🌱', '🌿', '🪴', '🌷'];
+// identity). Seed uses 🫘 rather than 🌱 — Unicode's "seedling" glyph
+// already looks like a sprouted two-leaf shoot, not an actual seed, so it's
+// shifted one stage later to where it visually belongs (Sprout).
+const DP_STAGE_EMOJI = ['🫘', '🌱', '🌿', '🪴', '🌷'];
 
 // ── Exercise Plant lifecycle: the ONLY progression system in RepSprout ─────
 // (product simplification: "The Companion is no longer a progression
 // system... All plant progression now belongs exclusively to individual
 // exercises... every exercise has an endless lifecycle"). Each exercise
 // owns one active plant, cycling Seed -> Sprout -> Young Plant -> Growing
-// -> Bloom forever — the moment it reaches Bloom it's archived permanently
-// into the Garden (see syncExercisePlantsAfterChange()) and the SAME
-// exercise immediately starts a brand new plant from Seed. There is no
-// terminal "Mastered" state anymore; cycleIndex just keeps climbing and
+// -> Budding -> Bloom forever — the moment it reaches Bloom it's archived
+// permanently into the Garden (see syncExercisePlantsAfterChange()) and the
+// SAME exercise immediately starts a brand new plant from Seed. There is
+// no terminal "Mastered" state anymore; cycleIndex just keeps climbing and
 // generation just keeps advancing.
-const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing'];
+const EXERCISE_PLANT_STAGE_NAMES = ['Seed', 'Sprout', 'Young Plant', 'Growing', 'Budding'];
 const EXERCISE_PLANT_CYCLE_LENGTH = EXERCISE_PLANT_STAGE_NAMES.length; // full cycles per lifecycle, before Bloom
 function exercisePlantGeneration(dpResult) {
   return dpResult ? Math.floor(dpResult.cycleIndex / EXERCISE_PLANT_CYCLE_LENGTH) : 0;
