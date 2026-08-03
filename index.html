@@ -129,6 +129,7 @@ body{font-family:'Inter',sans-serif}
    Group colours, activity-type/calendar colours) — those are functional
    colour-coding, not ambient theme chrome, and muting only their "green"
    entry would leave them mismatched against the others. */
+html:not(.dark) .text-slate-200{color:#dcd4c2}
 html:not(.dark) .text-slate-300{color:#cdc4b3}
 html:not(.dark) .text-slate-400{color:#a89d8c}
 html:not(.dark) .text-slate-500{color:#8a8071}
@@ -145,6 +146,9 @@ html:not(.dark) .border-slate-200{border-color:#e8e1d2}
 html:not(.dark) .border-slate-300{border-color:#cdc4b3}
 html:not(.dark) .divide-slate-100>:not([hidden])~:not([hidden]){border-color:#f1ece0}
 html:not(.dark) .divide-slate-200>:not([hidden])~:not([hidden]){border-color:#e8e1d2}
+html:not(.dark) .border-slate-200\/70{border-color:rgb(232 225 210 / .7)}
+html:not(.dark) .bg-slate-200\/70{background-color:rgb(232 225 210 / .7)}
+html:not(.dark) .accent-brand-500{accent-color:#6f9450}
 html:not(.dark) .ring-slate-400{--tw-ring-color:#a89d8c}
 html:not(.dark) .\!bg-slate-100{background-color:#f1ece0!important}
 html:not(.dark) .bg-white{background-color:#fbf8f0}
@@ -193,6 +197,23 @@ html:not(.dark) input:focus,html:not(.dark) textarea:focus,html:not(.dark) selec
 html:not(.dark) .btn:focus-visible,html:not(.dark) button:focus-visible,html:not(.dark) a:focus-visible{outline-color:#587a3d}
 html:not(.dark) .mg-full{background:rgba(111,148,80,.14);color:#587a3d;border-color:rgba(111,148,80,.3)}
 html:not(.dark) .mep-ex-card.mep-selected .mep-checkbox{background:#8a76ad;border-color:#8a76ad}
+/* :hover variants of the same brand/lavender utilities (link/icon hover
+   states) — same mapping, so a hovered link doesn't flash back to the old
+   vivid hue for the instant it's under the pointer. */
+html:not(.dark) .hover\:text-brand-500:hover{color:#6f9450}
+html:not(.dark) .hover\:text-brand-600:hover{color:#587a3d}
+html:not(.dark) .hover\:border-brand-300:hover{border-color:#a9c084}
+html:not(.dark) .hover\:border-brand-400:hover{border-color:#8aab6c}
+html:not(.dark) .hover\:bg-brand-50:hover{background-color:#f2f5ec}
+html:not(.dark) .hover\:text-lavender-500:hover{color:#8a76ad}
+html:not(.dark) .hover\:border-lavender-400:hover{border-color:#a393c2}
+html:not(.dark) .hover\:bg-lavender-50:hover{background-color:#f3f1f7}
+html:not(.dark) .hover\:bg-lavender-600:hover{background-color:#715f92}
+/* Tailwind's default shadow-2xl/-lg are neutral black rgba — fine on pure
+   white, slightly cold/harsh against every other now-warm-tinted shadow in
+   the app (sidebar/drawer edges, toast). */
+html:not(.dark) .shadow-2xl{box-shadow:0 25px 50px -12px rgb(61 56 47 / .22)}
+html:not(.dark) .shadow-lg{box-shadow:0 10px 15px -3px rgb(61 56 47 / .10),0 4px 6px -4px rgb(61 56 47 / .10)}
 /* Workout hub's per-card status tags (Groups/Exercises/History — Targets
    already covered by the brand override above) and a couple of garden
    stat numbers reuse stock Tailwind pink/blue/purple — same muting logic,
@@ -503,12 +524,12 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 #edit-target-modal .et-plain-input{background:transparent!important;border:none!important;padding:0!important;outline:none}
 #ls-mark-working[aria-pressed="true"]{background:#22c55e;color:white}
 #ls-mark-warmup[aria-pressed="true"]{background:#f59e0b;color:white}
-.queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white}
+.queue-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(61,56,47,.2);position:relative;z-index:10;background:#fbf8f0}
 .dark .queue-row-dragging{background:#1e293b}
 /* Group editor's exercise reorder — same lift-and-brighten language as the
    queue's own drag, a separate rule since it's a separate implementation
    (see armGmExDrag()/endGmExDrag()). */
-.gm-ex-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(0,0,0,.25);position:relative;z-index:10;background:white;border-radius:.75rem}
+.gm-ex-row-dragging{transition:none!important;box-shadow:0 8px 24px -4px rgba(61,56,47,.2);position:relative;z-index:10;background:#fbf8f0;border-radius:.75rem}
 .dark .gm-ex-row-dragging{background:#1e293b}
 .gm-ex-row-dragging .gm-ex-drag-handle{color:#22c55e!important}
 /* Exercise Settings sheet — settings rows and circular stepper buttons get
@@ -569,7 +590,7 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    selector specificity and loads after this rule, so without !important it
    silently wins and every bordered input renders with zero padding — text
    sitting directly on the border. */
-input,textarea,select{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:.625rem;padding:.75rem .875rem!important;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard)}
+input,textarea,select{background:#fbf8f0;color:#3d382f;border:1px solid #e8e1d2;border-radius:.625rem;padding:.75rem .875rem!important;font-size:.875rem;width:100%;outline:none;font-family:inherit;transition:border-color var(--rs-dur-quick) var(--rs-ease-standard)}
 input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .dark input,.dark textarea,.dark select{background:#1e293b;color:#f1f5f9;border-color:#334155}
 /* Search inputs with a leading icon (positioned absolute, left-3) need more
