@@ -108,6 +108,19 @@ body{font-family:'Inter',sans-serif}
 .bnav-active{color:#22c55e!important}
 .bnav-active .ms{font-variation-settings:'FILL' 1}
 .ms{font-family:'Material Symbols Outlined';font-variation-settings:'FILL' 0,'wght' 300;font-size:inherit;line-height:1;vertical-align:middle;user-select:none}
+/* Tailwind's slate-* grays are cool/blue-tinted — fine against the old cold
+   slate-50 canvas, but they read slightly muddy against the warm ivory
+   canvas above. Most muted-text usages pair every slate-300/400/500 with an
+   explicit dark:slate-* override, so simply overriding the base utility
+   class would double-apply in dark mode for that HALF, but there are also
+   plenty of bare slate-400 labels (footers, stat sub-labels) with no dark:
+   pair at all, meaning the base class is what dark mode renders too — so
+   this is scoped with an `html:not(.dark)` guard rather than touching the
+   utility classes directly, leaving dark mode completely unaffected either
+   way. Warm-gray values below match Tailwind's own `stone` scale. */
+html:not(.dark) .text-slate-300{color:#d6d3d1}
+html:not(.dark) .text-slate-400{color:#a8a29e}
+html:not(.dark) .text-slate-500{color:#78716c}
 .card{background:#fffdf7;border:1px solid rgba(17,24,39,.08);border-radius:1rem;box-shadow:0 12px 28px -18px rgba(31,41,55,.18),0 2px 8px -4px rgba(31,41,55,.08)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Tappable cards (.card combined with cursor-pointer) get the same press
@@ -192,7 +205,7 @@ body{font-family:'Inter',sans-serif}
 /* Soft rounded "pod" the icon sits in — no shadow/gradient, just a flat
    tinted surface a shade lighter than the card so it reads as a gentle
    anchor rather than a boxy tile. */
-.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#efe9db;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
+.cap-icon-pod{width:3.375rem;height:3.375rem;border-radius:1.125rem;background:#eeece3;transition:background-color var(--rs-dur-quick) var(--rs-ease-standard)}
 .dark .cap-icon-pod{background:rgba(51,65,85,.5)}
 /* Same "Start Growing" logic (start-workout-modal) — each option's own
    distinct color instead of one uniform neutral tone, so the sheet reads
@@ -240,7 +253,7 @@ body{font-family:'Inter',sans-serif}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
-.hero-surface{background:linear-gradient(180deg,#dff5e4 0%,#faf3e6 60%,#f4efe4 100%)}
+.hero-surface{background:linear-gradient(180deg,#e1f5e6 0%,#faf7f0 60%,#f5f2ec 100%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
 .dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
@@ -495,7 +508,7 @@ input:focus,textarea:focus,select:focus{border-color:#22c55e}
 body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) var(--rs-ease-standard),border-color var(--rs-dur-standard) var(--rs-ease-standard),color var(--rs-dur-standard) var(--rs-ease-standard)}
 </style>
 </head>
-<body class="bg-[#f4efe4] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
+<body class="bg-[#f5f2ec] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
 
 <!-- cfg banner -->
 <div id="cfg-banner" style="display:none" class="fixed top-0 inset-x-0 z-[999] bg-red-500 text-white text-xs text-center py-2 font-semibold">
@@ -1104,7 +1117,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 </div>
 
 <!-- ══════════ ACTIVE WORKOUT ══════════ -->
-<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
+<div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-[#f5f2ec] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
     <button id="aw-end-btn" class="p-2 text-slate-400 hover:text-red-400 flex-shrink-0" title="End workout" aria-label="End workout"><span class="ms text-xl" aria-hidden="true">close</span></button>
     <div class="text-center min-w-0 flex-1">
@@ -1130,7 +1143,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      hides this overlay and reveals whatever was already showing (Exercises
      tab, History, Home, or the active workout), so no explicit "return to"
      routing state is needed. See openExerciseDetail()/closeExerciseDetail(). -->
-<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
+<div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-[#f5f2ec] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="exd-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
@@ -1156,7 +1169,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Reuses the finish screen's own Session overview / Today's highlight /
      Plant progress / Exercise summary components wherever the underlying
      data supports it — see renderWorkoutSummaryPage(). -->
-<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
+<div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-[#f5f2ec] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center justify-between flex-shrink-0">
     <button id="wsum-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <button id="wsum-more-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More actions"><span class="ms text-xl" aria-hidden="true">more_horiz</span></button>
@@ -2012,7 +2025,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Last Activity (the most recent COMPLETED day/week, reusing the same
      calculateTargetPeriodProgress() the current-period progress already
      uses — never a second completion rule). -->
-<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
+<div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-[#f5f2ec] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="tgd-back-btn" class="p-2 text-slate-400 hover:text-lavender-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
@@ -2091,7 +2104,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      scrollable main, plain show()/hide(). Group identity is name + a chosen
      colour (see gm-color-row/gm-color-sheet) only — no cover image, no
      icon. -->
-<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-[#f4efe4] dark:bg-slate-950 flex flex-col">
+<div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-[#f5f2ec] dark:bg-slate-950 flex flex-col">
   <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-start gap-3 flex-shrink-0">
     <button id="group-modal-close" class="p-1.5 -ml-1.5 text-slate-400 hover:text-brand-500 flex-shrink-0 mt-0.5" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
