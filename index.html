@@ -3068,25 +3068,63 @@ function assignPlant() {
   return Object.entries(obScores).sort((a,b)=>b[1]-a[1])[0][0];
 }
 
+// Shared by getPlantHealth() and renderDashStats() so "how many consecutive
+// days ending today has the user trained" only has one implementation.
+function computeStreak(sessionDates) {
+  const today = todayStr();
+  let streak = 0, check = new Date(today+'T12:00:00');
+  for (let i = 0; i < 60; i++) {
+    if (sessionDates.includes(check.toISOString().slice(0,10))) streak++;
+    else if (i > 0) break;
+    check.setDate(check.getDate()-1);
+  }
+  return streak;
+}
+
 function getPlantHealth(sessionDates) {
-  if (!sessionDates.length) return 'seed';
+  if (!sessionDates.length) return { health: 'seed', streak: 0 };
   const today = todayStr();
   const sorted = [...sessionDates].sort().reverse();
   const last = sorted[0];
   const diff = Math.round((new Date(today+'T12:00:00') - new Date(last+'T12:00:00')) / 86400000);
-  if (diff >= 14) return 'dormant';
-  if (diff >= 4)  return 'wilting';
-  let streak = 0, check = new Date(today+'T12:00:00');
-  for (let i = 0; i < 60; i++) {
-    const ds = check.toISOString().slice(0,10);
-    if (sorted.includes(ds)) { streak++; }
-    else if (i > 0) break;
-    check.setDate(check.getDate()-1);
-  }
-  if (streak >= 7) return 'blooming';
-  if (streak >= 3) return 'thriving';
-  if (sessionDates.length <= 2) return 'sprout';
-  return 'growing';
+  if (diff >= 14) return { health: 'dormant', streak: 0 };
+  if (diff >= 4)  return { health: 'wilting', streak: 0 };
+  const streak = computeStreak(sorted);
+  if (streak >= 7) return { health: 'blooming', streak };
+  if (streak >= 3) return { health: 'thriving', streak };
+  if (sessionDates.length <= 2) return { health: 'sprout', streak };
+  return { health: 'growing', streak };
+}
+
+// Blooming covers every streak from 7 days up, so its status message is
+// tiered by the real streak length (and mentions the actual day count)
+// rather than one fixed "7+ day streak" line that stops making sense once
+// a streak reaches day 20 or day 60.
+function bloomingStatusVariants(streak) {
+  if (streak >= 30) return [
+    `👑 ${streak}-day streak. Absolute legend.`,
+    `🌟 ${streak} days strong — elite territory.`,
+    `🚀 ${streak} days and counting. Unstoppable.`,
+    `🔥 ${streak}-day streak. This is a lifestyle now.`,
+    `💎 ${streak} days straight. Diamond-level consistency.`,
+    `🏔️ ${streak} days deep. New heights.`
+  ];
+  if (streak >= 14) return [
+    `🔥 ${streak}-day streak — two+ weeks of pure momentum!`,
+    `⚡ ${streak} days straight. Just getting started.`,
+    `🚀 ${streak} days in. This streak has real legs.`,
+    `💪 ${streak} days of showing up. Seriously impressive.`,
+    `🏆 ${streak}-day streak. Certified consistency.`,
+    `✨ ${streak} days strong — the habit is sticking.`
+  ];
+  return [
+    `🔥 ${streak}-day streak — you're unstoppable!`,
+    `🚀 ${streak} days strong. Keep the momentum going!`,
+    `⚡ ${streak} days straight. You're on fire!`,
+    `💪 A ${streak}-day streak of showing up. Incredible.`,
+    `🏆 ${streak}-day streak achieved. Champion mode.`,
+    `✨ ${streak} days in a row — this is your era.`
+  ];
 }
 
 const HEALTH_LABELS = {
@@ -3094,14 +3132,9 @@ const HEALTH_LABELS = {
   sprout:   ['Just sprouting 🌱', 'Keep it up — consistency builds roots.'],
   growing:  ['Growing steadily 🌿', 'You\'re building momentum.'],
   thriving: ['Thriving! 🌿', 'Great streak — keep the momentum going.'],
-  blooming: ['Blooming! 🌸', [
-    '🔥 7-day streak — you\'re unstoppable!',
-    '🚀 One week strong. Keep the momentum going!',
-    '⚡ 7+ days straight. You\'re on fire!',
-    '💪 A full week of showing up. Incredible.',
-    '🏆 7-day streak achieved. Champion mode.',
-    '✨ Seven days in a row — this is your era.'
-  ]],
+  // Second slot is unused for blooming — see bloomingStatusVariants(), which
+  // needs the actual streak length and so is called directly instead.
+  blooming: ['Blooming! 🌸', null],
   wilting:  ['Taking it slow 🌿', 'Growth pauses when you rest. Jump back in anytime.'],
   dormant:  ['Welcome back 🌱', 'Let\'s keep growing.']
 };
@@ -4827,15 +4860,15 @@ function renderPlantHero(sessionDates, hasHistory) {
   }
   hide('dash-hero-empty'); show('dash-hero-body');
 
-  const health = getPlantHealth(sessionDates);
-  const [, statusVariants] = HEALTH_LABELS[health] || ['', ''];
+  const { health, streak } = getPlantHealth(sessionDates);
+  const statusVariants = health === 'blooming' ? bloomingStatusVariants(streak) : HEALTH_LABELS[health]?.[1];
   // A handful of statuses (e.g. blooming) list several message variants
   // instead of one fixed string — picked stably per day via seededRandom01
   // (same pattern as the Home Garden preview's daily rotation) so it
   // doesn't reshuffle on every render, just once a day.
   const statusMsg = Array.isArray(statusVariants)
     ? statusVariants[Math.floor(seededRandom01(`${todayStr()}-plant-status-${health}`) * statusVariants.length)]
-    : statusVariants;
+    : (statusVariants || '');
   emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
 }
@@ -4843,14 +4876,7 @@ function renderPlantHero(sessionDates, hasHistory) {
 function renderDashStats(sessionDates, hasHistory) {
   if (!hasHistory) { hide('dash-stats-row'); return; }
   show('dash-stats-row');
-  const today = todayStr();
-  let streak = 0, check = new Date(today+'T12:00:00');
-  for (let i = 0; i < 60; i++) {
-    if (sessionDates.includes(check.toISOString().slice(0,10))) streak++;
-    else if (i > 0) break;
-    check.setDate(check.getDate()-1);
-  }
-  document.getElementById('streak-val').textContent = streak;
+  document.getElementById('streak-val').textContent = computeStreak(sessionDates);
   document.getElementById('total-sessions-val').textContent = nonRecoveryWorkoutDates().length;
   // "Last session" means an actual workout or exercise activity — a
   // Recovery Day is real rest, not something to report as your last
