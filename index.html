@@ -3495,6 +3495,25 @@ function resolveActiveRepTarget(sessionEx, exerciseDef) {
   return { minReps, maxReps, configured: minReps != null && maxReps != null };
 }
 
+// The Active Workout screen's "Target: N sets · X–Y reps" line used to read
+// straight off the session's own ex.minReps/maxReps — a snapshot frozen at
+// whatever the exercise's target was the moment this session was built.
+// calculateExerciseDoubleProgression()'s own recommendation (shown right
+// below it on the same screen) always re-reads the exercise's LIVE global
+// record instead, via this exact resolveActiveRepTarget(null, exDef) call —
+// so editing an exercise's rep range mid-session (e.g. from inside a
+// Workout Group's Configure Exercise sheet) could leave the two lines on
+// the very same screen disagreeing. This reads the same live source the
+// recommendation already does, falling back to the session's own snapshot
+// only if the exercise's global record is somehow unavailable.
+function liveRepRangeFor(ex) {
+  const exDef = exercises[ex.exerciseId];
+  return {
+    min: exDef?.minReps ?? ex.minReps,
+    max: exDef?.maxReps ?? ex.maxReps
+  };
+}
+
 // One working set's status for a single logged session — independent of
 // every other set in the exercise, per the core "each set progresses on its
 // own" rule. Doesn't know about history/baselines; calculateExerciseDouble
@@ -4458,7 +4477,7 @@ function cleanupListeners() { dataRefs.forEach(r => off(r)); dataRefs = []; }
 function subscribeData() {
   cleanupListeners();
   const rExercises = ref(db, `exercises/${uid()}`);
-  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); refreshExerciseDetailIfOpen(); }, e => console.error(e));
+  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); refreshExerciseDetailIfOpen(); renderGuidedWorkout(); }, e => console.error(e));
   dataRefs.push(rExercises);
 
   // Nested under users/{uid} (not a new top-level groups/{uid} path) so it
@@ -4475,7 +4494,7 @@ function subscribeData() {
     // exercise card and the open detail page — both must recompute here too,
     // not just Dashboard/History/Calendar, or editing/deleting a past
     // workout wouldn't recalculate leaves/stage until the next full reload.
-    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList(); renderExerciseLibrary(); refreshExerciseDetailIfOpen(); refreshWorkoutSummaryIfOpen();
+    renderDashboard(); renderHistory(); renderCalendar(); renderGroupsList(); renderExerciseLibrary(); refreshExerciseDetailIfOpen(); refreshWorkoutSummaryIfOpen(); renderGuidedWorkout();
   }, e => console.error(e));
   dataRefs.push(rSessions);
 
@@ -8762,6 +8781,7 @@ function renderExercisePhase(ex) {
   const last = getLastLoggedSets(ex.exerciseId);
   const prevLine = last ? `${last.weight||0} ${last.unit||ex.unit} · ${last.sets.map(s=>s.reps||0).join(', ')}` : 'First time';
   const totalTarget = ex.targetReps.length;
+  const range = liveRepRangeFor(ex);
 
   if (!ex.entered) {
     main.innerHTML = `
@@ -8769,7 +8789,7 @@ function renderExercisePhase(ex) {
         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Up Next</p>
         <button id="aw-ex-name-btn" type="button" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white hover:text-brand-500 transition-colors" aria-label="View ${esc(ex.name)} progress">${esc(ex.name)}</button>
         <p class="text-xs text-slate-400">Exercise ${activeSession.currentExerciseIndex+1} of ${activeSession.exercises.length}</p>
-        <div class="pt-2"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} working set${totalTarget!==1?'s':''} · ${ex.minReps}–${ex.maxReps} reps</p></div>
+        <div class="pt-2"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} working set${totalTarget!==1?'s':''} · ${range.min}–${range.max} reps</p></div>
         <div><p class="text-xs text-slate-400">Previous</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300">${esc(prevLine)}</p></div>
       </div>`;
     footer.innerHTML = `
@@ -8828,7 +8848,7 @@ function renderExercisePhase(ex) {
       <button id="aw-ex-name-btn" type="button" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white hover:text-brand-500 transition-colors" aria-label="View ${esc(ex.name)} progress">${esc(ex.name)}</button>
       <div class="aw-set-fade w-full flex flex-col items-center">
         <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800 max-w-xs w-full pt-1">
-          <div class="text-left pr-4"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
+          <div class="text-left pr-4"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${totalTarget} sets · ${range.min}–${range.max} reps</p></div>
           <div class="text-left pl-4"><p class="text-xs text-slate-400">${esc(prevLabel)}</p><p class="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">${esc(prevValue)}</p></div>
         </div>
         <div class="w-full max-w-xs border-t border-slate-200 dark:border-slate-800 mt-3"></div>
@@ -8937,6 +8957,7 @@ function renderExerciseCompletePhase(ex) {
   const main = document.getElementById('aw-main');
   const footer = document.getElementById('aw-footer');
   const working = workingSetsFor(ex);
+  const range = liveRepRangeFor(ex);
 
   // Preview what THIS session's just-logged sets would do to Double
   // Progression if saved right now — the workout isn't persisted yet at
@@ -8969,7 +8990,7 @@ function renderExerciseCompletePhase(ex) {
       <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">${esc(ex.name)} Complete</h2>
       <p class="font-display font-bold text-lg text-slate-700 dark:text-slate-200">${working[0]?.weight||ex.weight||0} ${ex.unit}</p>
       <p class="text-sm text-slate-500 dark:text-slate-400">${working.map(s=>s.reps||0).join(' · ')}</p>
-      <div class="pt-1"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${ex.targetReps.length} sets · ${ex.minReps}–${ex.maxReps} reps</p></div>
+      <div class="pt-1"><p class="text-xs text-slate-400">Target</p><p class="text-sm font-semibold text-brand-500">${ex.targetReps.length} sets · ${range.min}–${range.max} reps</p></div>
       ${progressBox}
     </div>`;
   // "Last" means no unfinished exercise remains anywhere in today's queue —
@@ -9854,7 +9875,8 @@ function completedSetsSummary(ex) {
 }
 function targetSetsLine(ex) {
   const sets = ex.targetReps.length;
-  return `${sets} set${sets!==1?'s':''} · ${ex.minReps}–${ex.maxReps} reps`;
+  const range = liveRepRangeFor(ex);
+  return `${sets} set${sets!==1?'s':''} · ${range.min}–${range.max} reps`;
 }
 // current / done / skipped / pending — "pending" covers both the "Next" row
 // and plain upcoming rows, distinguished only by the separate Next label.
