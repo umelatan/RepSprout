@@ -202,23 +202,10 @@ html:not(.dark) .text-pink-500{color:#c98098}
 html:not(.dark) .text-blue-500{color:#6b8fae}
 html:not(.dark) .text-purple-500{color:#957fb8}
 /* Workout Group accent colours (GROUP_COLORS) and the legacy muscle-group/
-   activity colours share the same 6-ish stock hex values, always applied
-   as a literal inline `background:#hex` (never a Tailwind class, so the
-   overrides above can't reach them) — group badges/pills, calendar dots,
-   the colour picker's own swatches. Matched by the literal rendered hex
-   via an attribute selector instead, which needs no JS/HTML change at all
-   and, being scoped to the exact style string, can't collide with an
-   unrelated element that merely shares a class. Vivid cardio red (#ef4444)
-   is included here too — a calendar dot, not a delete/error button — but
-   stock red-* Tailwind CLASSES (used for those buttons) are deliberately
-   left alone, same reasoning as above. */
-html:not(.dark) [style*="background:#22c55e"]{background:#6f9450!important}
-html:not(.dark) [style*="background:#3b82f6"]{background:#6b8fae!important}
-html:not(.dark) [style*="background:#a855f7"]{background:#957fb8!important}
-html:not(.dark) [style*="background:#f97316"]{background:#c9915a!important}
-html:not(.dark) [style*="background:#ec4899"]{background:#c98098!important}
-html:not(.dark) [style*="background:#14b8a6"]{background:#5a9990!important}
-html:not(.dark) [style*="background:#ef4444"]{background:#c17968!important}
+   activity colours were muted the same way for a beat, but reverted —
+   user preferred the original vivid palette here specifically, since
+   these badges/pills/calendar dots are meant to stand out and read as
+   distinct at a glance, unlike the ambient neutral/brand system above. */
 .card{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);border-radius:1rem;box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Tappable cards (.card combined with cursor-pointer) get the same press
