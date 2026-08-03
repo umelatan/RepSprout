@@ -7698,7 +7698,7 @@ function updateGmesSaveEnabled() {
   document.getElementById('gmes-save').disabled = !dirty;
 }
 document.getElementById('gm-ex-settings-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-settings-modal') rsHideModal('gm-ex-settings-modal'); });
-document.getElementById('gmes-save').addEventListener('click', () => {
+document.getElementById('gmes-save').addEventListener('click', async () => {
   const saveBtn = document.getElementById('gmes-save');
   if (saveBtn.disabled) return;
   const ge = gmExSettingsIdx != null ? groupModalDraft.exercises[gmExSettingsIdx] : null;
@@ -7707,6 +7707,31 @@ document.getElementById('gmes-save').addEventListener('click', () => {
   ge.minReps = gmesDraft.min;
   ge.maxReps = gmesDraft.max;
   ge.restSeconds = gmesDraft.rest;
+  // Sets/rep range are the exercise's own core definition, not really a
+  // per-group override (Rest is the one field that's genuinely meant to
+  // vary by group — untouched here) — so saving from inside a group also
+  // writes them back to the exercise's own record. Without this, the
+  // Exercise Library/Detail pages and Double Progression's own
+  // recommendation (which always reads the exercise's own minReps/maxReps,
+  // never a per-group value) would keep showing the pre-edit numbers.
+  const exDef = exercises[ge.exerciseId];
+  if (exDef) {
+    const prevLabel = saveBtn.textContent;
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    const updated = {
+      ...exDef,
+      defaultSets: gmesDraft.sets, minReps: gmesDraft.min, maxReps: gmesDraft.max,
+      targetReps: resizeTargetReps(exDef.targetReps, gmesDraft.sets, gmesDraft.min, gmesDraft.max)
+    };
+    try {
+      await set(ref(db, `exercises/${uid()}/${ge.exerciseId}`), updated);
+      exercises[ge.exerciseId] = updated; // optimistic mirror; onValue confirms shortly after
+    } catch (err) {
+      console.error('Failed to update the exercise\'s own Sets/Rep range:', err);
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = prevLabel;
+    }
+  }
   rsHideModal('gm-ex-settings-modal');
   renderGmExerciseList();
 });
