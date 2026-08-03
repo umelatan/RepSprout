@@ -3094,7 +3094,14 @@ const HEALTH_LABELS = {
   sprout:   ['Just sprouting 🌱', 'Keep it up — consistency builds roots.'],
   growing:  ['Growing steadily 🌿', 'You\'re building momentum.'],
   thriving: ['Thriving! 🌿', 'Great streak — keep the momentum going.'],
-  blooming: ['Blooming! 🌸', '7+ day streak. You\'re on fire!'],
+  blooming: ['Blooming! 🌸', [
+    '🔥 7-day streak — you\'re unstoppable!',
+    '🚀 One week strong. Keep the momentum going!',
+    '⚡ 7+ days straight. You\'re on fire!',
+    '💪 A full week of showing up. Incredible.',
+    '🏆 7-day streak achieved. Champion mode.',
+    '✨ Seven days in a row — this is your era.'
+  ]],
   wilting:  ['Taking it slow 🌿', 'Growth pauses when you rest. Jump back in anytime.'],
   dormant:  ['Welcome back 🌱', 'Let\'s keep growing.']
 };
@@ -4821,7 +4828,14 @@ function renderPlantHero(sessionDates, hasHistory) {
   hide('dash-hero-empty'); show('dash-hero-body');
 
   const health = getPlantHealth(sessionDates);
-  const [, statusMsg] = HEALTH_LABELS[health] || ['', ''];
+  const [, statusVariants] = HEALTH_LABELS[health] || ['', ''];
+  // A handful of statuses (e.g. blooming) list several message variants
+  // instead of one fixed string — picked stably per day via seededRandom01
+  // (same pattern as the Home Garden preview's daily rotation) so it
+  // doesn't reshuffle on every render, just once a day.
+  const statusMsg = Array.isArray(statusVariants)
+    ? statusVariants[Math.floor(seededRandom01(`${todayStr()}-plant-status-${health}`) * statusVariants.length)]
+    : statusVariants;
   emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
 }
