@@ -2394,8 +2394,20 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <div class="flex justify-center pt-2.5 pb-1 flex-shrink-0" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
     <div class="flex-1 overflow-y-auto px-5 pb-5">
       <div class="pt-2 pb-5">
-        <h3 id="gmes-title" class="font-display font-bold text-2xl text-slate-800 dark:text-white truncate"></h3>
-        <p id="gmes-group" class="text-sm font-semibold text-lavender-500 dark:text-lavender-400 mt-0.5 truncate"></p>
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0 flex-1">
+            <!-- Editable here, not just display-only -- this is the exercise's
+                 own global name (exercises/{uid}/{exerciseId}.name), same as
+                 Create/Edit Exercise's own #ex-name, so a rename here shows up
+                 everywhere else that reads it too (see gmes-save's write-back).
+                 Styled with .ex-plain-input, the same "looks like a heading,
+                 is actually an input" convention the Sets/Min/Max fields in
+                 this exact sheet already use. -->
+            <input id="gmes-title" type="text" class="ex-plain-input font-display font-bold text-2xl text-slate-800 dark:text-white w-full truncate" aria-label="Exercise name">
+            <p id="gmes-group" class="text-sm font-semibold text-lavender-500 dark:text-lavender-400 mt-0.5 truncate"></p>
+          </div>
+          <button id="gmes-close" type="button" class="text-slate-400 p-1 -mr-1 -mt-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
+        </div>
         <p class="text-xs text-slate-400 mt-2">Configure how this exercise will be performed in this workout group.</p>
       </div>
 
@@ -7963,9 +7975,9 @@ function openGmExerciseSettings(idx) {
   const ex = ge && exercises[ge.exerciseId];
   if (!ex) return;
   gmExSettingsIdx = idx;
-  gmesDraft = { sets: ge.defaultSets, min: ge.minReps, max: ge.maxReps, rest: ge.restSeconds ?? null };
+  gmesDraft = { sets: ge.defaultSets, min: ge.minReps, max: ge.maxReps, rest: ge.restSeconds ?? null, name: ex.name };
   gmesOriginal = { ...gmesDraft };
-  document.getElementById('gmes-title').textContent = ex.name;
+  document.getElementById('gmes-title').value = ex.name;
   document.getElementById('gmes-group').textContent = groupModalDraft.name || '';
   renderGmesSheet();
   document.getElementById('gm-ex-settings-modal').style.display = '';
@@ -8022,10 +8034,20 @@ document.getElementById('gmes-rest-custom').addEventListener('input', () => {
   gmesDraft.rest = v > 0 ? v : null;
   updateGmesSaveEnabled();
 });
+// A blank name can never enable Save (same rule ex-modal-save's own alert
+// enforces for Create/Edit Exercise) -- easier to just keep Save disabled
+// here than pop an alert on every keystroke while the field is empty.
 function updateGmesSaveEnabled() {
-  const dirty = gmesDraft.sets !== gmesOriginal.sets || gmesDraft.min !== gmesOriginal.min || gmesDraft.max !== gmesOriginal.max || gmesDraft.rest !== gmesOriginal.rest;
-  document.getElementById('gmes-save').disabled = !dirty;
+  const trimmedName = gmesDraft.name.trim();
+  const dirty = gmesDraft.sets !== gmesOriginal.sets || gmesDraft.min !== gmesOriginal.min || gmesDraft.max !== gmesOriginal.max
+    || gmesDraft.rest !== gmesOriginal.rest || trimmedName !== gmesOriginal.name;
+  document.getElementById('gmes-save').disabled = !dirty || !trimmedName;
 }
+document.getElementById('gmes-title').addEventListener('input', e => {
+  gmesDraft.name = e.target.value;
+  updateGmesSaveEnabled();
+});
+document.getElementById('gmes-close').addEventListener('click', () => rsHideModal('gm-ex-settings-modal'));
 document.getElementById('gm-ex-settings-modal').addEventListener('click', e => { if (e.target.id === 'gm-ex-settings-modal') rsHideModal('gm-ex-settings-modal'); });
 document.getElementById('gmes-save').addEventListener('click', async () => {
   const saveBtn = document.getElementById('gmes-save');
@@ -8045,11 +8067,13 @@ document.getElementById('gmes-save').addEventListener('click', async () => {
   // override always wins over any live lookup). Patch it here too, or an
   // in-progress workout would keep resting for the old duration even after
   // saving a new one.
+  const trimmedName = gmesDraft.name.trim();
   if (activeSession && activeSession.groupId === groupModalId) {
     const sessionEx = activeSession.exercises.find(e => e.exerciseId === ge.exerciseId);
     if (sessionEx) {
       if (gmesDraft.rest != null) sessionEx.restSecondsOverride = gmesDraft.rest;
       else delete sessionEx.restSecondsOverride;
+      sessionEx.name = trimmedName;
       renderGuidedWorkout();
       saveActiveSessionDraft();
     }
@@ -8060,13 +8084,18 @@ document.getElementById('gmes-save').addEventListener('click', async () => {
   // writes them back to the exercise's own record. Without this, the
   // Exercise Library/Detail pages and Double Progression's own
   // recommendation (which always reads the exercise's own minReps/maxReps,
-  // never a per-group value) would keep showing the pre-edit numbers.
+  // never a per-group value) would keep showing the pre-edit numbers. Name
+  // is the same story — every other screen (Exercise Library/Detail,
+  // Garden cards, exercise pickers, future sessions) reads it live off this
+  // same record, never off the group's own entry (which never stored a
+  // name of its own to begin with — see renderGmExerciseList()).
   const exDef = exercises[ge.exerciseId];
   if (exDef) {
     const prevLabel = saveBtn.textContent;
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
     const updated = {
       ...exDef,
+      name: trimmedName,
       defaultSets: gmesDraft.sets, minReps: gmesDraft.min, maxReps: gmesDraft.max,
       targetReps: resizeTargetReps(exDef.targetReps, gmesDraft.sets, gmesDraft.min, gmesDraft.max)
     };
@@ -8074,7 +8103,7 @@ document.getElementById('gmes-save').addEventListener('click', async () => {
       await set(ref(db, `exercises/${uid()}/${ge.exerciseId}`), updated);
       exercises[ge.exerciseId] = updated; // optimistic mirror; onValue confirms shortly after
     } catch (err) {
-      console.error('Failed to update the exercise\'s own Sets/Rep range:', err);
+      console.error('Failed to update the exercise\'s own name/Sets/Rep range:', err);
     } finally {
       saveBtn.disabled = false; saveBtn.textContent = prevLabel;
     }
