@@ -1728,6 +1728,20 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <h3 id="sw-title" class="font-display font-bold text-lg text-slate-800 dark:text-white flex-1 truncate"></h3>
       <button id="sw-close" class="text-slate-400 p-1 -mr-1 flex-shrink-0 ml-auto" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
+    <!-- Other Activity leads the list — walks/runs/swims/sports, same
+         openLogOtherActivityForToday() path the pre-workout empty state's
+         own "Log other activity" button already uses. Unlike the three
+         options below, this one closes the sheet immediately instead of
+         leaving it open underneath (see sw-other-activity-btn's own click
+         handler) — there's no sub-page here with a "back to choice" of its
+         own to land on, just the activity library. -->
+    <button id="sw-other-activity-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
+      <span class="text-2xl flex-shrink-0" aria-hidden="true">🚶</span>
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-slate-800 dark:text-white">Other Activity</p>
+        <p class="text-xs text-slate-400">Walks, runs, swims, sports and more.</p>
+      </div>
+    </button>
     <button id="sw-group-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">🏋️</span>
       <div class="min-w-0">
@@ -1742,27 +1756,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <p class="text-xs text-slate-400">Log a custom workout.</p>
       </div>
     </button>
-    <!-- A third, equal option — not visually emphasized over the two
-         workout choices above (same border/padding/icon-size treatment). -->
+    <!-- Still equal to the other three (same border/padding/icon-size
+         treatment) despite landing last now. -->
     <button id="sw-target-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-lavender-400 dark:hover:border-lavender-600 text-left transition-all">
       <span class="text-2xl flex-shrink-0" aria-hidden="true">🎯</span>
       <div class="min-w-0">
         <p class="text-sm font-bold text-slate-800 dark:text-white">Create Target</p>
         <p class="text-xs text-slate-400">Create a new fitness goal.</p>
-      </div>
-    </button>
-    <!-- A fourth, equal option — walks/runs/swims/sports, same
-         openLogOtherActivityForToday() path the pre-workout empty state's
-         own "Log other activity" button already uses. Unlike the three
-         options above, this one closes the sheet immediately instead of
-         leaving it open underneath (see sw-other-activity-btn's own click
-         handler) — there's no sub-page here with a "back to choice" of its
-         own to land on, just the activity library. -->
-    <button id="sw-other-activity-btn" type="button" class="cap-card w-full flex items-start gap-3 p-4 rounded-xl hover:border-brand-400 dark:hover:border-brand-600 text-left transition-all">
-      <span class="text-2xl flex-shrink-0" aria-hidden="true">🚶</span>
-      <div class="min-w-0">
-        <p class="text-sm font-bold text-slate-800 dark:text-white">Other Activity</p>
-        <p class="text-xs text-slate-400">Walks, runs, swims, sports and more.</p>
       </div>
     </button>
   </div>
