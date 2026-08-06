@@ -5193,14 +5193,34 @@ function renderTodayMission() {
   if (planned) {
     body.innerHTML = renderHomeMissionPlannedCard(planned);
   } else if (done) {
-    const s = Object.values(todaySessions)[0];
+    // More than one thing can be logged for today (a Recovery Day, then a
+    // Yoga/Cardio activity added on top via "Log another activity") —
+    // Object.values(todaySessions)[0] used to be the ONLY session this
+    // summary ever looked at, so a second, real activity logged after a
+    // Recovery Day silently vanished from it entirely: the badge stayed
+    // "Recovery Day" and the count stayed frozen at that session's own
+    // (always-empty) exercise list. The badge still shows one "primary"
+    // session — preferring an actual workout if one happened today, same
+    // precedent Calendar's own day-preview card already uses — but the
+    // exercise count now sums every session logged today, and non-workout
+    // sessions (Recovery Day, Other Activity — neither ever has a real
+    // exercises array) no longer get described in exercise terms at all.
+    const todayList = Object.values(todaySessions);
+    const workoutIdx = todayList.findIndex(sx => histSessionKind(sx) === 'workout');
+    const s = workoutIdx !== -1 ? todayList[workoutIdx] : todayList[0];
+    const totalExercises = todayList.reduce((sum, sx) => sum + (sx.exercises || []).length, 0);
+    const extraCount = todayList.length - 1;
+    let metaText = null;
+    if (totalExercises > 0 && extraCount > 0) metaText = `${totalExercises} exercise${totalExercises !== 1 ? 's' : ''} + ${extraCount} more logged`;
+    else if (totalExercises > 0) metaText = `${totalExercises} exercise${totalExercises !== 1 ? 's' : ''}`;
+    else if (extraCount > 0) metaText = `${todayList.length} activities logged`;
     body.innerHTML = `
       <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-base">
         <span class="ms text-xl" aria-hidden="true">check_circle</span>Mission complete
       </div>
       <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="px-2.5 py-0.5 rounded-full text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
-        <span>${(s.exercises||[]).length} exercise${(s.exercises||[]).length!==1?'s':''}</span>
+        ${metaText ? `<span>${esc(metaText)}</span>` : ''}
       </div>
       <div class="flex items-center gap-3 pt-0.5 text-xs font-semibold">
         <button data-action="view-workout" class="text-brand-500 hover:underline py-2">View workout</button>
