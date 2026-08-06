@@ -228,6 +228,13 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    these badges/pills/calendar dots are meant to stand out and read as
    distinct at a glance, unlike the ambient neutral/brand system above. */
 .card{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);border-radius:1rem;box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
+/* Personal-record footer note (Finish/Workout Summary's "Today's highlight"
+   card) — a muted bronze/gold, deliberately not Tailwind's vivid amber-500,
+   so a PR reads as a quiet bonus tucked below the main volume number
+   rather than a second thing competing for attention. Lighter on dark so
+   it still holds enough contrast against a near-black card. */
+.pr-footer-note{color:#a8863f}
+.dark .pr-footer-note{color:#cbab6e}
 .dark .card{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Tappable cards (.card combined with cursor-pointer) get the same press
    feedback language as buttons, for free, via attribute match — no per-card
@@ -1307,7 +1314,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
             <p class="text-xs text-slate-400">Equivalent to lifting</p>
             <p id="wsum-comparison-text" class="text-lg font-bold text-slate-700 dark:text-slate-200"></p>
           </div>
-          <p id="wsum-pr-line" style="display:none" class="text-sm font-bold text-amber-500 mt-3 flex items-center gap-1"></p>
+          <p id="wsum-pr-line" style="display:none" class="pr-footer-note text-xs font-semibold flex items-center gap-1 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800"></p>
         </div>
       </div>
 
@@ -2687,7 +2694,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <p class="text-xs text-slate-400">Equivalent to lifting</p>
           <p id="finish-comparison-text" class="font-display font-bold text-xl text-slate-800 dark:text-white truncate"></p>
         </div>
-        <p id="finish-pr-line" style="display:none" class="text-sm font-bold text-amber-500 mt-3 flex items-center gap-1"></p>
+        <p id="finish-pr-line" style="display:none" class="pr-footer-note text-xs font-semibold flex items-center gap-1 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800"></p>
       </div>
     </div>
     <p id="finish-no-volume-headline" style="display:none" class="finish-reveal finish-reveal-5 text-center font-display font-bold text-lg text-slate-700 dark:text-slate-200"></p>
@@ -10935,7 +10942,7 @@ function renderFinishHighlight(sessionExercises) {
     renderFinishComparison(volume);
     const prLine = document.getElementById('finish-pr-line');
     prLine.style.display = prCount > 0 ? '' : 'none';
-    if (prCount > 0) prLine.textContent = `🏆 ${prCount} new personal record${prCount !== 1 ? 's' : ''}`;
+    if (prCount > 0) prLine.textContent = `🏆 ${prCount} Personal Record${prCount !== 1 ? 's' : ''}`;
   } else {
     section.style.display = 'none';
     noVolumeHeadline.style.display = '';
@@ -11897,7 +11904,7 @@ function renderWorkoutSummaryPage(date, sessionId) {
     const prCount = countSessionPrs(sessionExercises, `${date}_${sessionId}`);
     const prLine = document.getElementById('wsum-pr-line');
     prLine.style.display = prCount > 0 ? '' : 'none';
-    if (prCount > 0) prLine.textContent = `🏆 ${prCount} new personal record${prCount !== 1 ? 's' : ''}`;
+    if (prCount > 0) prLine.textContent = `🏆 ${prCount} Personal Record${prCount !== 1 ? 's' : ''}`;
   } else {
     highlightSection.style.display = 'none';
   }
