@@ -5007,11 +5007,16 @@ function renderPlantHero(sessionDates, hasHistory) {
   const { health, streak } = getPlantHealth(sessionDates);
   const statusVariants = health === 'blooming' ? bloomingStatusVariants(streak) : HEALTH_LABELS[health]?.[1];
   // A handful of statuses (e.g. blooming) list several message variants
-  // instead of one fixed string — picked stably per day via seededRandom01
-  // (same pattern as the Home Garden preview's daily rotation) so it
-  // doesn't reshuffle on every render, just once a day.
+  // instead of one fixed string. A plain seeded-random pick (one hash per
+  // day) technically "varies daily" but can land on the same index on
+  // back-to-back days by chance — a 6-item set repeating immediately reads
+  // as broken, not random. Rotating by calendar day-index instead
+  // guarantees every day advances to the next variant (wrapping every N
+  // days), so it never repeats two days running, while still landing on
+  // the same variant if re-rendered multiple times today.
+  const daysSinceEpoch = Math.floor(new Date(`${todayStr()}T00:00:00`).getTime() / 86400000);
   const statusMsg = Array.isArray(statusVariants)
-    ? statusVariants[Math.floor(seededRandom01(`${todayStr()}-plant-status-${health}`) * statusVariants.length)]
+    ? statusVariants[daysSinceEpoch % statusVariants.length]
     : (statusVariants || '');
   emoji.className = `relative text-[10rem] leading-none ${HEALTH_ANIM[health] || 'p-hero-float'}`;
   document.getElementById('plant-status-label').textContent = statusMsg;
