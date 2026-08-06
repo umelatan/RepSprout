@@ -2776,7 +2776,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <div id="cap-drag-handle" class="flex justify-center pt-2.5 pb-1 flex-shrink-0" style="touch-action:none" aria-hidden="true"><div class="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div></div>
     <div class="px-5 pt-1 pb-3 flex-shrink-0">
       <h3 id="cap-title" class="font-display font-bold text-lg text-slate-800 dark:text-white">Add to Calendar</h3>
-      <p class="text-xs text-slate-400 mt-0.5">What would you like to plan for this day?</p>
+      <p id="cap-subtitle" class="text-xs text-slate-400 mt-0.5">What would you like to plan for this day?</p>
     </div>
     <div class="flex-1 overflow-y-auto px-5 pb-2 space-y-2.5">
       <button id="cap-group-btn" type="button" class="cap-card w-full flex items-center gap-3 rounded-2xl p-3.5 text-left" aria-label="Workout Group — start from one of your saved workout groups.">
@@ -13036,11 +13036,25 @@ let calendarAddPickerDate = null;
 // call site (cds-add-btn, cds-change-btn, cds-add-another-btn) keeps
 // working unchanged.
 let calendarAddPickerFromDaySheet = false;
+// Title/subtitle read "Add to Calendar" / "...plan for this day" only for a
+// future date, where that's literally what's happening. For today/past this
+// sheet is logging something already done (or being done right now), not
+// scheduling ahead, so the wording follows the same Schedule-vs-Log split
+// every option inside it already uses (see cap-activity-btn's own per-item
+// title).
+const CAP_TITLE_BY_RELATION = { today: 'Log Today', past: 'Log This Day', future: 'Add to Calendar' };
+const CAP_SUBTITLE_BY_RELATION = {
+  today: 'What would you like to log for today?',
+  past: 'What would you like to log for this day?',
+  future: 'What would you like to plan for this day?'
+};
 function openCalendarAddPicker(date) {
   calendarAddPickerFromDaySheet = document.getElementById('calendar-day-sheet').style.display !== 'none';
   calendarAddPickerDate = date;
   const relation = dateRelation(date);
   const plantName = (PLANTS[userProfile.plant] || {}).name || 'your plant';
+  document.getElementById('cap-title').textContent = CAP_TITLE_BY_RELATION[relation];
+  document.getElementById('cap-subtitle').textContent = CAP_SUBTITLE_BY_RELATION[relation];
   document.getElementById('cap-recovery-desc').textContent = 'Plan a rest day — recovery is part of the process.';
   document.getElementById('cap-recovery-btn').setAttribute('aria-label', 'Recovery Day — plan a rest day.');
   document.getElementById('cap-footer-text').textContent = `Every plan is time well spent with ${plantName}.`;
