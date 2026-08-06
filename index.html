@@ -1307,6 +1307,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
             <p class="text-xs text-slate-400">Equivalent to lifting</p>
             <p id="wsum-comparison-text" class="text-lg font-bold text-slate-700 dark:text-slate-200"></p>
           </div>
+          <p id="wsum-pr-line" style="display:none" class="text-sm font-bold text-amber-500 mt-3 flex items-center gap-1"></p>
         </div>
       </div>
 
@@ -2686,6 +2687,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <p class="text-xs text-slate-400">Equivalent to lifting</p>
           <p id="finish-comparison-text" class="font-display font-bold text-xl text-slate-800 dark:text-white truncate"></p>
         </div>
+        <p id="finish-pr-line" style="display:none" class="text-sm font-bold text-amber-500 mt-3 flex items-center gap-1"></p>
       </div>
     </div>
     <p id="finish-no-volume-headline" style="display:none" class="finish-reveal finish-reveal-5 text-center font-display font-bold text-lg text-slate-700 dark:text-slate-200"></p>
@@ -4267,6 +4269,78 @@ function exercisePersonalBests(exerciseId) {
     });
   });
   return totalSessions ? { bestWeight, bestReps, totalSessions } : null;
+}
+
+// ── Session-scoped PRs ───────────────────────────────────────────────────────
+// exercisePersonalBests() above always answers "what's the current all-time
+// best," which is exactly what Exercise Detail's own Best Weight/Best Set
+// stat needs — but the Finish Summary and Workout Summary pages need a
+// different question: "was THIS set, at the time it happened, a new best?"
+// That's a personal-best scoped to everything strictly BEFORE one specific
+// session, not everything overall.
+//
+// beforeKey is a `${date}_${sessionId}` string; every session whose own key
+// is >= it is excluded. Firebase push keys sort lexicographically by
+// creation time, so plain string comparison on `${date}_${sessionId}`
+// already orders same-day sessions correctly too — no separate
+// completedAt comparison needed (same trick calculateExerciseDoubleProgression's
+// own timeline sort already relies on). Pass beforeKey=null to include
+// every session currently in memory — used for the not-yet-saved Finish
+// Summary, where the pending session doesn't exist in `sessions` yet
+// anyway, so "before" and "all of history" are the same thing.
+function personalBestBefore(exerciseId, beforeKey) {
+  let bestWeight = 0, bestReps = 0, found = false;
+  Object.entries(sessions).forEach(([d, daySessions]) => {
+    Object.entries(daySessions || {}).forEach(([sid, s]) => {
+      if (beforeKey != null && `${d}_${sid}` >= beforeKey) return;
+      const ex = (s.exercises || []).find(e => e.exerciseId === exerciseId);
+      if (!ex || ex.skipped) return;
+      (ex.sets || []).filter(st => st.completed && !st.warmup).forEach(st => {
+        const w = st.weight || 0;
+        if (w > bestWeight || (w === bestWeight && (st.reps || 0) > bestReps)) { bestWeight = w; bestReps = st.reps || 0; }
+        found = true;
+      });
+    });
+  });
+  return found ? { bestWeight, bestReps } : null;
+}
+
+// Which of THIS exercise's own completed working sets (already filtered/
+// ordered the same way finishExerciseSummaryRowHtml/histExerciseSummaryRowHtml
+// build their set rows) are a new PR — comparing against personalBestBefore(),
+// then updating the running best as we go, so a second set that beats the
+// first (e.g. 100kg then 105kg in the same session) still gets its own
+// credit. An exercise with no prior history at all returns no PRs — a
+// first-ever set has nothing to beat, so flagging it would just be noise
+// on every brand-new exercise.
+function sessionPrSetIndices(exerciseId, completedSets, beforeKey) {
+  const before = personalBestBefore(exerciseId, beforeKey);
+  if (!before) return new Set();
+  let { bestWeight, bestReps } = before;
+  const prIdx = new Set();
+  (completedSets || []).forEach((s, i) => {
+    const w = s.weight || 0;
+    if (w > bestWeight || (w === bestWeight && (s.reps || 0) > bestReps)) {
+      prIdx.add(i);
+      bestWeight = w; bestReps = s.reps || 0;
+    }
+  });
+  return prIdx;
+}
+
+// Total PR count across a whole session (every exercise), for the "Today's
+// highlight" card — sessionExercises can be either the live, not-yet-saved
+// activeSession.exercises (pass beforeKey=null) or an already-saved
+// session's own exercises array (pass its real `${date}_${sessionId}`).
+function countSessionPrs(sessionExercises, beforeKey) {
+  let count = 0;
+  (sessionExercises || []).forEach(ex => {
+    if (ex.skipped || !ex.exerciseId) return;
+    const completedSets = getCompletedWorkingSets(ex);
+    if (!completedSets.length) return;
+    count += sessionPrSetIndices(ex.exerciseId, completedSets, beforeKey).size;
+  });
+  return count;
 }
 
 function exerciseProgressionSummaryHtml(exerciseId, ex, unit) {
@@ -10597,6 +10671,7 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
 function finishExerciseSummaryRowHtml(ex, idx) {
   const completedSets = getCompletedWorkingSets(ex);
   const workingCount = completedSets.length;
+  const prIndices = ex.exerciseId ? sessionPrSetIndices(ex.exerciseId, completedSets, null) : new Set();
   const pending = { date: todayStr(), sessionId: 'pending', ex };
   const canConfigure = ex.exerciseId && ex.progressionEnabled && exercises[ex.exerciseId];
   const result = canConfigure ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId, pending) : null;
@@ -10626,7 +10701,12 @@ function finishExerciseSummaryRowHtml(ex, idx) {
   const setRows = completedSets.map((s, i) => {
     const p = positions[i];
     let cue = '—', cueClass = 'text-slate-400';
-    if (p) {
+    // A PR takes priority over the usual progression cue text -- there's
+    // only room for one message here, and beating your own all-time best
+    // is the more exciting of the two (the leaf pips to the right of the
+    // row still show "New leaf" status regardless of what this cue says).
+    if (prIndices.has(i)) { cue = '🏆 New PR'; cueClass = 'text-amber-500 font-semibold'; }
+    else if (p) {
       if (p.status === 'ready_to_increase' || p.status === 'increased_weight') { cue = 'Ready to increase'; cueClass = 'text-brand-500 font-semibold'; }
       else if (p.targetMaxReps != null) {
         const remaining = Math.max(0, p.targetMaxReps - (s.reps || 0));
@@ -10668,9 +10748,10 @@ function finishExerciseSummaryRowHtml(ex, idx) {
 // calculateExerciseDoubleProgression's note on why), and "New leaf" comes
 // from the real event log filtered to this session's id, never a live
 // "as of today" recomputation.
-function histExerciseSummaryRowHtml(ex, idx, sessionId) {
+function histExerciseSummaryRowHtml(ex, idx, sessionId, date) {
   const completedSets = getCompletedWorkingSets(ex);
   const workingCount = completedSets.length;
+  const prIndices = ex.exerciseId ? sessionPrSetIndices(ex.exerciseId, completedSets, `${date}_${sessionId}`) : new Set();
   const unit = ex.unit || 'kg';
   const canConfigure = ex.exerciseId && ex.progressionEnabled && exercises[ex.exerciseId];
   const targetMin = ex.minReps != null ? ex.minReps : null;
@@ -10706,7 +10787,9 @@ function histExerciseSummaryRowHtml(ex, idx, sessionId) {
   const setRows = completedSets.map((s, i) => {
     const matured = maturedPositions.has(i);
     let cue = '—', cueClass = 'text-slate-400';
-    if (matured) { cue = 'New leaf'; cueClass = 'text-brand-500 font-semibold'; }
+    // Same PR-takes-priority rule as finishExerciseSummaryRowHtml's cue.
+    if (prIndices.has(i)) { cue = '🏆 New PR'; cueClass = 'text-amber-500 font-semibold'; }
+    else if (matured) { cue = 'New leaf'; cueClass = 'text-brand-500 font-semibold'; }
     else if (targetMax != null) {
       const remaining = Math.max(0, targetMax - (s.reps || 0));
       cue = remaining ? `${remaining} rep${remaining !== 1 ? 's' : ''} to go` : 'At target';
@@ -10844,17 +10927,25 @@ function renderFinishHighlight(sessionExercises) {
   const { volume, unit } = computeSessionVolume(sessionExercises);
   const section = document.getElementById('finish-highlight-section');
   const noVolumeHeadline = document.getElementById('finish-no-volume-headline');
+  const prCount = countSessionPrs(sessionExercises, null);
   if (volume > 0) {
     section.style.display = '';
     noVolumeHeadline.style.display = 'none';
     document.getElementById('finish-volume-value').textContent = `${volume.toLocaleString()} ${unit}`;
     renderFinishComparison(volume);
+    const prLine = document.getElementById('finish-pr-line');
+    prLine.style.display = prCount > 0 ? '' : 'none';
+    if (prCount > 0) prLine.textContent = `🏆 ${prCount} new personal record${prCount !== 1 ? 's' : ''}`;
   } else {
     section.style.display = 'none';
     noVolumeHeadline.style.display = '';
     const { totalLeaves } = computeSessionPlantProgress(sessionExercises);
     const exCount = sessionExercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length).length;
-    noVolumeHeadline.textContent = totalLeaves > 0 ? `${totalLeaves} new ${totalLeaves !== 1 ? 'leaves' : 'leaf'} earned` : `${exCount} exercise${exCount !== 1 ? 's' : ''} completed`;
+    // Same "most exciting real stat wins" priority as the set-row cue:
+    // a PR beats a leaf, a leaf beats the plain exercise count.
+    noVolumeHeadline.textContent = prCount > 0 ? `🏆 ${prCount} new personal record${prCount !== 1 ? 's' : ''}`
+      : totalLeaves > 0 ? `${totalLeaves} new ${totalLeaves !== 1 ? 'leaves' : 'leaf'} earned`
+      : `${exCount} exercise${exCount !== 1 ? 's' : ''} completed`;
   }
   return { volume, unit };
 }
@@ -11803,6 +11894,10 @@ function renderWorkoutSummaryPage(date, sessionId) {
     const row = document.getElementById('wsum-comparison-row');
     if (comp) { row.style.display = ''; document.getElementById('wsum-comparison-text').textContent = `${comp.emoji} ${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`; }
     else row.style.display = 'none';
+    const prCount = countSessionPrs(sessionExercises, `${date}_${sessionId}`);
+    const prLine = document.getElementById('wsum-pr-line');
+    prLine.style.display = prCount > 0 ? '' : 'none';
+    if (prCount > 0) prLine.textContent = `🏆 ${prCount} new personal record${prCount !== 1 ? 's' : ''}`;
   } else {
     highlightSection.style.display = 'none';
   }
@@ -11811,7 +11906,7 @@ function renderWorkoutSummaryPage(date, sessionId) {
 
   document.getElementById('wsum-exercise-summary-subtitle').textContent = `${eligibleExercises.length} exercise${eligibleExercises.length !== 1 ? 's' : ''} • ${totalLeaves} progression${totalLeaves !== 1 ? 's' : ''}`;
   const exBox = document.getElementById('wsum-exercise-summary');
-  exBox.innerHTML = eligibleExercises.map((ex, i) => histExerciseSummaryRowHtml(ex, i, sessionId)).join('');
+  exBox.innerHTML = eligibleExercises.map((ex, i) => histExerciseSummaryRowHtml(ex, i, sessionId, date)).join('');
   exBox.querySelectorAll('.hist-ex-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.key;
