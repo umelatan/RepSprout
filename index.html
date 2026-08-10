@@ -7514,7 +7514,28 @@ document.getElementById('ex-modal-save').addEventListener('click', async () => {
       await set(newRef, data);
     }
     const checkedGroupIds = Array.from(document.querySelectorAll('.ex-addgroup-check:checked')).map(cb => cb.dataset.id);
-    if (checkedGroupIds.length) await addExerciseToGroups(newId, data, checkedGroupIds);
+    if (checkedGroupIds.length) {
+      // If this exercise was created from *inside* an already-open Edit
+      // Group sheet (group-modal stays open underneath this whole flow —
+      // see pick-ex-create-btn), and that exact group is one of the ones
+      // checked here, writing straight to Firebase would get silently
+      // undone the moment that sheet's own Save Changes is pressed: it
+      // writes groupModalDraft.exercises back over whatever's there,
+      // erasing an addition it doesn't know about. Route that one group
+      // through the draft instead — Save Changes commits it along with
+      // everything else, exactly like adding via "+ Add exercise" already
+      // does. Every other checked group has no such conflict, so those
+      // still write directly as before.
+      const groupModalOpen = document.getElementById('group-modal').style.display !== 'none';
+      const draftGroupChecked = groupModalOpen && groupModalId && checkedGroupIds.includes(groupModalId);
+      const directIds = draftGroupChecked ? checkedGroupIds.filter(gid => gid !== groupModalId) : checkedGroupIds;
+      if (directIds.length) await addExerciseToGroups(newId, data, directIds);
+      if (draftGroupChecked && !groupModalDraft.exercises.some(ge => ge.exerciseId === newId)) {
+        groupModalDraft.exercises.push({ exerciseId: newId, defaultSets: data.defaultSets || 3, minReps: data.minReps ?? 8, maxReps: data.maxReps ?? 12, notes: '' });
+        hide('gm-ex-error');
+        renderGmExerciseList();
+      }
+    }
     rsHideModal('exercise-modal');
 
     const buildWorkoutOpen = document.getElementById('build-workout-modal').style.display !== 'none';
