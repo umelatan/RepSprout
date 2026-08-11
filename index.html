@@ -2346,6 +2346,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <button id="gmea-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
     <button id="gmea-configure-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">tune</span>Configure exercise</button>
+    <button id="gmea-swap-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"><span class="ms text-lg text-slate-400" aria-hidden="true">swap_horiz</span>Swap exercise</button>
     <button id="gmea-remove-btn" type="button" class="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-sm font-semibold text-red-500 flex items-center gap-2"><span class="ms text-lg" aria-hidden="true">delete</span>Remove exercise from group</button>
   </div>
 </div>
@@ -7981,6 +7982,31 @@ document.getElementById('gmea-configure-btn').addEventListener('click', () => {
   rsHideModal('gm-ex-actions-modal');
   if (idx != null) openGmExerciseSettings(idx);
 });
+// Same replace-in-place pattern as the Active Workout queue's own Swap
+// exercise (swapQueueExercise()) — a fresh entry using the newly-picked
+// exercise's own defaults, never carrying over the old slot's Sets/Rep
+// range/Rest. Excludes every exercise already in this group (including
+// the one being swapped out), same list openGmAddExerciseFlow() already
+// excludes, so you can't "swap" onto a duplicate.
+document.getElementById('gmea-swap-btn').addEventListener('click', () => {
+  const idx = gmExActionsIdx;
+  rsHideModal('gm-ex-actions-modal');
+  if (idx == null) return;
+  openPickExModal(newId => {
+    rsHideModal('pick-ex-modal');
+    swapGmExercise(idx, newId);
+  }, groupModalDraft.exercises.map(ge => ge.exerciseId));
+});
+function swapGmExercise(idx, newExerciseId) {
+  const ge = groupModalDraft.exercises[idx];
+  if (!ge) return;
+  const oldName = exercises[ge.exerciseId]?.name || 'this exercise';
+  const newEx = exercises[newExerciseId];
+  if (!newEx || !confirm(`Swap ${oldName} for ${newEx.name}?`)) return;
+  groupModalDraft.exercises[idx] = { exerciseId: newExerciseId, defaultSets: newEx.defaultSets || 3, minReps: newEx.minReps ?? 8, maxReps: newEx.maxReps ?? 12, notes: '' };
+  hide('gm-ex-error');
+  renderGmExerciseList();
+}
 document.getElementById('gmea-remove-btn').addEventListener('click', () => {
   const idx = gmExActionsIdx;
   rsHideModal('gm-ex-actions-modal');
