@@ -7112,6 +7112,16 @@ function renderExerciseDetail(exerciseId) {
     const generation = exercisePlantGeneration(dpResult);
     const stageName = EXERCISE_PLANT_STAGE_NAMES[stageIdx];
     const pct = dpResult.workingSetCount ? Math.round((dpResult.leavesMatured / dpResult.workingSetCount) * 100) : 0;
+    // A completed generation wraps stageIdx back to 0 (Seed) for the new
+    // one, by design — but that alone reads as if nothing happened. The
+    // "N blooms collected" line already existed; it just never said what
+    // any of them actually were. Surfacing the most recent one's real,
+    // already-revealed species (same gardenCollection record
+    // gardenBloomedCardHtml() reads on the Garden page's own Bloomed tab —
+    // never re-derived or re-rolled here) answers that directly without
+    // adding a new element to the layout.
+    const exBlooms = Object.values(gardenCollection).filter(c => c.exerciseId === exerciseId);
+    const latestBloom = exBlooms.length ? exBlooms.reduce((a, b) => (b.generation > a.generation ? b : a)) : null;
     heroHtml = `
       <div class="card p-4 space-y-3">
         <div class="flex items-center gap-4">
@@ -7122,7 +7132,7 @@ function renderExerciseDetail(exerciseId) {
               <p class="font-display font-bold text-xl text-slate-800 dark:text-white">${esc(stageName)}</p>
               <span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${EXERCISE_PLANT_CYCLE_LENGTH}</span>
             </div>
-            ${generation > 0 ? `<p class="text-[11px] text-slate-400 mt-0.5">${generation} bloom${generation === 1 ? '' : 's'} collected</p>` : ''}
+            ${generation > 0 ? `<p class="text-[11px] text-slate-400 mt-0.5">${generation} bloom${generation === 1 ? '' : 's'} collected${latestBloom ? ` · ${latestBloom.speciesEmoji} ${esc(latestBloom.speciesName)}` : ''}</p>` : ''}
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -11019,7 +11029,7 @@ function renderHistPlantProgress(date, sessionId, sessionExercises) {
 // show — a cardio-only or all-bodyweight-at-0kg session, for instance —
 // rather than ever printing "0 kg".
 function renderFinishComparison(volume) {
-  const comp = selectVolumeComparison(volume);
+  const comp = selectVolumeComparison(volume, null, activeSession.pendingSessionId);
   const row = document.getElementById('finish-comparison-row');
   if (!comp) { row.style.display = 'none'; return; }
   row.style.display = '';
@@ -11079,6 +11089,20 @@ function openFinishSummary() {
   const eligibleExercises = activeSession.exercises.filter(ex => !ex.skipped && getCompletedWorkingSets(ex).length);
   const totalSets = eligibleExercises.reduce((sum, ex) => sum + getCompletedWorkingSets(ex).length, 0);
   if (!totalSets) { alert('Log at least one completed set before finishing.'); return; }
+
+  // Reserved once per session (idempotent — re-opening this summary, e.g.
+  // via "Continue", must never reroll it) so the volume comparison picked
+  // here and the one History shows later are the exact same
+  // selectVolumeComparison() call with the exact same seed, instead of two
+  // independent picks (this one unseeded/random, History's seeded by a
+  // sessionId that didn't exist yet at this point) that just happened to
+  // almost never agree. Also pins the date this key was reserved under, so
+  // a midnight rollover between opening this summary and tapping Save
+  // can't split the reserved key and the actual save onto different dates.
+  if (!activeSession.pendingSessionId) {
+    activeSession.pendingSessionDate = todayStr();
+    activeSession.pendingSessionId = push(ref(db, `sessions/${uid()}/${activeSession.pendingSessionDate}`)).key;
+  }
 
   document.getElementById('finish-group-name').textContent = `${activeSession.sessionType === 'quick' ? 'Quick Workout' : activeSession.groupName} completed`;
   const mins = Math.max(1, Math.round((Date.now() - activeSession.startedAt) / 60000));
@@ -11174,7 +11198,12 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
   btn.disabled = true; const prevLabel = btn.innerHTML;
   btn.innerHTML = '<span class="ms text-lg finish-save-leaf" aria-hidden="true">eco</span> Saving…';
 
-  const today = todayStr();
+  // Reuses the exact date/id openFinishSummary() already reserved (see its
+  // own comment) instead of a fresh push() here, so the saved sessionId is
+  // the same one the volume comparison shown on this screen was seeded
+  // with — the whole point being that History's later seeded pick lands on
+  // that identical comparison instead of a different one.
+  const today = activeSession.pendingSessionDate || todayStr();
   // Duration is no longer editable in Additional Details — always the
   // real measured elapsed time, matching what the overview card's own
   // count-up already showed the user.
@@ -11219,7 +11248,9 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
     }))
   };
   try {
-    const sessionRef = push(ref(db, `sessions/${uid()}/${today}`));
+    const sessionRef = activeSession.pendingSessionId
+      ? ref(db, `sessions/${uid()}/${today}/${activeSession.pendingSessionId}`)
+      : push(ref(db, `sessions/${uid()}/${today}`));
     await set(sessionRef, sessionData);
     // Optimistic local mirror — syncExercisePlantsAfterChange() reads
     // `sessions` directly and would otherwise race the onValue listener that
