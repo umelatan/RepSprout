@@ -3126,6 +3126,18 @@ const gp   = new GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────
 let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, calendarEntries = {}, customActivities = {}, gardenCollection = {}, exercisePlantGenerations = {}, targets = {}, targetLogs = {};
+// Set true the first time each listener's own onValue callback has fired at
+// least once — distinct from "gardenCollection/exercisePlantGenerations is
+// currently empty," which is also true before the first real snapshot
+// arrives. ensureExercisePlantsSynced() needs this distinction: onValue
+// listeners fire independently and don't resolve in registration order, so
+// the sessions listener can trigger a renderDashboard() (and so this
+// function) before exercisePlantGenerations has delivered its first real
+// snapshot -- at that moment it's still {} for the same reason a genuinely
+// fresh account's would be, and the sync would wrongly conclude nothing's
+// ever been archived and re-create a record for a generation that already
+// has one. See that function's own guard.
+let gardenCollectionLoaded = false, exercisePlantGenerationsLoaded = false;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'hub';
 let dataRefs = [];
@@ -3377,6 +3389,12 @@ let exercisePlantsSyncChecked = false;
 function ensureExercisePlantsSynced() {
   if (exercisePlantsSyncChecked) return;
   if (!totalLoggedSessions() && !Object.keys(exercises).length) return;
+  // Must not run until exercisePlantGenerations (what this sync checks
+  // every exercise against) has actually loaded its first real snapshot —
+  // see that variable's own comment for exactly why running against its
+  // still-default {} looks identical to "nothing archived yet" and creates
+  // a duplicate for a generation that already has one.
+  if (!gardenCollectionLoaded || !exercisePlantGenerationsLoaded) return;
   exercisePlantsSyncChecked = true;
   syncExercisePlantsAfterChange().catch(e => console.error('Failed to sync exercise plants:', e));
 }
@@ -3394,7 +3412,7 @@ function ensureExercisePlantsSynced() {
 let gardenCollectionDedupChecked = false;
 async function ensureGardenCollectionDeduped() {
   if (gardenCollectionDedupChecked) return;
-  if (!Object.keys(gardenCollection).length) return;
+  if (!gardenCollectionLoaded || !Object.keys(gardenCollection).length) return;
   gardenCollectionDedupChecked = true;
   const byIdentity = {};
   Object.values(gardenCollection).forEach(rec => {
@@ -4864,11 +4882,11 @@ function subscribeData() {
   // those lifecycles have already been archived — the exercise's currently
   // ACTIVE (unarchived) plant is always generation === that stored count.
   const rGardenCollection = ref(db, `users/${uid()}/gardenCollection`);
-  onValue(rGardenCollection, snap => { gardenCollection = snap.val() || {}; renderProfile(); renderDashboard(); }, e => console.error(e));
+  onValue(rGardenCollection, snap => { gardenCollection = snap.val() || {}; gardenCollectionLoaded = true; renderProfile(); renderDashboard(); }, e => console.error(e));
   dataRefs.push(rGardenCollection);
 
   const rExercisePlantGenerations = ref(db, `users/${uid()}/exercisePlantGenerations`);
-  onValue(rExercisePlantGenerations, snap => { exercisePlantGenerations = snap.val() || {}; renderProfile(); renderDashboard(); }, e => console.error(e));
+  onValue(rExercisePlantGenerations, snap => { exercisePlantGenerations = snap.val() || {}; exercisePlantGenerationsLoaded = true; renderProfile(); renderDashboard(); }, e => console.error(e));
   dataRefs.push(rExercisePlantGenerations);
 
   // Targets — an entirely optional habit-tracking layer, kept in its own
