@@ -3320,10 +3320,24 @@ const HEALTH_ANIM = {
 // permanently, keyed by its own generation), and leaves the exercise's
 // currently active plant sitting fresh at whatever stage its own leftover
 // cycleIndex implies. Idempotent via exercisePlantGenerations: recalculating
-// twice in a row (or three times) archives each generation exactly once.
+// twice in a row (or three times) archives each generation exactly once —
+// *as long as those recalculations never overlap in time*. There are 10+
+// call sites (every session save, target log, past-workout backfill, the
+// once-per-load catch-up sweep...), and the body below awaits a real
+// Firebase write per newly-completed generation before it updates
+// exercisePlantGenerations[exerciseId] — so if a second call started while
+// a first one was mid-await, it would still read the OLD (stale)
+// exercisePlantGenerations value, conclude the same generation hasn't been
+// archived yet, and create a second gardenCollection record for it (the
+// exact "1 exercise, 2 bloomed plants" duplicate this was fixed for).
+// exercisePlantsSyncChain below serializes every call onto one queue —
+// each run only starts once the previous one has fully finished — so two
+// calls can never race each other, while every caller still gets its own
+// accurate, up-to-date result (its turn only starts after every state
+// change requested before it was made).
 // Returns which exercises (if any) newly bloomed THIS call, for celebration
 // — see bloomMessage().
-async function syncExercisePlantsAfterChange() {
+async function syncExercisePlantsAfterChangeImpl() {
   const newlyBloomed = [];
   for (const [exerciseId, exDef] of Object.entries(exercises)) {
     if (exDef.archived || exDef.progressionEnabled === false) continue;
@@ -3346,6 +3360,12 @@ async function syncExercisePlantsAfterChange() {
   syncDoubleProgressionEvents().catch(e => console.error('Failed to sync Double Progression event audit trail:', e));
   return { newlyBloomed };
 }
+let exercisePlantsSyncChain = Promise.resolve();
+function syncExercisePlantsAfterChange() {
+  const run = exercisePlantsSyncChain.catch(() => {}).then(() => syncExercisePlantsAfterChangeImpl());
+  exercisePlantsSyncChain = run.catch(() => {}); // never let one failure wedge the queue for later callers
+  return run;
+}
 
 // One per-load catch-up sweep, the same "runs once, only once a real signal
 // has actually loaded" pattern the old Companion-growth consistency check
@@ -3359,6 +3379,40 @@ function ensureExercisePlantsSynced() {
   if (!totalLoggedSessions() && !Object.keys(exercises).length) return;
   exercisePlantsSyncChecked = true;
   syncExercisePlantsAfterChange().catch(e => console.error('Failed to sync exercise plants:', e));
+}
+
+// One-time cleanup for gardenCollection records already duplicated by the
+// exercisePlantsSyncChain-less race this file used to have (two overlapping
+// syncExercisePlantsAfterChange() calls both archiving the same generation
+// — see that function's own comment). The race itself is fixed, but that
+// fix can't retroactively undo duplicates a still-affected account already
+// has sitting in Firebase, so this keeps running once per load until
+// they're gone: group by exerciseId+generation (the real identity a bloom
+// should be unique on), and for any group with more than one record, keep
+// only the earliest (Firebase push keys sort chronologically, so a plain
+// string sort already puts the original first) and remove the rest.
+let gardenCollectionDedupChecked = false;
+async function ensureGardenCollectionDeduped() {
+  if (gardenCollectionDedupChecked) return;
+  if (!Object.keys(gardenCollection).length) return;
+  gardenCollectionDedupChecked = true;
+  const byIdentity = {};
+  Object.values(gardenCollection).forEach(rec => {
+    const key = `${rec.exerciseId}_${rec.generation}`;
+    (byIdentity[key] ??= []).push(rec);
+  });
+  const staleIds = [];
+  Object.values(byIdentity).forEach(group => {
+    if (group.length <= 1) return;
+    group.sort((a, b) => a.id.localeCompare(b.id));
+    group.slice(1).forEach(rec => staleIds.push(rec.id));
+  });
+  if (!staleIds.length) return;
+  for (const id of staleIds) {
+    delete gardenCollection[id]; // optimistic; onValue confirms shortly after
+    try { await remove(ref(db, `users/${uid()}/gardenCollection/${id}`)); }
+    catch (e) { console.error('Failed to remove a duplicate garden bloom record:', e); }
+  }
 }
 
 // Double Progression's own structured-event audit trail, kept separate from
@@ -5413,6 +5467,7 @@ function renderEncouragement() {
 
 function renderDashboard() {
   ensureExercisePlantsSynced();
+  ensureGardenCollectionDeduped().catch(e => console.error('Failed to dedupe garden collection:', e));
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
   renderPlantHero(sessionDates, hasHistory);
