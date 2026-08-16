@@ -3302,11 +3302,23 @@ function assignPlant() {
 
 // Shared by getPlantHealth() and renderDashStats() so "how many consecutive
 // days ending today has the user trained" only has one implementation.
+// A day with no logged session still keeps the streak alive if it has a
+// Recovery Day PLANNED on the Calendar in advance — the only way a 'planned'
+// (not yet 'completed') recovery entry can exist at all is via the
+// future-date Calendar flows (see cds-mark-recovery-btn/cap-recovery-btn),
+// so its mere presence already means this was scheduled ahead of time, not
+// decided in the moment. This is deliberately NOT a blanket "tolerate any
+// missed day" rule — an unplanned gap still breaks the streak exactly like
+// before. If the user trains that day instead of resting, the real session
+// already satisfies sessionDates on its own, so nothing extra is needed
+// here for that case either.
 function computeStreak(sessionDates) {
   const today = todayStr();
   let streak = 0, check = new Date(today+'T12:00:00');
   for (let i = 0; i < 60; i++) {
-    if (sessionDates.includes(check.toISOString().slice(0,10))) streak++;
+    const dateStr = check.toISOString().slice(0,10);
+    const coveredByPlannedRecovery = Object.values(entriesForDate(dateStr)).some(e => e.type === 'recovery' && e.status === 'planned');
+    if (sessionDates.includes(dateStr) || coveredByPlannedRecovery) streak++;
     else if (i > 0) break;
     check.setDate(check.getDate()-1);
   }
