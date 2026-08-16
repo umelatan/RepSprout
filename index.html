@@ -5359,15 +5359,19 @@ function renderTodayMission() {
     // exercise count now sums every session logged today, and non-workout
     // sessions (Recovery Day, Other Activity — neither ever has a real
     // exercises array) no longer get described in exercise terms at all.
-    const todayList = Object.values(todaySessions);
-    const workoutIdx = todayList.findIndex(sx => histSessionKind(sx) === 'workout');
-    const s = workoutIdx !== -1 ? todayList[workoutIdx] : todayList[0];
-    const totalExercises = todayList.reduce((sum, sx) => sum + (sx.exercises || []).length, 0);
-    const extraCount = todayList.length - 1;
+    // Entries (not just values) so the primary session's own id travels
+    // with it to the "View workout" button below — needed to open that
+    // exact session's Workout Summary page directly instead of just
+    // dropping the user into the general History list to go find it.
+    const todayEntries = Object.entries(todaySessions);
+    const workoutIdx = todayEntries.findIndex(([, sx]) => histSessionKind(sx) === 'workout');
+    const [sId, s] = workoutIdx !== -1 ? todayEntries[workoutIdx] : todayEntries[0];
+    const totalExercises = todayEntries.reduce((sum, [, sx]) => sum + (sx.exercises || []).length, 0);
+    const extraCount = todayEntries.length - 1;
     let metaText = null;
     if (totalExercises > 0 && extraCount > 0) metaText = `${totalExercises} exercise${totalExercises !== 1 ? 's' : ''} + ${extraCount} more logged`;
     else if (totalExercises > 0) metaText = `${totalExercises} exercise${totalExercises !== 1 ? 's' : ''}`;
-    else if (extraCount > 0) metaText = `${todayList.length} activities logged`;
+    else if (extraCount > 0) metaText = `${todayEntries.length} activities logged`;
     body.innerHTML = `
       <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-base">
         <span class="ms text-xl" aria-hidden="true">check_circle</span>Mission complete
@@ -5376,10 +5380,12 @@ function renderTodayMission() {
         <span class="px-2.5 py-0.5 rounded-full text-white font-semibold" style="background:${sessionColor(s)}">${esc(sessionLabel(s))}</span>
         ${metaText ? `<span>${esc(metaText)}</span>` : ''}
       </div>
-      <div class="flex items-center gap-3 pt-0.5 text-xs font-semibold">
-        <button data-action="view-workout" class="text-brand-500 hover:underline py-2">View workout</button>
+      <div class="flex items-center gap-3 pt-0.5 text-xs font-semibold flex-wrap">
+        <button data-action="view-workout" data-date="${today}" data-session-id="${sId}" class="text-brand-500 hover:underline py-2">View workout</button>
         <span class="text-slate-300 dark:text-slate-700" aria-hidden="true">|</span>
         <button data-action="log-another" class="text-slate-400 hover:underline py-2">Log another activity</button>
+        <span class="text-slate-300 dark:text-slate-700" aria-hidden="true">|</span>
+        <button data-action="view-history" class="text-slate-400 hover:underline py-2">Workout History</button>
       </div>`;
   } else {
     body.innerHTML = `
@@ -14098,7 +14104,21 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
   const today = todayStr();
   if (action === 'start-growing') openStartWorkoutChoice('Start a workout');
   else if (action === 'log-another') openStartWorkoutChoice('Log another workout');
-  if (action === 'view-workout') { goView('workout'); switchWorkoutTab('history'); }
+  // Jumps straight to today's own session instead of dropping the user into
+  // the general History list to go find it themselves — same distinction
+  // History's own journal rows already make (see the .hist-journal-row
+  // wiring): a real workout gets its full Workout Summary page, anything
+  // else (Recovery Day/Other Activity, which have no such page) gets the
+  // plain actions sheet instead. "Workout History" below is the new,
+  // explicit way to reach the full list now that this button no longer does.
+  if (action === 'view-workout') {
+    const { date, sessionId } = btn.dataset;
+    const s = date && sessionId ? sessions[date]?.[sessionId] : null;
+    if (s && histSessionKind(s) === 'workout') openWorkoutSummaryPage(date, sessionId);
+    else if (s) openHistActionsSheet(date, sessionId);
+    else { goView('workout'); switchWorkoutTab('history'); }
+  }
+  if (action === 'view-history') { goView('workout'); switchWorkoutTab('history'); }
 
   // Today's Mission reading a calendar plan — Change/Add Another both reuse
   // the exact same Calendar "Add to this day" flow rather than a second copy.
