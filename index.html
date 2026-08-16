@@ -1348,6 +1348,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5"><span class="ms text-base text-amber-500" aria-hidden="true">description</span>Notes</p>
         <div class="card p-3.5"><p id="wsum-notes-text" class="text-sm text-slate-600 dark:text-slate-300"></p></div>
       </div>
+
+      <div class="flex items-center justify-center pt-1 pb-2">
+        <button id="wsum-history-btn" class="text-xs font-semibold text-slate-400 hover:underline py-2">Workout History</button>
+      </div>
     </div>
   </main>
 </div>
@@ -5384,8 +5388,6 @@ function renderTodayMission() {
         <button data-action="view-workout" data-date="${today}" data-session-id="${sId}" class="text-brand-500 hover:underline py-2">View workout</button>
         <span class="text-slate-300 dark:text-slate-700" aria-hidden="true">|</span>
         <button data-action="log-another" class="text-slate-400 hover:underline py-2">Log another activity</button>
-        <span class="text-slate-300 dark:text-slate-700" aria-hidden="true">|</span>
-        <button data-action="view-history" class="text-slate-400 hover:underline py-2">Workout History</button>
       </div>`;
   } else {
     body.innerHTML = `
@@ -12303,6 +12305,14 @@ function renderWorkoutSummaryPage(date, sessionId) {
 }
 
 document.getElementById('wsum-back-btn').addEventListener('click', closeWorkoutSummaryPage);
+// Same close-self-then-navigate pattern exd-view-history-btn already uses
+// for Exercise Detail — this page is a fixed full-screen overlay
+// (z-[45]), so goView() alone would leave it sitting on top of the
+// Workout/History view underneath instead of actually replacing it.
+document.getElementById('wsum-history-btn').addEventListener('click', () => {
+  closeWorkoutSummaryPage();
+  goView('workout'); switchWorkoutTab('history');
+});
 // Reuses the exact same Edit/Share/Delete sheet the History list's own
 // row-overflow opens — see openHistActionsSheet() — rather than a second
 // menu component.
@@ -14109,8 +14119,8 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
   // History's own journal rows already make (see the .hist-journal-row
   // wiring): a real workout gets its full Workout Summary page, anything
   // else (Recovery Day/Other Activity, which have no such page) gets the
-  // plain actions sheet instead. "Workout History" below is the new,
-  // explicit way to reach the full list now that this button no longer does.
+  // plain actions sheet instead. The full list is still reachable from
+  // there via the Workout Summary page's own "Workout History" link.
   if (action === 'view-workout') {
     const { date, sessionId } = btn.dataset;
     const s = date && sessionId ? sessions[date]?.[sessionId] : null;
@@ -14118,7 +14128,6 @@ document.getElementById('dash-mission-card').addEventListener('click', async e =
     else if (s) openHistActionsSheet(date, sessionId);
     else { goView('workout'); switchWorkoutTab('history'); }
   }
-  if (action === 'view-history') { goView('workout'); switchWorkoutTab('history'); }
 
   // Today's Mission reading a calendar plan — Change/Add Another both reuse
   // the exact same Calendar "Add to this day" flow rather than a second copy.
