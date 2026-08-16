@@ -1600,6 +1600,25 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Guided workout's "Previous" footer button — a per-set breakdown of the
+     last time this exercise was logged, replacing what used to be a plain
+     alert() (a native system popup, everything mushed into one comma-joined
+     reps list with no set labels — see openPreviousSetsSheet()). Reads the
+     same per-position Double Progression data already driving the
+     "Previous (Set N)" line at the top of the guided workout screen, so
+     this sheet can never disagree with what's shown as you progress through
+     the exercise's own sets. -->
+<div id="previous-sets-modal" style="display:none" class="fixed inset-0 z-[76] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <div class="text-center">
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Previous session</p>
+      <h3 id="prev-sets-ex-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></h3>
+    </div>
+    <div id="prev-sets-list" class="card overflow-hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
+    <button id="prev-sets-close-btn" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Close</button>
+  </div>
+</div>
+
 <!-- Guided workout: queue drawer (right-side slide-over, active workout stays visible behind it) -->
 <div id="queue-modal" style="display:none" class="fixed inset-0 z-[58]" aria-hidden="true">
   <div id="queue-backdrop" class="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300"></div>
@@ -10359,6 +10378,41 @@ function openEditCompletedSets(ex) {
   saveActiveSessionDraft();
 }
 
+// Guided workout's "Previous" footer button (see #previous-sets-modal) —
+// reads the same per-position Double Progression data that already drives
+// the "Previous (Set N)" line at the top of the screen, so this sheet can
+// never disagree with what's shown as the user progresses through the
+// exercise's own sets, and each row is unambiguously labeled by set number
+// rather than the old alert()'s single comma-joined reps list. Falls back
+// to the raw last-session sets (same source the old alert() used) only when
+// Double Progression isn't configured/enabled for this exercise, since
+// there's no per-position data to read in that case.
+function openPreviousSetsSheet(ex) {
+  document.getElementById('prev-sets-ex-name').textContent = ex.name;
+  const list = document.getElementById('prev-sets-list');
+  const dpEnabled = ex.progressionEnabled !== false;
+  const dpResult = dpEnabled ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId) : null;
+  const dpPositions = (dpResult && dpResult.configured) ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId) : [];
+  if (dpPositions.length) {
+    list.innerHTML = dpPositions.map((p, i) => `
+      <div class="flex items-center justify-between px-4 py-3">
+        <span class="text-sm font-semibold text-slate-600 dark:text-slate-300">Set ${i + 1}</span>
+        <span class="text-sm font-bold text-slate-800 dark:text-white">${p.currentWeight != null ? `${p.currentWeight} ${esc(ex.unit)} × ${p.currentReps || 0}` : 'First time'}</span>
+      </div>`).join('');
+  } else {
+    const last = getLastLoggedSets(ex.exerciseId);
+    list.innerHTML = last
+      ? last.sets.map((s, i) => `
+        <div class="flex items-center justify-between px-4 py-3">
+          <span class="text-sm font-semibold text-slate-600 dark:text-slate-300">${s.warmup ? 'Warm-up' : `Set ${i + 1}`}</span>
+          <span class="text-sm font-bold text-slate-800 dark:text-white">${s.weight || 0} ${esc(last.unit || ex.unit)} × ${s.reps || 0}</span>
+        </div>`).join('')
+      : `<p class="text-sm text-slate-400 text-center py-4">Your previous sets will appear after your first session.</p>`;
+  }
+  document.getElementById('previous-sets-modal').style.display = '';
+}
+document.getElementById('prev-sets-close-btn').addEventListener('click', () => rsHideModal('previous-sets-modal'));
+
 // ── Delegated action handling for the main content + footer ────────────────
 function handleAwAction(action) {
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
@@ -10396,11 +10450,9 @@ function handleAwAction(action) {
       if (!isNaN(num)) { ex.weight = num; if (si >= 0) ex.sets[si].weight = num; renderGuidedWorkout(); saveActiveSessionDraft(); }
       break;
     }
-    case 'view-previous': {
-      const last = getLastLoggedSets(ex.exerciseId);
-      alert(last ? `Previous: ${last.weight||0} ${last.unit||ex.unit} · ${last.sets.map(s=>s.reps||0).join(', ')} reps` : 'Your previous sets will appear after your first session.');
+    case 'view-previous':
+      openPreviousSetsSheet(ex);
       break;
-    }
     case 'add-note': {
       const note = prompt('Exercise note', ex.notes || '');
       if (note !== null) { ex.notes = note.trim(); saveActiveSessionDraft(); }
@@ -14225,6 +14277,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['duration-picker-modal', closeDurationPicker],
   ['rest-scope-modal', closeRestScopeModal],
   ['change-rest-modal', closeChangeRestModal],
+  ['previous-sets-modal', () => rsHideModal('previous-sets-modal')],
   ['end-review-modal', () => { rsHideModal('end-review-modal'); renderGuidedWorkout(); }],
   ['start-workout-modal', closeStartWorkoutChoice],
   ['build-workout-modal', closeBuildWorkout],
