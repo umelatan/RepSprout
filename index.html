@@ -7243,31 +7243,47 @@ function renderExerciseDetail(exerciseId) {
   // must not disappear just because `configured` does.
   const exBlooms = Object.values(gardenCollection).filter(c => c.exerciseId === exerciseId);
   const latestBloom = exBlooms.length ? exBlooms.reduce((a, b) => (b.generation > a.generation ? b : a)) : null;
-  // ── Blooms collected — a browsable gallery of every species this specific
-  // exercise's plant has actually revealed, not just the "N blooms
-  // collected" count/latest-species line below. Lives inside the plant hero
-  // card itself (below a divider), not a separate card, so "current stage"
-  // and "everything it's bloomed into so far" read as one continuous story
-  // about this one plant. Only rendered once there's at least one real
-  // bloom (see exBlooms above); an exercise that hasn't bloomed yet gets no
-  // divider/empty section appended at all. Same glow-behind-emoji treatment
+  // ── Blooms collected — a browsable, collapsed-by-default gallery of every
+  // species this specific exercise's plant has actually revealed. Lives
+  // inside the plant hero card itself (below a divider), not a separate
+  // card, so "current stage" and "everything it's bloomed into so far" read
+  // as one continuous story about this one plant. The "N blooms collected ·
+  // latest species" line used to sit under the stage name up top — moved
+  // down here as this section's own subtitle instead, since it's about the
+  // blooms, not the current stage. Only rendered once there's at least one
+  // real bloom (see exBlooms above); an exercise that hasn't bloomed yet
+  // gets no divider/empty section appended at all. Reuses the same
+  // .exg-mg-body/.exg-mg-chevron collapse accordion as the Progress
+  // Timeline milestones below (see exerciseTimelineHtml()) rather than a
+  // one-off expand pattern, and the same glow-behind-emoji tile treatment
   // as gardenBloomedCardHtml() on the Garden page's Bloomed tab.
   let bloomsSectionHtml = '';
   if (exBlooms.length) {
     const sortedBlooms = [...exBlooms].sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation));
+    const bloomsSubtitle = `${exBlooms.length} bloom${exBlooms.length === 1 ? '' : 's'} collected${latestBloom ? ` · ${latestBloom.speciesEmoji} ${esc(latestBloom.speciesName)}` : ''}`;
     bloomsSectionHtml = `
       <div class="text-left border-t border-slate-100 dark:border-slate-800 pt-3">
-        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">local_florist</span>Blooms collected</p>
-        <div class="grid grid-cols-3 gap-3">
-          ${sortedBlooms.map(b => `
-            <div class="flex flex-col items-center gap-1 text-center">
-              <div class="relative flex-shrink-0 flex items-center justify-center" style="width:52px;height:52px" aria-hidden="true">
-                <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${EXG_ACCENT.brand.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(5px)"></div>
-                <span class="relative leading-none" style="font-size:42px;filter:drop-shadow(0 4px 4px rgba(15,23,42,.16))">${b.speciesEmoji}</span>
-              </div>
-              <p class="font-display font-bold text-xs text-slate-800 dark:text-white truncate w-full">${esc(b.speciesName)}</p>
-              <p class="text-[10px] text-slate-400">${histRelativeDate(b.bloomedAt)}</p>
-            </div>`).join('')}
+        <button type="button" class="exd-blooms-toggle w-full flex items-center gap-2 text-left" aria-expanded="false" aria-controls="exd-blooms-body">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">local_florist</span>Blooms collected</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">${bloomsSubtitle}</p>
+          </div>
+          <span class="ms exg-mg-chevron text-slate-400 flex-shrink-0" aria-hidden="true">expand_more</span>
+        </button>
+        <div class="exg-mg-body collapsed" id="exd-blooms-body">
+          <div><div class="pt-3">
+            <div class="grid grid-cols-3 gap-3">
+              ${sortedBlooms.map(b => `
+                <div class="flex flex-col items-center gap-1 text-center">
+                  <div class="relative flex-shrink-0 flex items-center justify-center" style="width:52px;height:52px" aria-hidden="true">
+                    <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${EXG_ACCENT.brand.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(5px)"></div>
+                    <span class="relative leading-none" style="font-size:42px;filter:drop-shadow(0 4px 4px rgba(15,23,42,.16))">${b.speciesEmoji}</span>
+                  </div>
+                  <p class="font-display font-bold text-xs text-slate-800 dark:text-white truncate w-full">${esc(b.speciesName)}</p>
+                  <p class="text-[10px] text-slate-400">${histRelativeDate(b.bloomedAt)}</p>
+                </div>`).join('')}
+            </div>
+          </div></div>
         </div>
       </div>`;
   }
@@ -7285,16 +7301,14 @@ function renderExerciseDetail(exerciseId) {
       </div>`;
   } else {
     const stageIdx = exercisePlantStageIdx(dpResult);
-    const generation = exercisePlantGeneration(dpResult);
     const stageName = EXERCISE_PLANT_STAGE_NAMES[stageIdx];
     const pct = dpResult.workingSetCount ? Math.round((dpResult.leavesMatured / dpResult.workingSetCount) * 100) : 0;
     // A completed generation wraps stageIdx back to 0 (Seed) for the new
-    // one, by design — but that alone reads as if nothing happened. The
-    // "N blooms collected" line names the most recent one's real,
-    // already-revealed species (same gardenCollection record
-    // gardenBloomedCardHtml() reads on the Garden page's own Bloomed tab —
-    // never re-derived or re-rolled here); the full set is now also
-    // browsable below, inside this same card (see bloomsSectionHtml).
+    // one, by design — but that alone reads as if nothing happened. Used to
+    // say so right here with an "N blooms collected" line; that's now the
+    // Blooms collected section's own subtitle instead (see bloomsSectionHtml
+    // above), so it lives with the actual bloom gallery rather than the
+    // current-stage summary.
     heroHtml = `
       <div class="card p-4 space-y-3">
         <div class="flex items-center gap-4">
@@ -7305,7 +7319,6 @@ function renderExerciseDetail(exerciseId) {
               <p class="font-display font-bold text-xl text-slate-800 dark:text-white">${esc(stageName)}</p>
               <span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/40 text-brand-500 text-[11px] font-bold flex-shrink-0">Stage ${stageIdx + 1} of ${EXERCISE_PLANT_CYCLE_LENGTH}</span>
             </div>
-            ${generation > 0 ? `<p class="text-[11px] text-slate-400 mt-0.5">${generation} bloom${generation === 1 ? '' : 's'} collected${latestBloom ? ` · ${latestBloom.speciesEmoji} ${esc(latestBloom.speciesName)}` : ''}</p>` : ''}
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -7453,6 +7466,16 @@ function renderExerciseDetail(exerciseId) {
       btn.querySelector('.exg-mg-chevron').textContent = open ? 'expand_less' : 'expand_more';
     });
   });
+  const bloomsToggle = document.getElementById('exd-main').querySelector('.exd-blooms-toggle');
+  if (bloomsToggle) {
+    bloomsToggle.addEventListener('click', () => {
+      const body = document.getElementById('exd-blooms-body');
+      const open = body.classList.contains('collapsed');
+      body.classList.toggle('collapsed', !open);
+      bloomsToggle.setAttribute('aria-expanded', String(open));
+      bloomsToggle.querySelector('.exg-mg-chevron').textContent = open ? 'expand_less' : 'expand_more';
+    });
+  }
   document.getElementById('exd-main').querySelectorAll('.exd-session-row').forEach(btn => {
     btn.addEventListener('click', () => { closeExerciseDetail(); openEditSessionModal(btn.dataset.date, btn.dataset.sessionId); });
   });
