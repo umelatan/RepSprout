@@ -1051,13 +1051,23 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </div>
 
       <!-- History — a chronological growth journal ("how am I growing?"),
-           deliberately not a second Calendar ("what happened on this
-           date?"). No date strip/picker here on purpose: browsing by a
-           specific date is Calendar's job — see renderHistory(). -->
+           still deliberately not a second Calendar ("what happened on this
+           date?"): the month nav below only ever scopes to a MONTH, never a
+           specific day — jumping to an exact date stays Calendar's job. The
+           selected month (histSelectedYear/histSelectedMonth) is the single
+           source of truth for everything below it — Latest Milestones, the
+           summary, the journal list, and the default scope of search — see
+           renderHistory(). -->
       <div id="wt-history" style="display:none" class="rs-view space-y-4">
         <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
 
         <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Workout History</h2>
+
+        <div class="flex items-center justify-center gap-1">
+          <button id="hist-month-prev" type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400" aria-label="Previous month"><span class="ms text-xl" aria-hidden="true">chevron_left</span></button>
+          <button id="hist-month-label" type="button" class="font-display font-bold text-sm text-slate-700 dark:text-slate-200 px-2 py-2 min-w-[150px] text-center hover:text-brand-500"></button>
+          <button id="hist-month-next" type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400" aria-label="Next month"><span class="ms text-xl" aria-hidden="true">chevron_right</span></button>
+        </div>
 
         <div class="flex items-center gap-2">
           <div class="relative flex-1 min-w-0">
@@ -2069,6 +2079,23 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <button id="hfm-close" class="text-slate-400 p-1 flex-shrink-0" aria-label="Close"><span class="ms text-xl" aria-hidden="true">close</span></button>
     </div>
     <div id="hfm-options" class="space-y-1"></div>
+  </div>
+</div>
+
+<!-- Workout History's month/year picker — opened by tapping the month label
+     in the nav row (see openHistMonthPicker()). Browsing year-by-year with a
+     grid of months to tap, same shape as a plain calendar month-picker;
+     months later than the real current month are disabled (there's nothing
+     to show there yet). -->
+<div id="hist-month-picker-modal" style="display:none" class="fixed inset-0 z-[71] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <button id="hmp-year-prev" type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400" aria-label="Previous year"><span class="ms text-xl" aria-hidden="true">chevron_left</span></button>
+      <h3 id="hmp-year-label" class="font-display font-bold text-lg text-slate-800 dark:text-white"></h3>
+      <button id="hmp-year-next" type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400" aria-label="Next year"><span class="ms text-xl" aria-hidden="true">chevron_right</span></button>
+    </div>
+    <div id="hmp-month-grid" class="grid grid-cols-3 gap-2"></div>
+    <button id="hmp-close" type="button" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Cancel</button>
   </div>
 </div>
 
@@ -11703,6 +11730,75 @@ const HIST_FILTER_TO_KIND = { workouts: 'workout', activities: 'activity', recov
 let histFilter = 'all';
 let histSearchQuery = '';
 
+// The month nav's selected month — the single source of truth every other
+// section on this page (Latest Milestones, the summary, the journal list,
+// and the default scope of search) reads from. Starts on the real current
+// month and persists across tab switches for the rest of the session, same
+// as histFilter/histSearchQuery above.
+const HIST_MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const HIST_MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+let histSelectedYear = new Date().getFullYear();
+let histSelectedMonth = new Date().getMonth(); // 0-11
+let histPickerYear = histSelectedYear; // the year shown INSIDE the open month/year picker, independent until a month is actually tapped
+
+function histMonthLabel(year, month) { return `${HIST_MONTH_NAMES[month]} ${year}`; }
+function histIsCurrentMonth(year, month) {
+  const n = new Date();
+  return year === n.getFullYear() && month === n.getMonth();
+}
+function histIsFutureMonth(year, month) {
+  const n = new Date();
+  return year > n.getFullYear() || (year === n.getFullYear() && month > n.getMonth());
+}
+
+function renderHistMonthNav() {
+  document.getElementById('hist-month-label').textContent = histMonthLabel(histSelectedYear, histSelectedMonth);
+  const nextBtn = document.getElementById('hist-month-next');
+  const atLatest = histIsCurrentMonth(histSelectedYear, histSelectedMonth);
+  nextBtn.disabled = atLatest;
+  nextBtn.classList.toggle('opacity-30', atLatest);
+  nextBtn.classList.toggle('pointer-events-none', atLatest);
+}
+document.getElementById('hist-month-prev').addEventListener('click', () => {
+  histSelectedMonth--;
+  if (histSelectedMonth < 0) { histSelectedMonth = 11; histSelectedYear--; }
+  renderHistory();
+});
+document.getElementById('hist-month-next').addEventListener('click', () => {
+  if (histIsCurrentMonth(histSelectedYear, histSelectedMonth)) return;
+  histSelectedMonth++;
+  if (histSelectedMonth > 11) { histSelectedMonth = 0; histSelectedYear++; }
+  renderHistory();
+});
+
+function renderHistMonthPicker() {
+  document.getElementById('hmp-year-label').textContent = String(histPickerYear);
+  const grid = document.getElementById('hmp-month-grid');
+  grid.innerHTML = HIST_MONTH_ABBR.map((label, i) => {
+    const future = histIsFutureMonth(histPickerYear, i);
+    const selected = histPickerYear === histSelectedYear && i === histSelectedMonth;
+    const cls = selected ? 'bg-brand-500 text-white'
+      : future ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700';
+    return `<button type="button" class="hmp-month-btn rounded-xl py-2.5 text-sm font-semibold ${cls}" data-month="${i}" ${future ? 'disabled' : ''}>${label}</button>`;
+  }).join('');
+  grid.querySelectorAll('.hmp-month-btn').forEach(b => b.addEventListener('click', () => {
+    histSelectedYear = histPickerYear;
+    histSelectedMonth = +b.dataset.month;
+    rsHideModal('hist-month-picker-modal');
+    renderHistory();
+  }));
+}
+function openHistMonthPicker() {
+  histPickerYear = histSelectedYear;
+  renderHistMonthPicker();
+  document.getElementById('hist-month-picker-modal').style.display = '';
+}
+document.getElementById('hist-month-label').addEventListener('click', openHistMonthPicker);
+document.getElementById('hmp-year-prev').addEventListener('click', () => { histPickerYear--; renderHistMonthPicker(); });
+document.getElementById('hmp-year-next').addEventListener('click', () => { histPickerYear++; renderHistMonthPicker(); });
+document.getElementById('hmp-close').addEventListener('click', () => rsHideModal('hist-month-picker-modal'));
+
 function histSessionKind(s) {
   if (s.sessionType === 'recovery') return 'recovery';
   if (s.sessionType === 'other') return 'activity';
@@ -11798,15 +11894,19 @@ function dedupedWeightIncreaseEvents(exerciseId) {
   return Object.values(bySession);
 }
 
-// Most recent weight-increase events across every non-archived exercise —
-// the app-wide "Latest Milestones" feed. Every field here traces back to a
-// real, already-recorded Double Progression event; nothing is estimated.
-function latestMilestonesAcrossExercises(limit = 3) {
+// Most recent weight-increase events across every non-archived exercise,
+// scoped to the given month (see histSelectedYear/histSelectedMonth — the
+// single source of truth for the whole History page) — the "Latest
+// Milestones" feed. Every field here traces back to a real, already-
+// recorded Double Progression event; nothing is estimated.
+function latestMilestonesAcrossExercises(year, month, limit = 3) {
   const all = [];
   Object.keys(exercises).forEach(exerciseId => {
     if (exercises[exerciseId].archived) return;
     dedupedWeightIncreaseEvents(exerciseId).forEach(e => {
       const date = String(e.createdAt).split('_')[0];
+      const d = new Date(date + 'T12:00:00');
+      if (d.getFullYear() !== year || d.getMonth() !== month) return;
       all.push({ exerciseId, date, previousWeight: e.previousValue, newWeight: e.newValue });
     });
   });
@@ -11901,10 +12001,15 @@ function histMonthFooterHtml(year, month) {
 // ── Latest Milestones ────────────────────────────────────────────────────────
 function renderHistMilestones() {
   const el = document.getElementById('hist-milestones');
-  const milestones = latestMilestonesAcrossExercises(3);
+  const milestones = latestMilestonesAcrossExercises(histSelectedYear, histSelectedMonth, 3);
   const label = `<p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Latest Milestones</p>`;
   if (!milestones.length) {
-    el.innerHTML = `${label}<div class="card p-4"><p class="text-sm text-slate-400 text-center">Your first progression milestone will appear here.</p></div>`;
+    // Distinguishes "nothing this month" from "nothing ever" — milestones
+    // are month-scoped now, so an account with real history elsewhere
+    // shouldn't see the same "your first..." copy meant for a brand-new one.
+    const hasAnyEver = Object.keys(exercises).some(id => !exercises[id].archived && dedupedWeightIncreaseEvents(id).length);
+    const msg = hasAnyEver ? `No progression milestones in ${histMonthLabel(histSelectedYear, histSelectedMonth)}.` : 'Your first progression milestone will appear here.';
+    el.innerHTML = `${label}<div class="card p-4"><p class="text-sm text-slate-400 text-center">${esc(msg)}</p></div>`;
     return;
   }
   // The dot cycles through the app's existing group-colour palette purely
@@ -11934,15 +12039,16 @@ function renderHistMonthSummary() {
   const el = document.getElementById('hist-month-summary');
   const totalSessions = Object.values(sessions).reduce((sum, day) => sum + Object.keys(day || {}).length, 0);
   if (!totalSessions) { el.innerHTML = ''; return; }
-  const now = new Date();
-  const year = now.getFullYear(), month = now.getMonth();
-  const m = histMonthlyMetrics(year, month);
-  const milestone = histGardenMilestone(year, month);
-  const monthName = now.toLocaleDateString('en-US', { month: 'long' });
+  // The month name/year already appears in the nav above (the single
+  // source of truth for the whole page) — "Monthly Summary" here rather
+  // than repeating it (e.g. "August 2026 Summary") keeps this label
+  // constant instead of re-deriving it every render.
+  const m = histMonthlyMetrics(histSelectedYear, histSelectedMonth);
+  const milestone = histGardenMilestone(histSelectedYear, histSelectedMonth);
   const col = (value, label, accent) => `<div><p class="font-display font-extrabold text-xl ${accent ? 'text-brand-500' : 'text-slate-800 dark:text-white'}">${value}</p><p class="text-[10px] text-slate-400 mt-0.5 leading-tight">${label}</p></div>`;
   el.innerHTML = `
     <div>
-      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">${esc(monthName)} Summary</p>
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">Monthly Summary</p>
       <div class="card p-4">
         <div class="grid grid-cols-4 divide-x divide-slate-100 dark:divide-slate-800 text-center">
           ${col(m.workouts, 'Workouts')}
@@ -12064,6 +12170,7 @@ function histDateLabelRowHtml(labelText, accentColor, withDivider) {
 }
 
 function renderHistory() {
+  renderHistMonthNav();
   renderHistMilestones();
   renderHistMonthSummary();
 
@@ -12079,27 +12186,31 @@ function renderHistory() {
     return;
   }
 
-  const flat = histSessionsFlat().filter(({ s }) =>
+  // Scoped to the selected month FIRST (see the nav above — the single
+  // source of truth for this whole page), then the workouts/activities/
+  // recovery filter and search both apply only within that month.
+  const monthFlat = histSessionsFlat().filter(({ date }) => {
+    const d = new Date(date + 'T12:00:00');
+    return d.getFullYear() === histSelectedYear && d.getMonth() === histSelectedMonth;
+  });
+  const flat = monthFlat.filter(({ s }) =>
     (histFilter === 'all' || histSessionKind(s) === HIST_FILTER_TO_KIND[histFilter]) && histMatchesSearch(histSearchQuery, s)
   );
   if (!flat.length) {
-    let label = 'No history found';
+    let label = `No history in ${histMonthLabel(histSelectedYear, histSelectedMonth)}`;
     if (histSearchQuery.trim()) label = 'No results found';
     else if (histFilter === 'workouts') label = 'No workouts found';
     else if (histFilter === 'activities') label = 'No activities found';
     else if (histFilter === 'recovery') label = 'No recovery days found';
-    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">${label}</p>`;
+    list.innerHTML = `<p class="text-sm text-slate-400 text-center py-8">${esc(label)}</p>`;
     return;
   }
 
-  // Group by date first (flat is already newest-first), then walk those
-  // date-groups noting whenever the calendar month changes so a "June"/
-  // "July" header and the previous month's reflective footer can be
-  // inserted — but only for months OTHER than the real current one, which
-  // the summary panel above already establishes. Each contiguous run of
-  // date-groups within one month gets its own rail (the connecting line +
-  // dots) — a bigger month header is a real section break, so the rail
-  // restarts after one rather than running behind it.
+  // Group by date (flat is already newest-first). Everything here already
+  // sits within the one selected month (see monthFlat above), so — unlike
+  // when this list used to scroll across every month at once — there's no
+  // mid-list month header/footer to insert: one continuous rail for the
+  // whole month, with a single reflective footer at the end.
   const byDate = [];
   flat.forEach(entry => {
     const bucket = byDate[byDate.length - 1];
@@ -12107,45 +12218,17 @@ function renderHistory() {
     else byDate.push({ date: entry.date, items: [entry] });
   });
 
-  const now = new Date();
-  const currentRealMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
-  let html = '';
-  let openMonthKey = null;
   let railBuffer = '';
-  let isFirstBlockInRail = true;
-  const flushRail = () => {
-    if (!railBuffer) return;
-    html += `<div class="relative"><div class="absolute bg-slate-200 dark:bg-slate-700/70" style="width:1px;left:${HIST_RAIL_COL_WIDTH / 2}px;top:10px;bottom:10px" aria-hidden="true"></div><div>${railBuffer}</div></div>`;
-    railBuffer = '';
-  };
-  byDate.forEach(group => {
-    const d = new Date(group.date + 'T12:00:00');
-    const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
-    if (monthKey !== openMonthKey) {
-      flushRail();
-      isFirstBlockInRail = true;
-      if (openMonthKey !== null) {
-        const [py, pm] = openMonthKey.split('-').map(Number);
-        html += histMonthFooterHtml(py, pm);
-      }
-      openMonthKey = monthKey;
-      if (monthKey !== currentRealMonthKey) {
-        html += `<p class="text-sm font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-300 pt-2">${esc(d.toLocaleDateString('en-US', { month: 'long' }))}</p>`;
-      }
-    }
+  byDate.forEach((group, i) => {
     const firstKind = histSessionKind(group.items[0].s);
     const accentColor = firstKind === 'recovery' ? null : sessionColor(group.items[0].s);
-    railBuffer += histDateLabelRowHtml(histDateLabel(group.date), accentColor, !isFirstBlockInRail);
-    isFirstBlockInRail = false;
+    railBuffer += histDateLabelRowHtml(histDateLabel(group.date), accentColor, i > 0);
     group.items.forEach(({ date, sessionId, s }, idx) => {
       railBuffer += histJournalRowHtml(date, sessionId, s, idx > 0);
     });
   });
-  flushRail();
-  if (openMonthKey !== null) {
-    const [py, pm] = openMonthKey.split('-').map(Number);
-    html += histMonthFooterHtml(py, pm);
-  }
+  let html = `<div class="relative"><div class="absolute bg-slate-200 dark:bg-slate-700/70" style="width:1px;left:${HIST_RAIL_COL_WIDTH / 2}px;top:10px;bottom:10px" aria-hidden="true"></div><div>${railBuffer}</div></div>`;
+  html += histMonthFooterHtml(histSelectedYear, histSelectedMonth);
   list.innerHTML = html;
 
   // Workout entries open the dedicated Workout Summary page (a journal
@@ -14291,6 +14374,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['target-actions-modal', () => rsHideModal('target-actions-modal')],
   ['hist-actions-modal', () => rsHideModal('hist-actions-modal')],
   ['hist-filter-modal', () => rsHideModal('hist-filter-modal')],
+  ['hist-month-picker-modal', () => rsHideModal('hist-month-picker-modal')],
   ['exg-actions-modal', () => rsHideModal('exg-actions-modal')],
   ['edit-target-modal', () => rsHideModal('edit-target-modal')],
   ['edit-target-log-modal', closeEditTargetLogModal],
