@@ -9880,7 +9880,29 @@ function updateRestCountdownDisplay(remainingMs) {
   el.textContent = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}`;
 }
 
+// A rest completion always fires from a setInterval tick (see tickRest()),
+// never a direct tap — and Safari/iOS suspends any AudioContext created
+// outside a real user gesture, so a fresh `new AudioContext()` at that
+// moment silently produces no sound at all (playGentleChime() used to do
+// exactly that every time). Instead, one shared context is created/resumed
+// here — called from a guaranteed real tap (see handleAwAction's
+// 'start-set' case, the earliest point in a set's lifecycle, always before
+// any rest timer could complete) — and reused for every chime after that,
+// which iOS allows since it already has "real user gesture" provenance.
+let restAudioCtx = null;
+function unlockRestAudio() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;
+  if (!restAudioCtx) { try { restAudioCtx = new Ctx(); } catch (e) { return; } }
+  if (restAudioCtx.state === 'suspended') { restAudioCtx.resume().catch(() => {}); }
+}
+
 function notifyRestComplete() {
+  // Real vibration (navigator.vibrate) has no effect on iOS — Safari/WebKit
+  // has never implemented the Vibration API, in the browser or installed
+  // PWAs, and there is no JS-level workaround; this is a platform
+  // restriction, not something fixable here. Still called for every other
+  // browser where it does work.
   if (navigator.vibrate) { try { navigator.vibrate([200,100,200]); } catch (e) {} }
   playGentleChime();
   if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
@@ -9889,9 +9911,10 @@ function notifyRestComplete() {
 }
 function playGentleChime() {
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
+    if (!restAudioCtx) unlockRestAudio(); // covers a page reload mid-rest, where the usual start-set tap never happened this load
+    const ctx = restAudioCtx;
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const osc = ctx.createOscillator(), gain = ctx.createGain();
     osc.type = 'sine'; osc.frequency.value = 660;
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
@@ -10455,6 +10478,7 @@ function handleAwAction(action) {
       renderGuidedWorkout(); saveActiveSessionDraft();
       break;
     case 'start-set':
+      unlockRestAudio(); // real tap, always before any rest timer could complete — see unlockRestAudio()
       activeSession.phase = 'active-set';
       activeSession.activeSetStartedAt = Date.now();
       renderGuidedWorkout(); saveActiveSessionDraft();
