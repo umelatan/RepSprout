@@ -425,7 +425,7 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf,.bloom-pop-in{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
   .finish-confetti-dot{animation:none!important;opacity:0!important}
 }
 /* Post-workout summary entrance sequence (see openFinishSummary()) — a
@@ -467,6 +467,12 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    entrance animations above. */
 @keyframes finishConfettiFloat{0%,100%{transform:translate(0,0) scale(.8);opacity:.5}50%{transform:translate(3px,-9px) scale(1.15);opacity:.9}}
 .finish-confetti-dot{position:absolute;width:6px;height:6px;border-radius:2px;animation:finishConfettiFloat 2.6s ease-in-out infinite;pointer-events:none}
+/* Bloom celebration modal's one-shot entrance (see openBloomCelebration()).
+   A plain display:none->'' toggle is enough to (re)trigger this each time,
+   unlike .finish-reveal's JS-armed class toggle — this modal has no
+   multi-section staggered sequence to coordinate, just one pop. */
+@keyframes bloomPopIn{0%{opacity:0;transform:scale(.6) translateY(6px)}60%{opacity:1;transform:scale(1.08) translateY(0)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.bloom-pop-in{animation:bloomPopIn .55s var(--rs-ease-settle) both}
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
@@ -2756,6 +2762,36 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Bloom celebration — replaces the old bloom toast, which people kept
+     missing since it auto-dismissed on the same ~2.6s timer as every other
+     toast. A plant fully blooming only happens once per generation and
+     deserves an acknowledged moment, not something that can flash by
+     unread — this modal sits open until explicitly dismissed. Reuses
+     finish-modal's confetti-dot motif (see .finish-confetti-dot) so
+     "something worth celebrating" reads consistently across the app, and
+     the same z-[85] as it needs to appear above whatever sheet/modal was
+     open when the bloom happened (Calendar's activity/recovery flows can
+     be several sheets deep — see openBloomCelebration()). -->
+<div id="bloom-modal" style="display:none" class="fixed inset-0 z-[85] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6 text-center space-y-5">
+    <div class="relative w-20 h-20 mx-auto">
+      <span class="finish-confetti-dot" style="top:-4px;left:18%;background:#8b5cf6;animation-delay:0s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:0;right:12%;background:#f97316;animation-delay:.6s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:34px;left:2%;background:#22c55e;animation-delay:1.1s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:24px;right:0;background:#8b5cf6;animation-delay:1.7s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:60px;left:24%;background:#f97316;animation-delay:.3s" aria-hidden="true"></span>
+      <div id="bloom-emoji" class="bloom-pop-in w-20 h-20 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center text-4xl" aria-hidden="true">🌸</div>
+    </div>
+    <div class="bloom-pop-in" style="animation-delay:.1s">
+      <p class="text-xs font-bold uppercase tracking-wide text-brand-500 mb-1">New bloom</p>
+      <h3 id="bloom-title" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></h3>
+      <p id="bloom-subtitle" class="text-sm text-slate-500 dark:text-slate-400 mt-1"></p>
+    </div>
+    <div id="bloom-more" style="display:none" class="text-left bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 divide-y divide-slate-100 dark:divide-slate-800"></div>
+    <button id="bloom-ack-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Nice!</button>
+  </div>
+</div>
+
 <!-- Optional: save a completed Quick Workout as a reusable group -->
 <div id="save-as-group-modal" style="display:none" class="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
@@ -3362,7 +3398,7 @@ const HEALTH_ANIM = {
 // accurate, up-to-date result (its turn only starts after every state
 // change requested before it was made).
 // Returns which exercises (if any) newly bloomed THIS call, for celebration
-// — see bloomMessage().
+// — see celebrateExerciseBloomsIfAny().
 async function syncExercisePlantsAfterChangeImpl() {
   const newlyBloomed = [];
   for (const [exerciseId, exDef] of Object.entries(exercises)) {
@@ -3691,21 +3727,30 @@ async function deleteTarget(targetId) {
   logs.forEach(l => delete targetLogs[l.id]);
 }
 
-// One line celebrating whichever exercise plants just bloomed this call —
-// null (skip the toast entirely) when nothing did. Names the new species
-// (the one moment it's ever revealed) and makes the endless-lifecycle
-// mechanic explicit, rather than reading like a terminal "you're done."
-function bloomMessage(newlyBloomed) {
-  if (!newlyBloomed || !newlyBloomed.length) return null;
-  const [first, ...rest] = newlyBloomed;
-  const suffix = rest.length ? ` (+${rest.length} more)` : '';
-  return `🌸 ${first.exerciseName}'s plant bloomed into a ${first.speciesName}!${suffix} A new seed is already sprouting.`;
-}
-
+// Opens #bloom-modal for whichever exercise plants just bloomed this call —
+// a no-op when nothing did. Names the new species (the one moment it's ever
+// revealed) and makes the endless-lifecycle mechanic explicit, rather than
+// reading like a terminal "you're done." Used to be a showToast() one-liner,
+// but a toast auto-dismisses on the same short timer as any other
+// confirmation — a bloom is rarer and worth an actually-acknowledged
+// moment, so it gets its own held-open modal instead (see #bloom-modal).
 function celebrateExerciseBloomsIfAny(newlyBloomed) {
-  const msg = bloomMessage(newlyBloomed);
-  if (msg) showToast(msg);
+  if (!newlyBloomed || !newlyBloomed.length) return;
+  const [first, ...rest] = newlyBloomed;
+  document.getElementById('bloom-emoji').textContent = first.speciesEmoji || '🌸';
+  document.getElementById('bloom-title').textContent = `${first.exerciseName}'s plant bloomed!`;
+  document.getElementById('bloom-subtitle').textContent = `It's now a ${first.speciesName}. A new seed is already sprouting.`;
+  const moreEl = document.getElementById('bloom-more');
+  if (rest.length) {
+    moreEl.style.display = '';
+    moreEl.innerHTML = rest.map(r => `<div class="flex items-center gap-2 py-1.5 first:pt-0 last:pb-0"><span class="text-lg" aria-hidden="true">${r.speciesEmoji || '🌸'}</span><span class="text-sm text-slate-600 dark:text-slate-300"><span class="font-semibold">${r.exerciseName}</span> bloomed into a ${r.speciesName}</span></div>`).join('');
+  } else {
+    moreEl.style.display = 'none';
+    moreEl.innerHTML = '';
+  }
+  document.getElementById('bloom-modal').style.display = '';
 }
+document.getElementById('bloom-ack-btn').addEventListener('click', () => rsHideModal('bloom-modal'));
 
 const ENCOURAGEMENT = [
   'Small reps become big strength.',
@@ -10853,7 +10898,7 @@ document.getElementById('atw-activity-btn').addEventListener('click', () => {
         // (exercises: [] on this record).
         const { newlyBloomed } = await logOtherActivitySession(todayStr(), activityId, details);
         closeAddToWorkoutSheet();
-        finishActivityAdded(todayStr(), bloomMessage(newlyBloomed));
+        finishActivityAdded(todayStr(), newlyBloomed);
       }
     });
   });
@@ -13139,7 +13184,8 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
     rsHideModal('edit-session-modal');
     renderDashboard(); renderHistory(); renderCalendar(); renderProfile(); refreshWorkoutSummaryIfOpen();
     if (esmOpenedFromDaySheet) openCalendarDaySheet(esmDate);
-    showToast(bloomMessage(newlyBloomed) || 'Workout updated');
+    if (newlyBloomed && newlyBloomed.length) celebrateExerciseBloomsIfAny(newlyBloomed);
+    else showToast('Workout updated');
   } catch (e) {
     console.error('Failed to save workout edits:', e);
     const errEl = document.getElementById('esm-error');
@@ -13175,11 +13221,11 @@ function closeCalendarActivityWindows(date) {
 // clears this instead, leaving the original plan untouched.
 let calendarChangeReplacingEntryId = null;
 
-// Shown only after a save has actually succeeded. A bloom message (see
-// bloomMessage()) takes priority over the generic confirmation when one is
-// worth showing — there's only one toast slot, and a bloom is more
-// noteworthy than "Activity added."
-async function finishActivityAdded(date, message) {
+// Shown only after a save has actually succeeded. A bloom (see
+// celebrateExerciseBloomsIfAny()) takes priority over the generic toast
+// confirmation when one happened — a bloom is rarer and more noteworthy
+// than "Activity added."
+async function finishActivityAdded(date, newlyBloomed) {
   const replacingId = calendarChangeReplacingEntryId;
   calendarChangeReplacingEntryId = null;
   if (replacingId) {
@@ -13187,7 +13233,8 @@ async function finishActivityAdded(date, message) {
     catch (e) { console.error('Failed to remove the previous plan after changing it:', e); }
   }
   closeCalendarActivityWindows(date);
-  showToast(message || (replacingId ? 'Workout changed' : 'Activity added'));
+  if (newlyBloomed && newlyBloomed.length) celebrateExerciseBloomsIfAny(newlyBloomed);
+  else showToast(replacingId ? 'Workout changed' : 'Activity added');
 }
 
 function wireCalDaySheetActions(date) {
@@ -13210,7 +13257,7 @@ function wireCalDaySheetActions(date) {
         initialDuration: entry.plannedDuration || act?.defaultDuration, confirmLabel: 'Mark Complete',
         onConfirm: async details => {
           const { newlyBloomed } = await logOtherActivitySession(date, entry.activityId, details);
-          finishActivityAdded(date, bloomMessage(newlyBloomed));
+          finishActivityAdded(date, newlyBloomed);
         }
       });
     } else {
@@ -13218,7 +13265,7 @@ function wireCalDaySheetActions(date) {
       btn.disabled = true; btn.textContent = 'Saving…';
       try {
         const { newlyBloomed } = await logRecoveryDaySession(date);
-        finishActivityAdded(date, bloomMessage(newlyBloomed));
+        finishActivityAdded(date, newlyBloomed);
       } catch (err) {
         console.error('Failed to save Recovery Day:', err);
         alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -13256,14 +13303,13 @@ function wireCalDaySheetActions(date) {
     btn.disabled = true;
     try {
       if (existing) await deleteCalendarEntry(date, existing.id);
-      let message = null;
+      let newlyBloomed = null;
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
       } else {
-        const { newlyBloomed } = await logRecoveryDaySession(date);
-        message = bloomMessage(newlyBloomed);
+        ({ newlyBloomed } = await logRecoveryDaySession(date));
       }
-      finishActivityAdded(date, message);
+      finishActivityAdded(date, newlyBloomed);
     } catch (err) {
       console.error('Failed to save Recovery Day:', err);
       alert(err.message || 'Could not save Recovery Day. Please try again.');
@@ -13409,7 +13455,7 @@ function openCalendarAddPicker(date) {
           // "Activity added" only ever appears once logPastWorkoutGroup resolves.
           onConfirm: async details => {
             const { newlyBloomed } = await logPastWorkoutGroup(date, groupId, details);
-            finishActivityAdded(date, bloomMessage(newlyBloomed));
+            finishActivityAdded(date, newlyBloomed);
           }
         });
       } else {
@@ -13450,7 +13496,7 @@ function openCalendarAddPicker(date) {
             title: 'Log Quick Workout', subtitle: fmtDate(date), initialDuration: 30, confirmLabel: 'Log Workout',
             onConfirm: async details => {
               const { newlyBloomed } = await logPastQuickWorkout(date, ids, details);
-              finishActivityAdded(date, bloomMessage(newlyBloomed));
+              finishActivityAdded(date, newlyBloomed);
             }
           });
         }
@@ -13475,14 +13521,13 @@ function openCalendarAddPicker(date) {
         title: `${relation === 'future' ? 'Schedule' : 'Log'} ${act?.name || 'Activity'}`, subtitle: fmtDate(date), showCalories: relation !== 'future',
         initialDuration: act?.defaultDuration, confirmLabel: relation === 'future' ? 'Schedule Activity' : 'Log Activity',
         onConfirm: async details => {
-          let message = null;
+          let newlyBloomed = null;
           if (relation === 'future') {
             await saveCalendarEntry(date, null, { type: 'activity', status: 'planned', activityId, plannedDuration: details.duration, notes: details.notes });
           } else {
-            const { newlyBloomed } = await logOtherActivitySession(date, activityId, details);
-            message = bloomMessage(newlyBloomed);
+            ({ newlyBloomed } = await logOtherActivitySession(date, activityId, details));
           }
-          finishActivityAdded(date, message);
+          finishActivityAdded(date, newlyBloomed);
         }
       });
     });
@@ -13499,15 +13544,14 @@ function openCalendarAddPicker(date) {
     const prevLabel = titleEl.textContent;
     btn.disabled = true; titleEl.textContent = 'Saving…';
     try {
-      let message = null;
+      let newlyBloomed = null;
       if (relation === 'future') {
         await saveCalendarEntry(date, null, { type: 'recovery', status: 'planned' });
       } else {
-        const { newlyBloomed } = await logRecoveryDaySession(date);
-        message = bloomMessage(newlyBloomed);
+        ({ newlyBloomed } = await logRecoveryDaySession(date));
       }
       closeCalendarAddModal();
-      finishActivityAdded(date, message);
+      finishActivityAdded(date, newlyBloomed);
     } catch (e) {
       console.error('Failed to save Recovery Day:', e);
       alert(e.message || 'Could not save Recovery Day. Please try again.');
@@ -13942,7 +13986,7 @@ function openLogOtherActivityForToday() {
       initialDuration: act?.defaultDuration, confirmLabel: 'Log Activity',
       onConfirm: async details => {
         const { newlyBloomed } = await logOtherActivitySession(today, activityId, details);
-        finishActivityAdded(today, bloomMessage(newlyBloomed));
+        finishActivityAdded(today, newlyBloomed);
       }
     });
   });
@@ -14072,6 +14116,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['pick-ex-modal', () => rsHideModal('pick-ex-modal')],
   ['exercise-modal', () => rsHideModal('exercise-modal')],
   ['finish-modal', () => rsHideModal('finish-modal')],
+  ['bloom-modal', () => rsHideModal('bloom-modal')],
   ['save-as-group-modal', () => { rsHideModal('save-as-group-modal'); goView('dashboard'); }],
   ['calendar-day-sheet', () => rsHideModal('calendar-day-sheet')],
   ['activity-library-modal', () => rsHideModal('activity-library-modal')],
