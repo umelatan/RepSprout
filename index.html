@@ -5446,14 +5446,14 @@ function renderGardenPreview() {
   // (see the ghp-plant-btn/ghp-tip-floating wiring below), never shown by default.
   const growingHtml = growing.length
     ? growing.map(g => `
-      <button type="button" class="ghp-plant-btn flex-shrink-0" data-name="${esc(g.name)}" aria-label="${esc(g.name)}">
+      <button type="button" class="ghp-plant-btn flex-shrink-0" data-name="${esc(g.name)}" data-secondary="${esc(EXERCISE_PLANT_STAGE_NAMES[g.stageIdx])}" aria-label="${esc(g.name)}">
         ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 44 })}
       </button>`).join('')
     : `<p class="text-xs text-slate-400 text-center py-2">Start training to grow your first plant.</p>`;
 
   const collectedHtml = collected.length
     ? collected.map(c => `
-      <button type="button" class="ghp-plant-btn flex-shrink-0 flex items-center justify-center" style="width:44px;height:44px;font-size:36px;line-height:1" data-name="${esc(c.speciesName)}" aria-label="${esc(c.speciesName)}">
+      <button type="button" class="ghp-plant-btn flex-shrink-0 flex items-center justify-center" style="width:44px;height:44px;font-size:36px;line-height:1" data-name="${esc(c.speciesName)}" data-secondary="${esc(c.exerciseName)}" aria-label="${esc(c.speciesName)}">
         <span aria-hidden="true">${c.speciesEmoji}</span>
       </button>`).join('')
     : `
@@ -5475,15 +5475,20 @@ function renderGardenPreview() {
       <div class="flex items-center justify-between gap-4 overflow-x-auto py-3 -my-3">${collectedHtml}</div>
     </div>`;
 }
-// Tapping a Garden preview plant shows its name in a single shared tooltip
+// Tapping a Garden preview plant shows info in a single shared tooltip
 // positioned via getBoundingClientRect() and `position:fixed` — deliberately
 // NOT an absolutely-positioned child of the plant row, since that row's
 // overflow-x-auto forces overflow-y to clip too (a standard browser quirk),
 // which would cut the tooltip off right where the Growing/Bloomed divider
 // sits. Fixed positioning escapes that clipping entirely and always paints
-// above the divider. Tapping the same plant, a different one, or anywhere
-// outside closes/moves it; only one shown at a time.
-let ghpTipEl = null, ghpTipOpenBtn = null, ghpTipShownAt = 0;
+// above the divider.
+// Each plant cycles through 3 taps rather than a plain on/off toggle: name
+// (data-name) -> secondary detail (data-secondary — current stage for a
+// still-growing plant, or the exercise it came from for an already-bloomed
+// one) -> closed. Tapping a different plant (or anywhere outside) always
+// restarts that plant's own cycle at step 1 rather than continuing
+// wherever the previous plant's cycle left off.
+let ghpTipEl = null, ghpTipOpenBtn = null, ghpTipShownAt = 0, ghpTipStep = 0;
 function ghpTipElement() {
   if (!ghpTipEl) {
     ghpTipEl = document.createElement('div');
@@ -5493,10 +5498,10 @@ function ghpTipElement() {
   }
   return ghpTipEl;
 }
-function showGhpTip(btn) {
+function showGhpTip(btn, text) {
   const tip = ghpTipElement();
   const rect = btn.getBoundingClientRect();
-  tip.textContent = btn.dataset.name;
+  tip.textContent = text;
   tip.style.left = `${rect.left + rect.width / 2}px`;
   tip.style.top = `${rect.bottom + 6}px`;
   tip.classList.add('ghp-tip-visible');
@@ -5506,12 +5511,15 @@ function showGhpTip(btn) {
 function hideGhpTip() {
   if (ghpTipEl) ghpTipEl.classList.remove('ghp-tip-visible');
   ghpTipOpenBtn = null;
+  ghpTipStep = 0;
 }
 document.getElementById('dash-garden-preview').addEventListener('click', e => {
   const btn = e.target.closest('.ghp-plant-btn');
   if (!btn) return;
-  if (btn === ghpTipOpenBtn) { hideGhpTip(); return; }
-  showGhpTip(btn);
+  if (btn !== ghpTipOpenBtn) ghpTipStep = 0;
+  ghpTipStep = (ghpTipStep + 1) % 3; // 1: name, 2: secondary detail, 0 (wraps): closed
+  if (ghpTipStep === 0) { hideGhpTip(); return; }
+  showGhpTip(btn, ghpTipStep === 1 ? btn.dataset.name : btn.dataset.secondary);
 });
 document.addEventListener('click', e => {
   if (!e.target.closest('.ghp-plant-btn')) hideGhpTip();
