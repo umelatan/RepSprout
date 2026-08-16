@@ -1059,9 +1059,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
            summary, the journal list, and the default scope of search — see
            renderHistory(). -->
       <div id="wt-history" style="display:none" class="rs-view space-y-4">
-        <button type="button" class="wt-back-btn flex items-center gap-1 text-sm font-semibold text-slate-400 hover:text-brand-500" aria-label="Back to Workout"><span class="ms text-lg" aria-hidden="true">arrow_back</span></button>
-
-        <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Workout History</h2>
+        <div class="flex items-center gap-2">
+          <button type="button" class="wt-back-btn p-1 -ml-1 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back to Workout"><span class="ms text-2xl" aria-hidden="true">arrow_back</span></button>
+          <h2 class="font-display font-extrabold text-2xl text-slate-800 dark:text-white">Workout History</h2>
+        </div>
 
         <div class="flex items-center justify-center gap-1">
           <button id="hist-month-prev" type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400" aria-label="Previous month"><span class="ms text-xl" aria-hidden="true">chevron_left</span></button>
