@@ -5148,9 +5148,14 @@ function nonRecoveryWorkoutDates() {
   return Object.entries(sessions).filter(([, day]) => day && Object.values(day).some(s => s?.sessionType !== 'recovery')).map(([date]) => date);
 }
 
-// Finds the exercise closest to its next weight increase, consuming the
-// weightUpFlag/targetReps state that nextProgression() already maintains
-// rather than recomputing progression from raw history.
+// Finds the exercise closest to its next weight increase. "remaining" is
+// deliberately computed from the same last-logged-session numbers the
+// Closest Progress card's circles already display (lastSets), not from
+// exDef.targetReps — those can already sit at max even when the last real
+// set came in under it (e.g. right after lowering the exercise's own max
+// rep target in its settings), which used to make the card show "0 more
+// reps" right next to a circle that plainly wasn't full. Sourcing both from
+// the same numbers keeps the card internally consistent.
 function findClosestProgression() {
   let best = null;
   let readyFallback = null;
@@ -5158,15 +5163,16 @@ function findClosestProgression() {
     if (exDef.archived) continue;
     const last = getLastLoggedSets(id);
     if (!last) continue;
-    const targetReps = exDef.targetReps || [8,8,8];
     const maxReps = exDef.maxReps ?? 12;
-    const remaining = targetReps.reduce((sum, r) => sum + Math.max(0, maxReps - r), 0);
+    const lastSets = last.sets.map(st => st.reps || 0);
+    const shortfalls = lastSets.map(r => Math.max(0, maxReps - r));
+    const remaining = shortfalls.reduce((sum, r) => sum + r, 0);
+    const shortSetCount = shortfalls.filter(r => r > 0).length;
     const entry = {
       exerciseId: id, name: exDef.name, group: exDef.muscleGroup,
       weight: exDef.currentWeight || 0, unit: exDef.unit || 'kg',
       weightIncrement: exDef.weightIncrement || 0,
-      targetReps, lastSets: last.sets.map(st => st.reps || 0),
-      remaining, ready: !!exDef.weightUpFlag
+      maxReps, lastSets, remaining, shortSetCount, ready: !!exDef.weightUpFlag
     };
     if (entry.ready) { if (!readyFallback) readyFallback = entry; continue; }
     if (!best || entry.remaining < best.remaining) best = entry;
@@ -5385,13 +5391,24 @@ function renderClosestProgress() {
       <p class="text-sm text-slate-400 text-center">Your next progression will appear after your first workout.</p>`;
     return;
   }
+  // "remaining"/shortSetCount come from best.lastSets (see
+  // findClosestProgression()) — the exact numbers the circles below show —
+  // so the message always agrees with what's on screen: one short set gets
+  // called out directly ("on your last set"), several get a summed total,
+  // and 0-with-not-ready-yet (every set already matched maxReps, but this
+  // session's own weight-up hasn't been flagged — see ready above) gets its
+  // own honest copy instead of a nonsensical "0 more reps."
   const [detailLead, detailRest] = best.ready
     ? (best.weightIncrement
         ? ['Ready to grow', ` — try ${round1(best.weight + best.weightIncrement)} ${best.unit} next session 🎉`]
         : ['Ready to increase', ' next session 🎉'])
-    : [`${best.remaining} more rep${best.remaining===1?'':'s'}`, ' total until your next leaf'];
+    : best.remaining === 0
+      ? ['Every set matured', ' — log it again to grow 🎉']
+      : best.shortSetCount === 1
+        ? [`${best.remaining} more rep${best.remaining === 1 ? '' : 's'}`, ' on your last set to mature it']
+        : [`${best.remaining} more rep${best.remaining === 1 ? '' : 's'}`, ` total across ${best.shortSetCount} sets to mature them`];
   const nodes = best.lastSets.map((r, i) => {
-    const filled = r >= 12;
+    const filled = r >= best.maxReps;
     const node = `<div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${filled ? 'bg-brand-500 text-white' : 'bg-brand-50 dark:bg-brand-950/40 text-brand-500 border-2 border-brand-200 dark:border-brand-800'}">${r}</div>`;
     const branch = i < best.lastSets.length - 1 ? '<div class="flex-1 h-0.5 bg-brand-200 dark:bg-brand-800 rounded-full min-w-2"></div>' : '';
     return node + branch;
