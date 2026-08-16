@@ -7243,6 +7243,35 @@ function renderExerciseDetail(exerciseId) {
   // must not disappear just because `configured` does.
   const exBlooms = Object.values(gardenCollection).filter(c => c.exerciseId === exerciseId);
   const latestBloom = exBlooms.length ? exBlooms.reduce((a, b) => (b.generation > a.generation ? b : a)) : null;
+  // ── Blooms collected — a browsable gallery of every species this specific
+  // exercise's plant has actually revealed, not just the "N blooms
+  // collected" count/latest-species line below. Lives inside the plant hero
+  // card itself (below a divider), not a separate card, so "current stage"
+  // and "everything it's bloomed into so far" read as one continuous story
+  // about this one plant. Only rendered once there's at least one real
+  // bloom (see exBlooms above); an exercise that hasn't bloomed yet gets no
+  // divider/empty section appended at all. Same glow-behind-emoji treatment
+  // as gardenBloomedCardHtml() on the Garden page's Bloomed tab.
+  let bloomsSectionHtml = '';
+  if (exBlooms.length) {
+    const sortedBlooms = [...exBlooms].sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation));
+    bloomsSectionHtml = `
+      <div class="text-left border-t border-slate-100 dark:border-slate-800 pt-3">
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">local_florist</span>Blooms collected</p>
+        <div class="grid grid-cols-3 gap-3">
+          ${sortedBlooms.map(b => `
+            <div class="flex flex-col items-center gap-1 text-center">
+              <div class="relative flex-shrink-0 flex items-center justify-center" style="width:52px;height:52px" aria-hidden="true">
+                <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${EXG_ACCENT.brand.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(5px)"></div>
+                <span class="relative leading-none" style="font-size:42px;filter:drop-shadow(0 4px 4px rgba(15,23,42,.16))">${b.speciesEmoji}</span>
+              </div>
+              <p class="font-display font-bold text-xs text-slate-800 dark:text-white truncate w-full">${esc(b.speciesName)}</p>
+              <p class="text-[10px] text-slate-400">${histRelativeDate(b.bloomedAt)}</p>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
   let heroHtml, leavesHtml = '';
   if (!configured) {
     const neutralMsg = disabled
@@ -7252,6 +7281,7 @@ function renderExerciseDetail(exerciseId) {
       <div class="card p-4 text-center space-y-2">
         <div class="flex justify-center">${exercisePlantVisual({ stageIdx: null, accent: exdAccent, size: 88 })}</div>
         <p class="text-sm text-slate-600 dark:text-slate-300">${esc(neutralMsg)}</p>
+        ${bloomsSectionHtml}
       </div>`;
   } else {
     const stageIdx = exercisePlantStageIdx(dpResult);
@@ -7264,7 +7294,7 @@ function renderExerciseDetail(exerciseId) {
     // already-revealed species (same gardenCollection record
     // gardenBloomedCardHtml() reads on the Garden page's own Bloomed tab —
     // never re-derived or re-rolled here); the full set is now also
-    // browsable below in bloomsHtml.
+    // browsable below, inside this same card (see bloomsSectionHtml).
     heroHtml = `
       <div class="card p-4 space-y-3">
         <div class="flex items-center gap-4">
@@ -7285,6 +7315,7 @@ function renderExerciseDetail(exerciseId) {
           <span class="text-sm font-bold text-brand-500 flex-shrink-0">${pct}%</span>
         </div>
         <p class="text-xs text-slate-400">All ${dpResult.workingSetCount} set${dpResult.workingSetCount!==1?'s':''} must progress to evolve to the next stage!</p>
+        ${bloomsSectionHtml}
       </div>`;
 
     // Standalone "Set progress (current stage)" leaf row — the three-state
@@ -7305,34 +7336,6 @@ function renderExerciseDetail(exerciseId) {
                 <p class="text-[11px] font-semibold ${labelColor}">${DP_LEAF_STATE_LABEL[state]}</p>
               </div>`;
           }).join('')}
-        </div>
-      </div>`;
-  }
-
-  // ── Blooms collected — a browsable gallery of every species this specific
-  // exercise's plant has actually revealed, not just the "N blooms
-  // collected" count/latest-species line above. Only shown once there's at
-  // least one real bloom (see exBlooms above); an exercise that hasn't
-  // bloomed yet gets no empty/placeholder card here. Same glow-behind-emoji
-  // treatment as gardenBloomedCardHtml() on the Garden page's Bloomed tab —
-  // reads as the same "species you've collected" idea, just scoped to this
-  // one exercise instead of the whole garden.
-  let bloomsHtml = '';
-  if (exBlooms.length) {
-    const sortedBlooms = [...exBlooms].sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation));
-    bloomsHtml = `
-      <div class="card p-4">
-        <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-1.5"><span class="ms text-base text-brand-500" aria-hidden="true">local_florist</span>Blooms collected</p>
-        <div class="grid grid-cols-3 gap-3">
-          ${sortedBlooms.map(b => `
-            <div class="flex flex-col items-center gap-1 text-center">
-              <div class="relative flex-shrink-0 flex items-center justify-center" style="width:52px;height:52px" aria-hidden="true">
-                <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,${EXG_ACCENT.brand.glow} 0%,rgba(0,0,0,0) 70%);filter:blur(5px)"></div>
-                <span class="relative leading-none" style="font-size:42px;filter:drop-shadow(0 4px 4px rgba(15,23,42,.16))">${b.speciesEmoji}</span>
-              </div>
-              <p class="font-display font-bold text-xs text-slate-800 dark:text-white truncate w-full">${esc(b.speciesName)}</p>
-              <p class="text-[10px] text-slate-400">${histRelativeDate(b.bloomedAt)}</p>
-            </div>`).join('')}
         </div>
       </div>`;
   }
@@ -7430,7 +7433,6 @@ function renderExerciseDetail(exerciseId) {
     <div class="p-4 max-w-2xl w-full mx-auto space-y-4">
       ${progressionSummaryHtml}
       ${heroHtml}
-      ${bloomsHtml}
       ${leavesHtml}
       ${setsHtml}
       ${recHtml}
