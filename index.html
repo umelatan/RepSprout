@@ -476,6 +476,10 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
+#log-set-modal .ls-weight-input{background:transparent!important;border:none!important;border-bottom:1px dashed #cbd5e1!important;padding:0 0 2px!important;text-align:right;outline:none}
+#log-set-modal .ls-weight-input:focus{border-bottom-style:solid!important;border-bottom-color:#22c55e!important}
+.dark #log-set-modal .ls-weight-input{border-bottom-color:#475569!important}
+.dark #log-set-modal .ls-weight-input:focus{border-bottom-color:#4ade80!important}
 #log-set-modal .ls-rir-chip[aria-pressed="true"]{border-color:#22c55e;background:#f0fdf4;color:#166534}
 .dark #log-set-modal .ls-rir-chip[aria-pressed="true"]{border-color:#4ade80;background:rgba(74,222,128,.12);color:#4ade80}
 #edit-session-modal input[type=number]::-webkit-outer-spin-button,#edit-session-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -1490,17 +1494,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5">
         <div class="flex items-center gap-3">
           <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
-          <span class="text-sm font-semibold text-slate-400 flex-shrink-0">Weight</span>
-          <p class="flex-1 min-w-0 flex items-baseline justify-center gap-1.5">
-            <span id="ls-weight-display" class="font-display font-extrabold text-3xl text-slate-800 dark:text-white"></span>
-            <span id="ls-unit" class="text-base text-slate-400"></span>
-          </p>
-          <button id="ls-change-weight-btn" class="text-sm font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" aria-expanded="false" aria-controls="ls-weight-editor">Change<span class="ms text-lg" aria-hidden="true">chevron_right</span></button>
-        </div>
-        <div id="ls-weight-editor" style="display:none" class="flex items-center justify-center gap-3 pt-3.5 mt-3.5 border-t border-slate-200 dark:border-slate-700">
-          <button id="ls-weight-minus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
-          <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white" style="width:5rem" aria-label="Weight">
-          <button id="ls-weight-plus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
+          <span class="text-sm font-semibold text-slate-400 flex-1 min-w-0">Weight</span>
+          <div class="flex items-baseline gap-1.5 flex-shrink-0">
+            <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-weight-input font-display font-extrabold text-3xl text-slate-800 dark:text-white text-right" style="width:4.5rem" aria-label="Weight">
+            <span id="ls-unit" class="text-base text-slate-400 flex-shrink-0"></span>
+          </div>
         </div>
       </div>
 
@@ -10510,31 +10508,6 @@ document.getElementById('ls-close-btn').addEventListener('click', () => {
   closeLogSetSheet();
   handleAwAction('cancel-set');
 });
-document.getElementById('ls-change-weight-btn').addEventListener('click', () => {
-  const editor = document.getElementById('ls-weight-editor');
-  const btn = document.getElementById('ls-change-weight-btn');
-  const opening = editor.style.display === 'none';
-  editor.style.display = opening ? '' : 'none';
-  btn.setAttribute('aria-expanded', String(opening));
-  if (opening) document.getElementById('ls-weight').focus();
-});
-document.getElementById('ls-weight').addEventListener('input', () => {
-  document.getElementById('ls-weight-display').textContent = document.getElementById('ls-weight').value || '0';
-});
-document.getElementById('ls-weight-minus').addEventListener('click', () => {
-  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
-  const step = ex.weightIncrement || (ex.unit === 'lb' ? 5 : 2.5);
-  const inp = document.getElementById('ls-weight');
-  inp.value = Math.max(0, (+inp.value || 0) - step);
-  inp.dispatchEvent(new Event('input'));
-});
-document.getElementById('ls-weight-plus').addEventListener('click', () => {
-  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
-  const step = ex.weightIncrement || (ex.unit === 'lb' ? 5 : 2.5);
-  const inp = document.getElementById('ls-weight');
-  inp.value = (+inp.value || 0) + step;
-  inp.dispatchEvent(new Event('input'));
-});
 document.querySelectorAll('.ls-rir-chip').forEach(btn => {
   btn.addEventListener('click', () => {
     const rirInput = document.getElementById('ls-rir');
@@ -10613,10 +10586,7 @@ function openLogSetSheet() {
   const pLs = workingSetNumLs ? dpPositionsLs[workingSetNumLs - 1] : null;
   const weightVal = (pLs && pLs.currentWeight != null) ? pLs.currentWeight : (ex.sets[si].weight || ex.weight || 0);
   document.getElementById('ls-weight').value = weightVal || '';
-  document.getElementById('ls-weight-display').textContent = weightVal || '0';
   document.getElementById('ls-unit').textContent = ex.unit;
-  document.getElementById('ls-weight-editor').style.display = 'none';
-  document.getElementById('ls-change-weight-btn').setAttribute('aria-expanded', 'false');
 
   // Pre-filled (not just a placeholder) so hitting the recommended number
   // needs zero taps — "Complete Set" works immediately. Still a plain
