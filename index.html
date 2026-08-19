@@ -476,10 +476,8 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 #log-set-modal input[type=number]::-webkit-outer-spin-button,#log-set-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
-#log-set-modal .ls-weight-input{background:transparent!important;border:none!important;border-bottom:1px dashed #cbd5e1!important;padding:0 0 2px!important;text-align:left;outline:none}
-#log-set-modal .ls-weight-input:focus{border-bottom-style:solid!important;border-bottom-color:#22c55e!important}
-.dark #log-set-modal .ls-weight-input{border-bottom-color:#475569!important}
-.dark #log-set-modal .ls-weight-input:focus{border-bottom-color:#4ade80!important}
+#log-set-modal .ls-rir-chip[aria-pressed="true"]{border-color:#22c55e;background:#f0fdf4;color:#166534}
+.dark #log-set-modal .ls-rir-chip[aria-pressed="true"]{border-color:#4ade80;background:rgba(74,222,128,.12);color:#4ade80}
 #edit-session-modal input[type=number]::-webkit-outer-spin-button,#edit-session-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #edit-session-modal input[type=number]{-moz-appearance:textfield}
 #edit-session-modal .esm-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
@@ -1480,29 +1478,50 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </div>
 
       <div class="text-center space-y-3">
-        <p class="text-sm font-bold text-brand-500">How many reps?</p>
+        <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Reps</p>
         <div class="flex items-center justify-center gap-4">
           <button id="ls-reps-minus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Decrease reps"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
           <input id="ls-reps" type="number" inputmode="numeric" class="ls-plain-input font-display font-extrabold text-5xl text-slate-800 dark:text-white" style="width:4.5rem" aria-label="Reps completed">
           <button id="ls-reps-plus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Increase reps"><span class="ms text-2xl" aria-hidden="true">add</span></button>
         </div>
+        <p class="text-sm text-slate-400">How many reps did you get?</p>
         <span id="ls-reps-announce" class="sr-only" role="status" aria-live="polite"></span>
       </div>
 
-      <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5">
         <div class="flex items-center gap-3">
           <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
-          <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-weight-input font-display font-extrabold text-xl text-slate-800 dark:text-white flex-1 min-w-0" style="width:100%" aria-label="Weight">
-          <span id="ls-unit" class="text-sm text-slate-400 flex-shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-semibold text-slate-400">Weight</p>
+            <p><span id="ls-weight-display" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></span> <span id="ls-unit" class="text-sm text-slate-400"></span></p>
+          </div>
+          <button id="ls-change-weight-btn" class="text-sm font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" aria-expanded="false" aria-controls="ls-weight-editor">Change<span class="ms text-lg" aria-hidden="true">chevron_right</span></button>
+        </div>
+        <div id="ls-weight-editor" style="display:none" class="flex items-center justify-center gap-3 pt-3.5 mt-3.5 border-t border-slate-200 dark:border-slate-700">
+          <button id="ls-weight-minus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+          <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white" style="width:5rem" aria-label="Weight">
+          <button id="ls-weight-plus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
         </div>
       </div>
 
       <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
-        <div class="flex items-center gap-3">
-          <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">speed</span>
-          <label for="ls-rir" class="flex-1 min-w-0 text-sm font-semibold text-slate-600 dark:text-slate-300">RIR <span class="font-normal text-slate-400">(reps in reserve)</span></label>
-          <input id="ls-rir" type="number" inputmode="numeric" placeholder="—" class="text-center font-display font-extrabold text-xl text-slate-800 dark:text-white flex-shrink-0" style="width:3.5rem">
+        <div class="flex items-center gap-1.5 mb-2.5">
+          <p class="text-sm font-bold text-slate-600 dark:text-slate-300">RIR <span class="font-normal text-slate-400">(reps in reserve)</span></p>
+          <span class="ms text-base text-slate-400 flex-shrink-0" aria-hidden="true" title="How many more reps you could have done before failure">info</span>
         </div>
+        <div id="ls-rir-chips" class="grid grid-cols-6 gap-1.5" role="group" aria-label="Reps in reserve (optional)">
+          <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="0" aria-pressed="false">0</button>
+          <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="1" aria-pressed="false">1</button>
+          <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="2" aria-pressed="false">2</button>
+          <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="3" aria-pressed="false">3</button>
+          <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="4" aria-pressed="false">4</button>
+          <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="5" aria-pressed="false">5</button>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-400 mt-1.5 px-0.5">
+          <span>← Harder</span>
+          <span>Easier →</span>
+        </div>
+        <input id="ls-rir" type="hidden" value="">
       </div>
 
       <!-- Formerly inside a collapsed "Advanced" drawer — set type and a
@@ -10491,6 +10510,41 @@ document.getElementById('ls-close-btn').addEventListener('click', () => {
   closeLogSetSheet();
   handleAwAction('cancel-set');
 });
+document.getElementById('ls-change-weight-btn').addEventListener('click', () => {
+  const editor = document.getElementById('ls-weight-editor');
+  const btn = document.getElementById('ls-change-weight-btn');
+  const opening = editor.style.display === 'none';
+  editor.style.display = opening ? '' : 'none';
+  btn.setAttribute('aria-expanded', String(opening));
+  if (opening) document.getElementById('ls-weight').focus();
+});
+document.getElementById('ls-weight').addEventListener('input', () => {
+  document.getElementById('ls-weight-display').textContent = document.getElementById('ls-weight').value || '0';
+});
+document.getElementById('ls-weight-minus').addEventListener('click', () => {
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const step = ex.weightIncrement || (ex.unit === 'lb' ? 5 : 2.5);
+  const inp = document.getElementById('ls-weight');
+  inp.value = Math.max(0, (+inp.value || 0) - step);
+  inp.dispatchEvent(new Event('input'));
+});
+document.getElementById('ls-weight-plus').addEventListener('click', () => {
+  const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+  const step = ex.weightIncrement || (ex.unit === 'lb' ? 5 : 2.5);
+  const inp = document.getElementById('ls-weight');
+  inp.value = (+inp.value || 0) + step;
+  inp.dispatchEvent(new Event('input'));
+});
+document.querySelectorAll('.ls-rir-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const rirInput = document.getElementById('ls-rir');
+    const val = btn.dataset.rir;
+    const selecting = rirInput.value !== val;
+    document.querySelectorAll('.ls-rir-chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    rirInput.value = selecting ? val : '';
+    if (selecting) btn.setAttribute('aria-pressed', 'true');
+  });
+});
 // Edit an already-completed set from THIS still-active session (see
 // #edit-active-set-modal and the tappable completedRows rows in
 // renderGuidedWorkout()) — a mis-typed weight/reps fixable right away
@@ -10559,7 +10613,10 @@ function openLogSetSheet() {
   const pLs = workingSetNumLs ? dpPositionsLs[workingSetNumLs - 1] : null;
   const weightVal = (pLs && pLs.currentWeight != null) ? pLs.currentWeight : (ex.sets[si].weight || ex.weight || 0);
   document.getElementById('ls-weight').value = weightVal || '';
+  document.getElementById('ls-weight-display').textContent = weightVal || '0';
   document.getElementById('ls-unit').textContent = ex.unit;
+  document.getElementById('ls-weight-editor').style.display = 'none';
+  document.getElementById('ls-change-weight-btn').setAttribute('aria-expanded', 'false');
 
   // Pre-filled (not just a placeholder) so hitting the recommended number
   // needs zero taps — "Complete Set" works immediately. Still a plain
@@ -10585,6 +10642,7 @@ function openLogSetSheet() {
   }
 
   document.getElementById('ls-rir').value = '';
+  document.querySelectorAll('.ls-rir-chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
   document.getElementById('ls-note').value = ex.notes || '';
   setLsWarmup(false);
 
