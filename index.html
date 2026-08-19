@@ -2875,6 +2875,37 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Streak milestone celebration — every fresh multiple of 15 days (see
+     checkStreakMilestone()). Same confetti-dot celebratory language as
+     #bloom-modal so "something worth celebrating" reads consistently
+     across the app, just themed around the streak's own fire icon instead
+     of a bloom. -->
+<div id="streak-milestone-modal" style="display:none" class="fixed inset-0 z-[85] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6 text-center space-y-5">
+    <div class="relative w-20 h-20 mx-auto">
+      <span class="finish-confetti-dot" style="top:-4px;left:18%;background:#8b5cf6;animation-delay:0s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:0;right:12%;background:#f97316;animation-delay:.6s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:34px;left:2%;background:#22c55e;animation-delay:1.1s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:24px;right:0;background:#8b5cf6;animation-delay:1.7s" aria-hidden="true"></span>
+      <span class="finish-confetti-dot" style="top:60px;left:24%;background:#f97316;animation-delay:.3s" aria-hidden="true"></span>
+      <div class="bloom-pop-in w-20 h-20 rounded-full bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-4xl" aria-hidden="true">🔥</div>
+    </div>
+    <div class="bloom-pop-in" style="animation-delay:.1s">
+      <p class="text-xs font-bold uppercase tracking-wide text-amber-500 mb-1">Streak milestone</p>
+      <h3 id="sms-title" class="font-display font-extrabold text-2xl text-slate-800 dark:text-white"></h3>
+      <p id="sms-subtitle" class="text-sm text-slate-500 dark:text-slate-400 mt-1"></p>
+    </div>
+    <div class="card p-4">
+      <div class="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800 text-center">
+        <div><p id="sms-workouts" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5">Workouts</p></div>
+        <div><p id="sms-volume" class="font-display font-extrabold text-xl text-brand-500"></p><p class="text-[10px] text-slate-400 mt-0.5">Lifted</p></div>
+      </div>
+      <p id="sms-comparison" style="display:none" class="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800"></p>
+    </div>
+    <button id="sms-ack-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Keep Growing</button>
+  </div>
+</div>
+
 <!-- Optional: save a completed Quick Workout as a reusable group -->
 <div id="save-as-group-modal" style="display:none" class="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
   <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-3">
@@ -3402,6 +3433,46 @@ function computeStreak(sessionDates) {
     check.setDate(check.getDate()-1);
   }
   return streak;
+}
+
+// ── Streak milestone celebration (every 15 days) ────────────────────────────
+// See #streak-milestone-modal / checkStreakMilestone() further down, near
+// renderDashStats() where the current streak is actually computed.
+function dateNDaysAgo(n) {
+  const d = new Date(todayStr() + 'T12:00:00');
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Total volume across every REAL logged set from startDate through today —
+// same per-set math as computeSessionVolume(), just summed across many
+// days and always normalized to kg (rather than picking a "dominant unit"
+// per day) since this spans the whole streak, not one session.
+function computeVolumeSince(startDate) {
+  let volumeKg = 0;
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    if (date < startDate) return;
+    Object.values(daySessions || {}).forEach(s => {
+      (s.exercises || []).filter(ex => !ex.skipped).forEach(ex => {
+        const unit = ex.unit === 'lbs' ? 'lbs' : 'kg';
+        getCompletedWorkingSets(ex).forEach(set => {
+          let w = set.weight || 0;
+          if (unit === 'lbs') w *= KG_PER_LB;
+          volumeKg += w * (set.reps || 0);
+        });
+      });
+    });
+  });
+  return round1(volumeKg);
+}
+
+function countWorkoutsSince(startDate) {
+  let count = 0;
+  Object.entries(sessions).forEach(([date, daySessions]) => {
+    if (date < startDate) return;
+    Object.values(daySessions || {}).forEach(s => { if (histSessionKind(s) === 'workout') count++; });
+  });
+  return count;
 }
 
 function getPlantHealth(sessionDates) {
@@ -5387,7 +5458,8 @@ function renderPlantHero(sessionDates, hasHistory) {
 function renderDashStats(sessionDates, hasHistory) {
   if (!hasHistory) { hide('dash-stats-row'); return; }
   show('dash-stats-row');
-  document.getElementById('streak-val').textContent = computeStreak(sessionDates);
+  const streak = computeStreak(sessionDates);
+  document.getElementById('streak-val').textContent = streak;
   document.getElementById('total-sessions-val').textContent = nonRecoveryWorkoutDates().length;
   // "Last session" means an actual workout or exercise activity — a
   // Recovery Day is real rest, not something to report as your last
@@ -5395,7 +5467,61 @@ function renderDashStats(sessionDates, hasHistory) {
   // streak/total-sessions stats above.
   const lastWorkoutDate = lastWorkoutSessionDate();
   document.getElementById('last-session-val').textContent = lastWorkoutDate ? fmtDate(lastWorkoutDate) : '—';
+  checkStreakMilestone(streak);
 }
+
+// A fresh multiple of 15 (15, 30, 45, ...) gets its own celebration —
+// userProfile.lastCelebratedStreakMilestone is the persisted high-water
+// mark so reopening the app on the same day (or this render firing again
+// from any of the many onValue listeners renderDashboard() hangs off of)
+// doesn't reopen it repeatedly. Only written on explicit acknowledgement
+// (see #sms-ack-btn below), not just on display, so an accidental close
+// without tapping "Keep Growing" shows it again next launch rather than
+// silently losing the celebration. If the CURRENT streak ever drops below
+// that high-water mark, the streak that earned it has broken and
+// restarted — the marker resets so a fresh run of 15/30/... can celebrate
+// again instead of staying permanently silenced by a streak that no
+// longer exists.
+let streakMilestoneModalOpenFor = null;
+function checkStreakMilestone(streak) {
+  if (streak < (userProfile.lastCelebratedStreakMilestone || 0)) {
+    userProfile.lastCelebratedStreakMilestone = 0;
+    set(ref(db, `users/${uid()}/lastCelebratedStreakMilestone`), 0).catch(e => console.error('Failed to reset streak milestone marker:', e));
+  }
+  if (!streak || streak % 15 !== 0) return;
+  if (streak <= (userProfile.lastCelebratedStreakMilestone || 0)) return;
+  if (streakMilestoneModalOpenFor === streak) return;
+  streakMilestoneModalOpenFor = streak;
+  openStreakMilestoneModal(streak);
+}
+
+function openStreakMilestoneModal(streak) {
+  const startDate = dateNDaysAgo(streak - 1);
+  const volumeKg = computeVolumeSince(startDate);
+  const workoutsCount = countWorkoutsSince(startDate);
+  document.getElementById('sms-title').textContent = `${streak}-Day Streak!`;
+  document.getElementById('sms-subtitle').textContent = `You've shown up ${streak} days in a row. That's real consistency.`;
+  document.getElementById('sms-workouts').textContent = workoutsCount;
+  document.getElementById('sms-volume').textContent = volumeKg > 0 ? `${Math.round(volumeKg).toLocaleString()} kg` : '—';
+  const comparisonEl = document.getElementById('sms-comparison');
+  const comp = volumeKg > 0 ? selectVolumeComparison(volumeKg) : null;
+  if (comp) {
+    comparisonEl.textContent = `That's like lifting ${comp.emoji} ${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
+    comparisonEl.style.display = '';
+  } else {
+    comparisonEl.style.display = 'none';
+  }
+  document.getElementById('streak-milestone-modal').style.display = '';
+}
+document.getElementById('sms-ack-btn').addEventListener('click', async () => {
+  const streak = streakMilestoneModalOpenFor;
+  streakMilestoneModalOpenFor = null;
+  rsHideModal('streak-milestone-modal');
+  if (streak == null) return;
+  userProfile.lastCelebratedStreakMilestone = streak;
+  try { await set(ref(db, `users/${uid()}/lastCelebratedStreakMilestone`), streak); }
+  catch (e) { console.error('Failed to save streak milestone acknowledgement:', e); }
+});
 
 // Most recent date with at least one non-Recovery-Day session (group,
 // quick, or other activity) — a Recovery Day on a later date must never
@@ -14549,6 +14675,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
   ['exercise-modal', () => rsHideModal('exercise-modal')],
   ['finish-modal', () => rsHideModal('finish-modal')],
   ['bloom-modal', () => rsHideModal('bloom-modal')],
+  ['streak-milestone-modal', () => rsHideModal('streak-milestone-modal')],
   ['save-as-group-modal', () => { rsHideModal('save-as-group-modal'); goView('dashboard'); }],
   ['calendar-day-sheet', () => rsHideModal('calendar-day-sheet')],
   ['activity-library-modal', () => rsHideModal('activity-library-modal')],
