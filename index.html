@@ -1491,10 +1491,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5">
         <div class="flex items-center gap-3">
           <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-slate-400">Weight</p>
-            <p><span id="ls-weight-display" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></span> <span id="ls-unit" class="text-sm text-slate-400"></span></p>
-          </div>
+          <p class="flex-1 min-w-0 flex items-baseline gap-1.5">
+            <span class="text-sm font-semibold text-slate-400">Weight</span>
+            <span id="ls-weight-display" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></span>
+            <span id="ls-unit" class="text-sm text-slate-400"></span>
+          </p>
           <button id="ls-change-weight-btn" class="text-sm font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" aria-expanded="false" aria-controls="ls-weight-editor">Change<span class="ms text-lg" aria-hidden="true">chevron_right</span></button>
         </div>
         <div id="ls-weight-editor" style="display:none" class="flex items-center justify-center gap-3 pt-3.5 mt-3.5 border-t border-slate-200 dark:border-slate-700">
