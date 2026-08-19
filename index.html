@@ -10729,10 +10729,10 @@ function openEditCompletedSets(ex) {
   document.getElementById('ecs-rows').innerHTML = completed.map(({ s, i }) => {
     const label = s.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(s) + 1}`;
     return `
-      <div class="flex items-center gap-3">
-        <span class="text-xs font-semibold text-slate-500 dark:text-slate-300 w-16 flex-shrink-0">${esc(label)}</span>
-        <div class="flex-1"><label class="text-[10px] text-slate-400 block mb-0.5">Weight (${esc(ex.unit)})</label><input type="number" inputmode="decimal" step="0.5" min="0" data-ecs-field="weight" data-ecs-index="${i}" value="${s.weight || ''}"></div>
-        <div class="flex-1"><label class="text-[10px] text-slate-400 block mb-0.5">Reps</label><input type="number" inputmode="numeric" min="0" data-ecs-field="reps" data-ecs-index="${i}" value="${s.reps || ''}"></div>
+      <div class="flex items-end gap-3">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-300 w-16 flex-shrink-0 pb-2.5">${esc(label)}</span>
+        <div class="flex-1"><label class="text-[10px] text-slate-400 block mb-0.5">Weight (${esc(ex.unit)})</label><input type="number" inputmode="decimal" step="0.5" min="0" class="text-center" data-ecs-field="weight" data-ecs-index="${i}" value="${s.weight || ''}"></div>
+        <div class="flex-1"><label class="text-[10px] text-slate-400 block mb-0.5">Reps</label><input type="number" inputmode="numeric" min="0" class="text-center" data-ecs-field="reps" data-ecs-index="${i}" value="${s.reps || ''}"></div>
       </div>`;
   }).join('');
   document.getElementById('edit-completed-sets-modal').style.display = '';
