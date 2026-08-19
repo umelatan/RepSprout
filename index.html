@@ -9412,6 +9412,19 @@ function workingSetsFor(ex) { return (ex.sets || []).filter(isWorkingSet); }
 // Never used to decide exercise completion; see isExerciseWorkingSetsComplete().
 function currentSetIndex(ex) { return ex.sets.findIndex(s => !s.completed); } // -1 = nothing left pending
 
+// The set that just triggered the current rest period — by completedAt,
+// not array position, since a warm-up can be spliced in ahead of the
+// pending slot (see the 'ls-save-btn' warm-up handling) and would
+// otherwise throw off a plain "last index" guess. Used by the resting
+// screen's "Edit Previous Set" button (see renderRestingPhase()).
+function lastCompletedSetIndex(ex) {
+  let bestIdx = -1, bestTime = -Infinity;
+  ex.sets.forEach((s, i) => {
+    if (s.completed && (s.completedAt || 0) > bestTime) { bestTime = s.completedAt || 0; bestIdx = i; }
+  });
+  return bestIdx;
+}
+
 function getCompletedWorkingSets(sessionExercise) { return workingSetsFor(sessionExercise).filter(s => s.completed); }
 function completedWorkingCount(ex) { return getCompletedWorkingSets(ex).length; }
 
@@ -10029,6 +10042,7 @@ function renderRestingPhase(ex) {
     </div>`;
   footer.innerHTML = `
     <button data-action="start-next-early" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Next Set Early</button>
+    <button data-action="edit-previous-set" class="btn btn-outline w-full py-3 text-sm mt-2">Edit Previous Set</button>
     <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-2 flex-wrap">
       <button data-action="rest-plus-30" class="text-slate-400 hover:underline py-2">+30 sec</button>
       <button data-action="rest-pause" class="text-slate-400 hover:underline py-2">${activeSession.restPausedRemainingMs!=null?'Resume':'Pause'}</button>
@@ -10674,6 +10688,17 @@ function handleAwAction(action) {
     case 'rest-skip':
       completeRest();
       break;
+    case 'edit-previous-set': {
+      // Opens the same #edit-active-set-modal the main exercise screen's
+      // completed-set rows use — nothing here touches activeSession.restEndsAt
+      // or the tickRest() interval, so the countdown keeps running
+      // underneath untouched while this sheet is open (and, since it's
+      // recomputed fresh from that same unchanged timestamp, still reads
+      // correctly the moment renderGuidedWorkout() redraws after Save).
+      const idx = lastCompletedSetIndex(ex);
+      if (idx !== -1) openEditActiveSetSheet(ex, activeSession.currentExerciseIndex, idx);
+      break;
+    }
     case 'rest-plus-30':
       if (activeSession.restEndsAt) activeSession.restEndsAt += 30000;
       else if (activeSession.restPausedRemainingMs != null) activeSession.restPausedRemainingMs += 30000;
