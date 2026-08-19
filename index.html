@@ -1446,113 +1446,119 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
 <!-- Guided workout: log a completed set -->
 <div id="log-set-modal" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-  <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm p-5 space-y-4 max-h-[92vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="ls-exercise-name">
-    <button id="ls-close-btn" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0" aria-label="Close without saving this set"><span class="ms text-lg" aria-hidden="true">close</span></button>
+  <!-- Was one long scrolling column with "Complete Set" at the very
+       bottom, plus a collapsed "Advanced" drawer hiding set-type/notes —
+       both meant real content (the button you always need; warm-up/note,
+       which aren't actually advanced) needed extra taps to reach. Same
+       flex-column shell #finish-modal already uses for the same reason:
+       a scrollable content area (flex-1 overflow-y-auto) + a fixed footer
+       for the action buttons (flex-shrink-0) — plus the former Advanced
+       drawer's contents promoted into the plain scrolling flow, no
+       toggle needed. -->
+  <div class="relative bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl w-full max-w-sm max-h-[92vh] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="ls-exercise-name">
+    <button id="ls-close-btn" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center flex-shrink-0 z-10" aria-label="Close without saving this set"><span class="ms text-lg" aria-hidden="true">close</span></button>
 
-    <div class="flex flex-col items-center text-center gap-1.5 pt-1">
-      <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-xl text-slate-400">fitness_center</span></div>
-      <p id="ls-exercise-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
-      <p id="ls-set-label" class="text-xs font-semibold text-slate-400"></p>
-    </div>
-
-    <div class="text-center space-y-3">
-      <p class="text-sm font-bold text-brand-500">How many reps?</p>
-      <div class="flex items-center justify-center gap-4">
-        <button id="ls-reps-minus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Decrease reps"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
-        <input id="ls-reps" type="number" inputmode="numeric" class="ls-plain-input font-display font-extrabold text-5xl text-slate-800 dark:text-white" style="width:4.5rem" aria-label="Reps completed">
-        <button id="ls-reps-plus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Increase reps"><span class="ms text-2xl" aria-hidden="true">add</span></button>
+    <div class="flex-1 overflow-y-auto p-5 space-y-4">
+      <div class="flex flex-col items-center text-center gap-1.5 pt-1">
+        <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-xl text-slate-400">fitness_center</span></div>
+        <p id="ls-exercise-name" class="font-display font-bold text-lg text-slate-800 dark:text-white"></p>
+        <p id="ls-set-label" class="text-xs font-semibold text-slate-400"></p>
       </div>
-      <span id="ls-reps-announce" class="sr-only" role="status" aria-live="polite"></span>
-    </div>
 
-    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
-      <div class="flex items-center gap-3">
-        <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
-        <p class="flex-1 min-w-0"><span id="ls-weight-display" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></span> <span id="ls-unit" class="text-sm text-slate-400"></span></p>
-        <button id="ls-change-weight-btn" class="text-xs font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" aria-expanded="false" aria-controls="ls-weight-editor">Change weight<span class="ms text-base" aria-hidden="true">chevron_right</span></button>
+      <div class="text-center space-y-3">
+        <p class="text-sm font-bold text-brand-500">How many reps?</p>
+        <div class="flex items-center justify-center gap-4">
+          <button id="ls-reps-minus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Decrease reps"><span class="ms text-2xl" aria-hidden="true">remove</span></button>
+          <input id="ls-reps" type="number" inputmode="numeric" class="ls-plain-input font-display font-extrabold text-5xl text-slate-800 dark:text-white" style="width:4.5rem" aria-label="Reps completed">
+          <button id="ls-reps-plus" type="button" class="w-14 h-14 rounded-full border-2 border-brand-400 text-brand-500 flex items-center justify-center flex-shrink-0" aria-label="Increase reps"><span class="ms text-2xl" aria-hidden="true">add</span></button>
+        </div>
+        <span id="ls-reps-announce" class="sr-only" role="status" aria-live="polite"></span>
       </div>
-      <div id="ls-weight-editor" style="display:none" class="flex items-center justify-center gap-3 pt-3.5 mt-3.5 border-t border-slate-200 dark:border-slate-700">
-        <button id="ls-weight-minus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
-        <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white" style="width:5rem" aria-label="Weight">
-        <button id="ls-weight-plus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
-      </div>
-    </div>
 
-    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
-      <div class="flex items-center gap-3">
-        <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">speed</span>
-        <label for="ls-rir" class="flex-1 min-w-0 text-sm font-semibold text-slate-600 dark:text-slate-300">RIR <span class="font-normal text-slate-400">(reps in reserve)</span></label>
-        <input id="ls-rir" type="number" inputmode="numeric" placeholder="—" class="text-center font-display font-extrabold text-xl text-slate-800 dark:text-white flex-shrink-0" style="width:3.5rem">
+      <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+        <div class="flex items-center gap-3">
+          <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
+          <p class="flex-1 min-w-0"><span id="ls-weight-display" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></span> <span id="ls-unit" class="text-sm text-slate-400"></span></p>
+          <button id="ls-change-weight-btn" class="text-xs font-bold text-brand-500 flex items-center gap-0.5 flex-shrink-0" aria-expanded="false" aria-controls="ls-weight-editor">Change weight<span class="ms text-base" aria-hidden="true">chevron_right</span></button>
+        </div>
+        <div id="ls-weight-editor" style="display:none" class="flex items-center justify-center gap-3 pt-3.5 mt-3.5 border-t border-slate-200 dark:border-slate-700">
+          <button id="ls-weight-minus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Decrease weight"><span class="ms text-lg" aria-hidden="true">remove</span></button>
+          <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="ls-plain-input font-display font-extrabold text-2xl text-slate-800 dark:text-white" style="width:5rem" aria-label="Weight">
+          <button id="ls-weight-plus" type="button" class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center flex-shrink-0" aria-label="Increase weight"><span class="ms text-lg" aria-hidden="true">add</span></button>
+        </div>
       </div>
-    </div>
 
-    <div id="ls-prev-workout-block">
-      <p class="text-xs font-semibold text-slate-400 mb-1.5 px-0.5">Last workout</p>
-      <div id="ls-prev-workout-row" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex items-center gap-3">
-        <p class="font-display font-bold text-slate-700 dark:text-slate-200"><span id="ls-prev-weight"></span> <span id="ls-prev-weight-unit" class="text-xs font-semibold text-slate-400"></span></p>
-        <p id="ls-prev-reps" class="flex-1 min-w-0 text-sm font-semibold truncate"></p>
-        <p id="ls-prev-date" class="text-xs text-slate-400 flex-shrink-0"></p>
+      <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+        <div class="flex items-center gap-3">
+          <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">speed</span>
+          <label for="ls-rir" class="flex-1 min-w-0 text-sm font-semibold text-slate-600 dark:text-slate-300">RIR <span class="font-normal text-slate-400">(reps in reserve)</span></label>
+          <input id="ls-rir" type="number" inputmode="numeric" placeholder="—" class="text-center font-display font-extrabold text-xl text-slate-800 dark:text-white flex-shrink-0" style="width:3.5rem">
+        </div>
       </div>
-      <p id="ls-prev-empty" style="display:none" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 text-sm text-slate-400 text-center">First time for this exercise</p>
-    </div>
 
-    <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
-      <button id="ls-advanced-toggle" class="w-full flex items-center gap-3 p-3.5 text-left" aria-expanded="false" aria-controls="ls-advanced-panel">
-        <div class="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lg text-purple-500 dark:text-purple-400">tune</span></div>
+      <div id="ls-prev-workout-block">
+        <p class="text-xs font-semibold text-slate-400 mb-1.5 px-0.5">Last workout</p>
+        <div id="ls-prev-workout-row" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 flex items-center gap-3">
+          <p class="font-display font-bold text-slate-700 dark:text-slate-200"><span id="ls-prev-weight"></span> <span id="ls-prev-weight-unit" class="text-xs font-semibold text-slate-400"></span></p>
+          <p id="ls-prev-reps" class="flex-1 min-w-0 text-sm font-semibold truncate"></p>
+          <p id="ls-prev-date" class="text-xs text-slate-400 flex-shrink-0"></p>
+        </div>
+        <p id="ls-prev-empty" style="display:none" class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5 text-sm text-slate-400 text-center">First time for this exercise</p>
+      </div>
+
+      <!-- Formerly inside a collapsed "Advanced" drawer — set type and a
+           note are both things people reach for often enough (not "rare/
+           power-user" settings), so both are always visible now. -->
+      <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+        <p class="text-xs font-semibold text-slate-400 mb-1.5" id="ls-set-type-label">Set type</p>
+        <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/50" role="group" aria-labelledby="ls-set-type-label">
+          <button id="ls-mark-working" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="true">Working set</button>
+          <button id="ls-mark-warmup" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="false">Warm-up</button>
+        </div>
+        <input id="ls-warmup" type="checkbox" class="sr-only">
+      </div>
+      <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
+        <label for="ls-note" class="text-xs font-semibold text-slate-400 block mb-1">Quick note (optional)</label>
+        <input id="ls-note" type="text" placeholder="Quick note (optional)">
+      </div>
+
+      <div class="rounded-2xl bg-brand-50 dark:bg-brand-950/25 p-3.5 flex items-center gap-3">
+        <div class="relative w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+          <span id="ls-growth-glow" class="stage-glow"></span>
+          <span class="ms text-3xl text-brand-600 dark:text-brand-400 relative">eco</span>
+        </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Advanced</p>
-          <p class="text-xs text-slate-400">Warm-up, notes</p>
+          <p id="ls-growth-headline" class="text-sm font-bold text-brand-600 dark:text-brand-400">+1 Growth</p>
+          <p id="ls-growth-detail" class="text-xs text-slate-500 dark:text-slate-400"></p>
         </div>
-        <span id="ls-advanced-chevron" class="ms text-slate-400 flex-shrink-0 transition-transform" aria-hidden="true">expand_more</span>
-      </button>
-      <div id="ls-advanced-panel" style="display:none" class="px-3.5 pb-3.5 space-y-3.5">
-        <div class="border-t border-slate-200 dark:border-slate-700 pt-3.5">
-          <p class="text-xs font-semibold text-slate-400 mb-1.5" id="ls-set-type-label">Set type</p>
-          <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/50" role="group" aria-labelledby="ls-set-type-label">
-            <button id="ls-mark-working" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="true">Working set</button>
-            <button id="ls-mark-warmup" type="button" class="py-2 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400" aria-pressed="false">Warm-up</button>
+        <div id="ls-plant-icon" class="relative w-14 h-14 flex-shrink-0" aria-hidden="true">
+          <span id="ls-plant-glow" class="stage-glow"></span>
+          <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
+            <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
+            <circle id="ls-plant-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset var(--rs-dur-celebration) var(--rs-ease-settle)"></circle>
+          </svg>
+          <div id="ls-plant-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
+            <span id="ls-plant-emoji" class="leading-none" style="font-size:1.35rem"></span>
+            <span class="sparkle-dot" aria-hidden="true">✨</span>
           </div>
-          <input id="ls-warmup" type="checkbox" class="sr-only">
+          <div id="ls-plant-water-stage" class="absolute inset-0" aria-hidden="true"></div>
         </div>
-        <div>
-          <label for="ls-note" class="text-xs font-semibold text-slate-400 block mb-1">Quick note (optional)</label>
-          <input id="ls-note" type="text" placeholder="Quick note (optional)">
-        </div>
+      </div>
+    </div>
+
+    <!-- Fixed footer — always on screen without scrolling. Mark incomplete/
+         Skip set moved in here too (also formerly in Advanced): secondary,
+         but still real actions worth reaching without hunting for them. -->
+    <div class="flex-shrink-0 p-5 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <div id="ls-complete-banner" style="display:none" class="rounded-2xl bg-brand-500 text-white p-3.5 flex items-center justify-center gap-2 font-display font-bold text-base" role="status"><span class="ms text-xl" aria-hidden="true">check_circle</span>Set complete</div>
+      <div id="ls-complete-controls" class="space-y-2">
+        <button id="ls-save-btn" class="btn btn-green btn-pop w-full text-base" style="min-height:52px"><span class="ms text-xl" aria-hidden="true">check_circle</span>Complete Set</button>
+        <p class="text-center text-xs text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">timer</span>Rest timer will start automatically</p>
         <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-1">
           <button id="ls-incomplete-btn" class="text-slate-400 hover:underline py-2">Mark incomplete</button>
           <button id="ls-skip-btn" class="text-red-400 hover:underline py-2">Skip set</button>
         </div>
       </div>
-    </div>
-
-    <div class="rounded-2xl bg-brand-50 dark:bg-brand-950/25 p-3.5 flex items-center gap-3">
-      <div class="relative w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-        <span id="ls-growth-glow" class="stage-glow"></span>
-        <span class="ms text-3xl text-brand-600 dark:text-brand-400 relative">eco</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p id="ls-growth-headline" class="text-sm font-bold text-brand-600 dark:text-brand-400">+1 Growth</p>
-        <p id="ls-growth-detail" class="text-xs text-slate-500 dark:text-slate-400"></p>
-      </div>
-      <div id="ls-plant-icon" class="relative w-14 h-14 flex-shrink-0" aria-hidden="true">
-        <span id="ls-plant-glow" class="stage-glow"></span>
-        <svg viewBox="0 0 64 64" class="w-14 h-14" style="transform:rotate(-90deg)" aria-hidden="true">
-          <circle cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke="currentColor" class="text-slate-200 dark:text-slate-700"></circle>
-          <circle id="ls-plant-ring" cx="32" cy="32" r="28" fill="none" stroke-width="4" stroke-linecap="round" style="transition:stroke-dashoffset var(--rs-dur-celebration) var(--rs-ease-settle)"></circle>
-        </svg>
-        <div id="ls-plant-emoji-wrap" class="absolute inset-0 flex items-center justify-center">
-          <span id="ls-plant-emoji" class="leading-none" style="font-size:1.35rem"></span>
-          <span class="sparkle-dot" aria-hidden="true">✨</span>
-        </div>
-        <div id="ls-plant-water-stage" class="absolute inset-0" aria-hidden="true"></div>
-      </div>
-    </div>
-
-    <div id="ls-complete-banner" style="display:none" class="rounded-2xl bg-brand-500 text-white p-3.5 flex items-center justify-center gap-2 font-display font-bold text-base" role="status"><span class="ms text-xl" aria-hidden="true">check_circle</span>Set complete</div>
-
-    <div id="ls-complete-controls" class="space-y-2">
-      <button id="ls-save-btn" class="btn btn-green btn-pop w-full text-base" style="min-height:52px"><span class="ms text-xl" aria-hidden="true">check_circle</span>Complete Set</button>
-      <p class="text-center text-xs text-slate-400 flex items-center justify-center gap-1"><span class="ms text-sm" aria-hidden="true">timer</span>Rest timer will start automatically</p>
     </div>
   </div>
 </div>
@@ -10511,16 +10517,6 @@ document.getElementById('ls-weight-plus').addEventListener('click', () => {
   inp.value = (+inp.value || 0) + step;
   inp.dispatchEvent(new Event('input'));
 });
-document.getElementById('ls-advanced-toggle').addEventListener('click', () => {
-  const panel = document.getElementById('ls-advanced-panel');
-  const toggle = document.getElementById('ls-advanced-toggle');
-  const chevron = document.getElementById('ls-advanced-chevron');
-  const opening = panel.style.display === 'none';
-  panel.style.display = opening ? '' : 'none';
-  toggle.setAttribute('aria-expanded', String(opening));
-  chevron.style.transform = opening ? 'rotate(180deg)' : '';
-});
-
 // Edit an already-completed set from THIS still-active session (see
 // #edit-active-set-modal and the tappable completedRows rows in
 // renderGuidedWorkout()) — a mis-typed weight/reps fixable right away
@@ -10572,7 +10568,22 @@ function openLogSetSheet() {
   document.getElementById('ls-exercise-name').textContent = ex.name;
   document.getElementById('ls-set-label').textContent = `Set ${setNum} of ${ex.targetReps.length}`;
 
-  const weightVal = ex.sets[si].weight || ex.weight || 0;
+  // Pre-fill from the SAME per-set-position Double Progression data the
+  // exercise screen's own "Previous (Set N)" line already reads (see
+  // renderExercisePhase()) — not the flat ex.sets[si].weight (seeded from
+  // exercises/{id}.currentWeight, one number for the WHOLE exercise). The
+  // two can disagree whenever different set positions were actually
+  // lifted at different weights last time (e.g. a pyramid, or only one
+  // position having progressed) — currentWeight has no way to represent
+  // that, so it could silently pre-fill a different position's weight
+  // instead of this exact set's own history ("the weight isn't
+  // reflective of my previous session's set").
+  const dpEnabledLs = ex.progressionEnabled !== false;
+  const dpResultLs = (!ex.sets[si].warmup && dpEnabledLs) ? DoubleProgressionStrategy.calculateExerciseResult(ex.exerciseId) : null;
+  const dpPositionsLs = (dpResultLs && dpResultLs.configured) ? DoubleProgressionStrategy.calculateSetResults(ex.exerciseId) : [];
+  const workingSetNumLs = ex.sets[si].warmup ? null : getWorkingSetNumber(ex.sets[si], ex.sets);
+  const pLs = workingSetNumLs ? dpPositionsLs[workingSetNumLs - 1] : null;
+  const weightVal = (pLs && pLs.currentWeight != null) ? pLs.currentWeight : (ex.sets[si].weight || ex.weight || 0);
   document.getElementById('ls-weight').value = weightVal || '';
   document.getElementById('ls-weight-display').textContent = weightVal || '0';
   document.getElementById('ls-unit').textContent = ex.unit;
@@ -10603,9 +10614,6 @@ function openLogSetSheet() {
   }
 
   document.getElementById('ls-rir').value = '';
-  document.getElementById('ls-advanced-panel').style.display = 'none';
-  document.getElementById('ls-advanced-toggle').setAttribute('aria-expanded', 'false');
-  document.getElementById('ls-advanced-chevron').style.transform = '';
   document.getElementById('ls-note').value = ex.notes || '';
   setLsWarmup(false);
 
