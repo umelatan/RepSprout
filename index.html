@@ -1550,6 +1550,34 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </div>
 </div>
 
+<!-- Guided workout: fix an already-logged set from within THIS still-active
+     session — mis-typed weight/reps noticed a set (or an exercise) later,
+     previously only fixable after finishing via History's Edit Workout.
+     Deliberately a separate, minimal sheet from #log-set-modal (no
+     recommendation text, no prev-workout comparison, no plant-watering
+     animation) — this is "fix a number," not "log the next set," so it
+     doesn't need any of that. See openEditActiveSetSheet(). -->
+<div id="edit-active-set-modal" style="display:none" class="fixed inset-0 z-[72] flex items-end md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4">
+    <div class="text-center">
+      <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Edit set</p>
+      <h3 id="eas-title" class="font-display font-bold text-lg text-slate-800 dark:text-white"></h3>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Weight (<span id="eas-unit"></span>)</label>
+        <input id="eas-weight" type="number" inputmode="decimal" step="0.5" min="0">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-400 block mb-1">Reps</label>
+        <input id="eas-reps" type="number" inputmode="numeric" min="0">
+      </div>
+    </div>
+    <button id="eas-save-btn" class="btn btn-green btn-pop w-full py-3 text-sm">Save changes</button>
+    <button id="eas-cancel-btn" class="text-xs font-semibold text-slate-400 hover:underline w-full text-center py-1">Cancel</button>
+  </div>
+</div>
+
 <!-- Generic rest-duration chooser. Reused by the first-rest fallback prompt and
      every scoped action inside "Change rest duration" — the title/subtitle and
      what happens when a value is chosen are supplied by whoever calls
@@ -9561,10 +9589,18 @@ function renderExercisePhase(ex) {
   const si = currentSetIndex(ex);
   if (si === -1) { activeSession.phase = 'exercise-complete'; renderGuidedWorkout(); return; } // defensive: nothing left pending
   const setNum = completedWorkingCount(ex) + 1;
-  const completedRows = ex.sets.slice(0, si).filter(s => s.completed).map(s => {
-    const label = s.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(s)+1}`;
-    return `<p class="text-xs text-slate-400">${label} · ${s.weight||0} ${ex.unit} × ${s.reps||0}</p>`;
-  }).join('');
+  // Tappable (see openEditActiveSetSheet()) so a mis-typed weight/reps
+  // noticed a set or two later can be fixed right away instead of only
+  // after finishing the whole workout. data-set-index carries the real
+  // index into ex.sets — filter() alone would lose that, so index is
+  // attached before filtering, not after.
+  const completedRows = ex.sets.slice(0, si)
+    .map((s, idx) => ({ s, idx }))
+    .filter(({ s }) => s.completed)
+    .map(({ s, idx }) => {
+      const label = s.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(s)+1}`;
+      return `<button type="button" class="aw-edit-set-row w-full flex items-center justify-between gap-2 text-xs text-slate-400 hover:text-brand-500 py-0.5" data-edit-set-index="${idx}"><span>${label} · ${s.weight||0} ${ex.unit} × ${s.reps||0}</span><span class="ms text-sm flex-shrink-0" aria-hidden="true">edit</span></button>`;
+    }).join('');
 
   // Both the "Previous" grid cell and the progression block below read from
   // the SAME Double Progression position `p` for this pending set — one
@@ -10283,6 +10319,48 @@ document.getElementById('ls-advanced-toggle').addEventListener('click', () => {
   panel.style.display = opening ? '' : 'none';
   toggle.setAttribute('aria-expanded', String(opening));
   chevron.style.transform = opening ? 'rotate(180deg)' : '';
+});
+
+// Edit an already-completed set from THIS still-active session (see
+// #edit-active-set-modal and the tappable completedRows rows in
+// renderGuidedWorkout()) — a mis-typed weight/reps fixable right away
+// instead of only after finishing via History's Edit Workout. editingSetCtx
+// holds which exercise/index is open so the save handler doesn't need to
+// re-derive it (activeSession.currentExerciseIndex could theoretically
+// change while the sheet is open, however unlikely in practice).
+let editingSetCtx = null;
+function openEditActiveSetSheet(ex, exerciseIndex, setIndex) {
+  const s = ex.sets[setIndex];
+  if (!s) return;
+  editingSetCtx = { exerciseIndex, setIndex };
+  const label = s.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(s) + 1}`;
+  document.getElementById('eas-title').textContent = `${ex.name} — ${label}`;
+  document.getElementById('eas-unit').textContent = ex.unit;
+  document.getElementById('eas-weight').value = s.weight || '';
+  document.getElementById('eas-reps').value = s.reps || '';
+  document.getElementById('edit-active-set-modal').style.display = '';
+}
+document.getElementById('aw-main').addEventListener('click', e => {
+  const btn = e.target.closest('[data-edit-set-index]');
+  if (!btn) return;
+  const exIdx = activeSession.currentExerciseIndex;
+  openEditActiveSetSheet(activeSession.exercises[exIdx], exIdx, +btn.dataset.editSetIndex);
+});
+document.getElementById('eas-cancel-btn').addEventListener('click', () => { editingSetCtx = null; rsHideModal('edit-active-set-modal'); });
+document.getElementById('eas-save-btn').addEventListener('click', () => {
+  if (!editingSetCtx) return;
+  const ex = activeSession.exercises[editingSetCtx.exerciseIndex];
+  const s = ex?.sets[editingSetCtx.setIndex];
+  if (!s) { editingSetCtx = null; rsHideModal('edit-active-set-modal'); return; }
+  const reps = +document.getElementById('eas-reps').value;
+  if (!reps || reps <= 0) { alert('Enter how many reps you completed.'); return; }
+  const weight = +document.getElementById('eas-weight').value || 0;
+  s.reps = reps;
+  s.weight = weight;
+  editingSetCtx = null;
+  rsHideModal('edit-active-set-modal');
+  renderGuidedWorkout();
+  saveActiveSessionDraft();
 });
 
 function openLogSetSheet() {
@@ -14423,6 +14501,7 @@ document.getElementById('toast-undo-btn').addEventListener('click', async () => 
 [
   ['dp-how-it-works-modal', () => rsHideModal('dp-how-it-works-modal')],
   ['log-set-modal', () => { closeLogSetSheet(); handleAwAction('cancel-set'); }],
+  ['edit-active-set-modal', () => { editingSetCtx = null; rsHideModal('edit-active-set-modal'); }],
   ['duration-picker-modal', closeDurationPicker],
   ['rest-scope-modal', closeRestScopeModal],
   ['change-rest-modal', closeChangeRestModal],
