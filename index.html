@@ -5495,12 +5495,29 @@ function checkStreakMilestone(streak) {
   openStreakMilestoneModal(streak);
 }
 
+// Rotates by which MILESTONE this is (1st = 15 days, 2nd = 30, 3rd = 45,
+// ...), not by day-of-week like bloomingStatusVariants()'s hero status —
+// this modal only ever appears once per milestone, so "today's date" isn't
+// a meaningful axis to vary on; "how many times has this user already seen
+// a milestone message" is. Deterministic per milestone (not Math.random())
+// so reopening the same not-yet-acknowledged milestone shows the same
+// line rather than a different one each time, which would read as buggy.
+const SMS_SUBTITLE_VARIANTS = streak => [
+  `You've shown up ${streak} days in a row. That's real consistency.`,
+  `${streak} days straight — small, steady effort adding up.`,
+  `Not a burst of motivation. ${streak} days of just showing up.`,
+  `${streak} days in a row. That's what steady growth looks like.`,
+  `${streak} days of training, one ordinary day at a time.`,
+  `${streak} days straight — the kind of habit that sticks.`
+];
 function openStreakMilestoneModal(streak) {
   const startDate = dateNDaysAgo(streak - 1);
   const volumeKg = computeVolumeSince(startDate);
   const workoutsCount = countWorkoutsSince(startDate);
+  const variants = SMS_SUBTITLE_VARIANTS(streak);
+  const milestoneIndex = Math.max(0, Math.round(streak / 15) - 1);
   document.getElementById('sms-title').textContent = `${streak}-Day Streak!`;
-  document.getElementById('sms-subtitle').textContent = `You've shown up ${streak} days in a row. That's real consistency.`;
+  document.getElementById('sms-subtitle').textContent = variants[milestoneIndex % variants.length];
   document.getElementById('sms-workouts').textContent = workoutsCount;
   document.getElementById('sms-volume').textContent = volumeKg > 0 ? `${Math.round(volumeKg).toLocaleString()} kg` : '—';
   const comparisonEl = document.getElementById('sms-comparison');
