@@ -4742,9 +4742,21 @@ function computeSessionVolume(sessionExercises) {
 // not sourced from any single authority, just representative real-world
 // ballpark figures chosen to give a legible spread from very light to very
 // heavy sessions.
-// Animals only, by request — no vehicles or appliances. Deliberately wide
-// variety across the whole weight spectrum (a hamster up to a blue whale)
-// so the light/heavy ends stay just as well covered as the old mixed list.
+// Animals only, by request — no vehicles or appliances (mammoth/T-Rex/
+// sauropod are prehistoric, but still real animals, not an exception).
+// selectVolumeComparison() only randomizes among entries that score within
+// 0.15 of the best fit for a given volume — with a sparse table, a given
+// user's fairly consistent total session volume can end up with only 1-2
+// realistic contenders, always landing on the same one or two animals (see
+// task: "I keep seeing the same animals"). Simulating a wide range of
+// realistic session volumes confirmed exactly this: entries were clustered
+// enough at the light end but had real gaps in the hundreds-to-thousands-kg
+// "typical session volume" range, and a huge 4,000–100,000kg gap at the top
+// with only elephant and blue whale to cover it. The otter/anaconda/
+// dolphin/sea-turtle/mammoth/T-Rex/sauropod entries below exist specifically
+// to fill those gaps, not just to pad the list — added density is what
+// actually produces more variety here, since the scoring/selection logic
+// itself already picks randomly among whatever contenders are available.
 const VOLUME_COMPARISONS = [
   { id: 'hamster', weightKg: .15, singular: 'hamster', plural: 'hamsters', emoji: '🐹' },
   { id: 'parrot', weightKg: .4, singular: 'parrot', plural: 'parrots', emoji: '🦜' },
@@ -4759,8 +4771,10 @@ const VOLUME_COMPARISONS = [
   { id: 'turkey', weightKg: 10, singular: 'turkey', plural: 'turkeys', emoji: '🦃' },
   { id: 'koala', weightKg: 11, singular: 'koala', plural: 'koalas', emoji: '🐨' },
   { id: 'badger', weightKg: 13, singular: 'badger', plural: 'badgers', emoji: '🦡' },
+  { id: 'otter', weightKg: 15, singular: 'otter', plural: 'otters', emoji: '🦦' },
   { id: 'beaver', weightKg: 20, singular: 'beaver', plural: 'beavers', emoji: '🦫' },
   { id: 'dog', weightKg: 25, singular: 'dog', plural: 'dogs', emoji: '🐕' },
+  { id: 'anaconda', weightKg: 30, singular: 'anaconda', plural: 'anacondas', emoji: '🐍' },
   { id: 'wolf', weightKg: 40, singular: 'wolf', plural: 'wolves', emoji: '🐺' },
   { id: 'leopard', weightKg: 60, singular: 'leopard', plural: 'leopards', emoji: '🐆' },
   { id: 'goat', weightKg: 65, singular: 'goat', plural: 'goats', emoji: '🐐' },
@@ -4776,7 +4790,9 @@ const VOLUME_COMPARISONS = [
   { id: 'lion', weightKg: 190, singular: 'lion', plural: 'lions', emoji: '🦁' },
   { id: 'young-elephant', weightKg: 200, singular: 'young elephant', plural: 'young elephants', emoji: '🐘' },
   { id: 'tiger', weightKg: 220, singular: 'tiger', plural: 'tigers', emoji: '🐅' },
+  { id: 'dolphin', weightKg: 250, singular: 'dolphin', plural: 'dolphins', emoji: '🐬' },
   { id: 'zebra', weightKg: 300, singular: 'zebra', plural: 'zebras', emoji: '🦓' },
+  { id: 'sea-turtle', weightKg: 350, singular: 'sea turtle', plural: 'sea turtles', emoji: '🐢' },
   { id: 'shark', weightKg: 400, singular: 'shark', plural: 'sharks', emoji: '🦈' },
   { id: 'crocodile', weightKg: 450, singular: 'crocodile', plural: 'crocodiles', emoji: '🐊' },
   { id: 'polar-bear', weightKg: 450, singular: 'polar bear', plural: 'polar bears', emoji: '🐻‍❄️' },
@@ -4791,6 +4807,9 @@ const VOLUME_COMPARISONS = [
   { id: 'rhino', weightKg: 2300, singular: 'rhino', plural: 'rhinos', emoji: '🦏' },
   { id: 'orca', weightKg: 3600, singular: 'orca', plural: 'orcas', emoji: '🐋' },
   { id: 'elephant', weightKg: 4000, singular: 'elephant', plural: 'elephants', emoji: '🐘' },
+  { id: 'mammoth', weightKg: 6000, singular: 'mammoth', plural: 'mammoths', emoji: '🦣' },
+  { id: 't-rex', weightKg: 7000, singular: 'T-Rex', plural: 'T-Rexes', emoji: '🦖' },
+  { id: 'sauropod', weightKg: 28000, singular: 'sauropod', plural: 'sauropods', emoji: '🦕' },
   { id: 'blue-whale', weightKg: 100000, singular: 'blue whale', plural: 'blue whales', emoji: '🐳' }
 ];
 
@@ -4845,10 +4864,27 @@ function selectVolumeComparison(volumeKg, excludeId = null, seed = null) {
 // Deterministic 0..1 pseudo-random derived from a string seed — exists only
 // so selectVolumeComparison() can give a past workout a stable, repeatable
 // pick (see its seed param above) without a second, parallel "random" system.
+// FNV-1a plus a Murmur-style finalizer, not a plain `h*31+c` accumulator —
+// that simpler version left the LAST character's contribution unscaled (no
+// multiply-by-a-large-prime after it), so two seeds differing only in their
+// final character produced h values only 1 apart, and `% 1000` barely
+// separated them at all. Real Firebase session ids (push keys) share a long
+// timestamp-based prefix for sessions logged close together, so this wasn't
+// theoretical — it could deterministically collapse many different
+// sessions' Workout Summary pages onto the same comparison (part of "I keep
+// seeing the same animals"). The finalizer's xorshift/multiply mixing here
+// ensures a one-character seed difference still scatters across the full
+// output range.
 function seededRandom01(seed) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  return (Math.abs(h) % 1000) / 1000;
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  return (h >>> 0) / 4294967296;
 }
 
 // New Double Progression weight-increase events this session would create,
