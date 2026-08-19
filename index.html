@@ -2900,7 +2900,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <div><p id="sms-workouts" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5">Workouts</p></div>
         <div><p id="sms-volume" class="font-display font-extrabold text-xl text-brand-500"></p><p class="text-[10px] text-slate-400 mt-0.5">Lifted</p></div>
       </div>
-      <p id="sms-comparison" style="display:none" class="text-xs text-slate-500 dark:text-slate-400 text-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800"></p>
+      <div id="sms-comparison-row" style="display:none" class="text-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <p class="text-xs text-slate-400">Equivalent to lifting</p>
+        <p id="sms-comparison" class="font-display font-extrabold text-xl text-slate-800 dark:text-white mt-0.5"></p>
+      </div>
     </div>
     <button id="sms-ack-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Keep Growing</button>
   </div>
@@ -5520,13 +5523,17 @@ function openStreakMilestoneModal(streak) {
   document.getElementById('sms-subtitle').textContent = variants[milestoneIndex % variants.length];
   document.getElementById('sms-workouts').textContent = workoutsCount;
   document.getElementById('sms-volume').textContent = volumeKg > 0 ? `${Math.round(volumeKg).toLocaleString()} kg` : '—';
-  const comparisonEl = document.getElementById('sms-comparison');
+  // Same "Equivalent to lifting" + large bold line treatment Finish
+  // Summary/Workout Summary already use for this exact comparison — a real
+  // highlight, not a muted footnote, since it's meant to be a genuine part
+  // of the celebration, not an afterthought.
+  const comparisonRow = document.getElementById('sms-comparison-row');
   const comp = volumeKg > 0 ? selectVolumeComparison(volumeKg) : null;
   if (comp) {
-    comparisonEl.textContent = `That's like lifting ${comp.emoji} ${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
-    comparisonEl.style.display = '';
+    document.getElementById('sms-comparison').textContent = `${comp.emoji} ${comp.count} ${comp.count === 1 ? comp.singular : comp.plural}`;
+    comparisonRow.style.display = '';
   } else {
-    comparisonEl.style.display = 'none';
+    comparisonRow.style.display = 'none';
   }
   document.getElementById('streak-milestone-modal').style.display = '';
 }
