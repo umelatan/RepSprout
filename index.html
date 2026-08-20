@@ -5667,6 +5667,10 @@ function describePlannedQuickWorkout(exerciseIds) {
   return `${exerciseIds.length} exercise${exerciseIds.length!==1?'s':''} planned${names.length ? ': ' + names.join(', ') : ''}`;
 }
 
+// Only ever called for a planned group/quick/activity entry — a planned
+// Recovery Day is intercepted earlier in renderTodayMission() and never
+// reaches here (see autoCompletePlannedRecoveryDay()), so there's no
+// recovery branch/label to maintain in this function anymore.
 function renderHomeMissionPlannedCard(planned) {
   let label, meta, primaryLabel, primaryAction;
   if (planned.type === 'group') {
@@ -5677,25 +5681,12 @@ function renderHomeMissionPlannedCard(planned) {
   } else if (planned.type === 'quick') {
     label = 'Quick Workout'; meta = describePlannedQuickWorkout(planned.plannedExerciseIds);
     primaryLabel = 'Start Quick Workout'; primaryAction = 'today-start-quick';
-  } else if (planned.type === 'activity') {
+  } else {
     const act = getActivity(planned.activityId);
     label = `${act?.icon ? act.icon + ' ' : ''}${act?.name || 'Activity'}`;
     meta = `${planned.plannedDuration || act?.defaultDuration || 30} min planned`;
     primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-activity-complete';
-  } else {
-    label = '🍃 Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
-    primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-recovery-complete';
   }
-  // "Mark Recovery Day" switches today's plan TO a recovery day — pointless
-  // to offer when today's plan already IS one; "Mark Complete" above
-  // already does that job, so showing both read as two ways to do the same
-  // thing ("feels like a repetition").
-  const isRecovery = planned.type === 'recovery';
-  // "Change Workout" doesn't hold up when today's plan IS a Recovery
-  // Day — there's no workout to change, so the label read as wrong, not
-  // just repetitive. "Change Plan" covers every planned.type (workout
-  // group, quick workout, activity, or recovery) without branching per
-  // type for a second near-duplicate string.
   return `
     <p class="text-base font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
     <p class="text-xs text-slate-400">${esc(meta)}</p>
@@ -5703,8 +5694,27 @@ function renderHomeMissionPlannedCard(planned) {
     <div class="flex items-center justify-center gap-4 pt-0.5 text-xs font-semibold flex-wrap">
       <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Plan</button>
       <button data-action="today-add-another" class="text-slate-400 hover:underline py-2">Add Another Activity</button>
-      ${isRecovery ? '' : '<button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>'}
+      <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
     </div>`;
+}
+
+// Guards against firing logRecoveryDaySession() twice concurrently for the
+// same date — renderDashboard() (and so renderTodayMission()) fires from
+// many independent onValue listeners in quick succession on boot, and
+// logRecoveryDaySession()'s own duplicate check only sees a previous call's
+// write AFTER that call's `await set()` resolves, so two overlapping calls
+// could otherwise both pass that check and create two recovery sessions for
+// one day. Cleared once the write settles (success or failure) so a later
+// render can retry if it failed.
+let autoCompletingRecoveryDate = null;
+function autoCompletePlannedRecoveryDay(date) {
+  if (autoCompletingRecoveryDate === date) return;
+  if (Object.values(sessions[date] || {}).some(s => s?.sessionType === 'recovery')) return;
+  autoCompletingRecoveryDate = date;
+  logRecoveryDaySession(date)
+    .then(({ newlyBloomed }) => celebrateExerciseBloomsIfAny(newlyBloomed))
+    .catch(e => console.error('Failed to auto-log planned recovery day:', e))
+    .finally(() => { autoCompletingRecoveryDate = null; });
 }
 
 function renderTodayMission() {
@@ -5717,9 +5727,38 @@ function renderTodayMission() {
   // "after it is completed, automatically show the next planned activity").
   const planned = firstIncompletePlannedEntry(today);
 
-  if (planned) {
+  // A planned Recovery Day needs no "Mark Complete" tap at all — unlike a
+  // planned workout, which only actually gets logged by DOING it (Start
+  // Growing), planning a rest day already IS the whole action; the streak
+  // already counts it the moment it's planned (see computeStreak()'s
+  // coveredByPlannedRecovery check). Auto-completing it here (same
+  // logRecoveryDaySession() write the old button used to trigger) means
+  // resting today needs no interaction with the app at all, matching how
+  // tapping "Mark Recovery Day" with nothing planned already logs it in
+  // one tap rather than a plan-then-confirm two-step.
+  if (planned && planned.type === 'recovery') {
+    autoCompletePlannedRecoveryDay(today);
+    if (!done) {
+      body.innerHTML = `
+        <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-base">
+          <span aria-hidden="true">🍃</span>Resting today
+        </div>
+        <p class="text-xs text-slate-400">Recovery day — no action needed.</p>
+        <div class="flex items-center justify-center gap-4 pt-0.5 text-xs font-semibold flex-wrap">
+          <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Plan</button>
+          <button data-action="today-add-another" class="text-slate-400 hover:underline py-2">Add Another Activity</button>
+        </div>`;
+      return;
+    }
+    // Something else was already logged today too (e.g. added on top via
+    // "Add Another Activity") — fall through to the normal "done" summary
+    // below instead of showing a stale recovery-specific card over it.
+  } else if (planned) {
     body.innerHTML = renderHomeMissionPlannedCard(planned);
-  } else if (done) {
+    return;
+  }
+
+  if (done) {
     // More than one thing can be logged for today (a Recovery Day, then a
     // Yoga/Cardio activity added on top via "Log another activity") —
     // Object.values(todaySessions)[0] used to be the ONLY session this
