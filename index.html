@@ -1487,14 +1487,19 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         <span id="ls-reps-announce" class="sr-only" role="status" aria-live="polite"></span>
       </div>
 
-      <div class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5">
-        <div class="flex items-center gap-3">
-          <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
-          <span class="text-sm font-semibold text-slate-400 flex-1 min-w-0">Weight</span>
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <input id="ls-weight" type="number" inputmode="decimal" step="0.5" class="text-center font-display font-extrabold text-3xl text-slate-800 dark:text-white" style="width:5.5rem" aria-label="Weight">
-            <span id="ls-unit" class="text-base text-slate-400 flex-shrink-0"></span>
-          </div>
+      <div id="ls-weight-row" class="rounded-2xl border border-slate-200 dark:border-slate-700 p-3.5 flex items-center gap-3 cursor-pointer" role="button" tabindex="0" aria-label="Weight. Tap to change.">
+        <span class="ms text-2xl text-slate-400 flex-shrink-0" aria-hidden="true">scale</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-semibold text-slate-400">Weight</p>
+          <p class="flex items-baseline gap-1.5">
+            <input id="ls-weight" type="number" inputmode="decimal" step="any" class="ls-plain-input font-display font-extrabold text-3xl text-slate-800 dark:text-white" style="width:4.5rem;text-align:left" aria-label="Weight">
+            <span id="ls-unit" class="text-base text-slate-400"></span>
+          </p>
+          <p id="ls-weight-hint" style="display:none" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <div class="flex flex-col items-end gap-1 flex-shrink-0" aria-hidden="true">
+          <span class="ms text-lg text-brand-500">edit</span>
+          <span class="text-xs text-slate-400 whitespace-nowrap">Tap to change</span>
         </div>
       </div>
 
@@ -10530,6 +10535,16 @@ function setLsWarmup(isWarmup) {
 document.getElementById('ls-mark-working').addEventListener('click', () => setLsWarmup(false));
 document.getElementById('ls-mark-warmup').addEventListener('click', () => setLsWarmup(true));
 
+// The whole row is the tap target (no dropdown/steppers) — tapping the
+// icon, label, hint text, or "Tap to change" affordance all focus the
+// real number input directly, which is what actually opens the numeric
+// keypad. Tapping the input itself already focuses it natively; this just
+// extends that to the rest of the row.
+document.getElementById('ls-weight-row').addEventListener('click', () => document.getElementById('ls-weight').focus());
+document.getElementById('ls-weight-row').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('ls-weight').focus(); }
+});
+
 document.getElementById('ls-close-btn').addEventListener('click', () => {
   closeLogSetSheet();
   handleAwAction('cancel-set');
@@ -10613,6 +10628,28 @@ function openLogSetSheet() {
   const weightVal = (pLs && pLs.currentWeight != null) ? pLs.currentWeight : (ex.sets[si].weight || ex.weight || 0);
   document.getElementById('ls-weight').value = weightVal || '';
   document.getElementById('ls-unit').textContent = ex.unit;
+
+  // "Same as last set" compares against the most recently COMPLETED working
+  // set within THIS session (not a warm-up, and not last time's history —
+  // that's already covered separately by the "Last workout" block above),
+  // so it reads as "same as the set you just did," matching how a lifter
+  // actually uses the phrase. Only shown when it's true; no comparison line
+  // at all for the first working set of the exercise (nothing to compare
+  // to yet) or when the numbers differ, rather than guessing copy for
+  // every possible delta.
+  let lsLastSetWeight = null;
+  for (let i = si - 1; i >= 0; i--) {
+    const s = ex.sets[i];
+    if (s && s.completed && !s.warmup) { lsLastSetWeight = s.weight; break; }
+  }
+  const lsWeightHint = document.getElementById('ls-weight-hint');
+  if (lsLastSetWeight != null && weightVal != null && Math.abs(lsLastSetWeight - weightVal) < 0.001) {
+    lsWeightHint.textContent = 'Same as last set';
+    lsWeightHint.style.display = '';
+  } else {
+    lsWeightHint.textContent = '';
+    lsWeightHint.style.display = 'none';
+  }
 
   // Pre-filled (not just a placeholder) so hitting the recommended number
   // needs zero taps — "Complete Set" works immediately. Still a plain
