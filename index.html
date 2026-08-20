@@ -1131,54 +1131,61 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </section>
 
     <!-- GARDEN / PROFILE -->
-    <section id="profile-view" style="display:none" class="rs-view flex-1 p-4 md:p-6 max-w-2xl w-full mx-auto space-y-4">
-      <!-- Companion card — the emotional mascot, permanent and unchanging.
-           Never a progression surface: artwork + name + current mood only.
-           Purely informational, not tappable — see renderGardenCompanion(). -->
-      <div id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
-        <div id="garden-companion-art" class="flex-shrink-0" aria-hidden="true"></div>
-        <div class="min-w-0 flex-1">
-          <p id="garden-companion-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
-          <p id="garden-companion-status" class="text-sm text-slate-400 mt-0.5"></p>
+    <section id="profile-view" style="display:none" class="rs-view flex-1 max-w-2xl w-full mx-auto">
+      <!-- Companion card, tabs, and filters stay pinned under the app's own
+           sticky top header (69px, its measured rendered height) while
+           scrolling — only the plant grids below actually scroll. -->
+      <div class="sticky z-10 bg-[#f3eee2]/90 dark:bg-slate-950/90 backdrop-blur-md p-4 md:p-6 pb-3 space-y-4" style="top:69px">
+        <!-- Companion card — the emotional mascot, permanent and unchanging.
+             Never a progression surface: artwork + name + current mood only.
+             Purely informational, not tappable — see renderGardenCompanion(). -->
+        <div id="garden-companion-card" class="card p-5 w-full text-left flex items-center gap-4">
+          <div id="garden-companion-art" class="flex-shrink-0" aria-hidden="true"></div>
+          <div class="min-w-0 flex-1">
+            <p id="garden-companion-name" class="font-display font-bold text-lg text-slate-800 dark:text-white truncate"></p>
+            <p id="garden-companion-status" class="text-sm text-slate-400 mt-0.5"></p>
+          </div>
         </div>
-      </div>
 
-      <!-- Growing / Bloomed / Locked tabs — one flat, scrollable collection
-           grid per tab (see renderGardenGrid()). No large "+ New Plant"
-           card; plants are unlocked by training, never manually created. -->
-      <div class="flex items-center gap-5 border-b border-slate-100 dark:border-slate-800">
-        <button type="button" id="garden-tab-active" class="garden-tab pb-2.5 text-sm font-bold border-b-2" aria-selected="true">Growing</button>
-        <button type="button" id="garden-tab-bloomed" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Bloomed</button>
-        <button type="button" id="garden-tab-locked" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Locked</button>
-      </div>
-
-      <!-- Body-part filter chips — reuses the Exercise Library's own
-           MG_LABEL grouping (see renderGardenFilters()), narrowed to the
-           four the task asks for. Filters all three tabs' grids. -->
-      <div id="garden-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
-
-      <div id="garden-active-panel">
-        <div id="garden-empty-state" style="display:none" class="card p-6 text-center space-y-2">
-          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Your garden is empty.</p>
-          <p class="text-sm text-slate-400">Create your first exercise to plant your first seed.</p>
-          <button type="button" id="garden-create-exercise-btn" class="btn btn-green text-sm px-4 py-2 mt-1">Create Exercise</button>
+        <!-- Growing / Bloomed / Locked tabs — one flat, scrollable collection
+             grid per tab (see renderGardenGrid()). No large "+ New Plant"
+             card; plants are unlocked by training, never manually created. -->
+        <div class="flex items-center gap-5 border-b border-slate-100 dark:border-slate-800">
+          <button type="button" id="garden-tab-active" class="garden-tab pb-2.5 text-sm font-bold border-b-2" aria-selected="true">Growing</button>
+          <button type="button" id="garden-tab-bloomed" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Bloomed</button>
+          <button type="button" id="garden-tab-locked" class="garden-tab pb-2.5 text-sm font-semibold border-b-2 border-transparent" aria-selected="false">Locked</button>
         </div>
-        <div id="garden-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+
+        <!-- Body-part filter chips — reuses the Exercise Library's own
+             MG_LABEL grouping (see renderGardenFilters()), narrowed to the
+             four the task asks for. Filters all three tabs' grids. -->
+        <div id="garden-filters" class="flex items-center gap-1.5 overflow-x-auto pb-1"></div>
       </div>
 
-      <div id="garden-bloomed-panel" style="display:none">
-        <div id="garden-bloomed-empty-state" style="display:none" class="card p-6 text-center space-y-2">
-          <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No blooms yet.</p>
-          <p class="text-sm text-slate-400">Keep training an exercise plant through all its stages to bloom it.</p>
+      <div class="p-4 md:p-6 pt-3 space-y-4">
+        <div id="garden-active-panel">
+          <div id="garden-empty-state" style="display:none" class="card p-6 text-center space-y-2">
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">Your garden is empty.</p>
+            <p class="text-sm text-slate-400">Create your first exercise to plant your first seed.</p>
+            <button type="button" id="garden-create-exercise-btn" class="btn btn-green text-sm px-4 py-2 mt-1">Create Exercise</button>
+          </div>
+          <div id="garden-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
         </div>
-        <div id="garden-bloomed-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-      </div>
 
-      <div id="garden-locked-panel" style="display:none">
-        <div id="garden-locked-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-      </div>
+        <div id="garden-bloomed-panel" style="display:none">
+          <div id="garden-bloomed-empty-state" style="display:none" class="card p-6 text-center space-y-2">
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No blooms yet.</p>
+            <p class="text-sm text-slate-400">Keep training an exercise plant through all its stages to bloom it.</p>
+          </div>
+          <div id="garden-bloomed-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+        </div>
 
-      <p class="text-center text-xs text-slate-400 flex items-center justify-center gap-1 pt-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Plants grow with consistent effort. Keep showing up.</p>
+        <div id="garden-locked-panel" style="display:none">
+          <div id="garden-locked-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+        </div>
+
+        <p class="text-center text-xs text-slate-400 flex items-center justify-center gap-1 pt-1"><span class="ms text-sm text-brand-400" aria-hidden="true">eco</span>Plants grow with consistent effort. Keep showing up.</p>
+      </div>
     </section>
 
     <!-- SETTINGS — moved out of the Garden page (see the Garden redesign
