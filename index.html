@@ -477,6 +477,13 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 #log-set-modal input[type=number]{-moz-appearance:textfield}
 #log-set-modal .ls-plain-input{background:transparent!important;border:none!important;padding:0!important;text-align:center;outline:none}
 #log-set-modal .ls-rir-chip[aria-pressed="true"]{border-color:#22c55e;background:#f0fdf4;color:#166534}
+/* Same dark-pill "tag" look as .ghp-tip-floating elsewhere in the app, but
+   anchored via a plain position:relative wrapper instead of a body-level
+   fixed-position element with its own scroll-tracking JS — this tip only
+   ever needs to stay pinned to one static icon inside a normal scrolling
+   container, so it can just scroll along with everything else for free. */
+#log-set-modal .ls-rir-tip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:200px;font-size:11px;line-height:1.4;font-weight:500;color:#fff;background:#1e293b;padding:.5rem .625rem;border-radius:.625rem;box-shadow:0 4px 10px -2px rgba(0,0,0,.25);z-index:20;text-align:left}
+#log-set-modal .ls-rir-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1e293b}
 .dark #log-set-modal .ls-rir-chip[aria-pressed="true"]{border-color:#4ade80;background:rgba(74,222,128,.12);color:#4ade80}
 #edit-session-modal input[type=number]::-webkit-outer-spin-button,#edit-session-modal input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #edit-session-modal input[type=number]{-moz-appearance:textfield}
@@ -1506,7 +1513,10 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3.5">
         <div class="flex items-center gap-1.5 mb-2.5">
           <p class="text-sm font-bold text-slate-600 dark:text-slate-300">RIR <span class="font-normal text-slate-400">(reps in reserve)</span></p>
-          <span class="ms text-base text-slate-400 flex-shrink-0" aria-hidden="true" title="How many more reps you could have done before failure">info</span>
+          <div class="relative flex-shrink-0">
+            <button type="button" id="ls-rir-info-btn" class="ms text-base text-slate-400 flex items-center justify-center" aria-label="What is RIR?" aria-expanded="false" aria-describedby="ls-rir-info-tip">info</button>
+            <div id="ls-rir-info-tip" role="tooltip" style="display:none" class="ls-rir-tip">Reps In Reserve — how many more reps you could've done before failure. 0 = went all-out, 3 = left 3 reps in the tank.</div>
+          </div>
         </div>
         <div id="ls-rir-chips" class="grid grid-cols-6 gap-1.5" role="group" aria-label="Reps in reserve (optional)">
           <button type="button" class="ls-rir-chip py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-500 dark:text-slate-400" data-rir="0" aria-pressed="false">0</button>
@@ -10559,6 +10569,25 @@ document.querySelectorAll('.ls-rir-chip').forEach(btn => {
     if (selecting) btn.setAttribute('aria-pressed', 'true');
   });
 });
+function closeLsRirTip() {
+  document.getElementById('ls-rir-info-tip').style.display = 'none';
+  document.getElementById('ls-rir-info-btn').setAttribute('aria-expanded', 'false');
+}
+document.getElementById('ls-rir-info-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  const tip = document.getElementById('ls-rir-info-tip');
+  const btn = document.getElementById('ls-rir-info-btn');
+  const opening = tip.style.display === 'none';
+  tip.style.display = opening ? '' : 'none';
+  btn.setAttribute('aria-expanded', String(opening));
+});
+// Tapping anywhere else (a chip, the backdrop, another card) dismisses the
+// tag the same way a native tooltip would, instead of it lingering until
+// the whole sheet closes.
+document.getElementById('log-set-modal').addEventListener('click', e => {
+  if (e.target.closest('#ls-rir-info-btn') || e.target.closest('#ls-rir-info-tip')) return;
+  closeLsRirTip();
+});
 // Edit an already-completed set from THIS still-active session (see
 // #edit-active-set-modal and the tappable completedRows rows in
 // renderGuidedWorkout()) — a mis-typed weight/reps fixable right away
@@ -10603,6 +10632,7 @@ document.getElementById('eas-save-btn').addEventListener('click', () => {
 
 function openLogSetSheet() {
   stopPlantWatering();
+  closeLsRirTip();
   const ex = activeSession.exercises[activeSession.currentExerciseIndex];
   const si = currentSetIndex(ex);
   if (si === -1) return;
