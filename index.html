@@ -5686,6 +5686,11 @@ function renderHomeMissionPlannedCard(planned) {
     label = '🍃 Recovery Day'; meta = 'Rest and recover — it\'s part of growth.';
     primaryLabel = 'Mark Complete'; primaryAction = 'today-mark-recovery-complete';
   }
+  // "Mark Recovery Day" switches today's plan TO a recovery day — pointless
+  // to offer when today's plan already IS one; "Mark Complete" above
+  // already does that job, so showing both read as two ways to do the same
+  // thing ("feels like a repetition").
+  const isRecovery = planned.type === 'recovery';
   return `
     <p class="text-base font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
     <p class="text-xs text-slate-400">${esc(meta)}</p>
@@ -5693,7 +5698,7 @@ function renderHomeMissionPlannedCard(planned) {
     <div class="flex items-center justify-center gap-4 pt-0.5 text-xs font-semibold flex-wrap">
       <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Workout</button>
       <button data-action="today-add-another" class="text-slate-400 hover:underline py-2">Add Another Activity</button>
-      <button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>
+      ${isRecovery ? '' : '<button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>'}
     </div>`;
 }
 
