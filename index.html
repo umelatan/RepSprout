@@ -3357,7 +3357,7 @@ let me = null, userProfile = {}, exercises = {}, sessions = {}, groups = {}, cal
 // fresh account's would be, and the sync would wrongly conclude nothing's
 // ever been archived and re-create a record for a generation that already
 // has one. See that function's own guard.
-let gardenCollectionLoaded = false, exercisePlantGenerationsLoaded = false;
+let gardenCollectionLoaded = false, exercisePlantGenerationsLoaded = false, calendarEntriesLoaded = false;
 let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
 let activeWorkoutTab = 'hub';
 let dataRefs = [];
@@ -5200,6 +5200,7 @@ function subscribeData() {
   const rCalendarEntries = ref(db, `users/${uid()}/calendarEntries`);
   onValue(rCalendarEntries, snap => {
     calendarEntries = snap.val() || {};
+    calendarEntriesLoaded = true;
     renderDashboard(); renderCalendar();
   }, e => console.error(e));
   dataRefs.push(rCalendarEntries);
@@ -5554,8 +5555,21 @@ function renderDashStats(sessionDates, hasHistory) {
 // restarted — the marker resets so a fresh run of 15/30/... can celebrate
 // again instead of staying permanently silenced by a streak that no
 // longer exists.
+// computeStreak() counts planned-recovery days via calendarEntries (see
+// entriesForDate()), and subscribeData() registers that listener AFTER
+// sessions — so on a fresh boot, renderDashboard() can fire from the
+// sessions listener with calendarEntriesLoaded still false, computing a
+// STREAK THAT UNDERCOUNTS any planned-recovery day. If that lower number
+// dips below an already-acknowledged high-water mark, the branch below
+// would wrongly reset+persist the marker to 0 milliseconds before the
+// calendar entries listener fires, recomputes the real (correct, higher)
+// streak, and reopens the already-acknowledged celebration ("please dont
+// let it pop up again when we open the app" — the modal reopened despite
+// having already tapped Keep Growing). Bailing out entirely until
+// calendarEntriesLoaded is true avoids acting on that incomplete count.
 let streakMilestoneModalOpenFor = null;
 function checkStreakMilestone(streak) {
+  if (!calendarEntriesLoaded) return;
   if (streak < (userProfile.lastCelebratedStreakMilestone || 0)) {
     userProfile.lastCelebratedStreakMilestone = 0;
     set(ref(db, `users/${uid()}/lastCelebratedStreakMilestone`), 0).catch(e => console.error('Failed to reset streak milestone marker:', e));
