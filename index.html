@@ -2950,7 +2950,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </div>
     <div class="card p-4">
       <div class="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800 text-center">
-        <div><p id="sms-workouts" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5">Workouts</p></div>
+        <div><p id="sms-workouts" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></p><p class="text-[10px] text-slate-400 mt-0.5">Sessions</p></div>
         <div><p id="sms-volume" class="font-display font-extrabold text-xl text-brand-500"></p><p class="text-[10px] text-slate-400 mt-0.5">Lifted</p></div>
       </div>
       <div id="sms-comparison-row" style="display:none" class="text-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -4913,6 +4913,16 @@ function computeSessionVolume(sessionExercises) {
 // to fill those gaps, not just to pad the list — added density is what
 // actually produces more variety here, since the scoring/selection logic
 // itself already picks randomly among whatever contenders are available.
+// Second density pass (see task: "i keep getting orcas"): the 900-6,000kg
+// band (bison to hippo to rhino to orca to elephant to mammoth) still had
+// the widest ratios left in the table (~1.5-1.67x between consecutive
+// entries, vs ~1.1-1.3x below 900kg), so orca in particular kept winning
+// as the sole/near-sole contender for a normal lifter's typical session
+// volume. walrus/black-rhino/narwhal/pilot-whale/steller-sea-cow fill that
+// band; whale-shark/fin-whale fill the (rarer but still sparse)
+// 7,000-100,000kg band above it. Simulating fixed/narrow-band volumes
+// confirmed orca's win rate dropping from 50%+ (often the sole contender)
+// to under 10% (one of many close options) once these were added.
 const VOLUME_COMPARISONS = [
   { id: 'hamster', weightKg: .15, singular: 'hamster', plural: 'hamsters', emoji: '🐹' },
   { id: 'parrot', weightKg: .4, singular: 'parrot', plural: 'parrots', emoji: '🦜' },
@@ -4959,13 +4969,20 @@ const VOLUME_COMPARISONS = [
   { id: 'water-buffalo', weightKg: 800, singular: 'water buffalo', plural: 'water buffalo', emoji: '🐃' },
   { id: 'giraffe', weightKg: 800, singular: 'giraffe', plural: 'giraffes', emoji: '🦒' },
   { id: 'bison', weightKg: 900, singular: 'bison', plural: 'bison', emoji: '🦬' },
+  { id: 'walrus', weightKg: 1200, singular: 'walrus', plural: 'walruses', emoji: '🦭' },
+  { id: 'black-rhino', weightKg: 1400, singular: 'black rhino', plural: 'black rhinos', emoji: '🦏' },
   { id: 'hippo', weightKg: 1500, singular: 'hippo', plural: 'hippos', emoji: '🦛' },
-  { id: 'rhino', weightKg: 2300, singular: 'rhino', plural: 'rhinos', emoji: '🦏' },
+  { id: 'narwhal', weightKg: 1650, singular: 'narwhal', plural: 'narwhals', emoji: '🐋' },
+  { id: 'white-rhino', weightKg: 2300, singular: 'white rhino', plural: 'white rhinos', emoji: '🦏' },
+  { id: 'pilot-whale', weightKg: 2900, singular: 'pilot whale', plural: 'pilot whales', emoji: '🐋' },
   { id: 'orca', weightKg: 3600, singular: 'orca', plural: 'orcas', emoji: '🐋' },
   { id: 'elephant', weightKg: 4000, singular: 'elephant', plural: 'elephants', emoji: '🐘' },
+  { id: 'steller-sea-cow', weightKg: 5500, singular: "Steller's sea cow", plural: "Steller's sea cows", emoji: '🦭' },
   { id: 'mammoth', weightKg: 6000, singular: 'mammoth', plural: 'mammoths', emoji: '🦣' },
   { id: 't-rex', weightKg: 7000, singular: 'T-Rex', plural: 'T-Rexes', emoji: '🦖' },
+  { id: 'whale-shark', weightKg: 19000, singular: 'whale shark', plural: 'whale sharks', emoji: '🦈' },
   { id: 'sauropod', weightKg: 28000, singular: 'sauropod', plural: 'sauropods', emoji: '🦕' },
+  { id: 'fin-whale', weightKg: 70000, singular: 'fin whale', plural: 'fin whales', emoji: '🐋' },
   { id: 'blue-whale', weightKg: 100000, singular: 'blue whale', plural: 'blue whales', emoji: '🐳' }
 ];
 
