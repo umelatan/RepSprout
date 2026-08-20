@@ -5691,12 +5691,17 @@ function renderHomeMissionPlannedCard(planned) {
   // already does that job, so showing both read as two ways to do the same
   // thing ("feels like a repetition").
   const isRecovery = planned.type === 'recovery';
+  // "Change Workout" doesn't hold up when today's plan IS a Recovery
+  // Day — there's no workout to change, so the label read as wrong, not
+  // just repetitive. "Change Plan" covers every planned.type (workout
+  // group, quick workout, activity, or recovery) without branching per
+  // type for a second near-duplicate string.
   return `
     <p class="text-base font-semibold text-slate-700 dark:text-slate-200">${esc(label)}</p>
     <p class="text-xs text-slate-400">${esc(meta)}</p>
     <button data-action="${primaryAction}" data-entry-id="${planned.id}" class="btn btn-green btn-pop w-full py-3.5 text-base">${esc(primaryLabel)}</button>
     <div class="flex items-center justify-center gap-4 pt-0.5 text-xs font-semibold flex-wrap">
-      <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Workout</button>
+      <button data-action="today-change-workout" class="text-brand-500 hover:underline py-2">Change Plan</button>
       <button data-action="today-add-another" class="text-slate-400 hover:underline py-2">Add Another Activity</button>
       ${isRecovery ? '' : '<button data-action="today-mark-recovery" class="text-slate-400 hover:underline py-2">Mark Recovery Day</button>'}
     </div>`;
