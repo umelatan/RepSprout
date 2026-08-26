@@ -3523,9 +3523,10 @@ function dateNDaysAgo(n) {
 }
 
 // Total volume across every REAL logged set from startDate through today —
-// same per-set math as computeSessionVolume(), just summed across many
-// days and always normalized to kg (rather than picking a "dominant unit"
-// per day) since this spans the whole streak, not one session.
+// same per-set math as computeSessionVolume() (warm-ups included via
+// getCompletedSets(), not getCompletedWorkingSets()), just summed across
+// many days and always normalized to kg (rather than picking a "dominant
+// unit" per day) since this spans the whole streak, not one session.
 function computeVolumeSince(startDate) {
   let volumeKg = 0;
   Object.entries(sessions).forEach(([date, daySessions]) => {
@@ -3533,7 +3534,7 @@ function computeVolumeSince(startDate) {
     Object.values(daySessions || {}).forEach(s => {
       (s.exercises || []).filter(ex => !ex.skipped).forEach(ex => {
         const unit = ex.unit === 'lbs' ? 'lbs' : 'kg';
-        getCompletedWorkingSets(ex).forEach(set => {
+        getCompletedSets(ex).forEach(set => {
           let w = set.weight || 0;
           if (unit === 'lbs') w *= KG_PER_LB;
           volumeKg += w * (set.reps || 0);
@@ -4872,11 +4873,12 @@ function computeWorkoutGrowth(sessionExercises) {
 }
 
 // ── Post-workout summary: total volume ──────────────────────────────────────
-// set volume = load × completed reps, summed over every completed, non-
-// warmup working set (getCompletedWorkingSets() — the exact same working-
-// set filter progression/growth already use, so this can never diverge from
-// what counts as a "real" set elsewhere). Skipped exercises and incomplete/
-// skipped sets are excluded by construction.
+// set volume = load × completed reps, summed over every completed set —
+// warm-ups included (getCompletedSets(), not getCompletedWorkingSets(): a
+// warm-up still moves real weight, so it counts toward how much was
+// actually lifted, even though it's deliberately excluded from
+// progression/growth math elsewhere in the app). Skipped exercises and
+// incomplete/skipped sets are excluded by construction.
 //
 // Units: the app tracks unit per-exercise, not as one global preference, so
 // a session that only ever used one unit is totalled in that unit exactly as
@@ -4905,7 +4907,7 @@ function computeSessionVolume(sessionExercises) {
   let volume = 0;
   eligible.forEach(ex => {
     const unit = ex.unit === 'lbs' ? 'lbs' : 'kg';
-    getCompletedWorkingSets(ex).forEach(set => {
+    getCompletedSets(ex).forEach(set => {
       let w = set.weight || 0;
       if (unit !== displayUnit) w = unit === 'lbs' ? w * KG_PER_LB : w / KG_PER_LB;
       volume += w * (set.reps || 0);
@@ -9731,6 +9733,11 @@ function lastCompletedSetIndex(ex) {
 
 function getCompletedWorkingSets(sessionExercise) { return workingSetsFor(sessionExercise).filter(s => s.completed); }
 function completedWorkingCount(ex) { return getCompletedWorkingSets(ex).length; }
+// Every completed set, warm-ups included — used ONLY for total volume (see
+// computeSessionVolume()/computeVolumeSince()), never for progression/growth/
+// set-count math, which must stay working-sets-only (getCompletedWorkingSets)
+// so a warm-up can never be mistaken for real progression.
+function getCompletedSets(sessionExercise) { return ((sessionExercise && sessionExercise.sets) || []).filter(s => s && s.completed); }
 
 // The one place "how many working sets does this exercise need" is resolved.
 // ex.targetReps is the live, mutable per-session source of truth: it's built
