@@ -2941,11 +2941,16 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       <div id="bloom-emoji" class="bloom-pop-in w-20 h-20 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center text-4xl" aria-hidden="true">🌸</div>
     </div>
     <div class="bloom-pop-in" style="animation-delay:.1s">
-      <p class="text-xs font-bold uppercase tracking-wide text-brand-500 mb-1">New bloom</p>
+      <p id="bloom-label" class="text-xs font-bold uppercase tracking-wide text-brand-500 mb-1">New bloom</p>
       <h3 id="bloom-title" class="font-display font-extrabold text-xl text-slate-800 dark:text-white"></h3>
       <p id="bloom-subtitle" class="text-sm text-slate-500 dark:text-slate-400 mt-1"></p>
     </div>
-    <div id="bloom-more" style="display:none" class="text-left bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 divide-y divide-slate-100 dark:divide-slate-800"></div>
+    <!-- Multiple-blooms case: every bloom gets an equally-sized card here
+         (see celebrateExerciseBloomsIfAny()) instead of the hero above
+         singling out just one exercise while the rest got a single muted
+         line — max-h/overflow so a rare big multi-bloom day still fits the
+         modal instead of pushing the Nice! button off-screen. -->
+    <div id="bloom-more" style="display:none" class="text-left bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 divide-y divide-slate-100 dark:divide-slate-800 max-h-64 overflow-y-auto"></div>
     <button id="bloom-ack-btn" class="btn btn-green btn-pop w-full py-3.5 text-base">Nice!</button>
   </div>
 </div>
@@ -3979,19 +3984,43 @@ async function deleteTarget(targetId) {
 // but a toast auto-dismisses on the same short timer as any other
 // confirmation — a bloom is rarer and worth an actually-acknowledged
 // moment, so it gets its own held-open modal instead (see #bloom-modal).
+//
+// A single bloom keeps the full hero treatment (large emoji circle, "New
+// bloom" label, exercise-named title, full "It's now a X" sentence). Two or
+// more used to single one exercise out for that hero treatment and demote
+// every other bloom that happened in the exact same call to one small,
+// easy-to-miss line below — reading as "only 1 bloom was highlighted" even
+// though the rest were technically present (see task: "achieved 2 blooms
+// today but the pop up only highlighted 1 bloom"). Multiple blooms now
+// share a generic "your garden is blooming" header and every one of them —
+// including what would have been "first" — gets an equally-sized card in
+// the list below, so nothing is visually privileged over anything else.
 function celebrateExerciseBloomsIfAny(newlyBloomed) {
   if (!newlyBloomed || !newlyBloomed.length) return;
-  const [first, ...rest] = newlyBloomed;
-  document.getElementById('bloom-emoji').textContent = first.speciesEmoji || '🌸';
-  document.getElementById('bloom-title').textContent = `${first.exerciseName}'s plant bloomed!`;
-  document.getElementById('bloom-subtitle').textContent = `It's now a ${first.speciesName}. A new seed is already sprouting.`;
+  const labelEl = document.getElementById('bloom-label');
   const moreEl = document.getElementById('bloom-more');
-  if (rest.length) {
-    moreEl.style.display = '';
-    moreEl.innerHTML = rest.map(r => `<div class="flex items-center gap-2 py-1.5 first:pt-0 last:pb-0"><span class="text-lg" aria-hidden="true">${r.speciesEmoji || '🌸'}</span><span class="text-sm text-slate-600 dark:text-slate-300"><span class="font-semibold">${r.exerciseName}</span> bloomed into a ${r.speciesName}</span></div>`).join('');
-  } else {
+  if (newlyBloomed.length === 1) {
+    const [only] = newlyBloomed;
+    labelEl.textContent = 'New bloom';
+    document.getElementById('bloom-emoji').textContent = only.speciesEmoji || '🌸';
+    document.getElementById('bloom-title').textContent = `${only.exerciseName}'s plant bloomed!`;
+    document.getElementById('bloom-subtitle').textContent = `It's now a ${only.speciesName}. A new seed is already sprouting.`;
     moreEl.style.display = 'none';
     moreEl.innerHTML = '';
+  } else {
+    labelEl.textContent = `${newlyBloomed.length} new blooms`;
+    document.getElementById('bloom-emoji').textContent = '🎉';
+    document.getElementById('bloom-title').textContent = 'Your garden is blooming!';
+    document.getElementById('bloom-subtitle').textContent = `${newlyBloomed.length} plants just grew into new seeds.`;
+    moreEl.style.display = '';
+    moreEl.innerHTML = newlyBloomed.map(r => `
+      <div class="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+        <div class="w-10 h-10 rounded-full bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center text-xl flex-shrink-0" aria-hidden="true">${r.speciesEmoji || '🌸'}</div>
+        <div class="min-w-0 text-left">
+          <p class="text-sm font-bold text-slate-800 dark:text-white truncate">${esc(r.exerciseName)}</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">It's now a ${esc(r.speciesName)}.</p>
+        </div>
+      </div>`).join('');
   }
   document.getElementById('bloom-modal').style.display = '';
 }
