@@ -4462,9 +4462,10 @@ const DoubleProgressionStrategy = {
 // bloomed species sharing a glyph with a still-growing stage reads as the
 // same plant in two different places at once (task: "one of the bloom is a
 // herb, and it's the same emoji as the one of the growing plant stages").
-// House Plant/🪴, Tulip/🌷, and Herb/🌿 all collided with 🪴/🌷/🌿 here until
-// fixed — see the species pool's own note on why those three now use a
-// different glyph for the exact same identity.
+// House Plant/🪴 and Tulip/🌷 both collided with the glyphs here until
+// fixed — see the species pool's own note on why they now use a different
+// glyph for the exact same identity (and why Herb/🌿, the third original
+// collision, was dropped from the pool entirely rather than re-iconed).
 const DP_STAGE_EMOJI = ['🫘', '🌱', '🌿', '🪴', '🌷'];
 
 // ── Exercise Plant lifecycle: the ONLY progression system in RepSprout ─────
@@ -4495,15 +4496,22 @@ function exercisePlantStageIdx(dpResult) {
 // it blooms") — the only difference now is that Bloom archives the plant
 // and hands the exercise a fresh Seed, rather than the same plant just
 // sitting there mastered forever.
-// House Plant/Tulip/Herb's emoji (originally 🪴/🌷/🌿) collided 1:1 with
-// DP_STAGE_EMOJI's Growing/Budding/Young-Plant glyphs — a bloomed plant
-// showing the exact same emoji as some OTHER exercise's still-growing
-// stage read as the same plant appearing twice (task: "one of the bloom
-// is a herb, and it's the same emoji as the one of the growing plant
-// stages... very confusing"). Only the glyph changed for these three, not
-// the name — see ensureBloomSpeciesEmojiMigrated() below, which retroactively
-// repaints any already-bloomed record's speciesEmoji to match (the name/
-// identity you already earned never changes, only its icon).
+// House Plant/Tulip's emoji (originally 🪴/🌷) collided 1:1 with
+// DP_STAGE_EMOJI's Growing/Budding glyphs — a bloomed plant showing the
+// exact same emoji as some OTHER exercise's still-growing stage read as
+// the same plant appearing twice (task: "one of the bloom is a herb, and
+// it's the same emoji as the one of the growing plant stages... very
+// confusing"). Only the glyph changed for these two, not the name — see
+// ensureBloomSpeciesEmojiMigrated() below, which retroactively repaints any
+// already-bloomed record's speciesEmoji to match (the name/identity you
+// already earned never changes, only its icon).
+// Herb itself (originally 🌿, also colliding — same task) was dropped from
+// the pool entirely by request rather than just re-iconed, replaced here
+// with Corn/🌽 for all FUTURE picks. An exercise that already bloomed into
+// Herb before this change keeps that name and its already-migrated 🍂
+// forever — removing an entry from this pool only ever affects future
+// draws, exactly like ensureBloomSpeciesEmojiMigrated() leaving untouched
+// any speciesName that no longer has a match here.
 const EXERCISE_PLANT_SPECIES = [
   { name: 'Rose', emoji: '🌹' },
   { name: 'Hibiscus', emoji: '🌺' },
@@ -4521,7 +4529,7 @@ const EXERCISE_PLANT_SPECIES = [
   { name: 'Lotus', emoji: '🪷' },
   { name: 'Monstera', emoji: '🍃' },
   { name: 'Chestnut', emoji: '🌰' },
-  { name: 'Herb', emoji: '🍂' }
+  { name: 'Corn', emoji: '🌽' }
 ];
 // Each exercise gets its own fixed, deterministic shuffle through the
 // ENTIRE species pool (a seeded Fisher-Yates keyed only by exerciseId) —
