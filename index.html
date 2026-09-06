@@ -3733,6 +3733,32 @@ async function ensureGardenCollectionDeduped() {
   }
 }
 
+// Retroactively repaints any already-bloomed record's speciesEmoji to match
+// EXERCISE_PLANT_SPECIES's CURRENT glyph for that same species name — never
+// touches speciesName/generation/exerciseId (the identity actually earned),
+// only the icon. Exists because a handful of species originally shared an
+// emoji with a growing-stage glyph (DP_STAGE_EMOJI) — a bloomed plant
+// showing the exact same icon as some OTHER exercise's still-growing stage
+// read as the same plant appearing twice (task: "one of the bloom is a
+// herb, and it's the same emoji as the one of the growing plant stages...
+// very confusing"). Runs once per load, same pattern as
+// ensureGardenCollectionDeduped() above.
+let bloomSpeciesEmojiMigrationChecked = false;
+async function ensureBloomSpeciesEmojiMigrated() {
+  if (bloomSpeciesEmojiMigrationChecked) return;
+  if (!gardenCollectionLoaded || !Object.keys(gardenCollection).length) return;
+  bloomSpeciesEmojiMigrationChecked = true;
+  const currentEmojiByName = {};
+  EXERCISE_PLANT_SPECIES.forEach(s => { currentEmojiByName[s.name] = s.emoji; });
+  for (const rec of Object.values(gardenCollection)) {
+    const current = currentEmojiByName[rec.speciesName];
+    if (!current || rec.speciesEmoji === current) continue;
+    rec.speciesEmoji = current; // optimistic; onValue confirms shortly after
+    try { await set(ref(db, `users/${uid()}/gardenCollection/${rec.id}/speciesEmoji`), current); }
+    catch (e) { console.error('Failed to migrate a garden bloom record\'s emoji:', e); }
+  }
+}
+
 // Double Progression's own structured-event audit trail, kept separate from
 // the plantProgressEvents above (different shape: per set-position, not per
 // session — and a different plant system entirely). Same "regenerate
@@ -4432,6 +4458,13 @@ const DoubleProgressionStrategy = {
 // the other four stage glyphs at this size, so it's back to 🫘 — and
 // "Chestnut" is back in EXERCISE_PLANT_SPECIES below since nothing needs
 // to reserve 🌰 anymore.)
+// None of these 5 may ever also appear in EXERCISE_PLANT_SPECIES below — a
+// bloomed species sharing a glyph with a still-growing stage reads as the
+// same plant in two different places at once (task: "one of the bloom is a
+// herb, and it's the same emoji as the one of the growing plant stages").
+// House Plant/🪴, Tulip/🌷, and Herb/🌿 all collided with 🪴/🌷/🌿 here until
+// fixed — see the species pool's own note on why those three now use a
+// different glyph for the exact same identity.
 const DP_STAGE_EMOJI = ['🫘', '🌱', '🌿', '🪴', '🌷'];
 
 // ── Exercise Plant lifecycle: the ONLY progression system in RepSprout ─────
@@ -4462,6 +4495,15 @@ function exercisePlantStageIdx(dpResult) {
 // it blooms") — the only difference now is that Bloom archives the plant
 // and hands the exercise a fresh Seed, rather than the same plant just
 // sitting there mastered forever.
+// House Plant/Tulip/Herb's emoji (originally 🪴/🌷/🌿) collided 1:1 with
+// DP_STAGE_EMOJI's Growing/Budding/Young-Plant glyphs — a bloomed plant
+// showing the exact same emoji as some OTHER exercise's still-growing
+// stage read as the same plant appearing twice (task: "one of the bloom
+// is a herb, and it's the same emoji as the one of the growing plant
+// stages... very confusing"). Only the glyph changed for these three, not
+// the name — see ensureBloomSpeciesEmojiMigrated() below, which retroactively
+// repaints any already-bloomed record's speciesEmoji to match (the name/
+// identity you already earned never changes, only its icon).
 const EXERCISE_PLANT_SPECIES = [
   { name: 'Rose', emoji: '🌹' },
   { name: 'Hibiscus', emoji: '🌺' },
@@ -4470,8 +4512,8 @@ const EXERCISE_PLANT_SPECIES = [
   { name: 'Palm', emoji: '🌴' },
   { name: 'Evergreen', emoji: '🌲' },
   { name: 'Bamboo Shoot', emoji: '🎍' },
-  { name: 'House Plant', emoji: '🪴' },
-  { name: 'Tulip', emoji: '🌷' },
+  { name: 'House Plant', emoji: '☘️' },
+  { name: 'Tulip', emoji: '💐' },
   { name: 'Cherry Blossom', emoji: '🌸' },
   { name: 'Maple', emoji: '🍁' },
   { name: 'Mushroom', emoji: '🍄' },
@@ -4479,7 +4521,7 @@ const EXERCISE_PLANT_SPECIES = [
   { name: 'Lotus', emoji: '🪷' },
   { name: 'Monstera', emoji: '🍃' },
   { name: 'Chestnut', emoji: '🌰' },
-  { name: 'Herb', emoji: '🌿' }
+  { name: 'Herb', emoji: '🍂' }
 ];
 // Each exercise gets its own fixed, deterministic shuffle through the
 // ENTIRE species pool (a seeded Fisher-Yates keyed only by exerciseId) —
@@ -6040,6 +6082,7 @@ function renderEncouragement() {
 function renderDashboard() {
   ensureExercisePlantsSynced();
   ensureGardenCollectionDeduped().catch(e => console.error('Failed to dedupe garden collection:', e));
+  ensureBloomSpeciesEmojiMigrated().catch(e => console.error('Failed to migrate garden bloom emoji:', e));
   const sessionDates = allSessionDates();
   const hasHistory = sessionDates.length > 0;
   renderPlantHero(sessionDates, hasHistory);
