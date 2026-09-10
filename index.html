@@ -3743,6 +3743,14 @@ async function ensureGardenCollectionDeduped() {
 // herb, and it's the same emoji as the one of the growing plant stages...
 // very confusing"). Runs once per load, same pattern as
 // ensureGardenCollectionDeduped() above.
+//
+// Herb specifically gets a full identity swap to Corn (name AND emoji, not
+// just the icon) — Herb was dropped from EXERCISE_PLANT_SPECIES entirely
+// rather than re-iconed, and the user explicitly asked for it gone from
+// their account too, not preserved as an already-earned exception ("i
+// still have a bloomed herb... make sure there's no herb in the system").
+// A one-off carve-out, not the general "removing a pool entry only affects
+// future draws" rule every other species still follows.
 let bloomSpeciesEmojiMigrationChecked = false;
 async function ensureBloomSpeciesEmojiMigrated() {
   if (bloomSpeciesEmojiMigrationChecked) return;
@@ -3750,7 +3758,15 @@ async function ensureBloomSpeciesEmojiMigrated() {
   bloomSpeciesEmojiMigrationChecked = true;
   const currentEmojiByName = {};
   EXERCISE_PLANT_SPECIES.forEach(s => { currentEmojiByName[s.name] = s.emoji; });
+  const corn = EXERCISE_PLANT_SPECIES.find(s => s.name === 'Corn');
   for (const rec of Object.values(gardenCollection)) {
+    if (rec.speciesName === 'Herb' && corn) {
+      rec.speciesName = corn.name;
+      rec.speciesEmoji = corn.emoji; // optimistic; onValue confirms shortly after
+      try { await set(ref(db, `users/${uid()}/gardenCollection/${rec.id}`), rec); }
+      catch (e) { console.error('Failed to migrate a Herb garden bloom record to Corn:', e); }
+      continue;
+    }
     const current = currentEmojiByName[rec.speciesName];
     if (!current || rec.speciesEmoji === current) continue;
     rec.speciesEmoji = current; // optimistic; onValue confirms shortly after
@@ -4507,11 +4523,10 @@ function exercisePlantStageIdx(dpResult) {
 // already earned never changes, only its icon).
 // Herb itself (originally 🌿, also colliding — same task) was dropped from
 // the pool entirely by request rather than just re-iconed, replaced here
-// with Corn/🌽 for all FUTURE picks. An exercise that already bloomed into
-// Herb before this change keeps that name and its already-migrated 🍂
-// forever — removing an entry from this pool only ever affects future
-// draws, exactly like ensureBloomSpeciesEmojiMigrated() leaving untouched
-// any speciesName that no longer has a match here.
+// with Corn/🌽 for all FUTURE picks. Unlike every other pool change,
+// already-earned Herb records ALSO get converted — see
+// ensureBloomSpeciesEmojiMigrated() below for why this one species is a
+// deliberate exception to "removing a pool entry only affects future draws."
 const EXERCISE_PLANT_SPECIES = [
   { name: 'Rose', emoji: '🌹' },
   { name: 'Hibiscus', emoji: '🌺' },
