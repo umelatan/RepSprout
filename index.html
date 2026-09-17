@@ -1147,6 +1147,14 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           </div>
         </div>
 
+        <!-- Search — filters all three tabs' grids by exercise name (see
+             renderGardenGrid()), same rs-search-input treatment as every
+             other search bar in the app (Exercise Library, History, etc). -->
+        <div class="relative">
+          <span class="ms absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" aria-hidden="true">search</span>
+          <input id="garden-search" type="text" placeholder="Search exercises..." class="rs-search-input py-2.5 rounded-xl" aria-label="Search exercises in your garden">
+        </div>
+
         <!-- Growing / Bloomed / Locked tabs — one flat, scrollable collection
              grid per tab (see renderGardenGrid()). No large "+ New Plant"
              card; plants are unlocked by training, never manually created. -->
@@ -6338,35 +6346,55 @@ function gardenBloomedCardHtml(c) {
 
 function renderGardenGrid() {
   renderGardenFilters();
-  const matchesFilter = ex => !gardenGroupFilter || ex.muscleGroup === gardenGroupFilter;
+  const q = (document.getElementById('garden-search').value || '').trim().toLowerCase();
+  const matchesFilter = ex => (!gardenGroupFilter || ex.muscleGroup === gardenGroupFilter) && (!q || ex.name?.toLowerCase().includes(q));
   const all = gardenExercisePlants();
   const active = all.filter(p => p.everTrained && matchesFilter(p.ex));
   const untrained = all.filter(p => !p.everTrained && matchesFilter(p.ex));
   const archived = gardenArchivedPlants().filter(p => matchesFilter(p.ex));
   const bloomed = Object.values(gardenCollection || {})
-    .filter(c => !gardenGroupFilter || exercises[c.exerciseId]?.muscleGroup === gardenGroupFilter)
+    .filter(c => (!gardenGroupFilter || exercises[c.exerciseId]?.muscleGroup === gardenGroupFilter) && (!q || c.exerciseName?.toLowerCase().includes(q)))
     .sort((a, b) => (b.bloomedAt || '').localeCompare(a.bloomedAt || '') || (b.generation - a.generation));
 
-  document.getElementById('garden-empty-state').style.display = all.length === 0 ? '' : 'none';
-  document.getElementById('garden-bloomed-empty-state').style.display = bloomed.length === 0 ? '' : 'none';
+  // "Your garden is empty"/"No blooms yet" only ever describe a genuinely
+  // empty collection with no search active — a search that just happens to
+  // match nothing gets its own "no results" copy in the grid instead (see
+  // below), the same distinction Exercise Library's own search already
+  // makes (see renderExerciseLibrary()).
+  document.getElementById('garden-empty-state').style.display = !q && all.length === 0 ? '' : 'none';
+  document.getElementById('garden-bloomed-empty-state').style.display = !q && bloomed.length === 0 ? '' : 'none';
 
   const grid = document.getElementById('garden-grid');
-  grid.innerHTML = active.map(p => gardenPlantCardHtml({
-    exerciseId: p.exerciseId, ex: p.ex, dpResult: p.dpResult,
-    stageIdx: exercisePlantStageIdx(p.dpResult), generation: exercisePlantGeneration(p.dpResult)
-  })).join('');
+  if (active.length) {
+    grid.innerHTML = active.map(p => gardenPlantCardHtml({
+      exerciseId: p.exerciseId, ex: p.ex, dpResult: p.dpResult,
+      stageIdx: exercisePlantStageIdx(p.dpResult), generation: exercisePlantGeneration(p.dpResult)
+    })).join('');
+  } else if (q) {
+    grid.innerHTML = `<p class="text-sm text-slate-400 text-center py-8 col-span-2 md:col-span-3">No growing plants match your search.</p>`;
+  } else {
+    grid.innerHTML = '';
+  }
   grid.querySelectorAll('.garden-plant-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
 
   const bloomedGrid = document.getElementById('garden-bloomed-grid');
-  bloomedGrid.innerHTML = bloomed.map(gardenBloomedCardHtml).join('');
+  bloomedGrid.innerHTML = bloomed.length
+    ? bloomed.map(gardenBloomedCardHtml).join('')
+    : (q ? `<p class="text-sm text-slate-400 text-center py-8 col-span-2 md:col-span-3">No blooms match your search.</p>` : '');
   bloomedGrid.querySelectorAll('.garden-bloomed-card').forEach(b => b.addEventListener('click', () => openExerciseDetail(b.dataset.exerciseId)));
 
+  // The generic "Unknown Plant / create a new exercise" slot isn't a real
+  // search result for any named exercise, so it's dropped while actively
+  // searching — showing it alongside "no results" copy would read as if
+  // the search somehow matched something.
   const lockedCards = [];
   untrained.forEach(p => lockedCards.push(gardenLockedCardHtml({ name: p.ex.name, tag: 'Locked', reason: `Progress ${p.ex.name} to unlock.` })));
   archived.forEach(p => lockedCards.push(gardenLockedCardHtml({ name: p.ex.name, tag: 'Archived', reason: `${p.ex.name}'s growth history is preserved. Unarchive it to resume growing this plant.` })));
-  lockedCards.push(gardenLockedCardHtml({ name: 'Unknown Plant', tag: 'Locked', reason: 'Create a new exercise to unlock.', isCreate: true }));
+  if (!q) lockedCards.push(gardenLockedCardHtml({ name: 'Unknown Plant', tag: 'Locked', reason: 'Create a new exercise to unlock.', isCreate: true }));
   const lockedGrid = document.getElementById('garden-locked-grid');
-  lockedGrid.innerHTML = lockedCards.join('');
+  lockedGrid.innerHTML = lockedCards.length
+    ? lockedCards.join('')
+    : (q ? `<p class="text-sm text-slate-400 text-center py-8 col-span-2 md:col-span-3">No locked plants match your search.</p>` : '');
   lockedGrid.querySelectorAll('.garden-locked-card').forEach(b => b.addEventListener('click', () => {
     if (b.dataset.create === '1') openExerciseModal();
     else alert(b.dataset.reason);
@@ -6374,6 +6402,7 @@ function renderGardenGrid() {
 
   setGardenTab(gardenActiveTab);
 }
+document.getElementById('garden-search').addEventListener('input', renderGardenGrid);
 document.getElementById('garden-create-exercise-btn').addEventListener('click', () => openExerciseModal());
 
 // ── Settings page ────────────────────────────────────────────────────────────
