@@ -366,17 +366,30 @@ html:not(.dark) .text-purple-500{color:#957fb8}
   #cap-recovery-btn{animation-delay:120ms}
   #cap-footer-leaf,#cap-footer-text{animation-delay:160ms}
 }
-.hero-surface{background:linear-gradient(180deg,#e9efdd 0%,#f7ecd8 45%,#f3eee2 100%)}
-.dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 70%,#020617 100%)}
+/* Gradient's last stop already matches the page background exactly
+   (#f3eee2 light / #020617 dark, see <body>'s own bg classes) — pushed to
+   an earlier stop (78%/85% instead of 100%) so there's a real flat run of
+   already-matching color before the hero's rounded bottom edge, rather
+   than the transition finishing exactly AT the edge (task: "let the hero
+   background gradient fade naturally into the page background instead of
+   ending abruptly... visually connected to the content below"). */
+.hero-surface{background:linear-gradient(180deg,#e9efdd 0%,#f7ecd8 40%,#f3eee2 78%)}
+.dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 55%,#020617 85%)}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
 .dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
 .hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.3),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
 .dark .hero-glow-warm{background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.12),rgba(251,191,36,0) 55%)}
-.hero-surface{box-shadow:0 24px 48px -28px rgba(61,56,47,.16)}
-.dark .hero-surface{box-shadow:0 24px 40px -30px rgba(0,0,0,.4)}
-.mission-surface{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
+/* Shadow removed entirely (was 0 24px 48px -28px) — a drop shadow under a
+   rounded bottom edge is exactly what reads as "a separate floating card
+   sitting above the page," the opposite of feeling connected to what's
+   below it. */
+/* Card shadows softened (task: "reduce the shadow slightly... use spacing
+   rather than shadows to create hierarchy") — same 3-layer structure,
+   lower alpha and tighter spread on each layer, so they still lift softly
+   off the page without competing with it. */
+.mission-surface{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.03),0 6px 16px -10px rgba(61,56,47,.08),0 16px 28px -22px rgba(61,56,47,.06)}
 .dark .mission-surface{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
-.garden-shelf{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.04),0 10px 24px -10px rgba(61,56,47,.12),0 24px 44px -28px rgba(61,56,47,.10)}
+.garden-shelf{background:#fbf8f0;border:1px solid rgba(61,56,47,.05);box-shadow:0 1px 2px rgba(61,56,47,.03),0 6px 16px -10px rgba(61,56,47,.08),0 16px 28px -22px rgba(61,56,47,.06)}
 .dark .garden-shelf{background:rgba(30,41,59,.75);border-color:rgba(51,65,85,.5)}
 /* Garden preview plants (Home) — the exercise/species name is hidden by
    default and only reveals in this small tooltip when its plant is tapped
@@ -412,6 +425,12 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 }
 .dash-pager{scrollbar-width:none}
 .dash-pager::-webkit-scrollbar{display:none}
+/* scroll-padding matches #dash-pager's own px-2.5 (10px) padding — keeps
+   snap-center's alignment zone consistent with the visual peek inset, so
+   the first/last page's snap point isn't thrown off by that padding
+   (task: "allow a tiny peek of the next page so users naturally
+   understand they can swipe horizontally"). */
+@media (max-width:767px){.dash-pager{scroll-padding-inline:10px}}
 .dash-page{scroll-snap-stop:always}
 .dash-dot{width:6px;height:6px;border-radius:999px;background:#cbd5e1;transition:background var(--rs-dur-quick) var(--rs-ease-standard),width var(--rs-dur-quick) var(--rs-ease-standard);padding:0;border:none;cursor:pointer}
 .dash-dot[aria-selected="true"]{background:#22c55e;width:18px}
@@ -799,26 +818,26 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
       <!-- Plant companion hero — full-bleed, the one true hero of the page.
            Fixed anchor: never scrolls away, on mobile or desktop. -->
-      <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-8 text-center flex-shrink-0">
+      <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-6 text-center flex-shrink-0">
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="hero-glow-warm" aria-hidden="true"></div>
         <span class="leaf-particle text-2xl" style="top:6%;left:12%;animation-delay:0s" aria-hidden="true">🍃</span>
         <span class="leaf-particle text-xl" style="top:12%;right:14%;animation-delay:1.8s" aria-hidden="true">🍃</span>
         <span class="leaf-particle text-lg" style="top:32%;right:6%;animation-delay:3.2s" aria-hidden="true">🍃</span>
 
-        <div id="plant-emoji" class="relative text-[10rem] leading-none p-hero-float" aria-hidden="true">🌱</div>
+        <div id="plant-emoji" class="relative text-[9rem] leading-none p-hero-float" aria-hidden="true">🌱</div>
 
-        <div class="relative space-y-0.5 -mt-1">
+        <div class="relative space-y-0.5 -mt-2">
           <p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white" id="plant-name-label"></p>
           <p id="plant-subtitle-label" class="text-xs text-slate-500 dark:text-slate-400"></p>
         </div>
 
-        <div id="dash-hero-empty" style="display:none" class="relative space-y-1 pt-3 max-w-xs mx-auto">
+        <div id="dash-hero-empty" style="display:none" class="relative space-y-1 pt-2 max-w-xs mx-auto">
           <p class="text-sm font-semibold text-slate-600 dark:text-slate-300" id="hero-empty-line1"></p>
           <p class="text-xs text-slate-400" id="hero-empty-line2"></p>
         </div>
 
-        <div id="dash-hero-body" class="relative space-y-2 pt-2">
+        <div id="dash-hero-body" class="relative space-y-2 pt-1">
           <p id="plant-status-label" class="text-sm text-slate-500 dark:text-slate-400"></p>
         </div>
       </div>
@@ -828,11 +847,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
            old single vertically-scrolling column. On desktop (md:), reverts
            to the original stacked, normally-scrolling layout — a swipe pager
            is a touch metaphor that doesn't belong on a wide sidebar layout. -->
-      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory md:block md:overflow-visible md:mt-2">
+      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex gap-3 px-2.5 overflow-x-auto snap-x snap-mandatory md:block md:gap-0 md:px-0 md:overflow-visible md:mt-2">
 
         <!-- Page 1: Today — Today's Mission, Targets, and the day-streak /
              workouts / last-session stats row. Everything about today. -->
-        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-3 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:gap-6 md:py-0 md:max-w-2xl md:mx-auto" data-page="0">
+        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-32px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-4 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto" data-page="0">
           <!-- Today's mission — the one strong card on the page -->
           <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
             <div>
@@ -854,7 +873,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 2: Progress — Recent Win, Closest Progress, then Targets
              at the bottom. Everything about current progression. -->
-        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-3 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:gap-6 md:py-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
+        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-32px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-4 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
           <!-- Recent win — compact chip, not a card. -->
           <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
             <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
@@ -906,7 +925,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 3: Garden — Garden preview (Growing/Bloomed plants) and
              View Garden. Everything about collecting plants. -->
-        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:py-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
+        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-32px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 px-4 md:px-6 md:h-auto md:overflow-visible md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
           <div class="garden-shelf rounded-3xl p-4 space-y-4">
             <div class="flex items-center justify-between">
               <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Garden</p>
@@ -918,14 +937,16 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
       </div>
 
       <!-- Page dots — mobile only, hidden on desktop where the pager reverts
-           to a normal stacked column. -->
-      <div id="dash-page-dots" class="flex items-center justify-center gap-1.5 py-2 flex-shrink-0 md:hidden" role="tablist" aria-label="Home page sections">
+           to a normal stacked column. Pulled close to the pager above
+           (pt-1) with a bit more room below (pb-2) so they read as
+           belonging to the pager, not floating between it and the footer. -->
+      <div id="dash-page-dots" class="flex items-center justify-center gap-1.5 pt-1 pb-2 flex-shrink-0 md:hidden" role="tablist" aria-label="Home page sections">
         <button type="button" class="dash-dot" data-page="0" aria-label="Today" aria-selected="true"></button>
         <button type="button" class="dash-dot" data-page="1" aria-label="Progress" aria-selected="false"></button>
         <button type="button" class="dash-dot" data-page="2" aria-label="Garden" aria-selected="false"></button>
       </div>
 
-      <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic flex-shrink-0 pb-2 md:pb-0 md:mt-6 md:pt-2 md:max-w-2xl md:mx-auto md:w-full md:px-4"></p>
+      <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic opacity-70 flex-shrink-0 pb-2 md:pb-0 md:mt-6 md:pt-2 md:max-w-2xl md:mx-auto md:w-full md:px-4"></p>
     </section>
 
     <!-- WORKOUT -->
@@ -6315,11 +6336,23 @@ document.getElementById('dash-target-preview-body').addEventListener('click', e 
 (() => {
   const pager = document.getElementById('dash-pager');
   const dots = Array.from(document.querySelectorAll('.dash-dot'));
-  if (!pager || !dots.length) return;
+  const pages = Array.from(document.querySelectorAll('.dash-page'));
+  if (!pager || !dots.length || pages.length < 2) return;
+  // The distance between consecutive snap points is no longer exactly
+  // pager.clientWidth now that each page has a "peek" inset (narrower
+  // than the pager itself, plus a gap between pages — see .dash-page's
+  // w-[calc(100vw-32px)] and #dash-pager's gap-3/px-2.5 in the markup,
+  // task: "allow a tiny peek of the next page"). Measured live from the
+  // DOM instead of assumed, so it stays correct regardless of the exact
+  // peek/gap pixel values and automatically adapts to a live window
+  // resize too.
+  function pageStep() {
+    return pages[1].offsetLeft - pages[0].offsetLeft || pager.clientWidth || 1;
+  }
   let rafPending = false;
   function syncDots() {
     rafPending = false;
-    const idx = Math.round(pager.scrollLeft / (pager.clientWidth || 1));
+    const idx = Math.round(pager.scrollLeft / pageStep());
     dots.forEach((d, i) => d.setAttribute('aria-selected', String(i === idx)));
   }
   pager.addEventListener('scroll', () => {
@@ -6330,7 +6363,7 @@ document.getElementById('dash-target-preview-body').addEventListener('click', e 
   dots.forEach((dot, i) => {
     dot.addEventListener('click', () => {
       const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      pager.scrollTo({ left: i * pager.clientWidth, behavior: reducedMotion ? 'auto' : 'smooth' });
+      pager.scrollTo({ left: i * pageStep(), behavior: reducedMotion ? 'auto' : 'smooth' });
     });
   });
 })();
