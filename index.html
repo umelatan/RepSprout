@@ -5290,8 +5290,21 @@ function cleanupListeners() { dataRefs.forEach(r => off(r)); dataRefs = []; }
 
 function subscribeData() {
   cleanupListeners();
+  // renderProfile()/renderDashboard() were both missing here — a brand new
+  // exercise (or any exercise edit) saved fine to Firebase, but the
+  // already-rendered Garden page (renderGardenGrid(), which reads straight
+  // from `exercises`) and Home's exercise-derived cards (closest-progress,
+  // recent win, ...) never got a fresh render to pick it up. goView()
+  // itself only toggles display on whatever's already rendered — it never
+  // forces a re-render — so a new exercise created (e.g. mid-session, via
+  // any "create exercise" entry point) silently didn't show up in the
+  // Garden until some OTHER listener happened to fire and call
+  // renderProfile() (a full page reload, most reliably). Every sibling
+  // listener below already calls renderProfile() for the exact same
+  // reason (see that function's own comment, which already claimed this
+  // invariant held everywhere).
   const rExercises = ref(db, `exercises/${uid()}`);
-  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); refreshExerciseDetailIfOpen(); renderGuidedWorkout(); }, e => console.error(e));
+  onValue(rExercises, snap => { exercises = snap.val() || {}; renderExerciseLibrary(); renderGroupsList(); refreshExerciseDetailIfOpen(); renderGuidedWorkout(); renderProfile(); renderDashboard(); }, e => console.error(e));
   dataRefs.push(rExercises);
 
   // Nested under users/{uid} (not a new top-level groups/{uid} path) so it
