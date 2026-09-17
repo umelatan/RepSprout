@@ -389,6 +389,34 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 .ghp-tip-floating.ghp-tip-visible{opacity:1;transform:translate(-50%,0) scale(1)}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
+/* Home page fixed shell + swipeable pager — mobile only (matches the
+   md:hidden bottom nav / sidebar-nav split already used everywhere else in
+   this file: a horizontal swipe pager is a touch metaphor, desktop keeps
+   the original scrolling stacked layout via the md: overrides on
+   #dash-pager/.dash-page/#dash-page-dots below, no separate markup needed).
+   69px = the header's own measured rendered height (see the identical
+   top:69px convention already used for the Garden page's sticky block).
+   80px = <main>'s own existing pb-20 (already reserved there for the fixed
+   bottom nav, unrelated to this change — just has to be subtracted too, or
+   dashboard-view's height plus that trailing padding together exceed the
+   viewport). flex:none overrides Tailwind's flex-1 (flex:1 1 0%) — with
+   flex-basis:0% still in play, an explicit height on a column flex item is
+   otherwise fought by the flex-grow algorithm and silently ignored; this
+   makes the height authoritative instead. Two `height` declarations (vh
+   then dvh) are progressive enhancement: browsers that don't understand
+   `dvh` simply ignore that whole declaration and keep the vh-based one;
+   dvh accounts for mobile browser chrome (address bar) so the fit stays
+   exact as it shows/hides. */
+@media (max-width:767px){
+  #dashboard-view.dash-fixed-shell{display:flex;flex-direction:column;overflow:hidden;flex:none;height:calc(100vh - 149px);height:calc(100dvh - 149px)}
+}
+.dash-pager{scrollbar-width:none}
+.dash-pager::-webkit-scrollbar{display:none}
+.dash-page{scroll-snap-stop:always}
+.dash-dot{width:6px;height:6px;border-radius:999px;background:#cbd5e1;transition:background var(--rs-dur-quick) var(--rs-ease-standard),width var(--rs-dur-quick) var(--rs-ease-standard);padding:0;border:none;cursor:pointer}
+.dash-dot[aria-selected="true"]{background:#22c55e;width:18px}
+.dark .dash-dot{background:#475569}
+.dark .dash-dot[aria-selected="true"]{background:#4ade80}
 .btn-pop{border-radius:1.25rem;box-shadow:0 6px 14px -6px rgba(111,148,80,.35)}
 .btn-pop:hover{box-shadow:0 8px 16px -6px rgba(111,148,80,.4)}
 .dark .btn-pop{box-shadow:0 6px 14px -4px rgba(34,197,94,.22)}
@@ -767,10 +795,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     </header>
 
     <!-- DASHBOARD -->
-    <section id="dashboard-view" class="rs-view flex-1 pb-8">
+    <section id="dashboard-view" class="rs-view dash-fixed-shell flex-1 md:pb-8">
 
-      <!-- Plant companion hero — full-bleed, the one true hero of the page -->
-      <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-8 text-center">
+      <!-- Plant companion hero — full-bleed, the one true hero of the page.
+           Fixed anchor: never scrolls away, on mobile or desktop. -->
+      <div id="dash-hero" class="hero-surface relative overflow-hidden rounded-b-3xl px-4 md:px-6 pt-3 pb-8 text-center flex-shrink-0">
         <div class="hero-glow" aria-hidden="true"></div>
         <div class="hero-glow-warm" aria-hidden="true"></div>
         <span class="leaf-particle text-2xl" style="top:6%;left:12%;animation-delay:0s" aria-hidden="true">🍃</span>
@@ -794,86 +823,108 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
       </div>
 
-      <!-- Content below the hero, with breathing room before Today's Mission -->
-      <div class="max-w-2xl w-full mx-auto px-4 md:px-6 mt-2 relative z-10 space-y-6">
+      <!-- Swipeable content area — on mobile, a horizontal scroll-snap pager
+           of 3 fixed-height pages (Today / Progress / Garden), replacing the
+           old single vertically-scrolling column. On desktop (md:), reverts
+           to the original stacked, normally-scrolling layout — a swipe pager
+           is a touch metaphor that doesn't belong on a wide sidebar layout. -->
+      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex overflow-x-auto snap-x snap-mandatory md:block md:overflow-visible md:mt-2">
 
-        <!-- Today's mission — the one strong card on the page -->
-        <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
-          <div>
-            <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
-            <div id="dash-mission-body" class="space-y-2.5 mt-2.5"></div>
+        <!-- Page 1: Today — Today's Mission, Targets, and the day-streak /
+             workouts / last-session stats row. Everything about today. -->
+        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-1 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:gap-6 md:py-0 md:max-w-2xl md:mx-auto" data-page="0">
+          <!-- Today's mission — the one strong card on the page -->
+          <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
+            <div>
+              <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
+              <div id="dash-mission-body" class="space-y-2.5 mt-2.5"></div>
+            </div>
+          </div>
+
+          <!-- Targets — entirely optional. Exactly one of these two shows at a
+               time (never both, never neither's absence noticeable) — see
+               renderHomeTargetSection(). A user who never creates a target
+               sees, at most, this lightweight dismissible discovery card —
+               deliberately lower visual weight than Today's Mission (a plain
+               .card, no dashed border, no full-width button), since an
+               optional feature shouldn't compete with the primary Home
+               experience. Once dismissed it never reappears
+               (userProfile.targetsInviteDismissed); it's also removed
+               automatically the moment the user creates their first target,
+               at which point the compact preview below takes over instead. -->
+          <div id="dash-target-invite" style="display:none" class="card p-3 flex items-start gap-3 relative">
+            <span class="w-8 h-8 rounded-full bg-lavender-100 dark:bg-lavender-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lavender-500 text-base">track_changes</span></span>
+            <div class="min-w-0 flex-1 pr-5">
+              <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Personal Targets</p>
+              <p class="text-xs text-slate-400 mt-0.5">Optional daily or weekly fitness goals.</p>
+              <button id="dash-target-invite-create" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline mt-1 inline-flex items-center gap-0.5">Try Targets <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
+            </div>
+            <button id="dash-target-invite-dismiss" type="button" class="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 dark:hover:text-slate-400" aria-label="Dismiss this invitation"><span class="ms text-base" aria-hidden="true">close</span></button>
+          </div>
+
+          <div id="dash-target-preview" style="display:none" class="space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <p class="text-xs font-bold text-slate-400">Today's Target</p>
+              <button id="dash-target-view-all" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline">View all</button>
+            </div>
+            <div id="dash-target-preview-body"></div>
+          </div>
+
+          <!-- Ambient stats — quiet, secondary. Apple Health-style hierarchy:
+               the number carries the weight, the label just quietly names it. -->
+          <div id="dash-stats-row" class="flex items-center justify-center">
+            <div class="text-center px-5"><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white flex items-center justify-center gap-1.5"><span class="ms text-lg align-middle text-amber-500" aria-hidden="true">local_fire_department</span><span id="streak-val">0</span></p><p class="text-[11px] text-slate-400 mt-0.5">day streak</p></div>
+            <div class="w-px h-10 bg-slate-200 dark:bg-slate-800" aria-hidden="true"></div>
+            <div class="text-center px-5"><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white flex items-center justify-center gap-1.5"><span class="ms text-lg align-middle text-brand-500" aria-hidden="true">fitness_center</span><span id="total-sessions-val">0</span></p><p class="text-[11px] text-slate-400 mt-0.5">workouts</p></div>
+            <div class="w-px h-10 bg-slate-200 dark:bg-slate-800" aria-hidden="true"></div>
+            <div class="text-center px-5"><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white flex items-center justify-center gap-1.5"><span class="ms text-lg align-middle text-lavender-500" aria-hidden="true">calendar_month</span><span id="last-session-val">—</span></p><p class="text-[11px] text-slate-400 mt-0.5">last session</p></div>
           </div>
         </div>
 
-        <!-- Targets — entirely optional. Exactly one of these two shows at a
-             time (never both, never neither's absence noticeable) — see
-             renderHomeTargetSection(). A user who never creates a target
-             sees, at most, this lightweight dismissible discovery card —
-             deliberately lower visual weight than Today's Mission (a plain
-             .card, no dashed border, no full-width button), since an
-             optional feature shouldn't compete with the primary Home
-             experience. Once dismissed it never reappears
-             (userProfile.targetsInviteDismissed); it's also removed
-             automatically the moment the user creates their first target,
-             at which point the compact preview below takes over instead. -->
-        <div id="dash-target-invite" style="display:none" class="card p-3 flex items-start gap-3 relative">
-          <span class="w-8 h-8 rounded-full bg-lavender-100 dark:bg-lavender-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lavender-500 text-base">track_changes</span></span>
-          <div class="min-w-0 flex-1 pr-5">
-            <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Personal Targets</p>
-            <p class="text-xs text-slate-400 mt-0.5">Optional daily or weekly fitness goals.</p>
-            <button id="dash-target-invite-create" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline mt-1 inline-flex items-center gap-0.5">Try Targets <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
+        <!-- Page 2: Progress — Recent Win and Closest Progress. Everything
+             about current progression. -->
+        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-4 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:py-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
+          <!-- Recent win — compact chip, not a card. -->
+          <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
+            <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
+            <div class="min-w-0">
+              <p class="text-[10px] font-semibold text-brand-600 dark:text-brand-300">Recent win</p>
+              <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate"></p>
+            </div>
           </div>
-          <button id="dash-target-invite-dismiss" type="button" class="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 dark:hover:text-slate-400" aria-label="Dismiss this invitation"><span class="ms text-base" aria-hidden="true">close</span></button>
-        </div>
 
-        <div id="dash-target-preview" style="display:none" class="space-y-2">
-          <div class="flex items-center justify-between px-1">
-            <p class="text-xs font-bold text-slate-400">Today's Target</p>
-            <button id="dash-target-view-all" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline">View all</button>
-          </div>
-          <div id="dash-target-preview-body"></div>
-        </div>
-
-        <!-- Ambient stats — quiet, secondary. Apple Health-style hierarchy:
-             the number carries the weight, the label just quietly names it. -->
-        <div id="dash-stats-row" class="flex items-center justify-center">
-          <div class="text-center px-5"><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white flex items-center justify-center gap-1.5"><span class="ms text-lg align-middle text-amber-500" aria-hidden="true">local_fire_department</span><span id="streak-val">0</span></p><p class="text-[11px] text-slate-400 mt-0.5">day streak</p></div>
-          <div class="w-px h-10 bg-slate-200 dark:bg-slate-800" aria-hidden="true"></div>
-          <div class="text-center px-5"><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white flex items-center justify-center gap-1.5"><span class="ms text-lg align-middle text-brand-500" aria-hidden="true">fitness_center</span><span id="total-sessions-val">0</span></p><p class="text-[11px] text-slate-400 mt-0.5">workouts</p></div>
-          <div class="w-px h-10 bg-slate-200 dark:bg-slate-800" aria-hidden="true"></div>
-          <div class="text-center px-5"><p class="font-display font-extrabold text-2xl text-slate-800 dark:text-white flex items-center justify-center gap-1.5"><span class="ms text-lg align-middle text-lavender-500" aria-hidden="true">calendar_month</span><span id="last-session-val">—</span></p><p class="text-[11px] text-slate-400 mt-0.5">last session</p></div>
-        </div>
-
-        <!-- Recent win — compact chip, not a card. Sits right after the
-             stats row (both retrospective — "what have I done") and before
-             Closest Progress (forward-looking — "what's coming next"), so
-             the two exercise-level progress insights read together instead
-             of being split apart by the Garden preview below. -->
-        <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
-          <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
-          <div class="min-w-0">
-            <p class="text-[10px] font-semibold text-brand-600 dark:text-brand-300">Recent win</p>
-            <p id="dash-win-text" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate"></p>
+          <!-- Closest progress — open section, not a card. No top divider
+               here (unlike the old single-column layout) since this now
+               opens its own page rather than continuing on from Recent Win
+               in one scroll. -->
+          <div class="space-y-2">
+            <p class="text-xs font-semibold text-slate-400">Closest progress</p>
+            <div id="dash-progress-body" class="space-y-2"></div>
           </div>
         </div>
 
-        <!-- Closest progress — open section, not a card -->
-        <div class="pt-1 pb-1 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2">
-          <p class="text-xs font-semibold text-slate-400 pt-3">Closest progress</p>
-          <div id="dash-progress-body" class="space-y-2"></div>
-        </div>
-
-        <!-- Garden preview — a glimpse, not an inventory. See renderGardenPreview(). -->
-        <div class="garden-shelf rounded-3xl p-4 space-y-4">
-          <div class="flex items-center justify-between">
-            <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Garden</p>
-            <button id="dash-view-garden" class="text-sm font-semibold text-brand-500 hover:underline py-2 flex items-center gap-1">View Garden <span class="ms text-base" aria-hidden="true">arrow_forward</span></button>
+        <!-- Page 3: Garden — Garden preview (Growing/Bloomed plants) and
+             View Garden. Everything about collecting plants. -->
+        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:py-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
+          <div class="garden-shelf rounded-3xl p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Garden</p>
+              <button id="dash-view-garden" class="text-sm font-semibold text-brand-500 hover:underline py-2 flex items-center gap-1">View Garden <span class="ms text-base" aria-hidden="true">arrow_forward</span></button>
+            </div>
+            <div id="dash-garden-preview" class="space-y-4"></div>
           </div>
-          <div id="dash-garden-preview" class="space-y-4"></div>
         </div>
-
-        <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic pt-2"></p>
       </div>
+
+      <!-- Page dots — mobile only, hidden on desktop where the pager reverts
+           to a normal stacked column. -->
+      <div id="dash-page-dots" class="flex items-center justify-center gap-1.5 py-2 flex-shrink-0 md:hidden" role="tablist" aria-label="Home page sections">
+        <button type="button" class="dash-dot" data-page="0" aria-label="Today" aria-selected="true"></button>
+        <button type="button" class="dash-dot" data-page="1" aria-label="Progress" aria-selected="false"></button>
+        <button type="button" class="dash-dot" data-page="2" aria-label="Garden" aria-selected="false"></button>
+      </div>
+
+      <p id="dash-encouragement" class="text-center text-xs text-slate-400 italic flex-shrink-0 pb-2 md:pb-0 md:mt-6 md:pt-2 md:max-w-2xl md:mx-auto md:w-full md:px-4"></p>
     </section>
 
     <!-- WORKOUT -->
@@ -5461,6 +5512,24 @@ function closeAllOpenWindows() {
   ].forEach(hide);
 }
 
+// Calendar is always a fixed, non-scrolling screen, any viewport width.
+// Home is fixed the SAME way, but only on mobile — #dashboard-view's own
+// fixed-height/pager treatment is deliberately scoped to that same <768px
+// breakpoint (see .dash-fixed-shell), and on desktop the page reverts to
+// its original taller, stacked, genuinely-scrolling layout — locking the
+// document there would trap that content below the fold with no way to
+// reach it. The Workout hub locks the same way but via
+// switchWorkoutTab('hub'), since it has to react to its own sub-tab
+// switches too, not just goView(). Any other view/width combination
+// releases the lock. Factored out of goView() so a bare window resize (see
+// the listener below) can re-sync just this, without re-running goView()'s
+// other side effects (scroll-to-top, nav highlight, view transition).
+function syncScrollLockForView(v) {
+  const isMobileWidth = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+  const lockScroll = v === 'calendar' || (v === 'dashboard' && isMobileWidth);
+  document.documentElement.style.overflow = lockScroll ? 'hidden' : '';
+  document.body.style.overflow = lockScroll ? 'hidden' : '';
+}
 function goView(v) {
   closeAllOpenWindows();
   // Every view switch starts at the top of the page — views share one
@@ -5468,12 +5537,7 @@ function goView(v) {
   // this a view can open already scrolled partway down from wherever the
   // previous view happened to leave off (e.g. Garden opening mid-page).
   window.scrollTo(0, 0);
-  // Calendar is a fixed, non-scrolling screen (locked here); the Workout
-  // hub locks the same way but via switchWorkoutTab('hub') below, since it
-  // has to react to its own sub-tab switches too, not just goView(). Any
-  // other view releases the lock.
-  document.documentElement.style.overflow = v === 'calendar' ? 'hidden' : '';
-  document.body.style.overflow = v === 'calendar' ? 'hidden' : '';
+  syncScrollLockForView(v);
   // Nav feedback (highlight/title) is synchronous — a tap should register
   // instantly even though the page content below fades out/in.
   document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
@@ -5487,7 +5551,20 @@ function goView(v) {
   // swapViews() below without a stale setTimeout re-asserting 'hub' after
   // the caller already chose a different sub-tab.
   if (v === 'workout') switchWorkoutTab('hub');
-  const swapViews = () => { VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none'); };
+  // Reopening Home always starts back on Page 1 (Today) — matches the
+  // window.scrollTo(0,0) reset-to-top convention above, just for the
+  // pager's own horizontal scroll position instead of the document's
+  // vertical one. Deliberately set only once the section is actually
+  // display:'' (inside swapViews(), not before it runs) — writing
+  // .scrollLeft on a still display:none element is unreliable/inert in
+  // most browsers, since it has no layout box yet.
+  const swapViews = () => {
+    VIEWS.forEach(x => document.getElementById(x+'-view').style.display = x===v ? '' : 'none');
+    if (v === 'dashboard') {
+      const pager = document.getElementById('dash-pager');
+      if (pager) pager.scrollLeft = 0;
+    }
+  };
   const current = VIEWS.find(x => x !== v && document.getElementById(x+'-view').style.display !== 'none');
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!current || reducedMotion) { swapViews(); return; }
@@ -5505,6 +5582,23 @@ document.querySelectorAll('.rs-nav,.rs-bnav').forEach(el =>
 document.querySelectorAll('.rs-mnav').forEach(el =>
   el.addEventListener('click', () => { closeMobDrawer(); goView(el.dataset.view); })
 );
+// syncScrollLockForView()'s mobile-width check only runs at the moment of
+// navigation (inside goView()) — if the window is resized across the
+// 768px breakpoint while already sitting on Home (a real scenario in a
+// resizable desktop browser, or a foldable/tablet rotating), that lock
+// would go stale otherwise. Deliberately NOT calling goView('dashboard')
+// here — that would also reset scroll-to-top and replay the view
+// transition on every resize tick, which would fight the user's actual
+// scroll position while they're mid-resize. Only the lock itself needs
+// re-syncing. renderHomeTargetSection()'s compact-vs-full Target card
+// choice has the exact same viewport-at-render-time limitation (see that
+// function) — re-run it too so a live resize doesn't strand the compact,
+// buttonless card on a now-roomy desktop width, or vice versa.
+window.addEventListener('resize', () => {
+  if (document.getElementById('dashboard-view').style.display === 'none') return;
+  syncScrollLockForView('dashboard');
+  renderHomeTargetSection();
+});
 
 // Mobile drawer
 document.getElementById('mob-menu-btn').addEventListener('click', () => {
@@ -6165,8 +6259,36 @@ function renderHomeTargetSection() {
   }
   invite.style.display = 'none';
   preview.style.display = '';
-  document.getElementById('dash-target-preview-body').innerHTML = targetCardHtml(picked.id, picked.target, picked.progress);
-  wireTargetCardActions();
+  const body = document.getElementById('dash-target-preview-body');
+  // Mobile Home has no room to spare (Mission + Target + stats all sharing
+  // one fixed-height pager page — see task: "Page 1 doesn't fit... slim
+  // the Target preview for Home only"), so it gets the compact, buttonless
+  // variant. Desktop Home was never space-constrained — the full card
+  // (with its own working "+ Add log"/manage buttons) stays exactly as it
+  // always has, matching the Targets tab's own card one-for-one, no
+  // regression there.
+  const isMobileWidth = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+  if (isMobileWidth) {
+    body.innerHTML = targetCardCompactHtml(picked.id, picked.target, picked.progress);
+    // The full card has real <button> children a keyboard user can Tab to
+    // — the compact card has none, so without this it would be keyboard-
+    // unreachable even though mouse/touch users can already tap it via
+    // #dash-target-preview-body's own delegated click listener (see
+    // below). Freshly wired each render, matching dash-progress-card's own
+    // identical pattern in renderClosestProgress().
+    const card = body.querySelector('[data-target-id]');
+    if (card) {
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-label', `${picked.target.name}: view in Targets`);
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goView('workout'); switchWorkoutTab('targets'); }
+      });
+    }
+  } else {
+    body.innerHTML = targetCardHtml(picked.id, picked.target, picked.progress);
+    wireTargetCardActions();
+  }
 }
 document.getElementById('dash-target-invite-dismiss').addEventListener('click', async () => {
   userProfile.targetsInviteDismissed = true;
@@ -6181,6 +6303,36 @@ document.getElementById('dash-target-preview-body').addEventListener('click', e 
   if (e.target.closest('.tgt-log-btn, .tgt-more-btn')) return;
   goView('workout'); switchWorkoutTab('targets');
 });
+
+// ── Home page pager (Today / Progress / Garden) ─────────────────────────────
+// Wired once — #dash-pager and its 3 .dash-page children are static markup;
+// only the CONTENT inside each page re-renders on every renderDashboard()
+// call (via the existing render*() functions, unchanged). Native touch
+// swipe/momentum/snap is handled entirely by the browser (scroll-snap on
+// #dash-pager, see CSS) — this JS only keeps the dot indicators in sync
+// with wherever the pager actually is, and lets tapping a dot jump there.
+(() => {
+  const pager = document.getElementById('dash-pager');
+  const dots = Array.from(document.querySelectorAll('.dash-dot'));
+  if (!pager || !dots.length) return;
+  let rafPending = false;
+  function syncDots() {
+    rafPending = false;
+    const idx = Math.round(pager.scrollLeft / (pager.clientWidth || 1));
+    dots.forEach((d, i) => d.setAttribute('aria-selected', String(i === idx)));
+  }
+  pager.addEventListener('scroll', () => {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(syncDots);
+  }, { passive: true });
+  dots.forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      pager.scrollTo({ left: i * pager.clientWidth, behavior: reducedMotion ? 'auto' : 'smooth' });
+    });
+  });
+})();
 
 // ── Profile render ──────────────────────────────────────────────────────────
 // renderProfile() is the one function every realtime listener/save-flow
@@ -6585,6 +6737,29 @@ function targetCardHtml(id, target, progress) {
       </div>
       <p class="text-[11px] text-slate-400">${esc(targetPreviousActivityLabel(target, id))}</p>
       <button type="button" class="tgt-log-btn btn text-sm bg-lavender-500 hover:bg-lavender-600 text-white w-full py-2" data-id="${id}" aria-label="Add log for ${esc(target.name)}">+ Add log</button>
+    </div>`;
+}
+
+// Leaner variant for Home's Page 1 only — the full targetCardHtml() above
+// (still used as-is on the Targets tab) carries a manage ("...") button, a
+// full-width "+ Add log" button, and a "previous activity" line that don't
+// fit Home's much tighter, fixed-height pager page (Mission + Target +
+// stats all sharing ~339px with no scroll allowed — see task: "Page 1
+// doesn't fit... slim the Target preview for Home only"). Name + progress
+// only; the whole card is still tappable to open Targets — no separate
+// click wiring needed here since #dash-target-preview-body's existing
+// delegated listener (see renderHomeTargetSection() callers) only special-
+// cases taps on .tgt-log-btn/.tgt-more-btn, neither of which exist here.
+function targetCardCompactHtml(id, target, progress) {
+  const unit = targetUnitLabel(target);
+  const ariaLabel = `${target.name} progress: ${progress.totalLogged} of ${progress.targetAmount} ${unit}`;
+  return `
+    <div class="card p-3 space-y-1.5 cursor-pointer" data-target-id="${id}">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-bold text-slate-800 dark:text-white truncate min-w-0">${esc(target.name)}</p>
+        <p class="text-xs font-bold text-lavender-600 dark:text-lavender-400 flex-shrink-0">${progress.totalLogged} / ${progress.targetAmount} ${esc(unit)}</p>
+      </div>
+      <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${progress.percentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${esc(ariaLabel)}"><div class="h-full bg-lavender-500 rounded-full transition-all duration-500" style="width:${progress.percentage}%"></div></div>
     </div>`;
 }
 
