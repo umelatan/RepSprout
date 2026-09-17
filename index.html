@@ -1371,6 +1371,15 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <div id="aw-progress-bar" class="h-full bg-brand-500 transition-all duration-500" style="width:0%"></div>
   </div>
 
+  <div id="aw-last-note-banner" style="display:none" class="flex-shrink-0 mx-4 mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 flex items-start gap-2.5">
+    <span class="ms text-base text-amber-500 flex-shrink-0" aria-hidden="true">description</span>
+    <div class="min-w-0 flex-1">
+      <p class="text-[11px] font-semibold text-amber-600 dark:text-amber-400">Last time</p>
+      <p id="aw-last-note-text" class="text-sm text-slate-600 dark:text-slate-300"></p>
+    </div>
+    <button type="button" id="aw-last-note-dismiss" class="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Dismiss"><span class="ms text-base" aria-hidden="true">close</span></button>
+  </div>
+
   <main class="flex-1 overflow-y-auto flex flex-col" id="aw-main" aria-live="polite"></main>
 
   <div class="flex-shrink-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800" id="aw-footer"></div>
@@ -9983,6 +9992,26 @@ function buildSessionExercise(exerciseId, overrides = {}) {
   };
 }
 
+// Most recent finished session for this exact workout group that has a
+// note attached — read-only, surfaced as a dismissible banner right as the
+// user starts the same group again (see startWorkoutSession()) so their own
+// past note ("left knee felt tight", "bump the weight next time") is the
+// first thing they see, not something they have to dig for in History.
+function lastGroupSessionNote(groupId) {
+  if (!groupId) return null;
+  const found = histSessionsFlat().find(({ s }) => s.groupId === groupId && s.notes && s.notes.trim());
+  return found ? { date: found.date, notes: found.s.notes.trim() } : null;
+}
+function renderAwLastNoteBanner(note) {
+  const banner = document.getElementById('aw-last-note-banner');
+  if (!note) { banner.style.display = 'none'; return; }
+  document.getElementById('aw-last-note-text').textContent = note.notes;
+  banner.style.display = '';
+}
+document.getElementById('aw-last-note-dismiss').addEventListener('click', () => {
+  document.getElementById('aw-last-note-banner').style.display = 'none';
+});
+
 function startWorkoutSession(groupId) {
   if (activeSession) { alert('Finish or exit your current workout before starting another.'); return; }
   const g = groups[groupId];
@@ -9991,6 +10020,7 @@ function startWorkoutSession(groupId) {
   const exList = (g.exercises || []).map(ge => buildSessionExercise(ge.exerciseId, ge)).filter(Boolean);
   if (!exList.length) { alert('This group has no exercises yet — add some first.'); return; }
   exList[0].entered = true;
+  renderAwLastNoteBanner(lastGroupSessionNote(groupId));
 
   activeSession = {
     groupId, groupName: g.name, groupColor: g.color || GROUP_COLORS[0], sessionType: 'group', startedAt: Date.now(),
@@ -10017,6 +10047,7 @@ function startQuickWorkout(exerciseIds = []) {
   closeGroupPicker();
   const exList = exerciseIds.map(id => buildSessionExercise(id)).filter(Boolean);
   if (exList.length) exList[0].entered = true;
+  renderAwLastNoteBanner(null);
   activeSession = {
     groupId: null, groupName: null, groupColor: null, sessionType: 'quick', startedAt: Date.now(),
     exercises: exList, currentExerciseIndex: 0, phase: 'exercise',
