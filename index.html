@@ -832,42 +832,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 1: Today — Today's Mission, Targets, and the day-streak /
              workouts / last-session stats row. Everything about today. -->
-        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-1 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:gap-6 md:py-0 md:max-w-2xl md:mx-auto" data-page="0">
+        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-3 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:gap-6 md:py-0 md:max-w-2xl md:mx-auto" data-page="0">
           <!-- Today's mission — the one strong card on the page -->
           <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
             <div>
               <p class="text-xs font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-1"><span class="ms text-sm" aria-hidden="true">eco</span>Today's mission</p>
               <div id="dash-mission-body" class="space-y-2.5 mt-2.5"></div>
             </div>
-          </div>
-
-          <!-- Targets — entirely optional. Exactly one of these two shows at a
-               time (never both, never neither's absence noticeable) — see
-               renderHomeTargetSection(). A user who never creates a target
-               sees, at most, this lightweight dismissible discovery card —
-               deliberately lower visual weight than Today's Mission (a plain
-               .card, no dashed border, no full-width button), since an
-               optional feature shouldn't compete with the primary Home
-               experience. Once dismissed it never reappears
-               (userProfile.targetsInviteDismissed); it's also removed
-               automatically the moment the user creates their first target,
-               at which point the compact preview below takes over instead. -->
-          <div id="dash-target-invite" style="display:none" class="card p-3 flex items-start gap-3 relative">
-            <span class="w-8 h-8 rounded-full bg-lavender-100 dark:bg-lavender-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lavender-500 text-base">track_changes</span></span>
-            <div class="min-w-0 flex-1 pr-5">
-              <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Personal Targets</p>
-              <p class="text-xs text-slate-400 mt-0.5">Optional daily or weekly fitness goals.</p>
-              <button id="dash-target-invite-create" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline mt-1 inline-flex items-center gap-0.5">Try Targets <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
-            </div>
-            <button id="dash-target-invite-dismiss" type="button" class="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 dark:hover:text-slate-400" aria-label="Dismiss this invitation"><span class="ms text-base" aria-hidden="true">close</span></button>
-          </div>
-
-          <div id="dash-target-preview" style="display:none" class="space-y-2">
-            <div class="flex items-center justify-between px-1">
-              <p class="text-xs font-bold text-slate-400">Today's Target</p>
-              <button id="dash-target-view-all" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline">View all</button>
-            </div>
-            <div id="dash-target-preview-body"></div>
           </div>
 
           <!-- Ambient stats — quiet, secondary. Apple Health-style hierarchy:
@@ -881,9 +852,9 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           </div>
         </div>
 
-        <!-- Page 2: Progress — Recent Win and Closest Progress. Everything
-             about current progression. -->
-        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-4 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:py-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
+        <!-- Page 2: Progress — Recent Win, Closest Progress, then Targets
+             at the bottom. Everything about current progression. -->
+        <div class="dash-page snap-center flex-shrink-0 w-full h-full overflow-hidden flex flex-col justify-center gap-3 px-4 md:px-6 md:h-auto md:justify-start md:overflow-visible md:gap-6 md:py-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
           <!-- Recent win — compact chip, not a card. -->
           <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
             <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
@@ -900,6 +871,36 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
           <div class="space-y-2">
             <p class="text-xs font-semibold text-slate-400">Closest progress</p>
             <div id="dash-progress-body" class="space-y-2"></div>
+          </div>
+
+          <!-- Targets — entirely optional. Exactly one of these two shows at a
+               time (never both, never neither's absence noticeable) — see
+               renderHomeTargetSection(). A user who never creates a target
+               sees, at most, this lightweight dismissible discovery card —
+               deliberately lower visual weight than Today's Mission (a plain
+               .card, no dashed border, no full-width button), since an
+               optional feature shouldn't compete with the primary Home
+               experience. Once dismissed it never reappears
+               (userProfile.targetsInviteDismissed); it's also removed
+               automatically the moment the user creates their first target,
+               at which point the compact preview below takes over instead.
+               Bottom-most on this page by request. -->
+          <div id="dash-target-invite" style="display:none" class="card p-3 flex items-start gap-3 relative">
+            <span class="w-8 h-8 rounded-full bg-lavender-100 dark:bg-lavender-950/40 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-lavender-500 text-base">track_changes</span></span>
+            <div class="min-w-0 flex-1 pr-5">
+              <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Personal Targets</p>
+              <p class="text-xs text-slate-400 mt-0.5">Optional daily or weekly fitness goals.</p>
+              <button id="dash-target-invite-create" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline mt-1 inline-flex items-center gap-0.5">Try Targets <span class="ms text-sm" aria-hidden="true">arrow_forward</span></button>
+            </div>
+            <button id="dash-target-invite-dismiss" type="button" class="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 dark:hover:text-slate-400" aria-label="Dismiss this invitation"><span class="ms text-base" aria-hidden="true">close</span></button>
+          </div>
+
+          <div id="dash-target-preview" style="display:none" class="space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <p class="text-xs font-bold text-slate-400">Today's Target</p>
+              <button id="dash-target-view-all" type="button" class="text-xs font-semibold text-lavender-600 dark:text-lavender-400 hover:underline">View all</button>
+            </div>
+            <div id="dash-target-preview-body"></div>
           </div>
         </div>
 
