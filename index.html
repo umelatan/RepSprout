@@ -436,8 +436,10 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    this file: a horizontal swipe pager is a touch metaphor, desktop keeps
    the original scrolling stacked layout via the md: overrides on
    #dash-pager/.dash-page/#dash-page-dots below, no separate markup needed).
-   69px = the header's own measured rendered height (see the identical
-   top:69px convention already used for the Garden page's sticky block).
+   69px = the header's own measured rendered height as originally quoted
+   here — since shrunk to 68px once its border-b was removed (see the
+   margin-top:-68px note below, and the Garden page's sticky block, which
+   uses the same real figure).
    80px = <main>'s own existing pb-20 (already reserved there for the fixed
    bottom nav, unrelated to this change — just has to be subtracted too, or
    dashboard-view's height plus that trailing padding together exceed the
@@ -1260,9 +1262,12 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <!-- GARDEN / PROFILE -->
     <section id="profile-view" style="display:none" class="rs-view flex-1 max-w-2xl w-full mx-auto">
       <!-- Companion card, tabs, and filters stay pinned under the app's own
-           sticky top header (69px, its measured rendered height) while
+           sticky top header (68px, its measured rendered height — was 69px
+           until the header's border-b was removed, which is why this has
+           to stay in sync with #app-header's own real height or a sliver
+           of whatever's scrolling underneath shows through the gap) while
            scrolling — only the plant grids below actually scroll. -->
-      <div class="sticky z-10 bg-[#f3eee2]/90 dark:bg-slate-950/90 backdrop-blur-md p-4 md:p-6 pb-3 space-y-4" style="top:69px">
+      <div class="sticky z-10 bg-[#f3eee2]/90 dark:bg-slate-950/90 backdrop-blur-md p-4 md:p-6 pb-3 space-y-4" style="top:68px">
         <!-- Companion card — the emotional mascot, permanent and unchanging.
              Never a progression surface: artwork + name + current mood only.
              Purely informational, not tappable — see renderGardenCompanion(). -->
