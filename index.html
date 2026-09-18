@@ -467,11 +467,25 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 }
 .dash-pager{scrollbar-width:none}
 .dash-pager::-webkit-scrollbar{display:none}
-/* scroll-padding matches #dash-pager's own px-2.5 (10px) padding — keeps
-   snap-center's alignment zone consistent with the visual peek inset, so
-   the first/last page's snap point isn't thrown off by that padding
-   (task: "allow a tiny peek of the next page so users naturally
-   understand they can swipe horizontally"). */
+/* .dash-page uses snap-start, not snap-center — center-alignment made
+   the first/last page's snap position get clamped against the scroll
+   boundary (can't scroll left of 0 or past max), landing them off-centre
+   in a way the middle page never was, so the three pages each showed a
+   different, inconsistent gap pattern. snap-start doesn't have that
+   problem: every page's own left edge aligns to scroll-padding-inline
+   the same way regardless of position in the sequence.
+   #dash-pager's own left/right padding is deliberately asymmetric
+   (pl-1.5 / pr-[22px]) for the same reason: the LAST page still needs
+   22px of real trailing scroll room to physically reach that flush-left
+   position (with only pl-1.5's 6px of padding after it, the browser
+   can't scroll it far enough and it lands 16px short, mismatched with
+   pages 1-2) — 22px = 28px (the gap the page-width formula below trims
+   from 100vw) minus this 6px scroll-padding, which cancels out any
+   dependence on actual viewport width. Net effect: every page reads with
+   the same flush-left / peek-right rhythm (task: "allow a tiny peek of
+   the next page so users naturally understand they can swipe
+   horizontally" — now consistently applied to all three, not just the
+   middle one). */
 @media (max-width:767px){.dash-pager{scroll-padding-inline:6px}}
 .dash-page{scroll-snap-stop:always}
 .dash-dot{width:6px;height:6px;border-radius:999px;background:#cbd5e1;transition:background var(--rs-dur-quick) var(--rs-ease-standard),width var(--rs-dur-quick) var(--rs-ease-standard);padding:0;border:none;cursor:pointer}
@@ -903,11 +917,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
            old single vertically-scrolling column. On desktop (md:), reverts
            to the original stacked, normally-scrolling layout — a swipe pager
            is a touch metaphor that doesn't belong on a wide sidebar layout. -->
-      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex gap-3 px-1.5 overflow-x-auto snap-x snap-mandatory md:block md:gap-0 md:px-0 md:overflow-visible md:mt-2">
+      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex gap-3 pl-1.5 pr-[22px] overflow-x-auto snap-x snap-mandatory md:block md:gap-0 md:px-0 md:overflow-visible md:mt-2">
 
         <!-- Page 1: Today — Today's Mission, Targets, and the day-streak /
              workouts / last-session stats row. Everything about today. -->
-        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto" data-page="0">
+        <div class="dash-page snap-start flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto" data-page="0">
           <!-- Today's mission — the one strong card on the page -->
           <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
             <div>
@@ -929,7 +943,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 2: Progress — Recent Win, Closest Progress, then Targets
              at the bottom. Everything about current progression. -->
-        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
+        <div class="dash-page snap-start flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
           <!-- Recent win — compact chip, not a card. -->
           <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
             <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
@@ -981,7 +995,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 3: Garden — Garden preview (Growing/Bloomed plants) and
              View Garden. Everything about collecting plants. -->
-        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
+        <div class="dash-page snap-start flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
           <div class="garden-shelf rounded-3xl p-4 space-y-4">
             <div class="flex items-center justify-between">
               <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Garden</p>
