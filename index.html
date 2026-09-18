@@ -6162,10 +6162,16 @@ function renderGardenPreview() {
   // No background chip, no name label — the artwork alone carries it. The
   // exercise/species name only reveals in a small tap-triggered tooltip
   // (see the ghp-plant-btn/ghp-tip-floating wiring below), never shown by default.
+  // Sized so a full row of 5 (the max either row ever shows, per the
+  // .slice(0,5)/dailyRandomSample(...,5,...) above) always fits within the
+  // shelf's own width on the narrowest supported viewport (iPhone 13 mini,
+  // 375px) without clipping the last plant — measured: at that width the
+  // row has ~249px to work with, and 5×38px items + 4×10px gaps = 230px,
+  // leaving headroom for justify-between to spread them out further.
   const growingHtml = growing.length
     ? growing.map(g => `
       <button type="button" class="ghp-plant-btn flex-shrink-0" data-name="${esc(g.name)}" data-secondary="${esc(EXERCISE_PLANT_STAGE_NAMES[g.stageIdx])}" aria-label="${esc(g.name)}">
-        ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 44 })}
+        ${exercisePlantVisual({ stageIdx: g.stageIdx, accent: EXG_ACCENT.brand, size: 38 })}
       </button>`).join('')
     : `<p class="text-xs text-slate-400 text-center py-2">Start training to grow your first plant.</p>`;
 
@@ -6175,9 +6181,9 @@ function renderGardenPreview() {
   // finished plant visibly reads as "complete" next to a still-growing one.
   const collectedHtml = collected.length
     ? collected.map(c => `
-      <button type="button" class="ghp-plant-btn flex-shrink-0 relative flex items-center justify-center" style="width:44px;height:44px" data-name="${esc(c.speciesName)}" data-secondary="${esc(c.exerciseName)}" aria-label="${esc(c.speciesName)}">
+      <button type="button" class="ghp-plant-btn flex-shrink-0 relative flex items-center justify-center" style="width:38px;height:38px" data-name="${esc(c.speciesName)}" data-secondary="${esc(c.exerciseName)}" aria-label="${esc(c.speciesName)}">
         <span class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,rgba(244,185,66,.22) 0%,rgba(244,185,66,0) 70%);filter:blur(6px)" aria-hidden="true"></span>
-        <span class="relative leading-none" style="font-size:36px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))" aria-hidden="true">${c.speciesEmoji}</span>
+        <span class="relative leading-none" style="font-size:32px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))" aria-hidden="true">${c.speciesEmoji}</span>
         <span class="sparkle-star sparkle-star-tr" aria-hidden="true">✦</span>
         <span class="sparkle-star sparkle-star-bl" aria-hidden="true">✦</span>
       </button>`).join('')
@@ -6192,11 +6198,11 @@ function renderGardenPreview() {
   wrap.innerHTML = `
     <div class="garden-shelf-growing rounded-2xl px-3.5 py-3.5 space-y-2.5">
       <p class="text-[10px] font-bold uppercase tracking-wider ghp-label-growing flex items-center gap-1.5"><span class="text-sm" aria-hidden="true">🌱</span>Growing</p>
-      <div class="flex items-center justify-between gap-4 overflow-x-auto py-1">${growingHtml}</div>
+      <div class="flex items-center justify-between gap-2 overflow-x-auto py-1">${growingHtml}</div>
     </div>
     <div class="garden-shelf-bloomed rounded-2xl px-3.5 py-3.5 space-y-2.5">
       <p class="text-[10px] font-bold uppercase tracking-wider ghp-label-bloomed flex items-center gap-1.5"><span class="text-sm" aria-hidden="true">🌸</span>Bloomed</p>
-      <div class="flex items-center justify-between gap-4 overflow-x-auto py-1">${collectedHtml}</div>
+      <div class="flex items-center justify-between gap-2 overflow-x-auto px-2 py-1">${collectedHtml}</div>
     </div>`;
 }
 // Tapping a Garden preview plant shows info in a single shared tooltip
