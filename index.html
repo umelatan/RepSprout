@@ -1403,7 +1403,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
 <!-- ══════════ ACTIVE WORKOUT ══════════ -->
 <div id="active-workout-view" style="display:none" class="fixed inset-0 z-40 bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
+  <header class="sticky top-0 z-10 backdrop-blur-md px-2 py-2.5 flex items-center gap-1 flex-shrink-0">
     <button id="aw-end-btn" class="p-2 text-slate-400 hover:text-red-400 flex-shrink-0" title="End workout" aria-label="End workout"><span class="ms text-xl" aria-hidden="true">close</span></button>
     <div class="text-center min-w-0 flex-1">
       <h2 id="aw-group-name" class="font-display font-bold text-sm text-slate-800 dark:text-white truncate"></h2>
@@ -1438,7 +1438,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      tab, History, Home, or the active workout), so no explicit "return to"
      routing state is needed. See openExerciseDetail()/closeExerciseDetail(). -->
 <div id="exercise-detail-view" style="display:none" class="fixed inset-0 z-[45] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
+  <header class="sticky top-0 z-10 backdrop-blur-md px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="exd-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
       <div class="flex items-center gap-1.5">
@@ -1464,7 +1464,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      Plant progress / Exercise summary components wherever the underlying
      data supports it — see renderWorkoutSummaryPage(). -->
 <div id="workout-summary-view" style="display:none" class="rs-view fixed inset-0 z-[45] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center justify-between flex-shrink-0">
+  <header class="sticky top-0 z-10 backdrop-blur-md px-2 py-2.5 flex items-center justify-between flex-shrink-0">
     <button id="wsum-back-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <button id="wsum-more-btn" class="p-2 text-slate-400 hover:text-brand-500 flex-shrink-0" aria-label="More actions"><span class="ms text-xl" aria-hidden="true">more_horiz</span></button>
   </header>
@@ -2455,7 +2455,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      calculateTargetPeriodProgress() the current-period progress already
      uses — never a second completion rule). -->
 <div id="target-detail-view" style="display:none" class="fixed inset-0 z-[46] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
+  <header class="sticky top-0 z-10 backdrop-blur-md px-2 py-2.5 flex items-center gap-2 flex-shrink-0">
     <button id="tgd-back-btn" class="p-2 text-slate-400 hover:text-lavender-500 flex-shrink-0" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
       <h2 id="tgd-name" class="font-display font-bold text-base text-slate-800 dark:text-white truncate"></h2>
@@ -2534,7 +2534,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
      colour (see gm-color-row/gm-color-sheet) only — no cover image, no
      icon. -->
 <div id="group-modal" style="display:none" class="fixed inset-0 z-[47] bg-[#f3eee2] dark:bg-slate-950 flex flex-col">
-  <header class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-start gap-3 flex-shrink-0">
+  <header class="sticky top-0 z-10 backdrop-blur-md px-4 py-3 flex items-start gap-3 flex-shrink-0">
     <button id="group-modal-close" class="p-1.5 -ml-1.5 text-slate-400 hover:text-brand-500 flex-shrink-0 mt-0.5" aria-label="Back"><span class="ms text-xl" aria-hidden="true">arrow_back</span></button>
     <div class="min-w-0 flex-1">
       <h2 id="group-modal-title" class="font-display font-extrabold text-xl text-slate-800 dark:text-white truncate">Create Workout</h2>
