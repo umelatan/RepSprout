@@ -755,8 +755,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
    its own grid of plant art is colourful/busy enough that blurring it
    through the transparent header reads as visual noise rather than the
    calm "one canvas" effect that works on Home/Workout/Calendar's plainer
-   backgrounds, so it keeps a near-opaque header instead. */
-.app-header-solid{background:rgba(251,248,240,.94)}
+   backgrounds, so it keeps a near-opaque header instead. Matches <body>'s
+   own bg-[#f3eee2] exactly (same rgb as .nav-blend below) — was
+   rgba(251,248,240,...), the CARD tone, which read as a too-white slab
+   sitting on top of the page rather than part of it. */
+.app-header-solid{background:rgba(243,238,226,.94)}
 .dark .app-header-solid{background:rgba(2,6,23,.92)}
 </style>
 </head>
