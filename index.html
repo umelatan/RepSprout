@@ -470,7 +470,7 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    the first/last page's snap point isn't thrown off by that padding
    (task: "allow a tiny peek of the next page so users naturally
    understand they can swipe horizontally"). */
-@media (max-width:767px){.dash-pager{scroll-padding-inline:10px}}
+@media (max-width:767px){.dash-pager{scroll-padding-inline:6px}}
 .dash-page{scroll-snap-stop:always}
 .dash-dot{width:6px;height:6px;border-radius:999px;background:#cbd5e1;transition:background var(--rs-dur-quick) var(--rs-ease-standard),width var(--rs-dur-quick) var(--rs-ease-standard);padding:0;border:none;cursor:pointer}
 .dash-dot[aria-selected="true"]{background:#22c55e;width:18px}
@@ -901,11 +901,11 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
            old single vertically-scrolling column. On desktop (md:), reverts
            to the original stacked, normally-scrolling layout — a swipe pager
            is a touch metaphor that doesn't belong on a wide sidebar layout. -->
-      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex gap-3 px-2.5 overflow-x-auto snap-x snap-mandatory md:block md:gap-0 md:px-0 md:overflow-visible md:mt-2">
+      <div id="dash-pager" class="dash-pager relative z-10 flex-1 min-h-0 flex gap-3 px-1.5 overflow-x-auto snap-x snap-mandatory md:block md:gap-0 md:px-0 md:overflow-visible md:mt-2">
 
         <!-- Page 1: Today — Today's Mission, Targets, and the day-streak /
              workouts / last-session stats row. Everything about today. -->
-        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-32px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-4 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto" data-page="0">
+        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto" data-page="0">
           <!-- Today's mission — the one strong card on the page -->
           <div id="dash-mission-card" class="mission-surface rounded-3xl p-4 shadow-sm">
             <div>
@@ -927,7 +927,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 2: Progress — Recent Win, Closest Progress, then Targets
              at the bottom. Everything about current progression. -->
-        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-32px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-4 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
+        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 gap-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:gap-6 md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="1">
           <!-- Recent win — compact chip, not a card. -->
           <div class="win-banner rounded-2xl px-4 py-2.5 flex items-center gap-3">
             <span class="relative text-2xl flex-shrink-0" aria-hidden="true"><span class="sparkle-dot">✨</span><span id="dash-win-icon">🍃</span></span>
@@ -979,7 +979,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
 
         <!-- Page 3: Garden — Garden preview (Growing/Bloomed plants) and
              View Garden. Everything about collecting plants. -->
-        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-32px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 px-4 md:px-6 md:h-auto md:overflow-visible md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
+        <div class="dash-page snap-center flex-shrink-0 w-[calc(100vw-28px)] md:w-full h-full overflow-hidden flex flex-col justify-start pt-3 px-2.5 md:px-6 md:h-auto md:overflow-visible md:py-0 md:pt-0 md:max-w-2xl md:mx-auto md:mt-6" data-page="2">
           <div class="garden-shelf rounded-3xl p-4 space-y-4">
             <div class="flex items-center justify-between">
               <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Garden</p>
