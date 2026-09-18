@@ -402,6 +402,24 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    Growing/Bloomed divider below it, instead of being cut off. */
 .ghp-tip-floating{position:fixed;transform:translate(-50%,-4px) scale(.92);opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;white-space:nowrap;font-size:10px;font-weight:600;color:#fff;background:#1e293b;padding:.25rem .5rem;border-radius:.5rem;box-shadow:0 4px 10px -2px rgba(0,0,0,.25);z-index:200}
 .ghp-tip-floating.ghp-tip-visible{opacity:1;transform:translate(-50%,0) scale(1)}
+/* Garden preview's two sub-shelves (Home) — each an independently tinted
+   surface (sage-to-cream for Growing, blush-to-cream for Bloomed) instead
+   of one flat card split by a divider, so the two states read as distinct
+   "beds" within the same shelf. */
+.garden-shelf-growing{background:linear-gradient(135deg,#eef4e0 0%,#f8f1dc 100%)}
+.dark .garden-shelf-growing{background:linear-gradient(135deg,#1a3630 0%,#26332f 100%)}
+.garden-shelf-bloomed{background:linear-gradient(150deg,#fbe3dd 0%,#f6efe3 60%,#f8f2e7 100%)}
+.dark .garden-shelf-bloomed{background:linear-gradient(150deg,#2f2136 0%,#1c1f2c 55%,#0e1420 100%)}
+.ghp-label-growing{color:#2f7d29}
+.dark .ghp-label-growing{color:#86efac}
+.ghp-label-bloomed{color:#a8434f}
+.dark .ghp-label-bloomed{color:#f593c3}
+/* Two-star sparkle accent on each Bloomed plant — reuses sparklePulse
+   (already defined for the Recent Win/win-banner sparkle-dot) so both
+   twinkle the same way and both freeze together under reduced motion. */
+.sparkle-star{position:absolute;font-size:.6rem;line-height:1;color:#f4b942;animation:sparklePulse 2.4s ease-in-out infinite;pointer-events:none}
+.sparkle-star-tr{top:-4px;right:-6px}
+.sparkle-star-bl{bottom:-4px;left:-6px;animation-delay:1.15s}
 .win-banner{background:linear-gradient(120deg,#fefce8 0%,#f0fdf4 100%)}
 .dark .win-banner{background:linear-gradient(120deg,rgba(133,77,14,.2) 0%,rgba(20,83,45,.25) 100%)}
 /* Home page fixed shell + swipeable pager — mobile only (matches the
@@ -474,7 +492,7 @@ html:not(.dark) .text-purple-500{color:#957fb8}
 #ls-growth-glow{background:radial-gradient(circle,rgba(34,197,94,.45),transparent 70%)}
 @media (prefers-reduced-motion:reduce){
   .stage-glow{opacity:.4}
-  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf,.bloom-pop-in{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
+  .p-sway,.p-droop,.p-bloom,.p-hero-float,.p-hero-bloom,.p-breathe,.leaf-particle,.sparkle-dot,.sparkle-star,#growth-bar-fill,.water-drop-fall,.water-glow-loop,.water-ripple-loop,.stage-pop,.stage-glow,#queue-panel,#queue-backdrop,.p-sway-breathe,.ls-complete-pop,.aw-set-fade,.cap-backdrop,.cap-sheet,.mep-plant-pop,.finish-reveal,.finish-leaf-in,.finish-save-leaf,.bloom-pop-in{animation:none!important;transition:none!important;opacity:1!important;transform:none!important}
   .finish-confetti-dot{animation:none!important;opacity:0!important}
 }
 /* Post-workout summary entrance sequence (see openFinishSummary()) — a
@@ -933,7 +951,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
               <p class="font-display font-bold text-lg text-slate-800 dark:text-white">Garden</p>
               <button id="dash-view-garden" class="text-sm font-semibold text-brand-500 hover:underline py-2 flex items-center gap-1">View Garden <span class="ms text-base" aria-hidden="true">arrow_forward</span></button>
             </div>
-            <div id="dash-garden-preview" class="space-y-4"></div>
+            <div id="dash-garden-preview" class="space-y-3"></div>
           </div>
         </div>
       </div>
@@ -6151,10 +6169,17 @@ function renderGardenPreview() {
       </button>`).join('')
     : `<p class="text-xs text-slate-400 text-center py-2">Start training to grow your first plant.</p>`;
 
+  // Each bloomed plant gets a soft gold glow behind it (echoing
+  // exercisePlantVisual()'s own glow-plus-drop-shadow treatment for
+  // Growing) and two sparkle-star accents at opposite corners, so a
+  // finished plant visibly reads as "complete" next to a still-growing one.
   const collectedHtml = collected.length
     ? collected.map(c => `
-      <button type="button" class="ghp-plant-btn flex-shrink-0 flex items-center justify-center" style="width:44px;height:44px;font-size:36px;line-height:1" data-name="${esc(c.speciesName)}" data-secondary="${esc(c.exerciseName)}" aria-label="${esc(c.speciesName)}">
-        <span aria-hidden="true">${c.speciesEmoji}</span>
+      <button type="button" class="ghp-plant-btn flex-shrink-0 relative flex items-center justify-center" style="width:44px;height:44px" data-name="${esc(c.speciesName)}" data-secondary="${esc(c.exerciseName)}" aria-label="${esc(c.speciesName)}">
+        <span class="absolute inset-0 rounded-full" style="background:radial-gradient(circle,rgba(244,185,66,.22) 0%,rgba(244,185,66,0) 70%);filter:blur(6px)" aria-hidden="true"></span>
+        <span class="relative leading-none" style="font-size:36px;filter:drop-shadow(0 6px 5px rgba(15,23,42,.16))" aria-hidden="true">${c.speciesEmoji}</span>
+        <span class="sparkle-star sparkle-star-tr" aria-hidden="true">✦</span>
+        <span class="sparkle-star sparkle-star-bl" aria-hidden="true">✦</span>
       </button>`).join('')
     : `
       <div class="flex items-center gap-4 py-1">
@@ -6165,14 +6190,13 @@ function renderGardenPreview() {
       </div>`;
 
   wrap.innerHTML = `
-    <div class="space-y-2.5">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Growing</p>
-      <div class="flex items-center justify-between gap-4 overflow-x-auto py-3 -my-3">${growingHtml}</div>
+    <div class="garden-shelf-growing rounded-2xl px-3.5 py-3.5 space-y-2.5">
+      <p class="text-[10px] font-bold uppercase tracking-wider ghp-label-growing flex items-center gap-1.5"><span class="text-sm" aria-hidden="true">🌱</span>Growing</p>
+      <div class="flex items-center justify-between gap-4 overflow-x-auto py-1">${growingHtml}</div>
     </div>
-    <div class="border-t border-slate-200/70 dark:border-slate-800/70"></div>
-    <div class="space-y-2.5">
-      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bloomed</p>
-      <div class="flex items-center justify-between gap-4 overflow-x-auto py-3 -my-3">${collectedHtml}</div>
+    <div class="garden-shelf-bloomed rounded-2xl px-3.5 py-3.5 space-y-2.5">
+      <p class="text-[10px] font-bold uppercase tracking-wider ghp-label-bloomed flex items-center gap-1.5"><span class="text-sm" aria-hidden="true">🌸</span>Bloomed</p>
+      <div class="flex items-center justify-between gap-4 overflow-x-auto py-1">${collectedHtml}</div>
     </div>`;
 }
 // Tapping a Garden preview plant shows info in a single shared tooltip
