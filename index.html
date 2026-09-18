@@ -377,6 +377,15 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    ending abruptly... visually connected to the content below"). */
 .hero-surface{background:linear-gradient(180deg,#e9efdd 0%,#f7ecd8 40%,#f3eee2 78%)}
 .dark .hero-surface{background:linear-gradient(180deg,rgba(20,83,45,.45) 0%,rgba(15,23,42,.9) 55%,#020617 85%)}
+/* Mobile-only: dashboard-view's shell (above) now starts at the true top of
+   the screen, behind the transparent header, so dash-hero's own top edge
+   sits there too — its content needs the header's 69px height plus the
+   original pt-3 (12px) of breathing room added back so the plant/title
+   aren't covered by the header's icons. #id+.class beats the bare .pt-3
+   utility on specificity regardless of the two stylesheets' load order. */
+@media (max-width:767px){
+  #dash-hero.hero-surface{padding-top:80px}
+}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 22%,var(--plant-glow,rgba(34,197,94,.35)),rgba(34,197,94,0) 60%);filter:blur(6px);pointer-events:none}
 .dark .hero-glow{background:radial-gradient(circle at 50% 22%,var(--plant-glow-dark,var(--plant-glow,rgba(34,197,94,.28))),rgba(34,197,94,0) 60%)}
 .hero-glow-warm{position:absolute;inset:0;background:radial-gradient(circle at 78% 12%,rgba(251,191,36,.3),rgba(251,191,36,0) 55%);filter:blur(8px);pointer-events:none}
@@ -439,9 +448,20 @@ html:not(.dark) .text-purple-500{color:#957fb8}
    then dvh) are progressive enhancement: browsers that don't understand
    `dvh` simply ignore that whole declaration and keep the vh-based one;
    dvh accounts for mobile browser chrome (address bar) so the fit stays
-   exact as it shows/hides. */
+   exact as it shows/hides.
+   margin-top:-68px pulls the whole shell up underneath the now-transparent
+   sticky header (see <header>'s own comment; 68px since removing its
+   border-b shaved 1px off the 69px figure quoted above) so the hero's
+   gradient — its first child — paints all the way to the true top of the
+   screen instead of stopping at the header's bottom edge; height grows by
+   the same amount so the shell's own bottom edge lands exactly where it
+   did before (still 100vh/100dvh minus just the 80px bottom-nav reserve —
+   that 80px is independent of the header, so it's untouched here). <main>
+   itself has no overflow clipping, so nothing cuts this off — only
+   dash-hero's own padding-top (below) needs to grow to keep its actual
+   content clear of the header's icons/text now floating on top of it. */
 @media (max-width:767px){
-  #dashboard-view.dash-fixed-shell{display:flex;flex-direction:column;overflow:hidden;flex:none;height:calc(100vh - 149px);height:calc(100dvh - 149px)}
+  #dashboard-view.dash-fixed-shell{display:flex;flex-direction:column;overflow:hidden;flex:none;margin-top:-68px;height:calc(100vh - 80px);height:calc(100dvh - 80px)}
 }
 .dash-pager{scrollbar-width:none}
 .dash-pager::-webkit-scrollbar{display:none}
@@ -708,6 +728,13 @@ input:focus,textarea:focus,select:focus{border-color:#22c55e}
 .mg-cardio{background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.3)}
 .cal-upper{background:#3b82f6}.cal-lower{background:#f97316}.cal-core{background:#a855f7}.cal-full{background:#22c55e}.cal-cardio{background:#ef4444}
 body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) var(--rs-ease-standard),border-color var(--rs-dur-standard) var(--rs-ease-standard),color var(--rs-dur-standard) var(--rs-ease-standard)}
+/* Bottom nav (all pages) — was a flat bg-white/slate-900 slab with a hard
+   border-t; now the exact same rgba as <body>'s own background (task: "the
+   Home page should feel like one continuous canvas... no harsh colour
+   breaks"), just translucent + blurred like an iOS tab bar, so it reads as
+   part of the page rather than a separate panel sitting on top of it. */
+.nav-blend{background:rgba(243,238,226,.78)}
+.dark .nav-blend{background:rgba(2,6,23,.78)}
 </style>
 </head>
 <body class="bg-[#f3eee2] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
@@ -815,7 +842,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   <main class="md:ml-56 min-h-screen flex flex-col pb-20 md:pb-0">
 
     <!-- Header -->
-    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 md:px-6 py-3">
+    <header class="sticky top-0 z-40 backdrop-blur-md flex items-center justify-between px-4 md:px-6 py-3">
       <div class="flex items-center gap-2">
         <button id="mob-menu-btn" class="md:hidden p-2 rounded-xl text-slate-400 hover:text-brand-500 transition-colors">
           <span class="ms text-xl">menu</span>
@@ -1366,7 +1393,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   </main>
 
   <!-- Bottom nav -->
-  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex z-30">
+  <nav class="md:hidden fixed bottom-0 inset-x-0 backdrop-blur-md nav-blend flex z-30">
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="dashboard"><span class="ms text-2xl">home</span><span class="text-[9px] font-semibold">Home</span></button>
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="workout"><span class="ms text-2xl">fitness_center</span><span class="text-[9px] font-semibold">Workout</span></button>
     <button class="rs-bnav flex-1 flex flex-col items-center gap-0.5 py-2.5 text-slate-400 transition-colors" data-view="calendar"><span class="ms text-2xl">calendar_month</span><span class="text-[9px] font-semibold">Calendar</span></button>
