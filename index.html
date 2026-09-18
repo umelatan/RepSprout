@@ -735,6 +735,13 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
    part of the page rather than a separate panel sitting on top of it. */
 .nav-blend{background:rgba(243,238,226,.78)}
 .dark .nav-blend{background:rgba(2,6,23,.78)}
+/* Garden page only (#app-header.app-header-solid, toggled in goView()) —
+   its own grid of plant art is colourful/busy enough that blurring it
+   through the transparent header reads as visual noise rather than the
+   calm "one canvas" effect that works on Home/Workout/Calendar's plainer
+   backgrounds, so it keeps a near-opaque header instead. */
+.app-header-solid{background:rgba(251,248,240,.94)}
+.dark .app-header-solid{background:rgba(2,6,23,.92)}
 </style>
 </head>
 <body class="bg-[#f3eee2] dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
@@ -842,7 +849,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
   <main class="md:ml-56 min-h-screen flex flex-col pb-20 md:pb-0">
 
     <!-- Header -->
-    <header class="sticky top-0 z-40 backdrop-blur-md flex items-center justify-between px-4 md:px-6 py-3">
+    <header id="app-header" class="sticky top-0 z-40 backdrop-blur-md flex items-center justify-between px-4 md:px-6 py-3">
       <div class="flex items-center gap-2">
         <button id="mob-menu-btn" class="md:hidden p-2 rounded-xl text-slate-400 hover:text-brand-500 transition-colors">
           <span class="ms text-xl">menu</span>
@@ -5619,6 +5626,7 @@ function goView(v) {
   // Nav feedback (highlight/title) is synchronous — a tap should register
   // instantly even though the page content below fades out/in.
   document.getElementById('page-title').textContent = v === 'dashboard' ? getGreeting() : (TITLES[v] || '');
+  document.getElementById('app-header').classList.toggle('app-header-solid', v === 'profile');
   document.querySelectorAll('.rs-nav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-bnav').forEach(el => el.classList.toggle('bnav-active', el.dataset.view===v));
   document.querySelectorAll('.rs-mnav').forEach(el => el.classList.toggle('nav-active', el.dataset.view===v));
