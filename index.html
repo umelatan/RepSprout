@@ -3676,8 +3676,15 @@ function assignPlant() {
 // here for that case either.
 function computeStreak(sessionDates) {
   const today = todayStr();
+  // Bounded at 10 years (3650 days), not the streak length itself — the
+  // loop already terminates on its own via the `else if (i > 0) break`
+  // below the first time it hits a day with no session/planned-recovery,
+  // so this is just a sanity ceiling against corrupted data, never meant
+  // to cap a real streak (an earlier `i < 60` here did exactly that: any
+  // streak past 60 days silently froze at 60 forever since the loop just
+  // stopped counting).
   let streak = 0, check = new Date(today+'T12:00:00');
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 3650; i++) {
     const dateStr = check.toISOString().slice(0,10);
     const coveredByPlannedRecovery = Object.values(entriesForDate(dateStr)).some(e => e.type === 'recovery' && e.status === 'planned');
     if (sessionDates.includes(dateStr) || coveredByPlannedRecovery) streak++;
