@@ -14487,6 +14487,16 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
     }
     esmDraft.duration = +document.getElementById('esm-duration').value || 0;
     esmDraft.notes = document.getElementById('esm-notes').value.trim();
+    // renderEsmExList() already shows every exercise here regardless of its
+    // stored skipped flag (including ones stuck skipped by the old
+    // "Skip on the last set drops the whole exercise" bug — see the
+    // startWorkoutSession()-era skip-set fix). Reviewing/editing an
+    // exercise's own sets in this modal is the user confirming it belongs
+    // in the session, so clear the flag on save — an exercise with no real
+    // completed sets still correctly falls out of eligibleExercises
+    // elsewhere via its own getCompletedWorkingSets().length check, so
+    // this can't wrongly resurrect a genuinely empty entry.
+    esmDraft.exercises.forEach(ex => { ex.skipped = false; });
 
     await set(ref(db, `sessions/${uid()}/${esmDate}/${esmSessionId}`), esmDraft);
     (sessions[esmDate] ??= {})[esmSessionId] = esmDraft; // mirror before recalculating — see finish-save-btn
