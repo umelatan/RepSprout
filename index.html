@@ -1452,7 +1452,7 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
     <span class="ms text-base text-amber-500 flex-shrink-0" aria-hidden="true">description</span>
     <div class="min-w-0 flex-1">
       <p class="text-[11px] font-semibold text-amber-600 dark:text-amber-400">Note</p>
-      <p id="aw-last-note-text" class="text-sm text-slate-600 dark:text-slate-300"></p>
+      <p id="aw-last-note-text" class="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line"></p>
     </div>
     <button type="button" id="aw-last-note-dismiss" class="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0" aria-label="Dismiss"><span class="ms text-base" aria-hidden="true">close</span></button>
   </div>
@@ -10084,6 +10084,29 @@ function buildSessionExercise(exerciseId, overrides = {}) {
   };
 }
 
+// Every non-empty note actually left on a saved session, one line per set
+// that has one — "<Exercise> Set N: <note>" once more than one exercise
+// carries a note (so it's unambiguous which exercise it's about), just
+// "Set N: <note>" when only one exercise has any. Notes live per-set now
+// (see buildSessionExercise()), not on the session as a whole, so this is
+// the real source of truth; falls back to the legacy session-level
+// s.notes field only for older sessions saved before that change, which
+// never got any per-set notes recorded at all.
+function sessionNoteLines(s) {
+  const perExercise = (s.exercises || []).map(ex => {
+    const lines = (ex.sets || [])
+      .filter(set => set && set.notes && String(set.notes).trim())
+      .map(set => {
+        const label = set.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(set) + 1}`;
+        return `${label}: ${String(set.notes).trim()}`;
+      });
+    return { name: ex.name, lines };
+  }).filter(e => e.lines.length);
+  if (!perExercise.length) return (s.notes && s.notes.trim()) ? [s.notes.trim()] : [];
+  const multiExercise = perExercise.length > 1;
+  return perExercise.flatMap(e => e.lines.map(line => multiExercise ? `${e.name} ${line}` : line));
+}
+
 // Most recent finished session for this exact workout group that has a
 // note attached — read-only, surfaced as a dismissible banner right as the
 // user starts the same group again (see startWorkoutSession()) so their own
@@ -10091,8 +10114,8 @@ function buildSessionExercise(exerciseId, overrides = {}) {
 // first thing they see, not something they have to dig for in History.
 function lastGroupSessionNote(groupId) {
   if (!groupId) return null;
-  const found = histSessionsFlat().find(({ s }) => s.groupId === groupId && s.notes && s.notes.trim());
-  return found ? { date: found.date, notes: found.s.notes.trim() } : null;
+  const found = histSessionsFlat().find(({ s }) => s.groupId === groupId && sessionNoteLines(s).length);
+  return found ? { date: found.date, notes: sessionNoteLines(found.s).join('\n') } : null;
 }
 function renderAwLastNoteBanner(note) {
   const banner = document.getElementById('aw-last-note-banner');
@@ -12196,10 +12219,13 @@ function finishExerciseSummaryRowHtml(ex, idx) {
       }
     }
     return `
-      <div class="flex items-center justify-between gap-2 py-1.5 ${i > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''}">
-        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 w-11 flex-shrink-0">Set ${i + 1}</span>
-        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">${s.weight || 0}${unit} × ${s.reps || 0}</span>
-        <span class="text-xs ${cueClass} flex-shrink-0">${esc(cue)}</span>
+      <div class="py-1.5 ${i > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''}">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 w-11 flex-shrink-0">Set ${i + 1}</span>
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">${s.weight || 0}${unit} × ${s.reps || 0}</span>
+          <span class="text-xs ${cueClass} flex-shrink-0">${esc(cue)}</span>
+        </div>
+        ${s.notes ? `<p class="text-xs text-slate-400 italic mt-0.5 pl-11">${esc(s.notes)}</p>` : ''}
       </div>`;
   }).join('');
   const key = `fin-ex-${idx}`;
@@ -12277,10 +12303,13 @@ function histExerciseSummaryRowHtml(ex, idx, sessionId, date) {
       cue = remaining ? `${remaining} rep${remaining !== 1 ? 's' : ''} to go` : 'At target';
     }
     return `
-      <div class="flex items-center justify-between gap-2 py-1.5 ${i > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''}">
-        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 w-11 flex-shrink-0">Set ${i + 1}</span>
-        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">${s.weight || 0}${unit} × ${s.reps || 0}</span>
-        <span class="text-xs ${cueClass} flex-shrink-0">${esc(cue)}</span>
+      <div class="py-1.5 ${i > 0 ? 'border-t border-slate-100 dark:border-slate-800' : ''}">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 w-11 flex-shrink-0">Set ${i + 1}</span>
+          <span class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex-1">${s.weight || 0}${unit} × ${s.reps || 0}</span>
+          <span class="text-xs ${cueClass} flex-shrink-0">${esc(cue)}</span>
+        </div>
+        ${s.notes ? `<p class="text-xs text-slate-400 italic mt-0.5 pl-11">${esc(s.notes)}</p>` : ''}
       </div>`;
   }).join('');
 
