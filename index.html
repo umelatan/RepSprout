@@ -14271,21 +14271,20 @@ function esmExpandedCardHtml(ex, i) {
           <span class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-base text-purple-500 dark:text-purple-400">tune</span></span>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Advanced</p>
-            <p class="text-xs text-slate-400">RIR, warm-up, notes</p>
+            <p class="text-xs text-slate-400">RIR, notes</p>
           </div>
           <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">${esmAdvancedOpen?'expand_less':'expand_more'}</span>
         </button>
         ${esmAdvancedOpen ? `
         <div class="px-3 pb-3 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-3">
           <div>
-            <label class="text-xs font-semibold text-slate-400 block mb-1">RIR — reps in reserve (optional)</label>
-            <input type="number" inputmode="numeric" class="esm-rir-input" data-idx="${i}" placeholder="—" value="${ex.sets?.[0]?.rir ?? ''}">
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-400 mb-1.5">Set type</p>
-            <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-200/70 dark:bg-slate-700/50">
-              <button type="button" class="esm-mark-working py-2 rounded-lg text-sm font-bold ${!ex.sets?.[0]?.warmup ? 'bg-brand-500 text-white' : 'text-slate-500 dark:text-slate-400'}" data-idx="${i}">Working set</button>
-              <button type="button" class="esm-mark-warmup py-2 rounded-lg text-sm font-bold ${ex.sets?.[0]?.warmup ? 'bg-amber-500 text-white' : 'text-slate-500 dark:text-slate-400'}" data-idx="${i}">Warm-up</button>
+            <p class="text-xs font-semibold text-slate-400 mb-1.5">RIR per set — reps in reserve (optional)</p>
+            <div class="space-y-2">
+              ${(ex.sets||[]).map((s, j) => `
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
+                  <input type="number" inputmode="numeric" class="esm-set-rir flex-1" data-idx="${i}" data-set="${j}" placeholder="—" value="${s.rir ?? ''}">
+                </div>`).join('')}
             </div>
           </div>
           <div>
@@ -14326,10 +14325,6 @@ function esmStepWeight(idx, dir) {
   const w = Math.max(0, (ex.weight||0) + dir*step);
   ex.weight = w;
   ex.sets.forEach(s => { if (!s.warmup) s.weight = w; });
-  renderEsmExList();
-}
-function esmSetWarmup(idx, isWarmup) {
-  esmDraft.exercises[idx].sets.forEach(s => { s.warmup = isWarmup; });
   renderEsmExList();
 }
 function wireEsmExListEvents() {
@@ -14393,12 +14388,9 @@ function wireEsmExListEvents() {
     esmAdvancedOpen = !esmAdvancedOpen;
     renderEsmExList();
   }));
-  list.querySelectorAll('.esm-rir-input').forEach(inp => inp.addEventListener('change', () => {
-    const v = inp.value === '' ? null : +inp.value;
-    esmDraft.exercises[+inp.dataset.idx].sets.forEach(s => { s.rir = v; });
+  list.querySelectorAll('.esm-set-rir').forEach(inp => inp.addEventListener('change', () => {
+    esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].rir = inp.value === '' ? null : +inp.value;
   }));
-  list.querySelectorAll('.esm-mark-working').forEach(b => b.addEventListener('click', () => esmSetWarmup(+b.dataset.idx, false)));
-  list.querySelectorAll('.esm-mark-warmup').forEach(b => b.addEventListener('click', () => esmSetWarmup(+b.dataset.idx, true)));
   list.querySelectorAll('.esm-set-notes').forEach(inp => inp.addEventListener('change', () => {
     esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].notes = inp.value.trim();
   }));
