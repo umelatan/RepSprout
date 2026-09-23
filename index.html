@@ -3486,14 +3486,6 @@ body,.card,aside,header,nav{transition:background-color var(--rs-dur-standard) v
         </div>
       </div>
 
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex-1 min-w-0">
-          <label for="esm-notes" class="text-xs font-semibold text-slate-400 block mb-1">Notes</label>
-          <input id="esm-notes" type="text" placeholder="Optional notes about your workout" class="esm-underline-input w-full">
-        </div>
-        <span class="ms text-lg text-slate-400 flex-shrink-0 pointer-events-none" aria-hidden="true">edit</span>
-      </div>
-
       <div id="esm-ex-list" class="space-y-2.5"></div>
       <button id="esm-add-ex-btn" type="button" class="w-full py-2.5 border border-dashed border-brand-300 dark:border-brand-700 text-brand-500 rounded-xl text-sm font-semibold hover:bg-brand-50 dark:hover:bg-brand-950/30 transition-all flex items-center justify-center gap-2">
         <span class="ms text-base" aria-hidden="true">add</span>Add exercise
@@ -14437,7 +14429,6 @@ function openEditSessionModal(date, sessionId) {
     nameField.style.display = 'none'; // Quick Workout has no name to rename
   }
   document.getElementById('esm-duration').value = esmDraft.duration || '';
-  document.getElementById('esm-notes').value = esmDraft.notes || '';
   document.getElementById('esm-details-panel').style.display = 'none';
   document.getElementById('esm-details-toggle').setAttribute('aria-expanded', 'false');
 
@@ -14488,7 +14479,11 @@ document.getElementById('esm-save-btn').addEventListener('click', async () => {
       if (name) esmDraft.groupName = name; // relabels only this logged record, never the saved group template
     }
     esmDraft.duration = +document.getElementById('esm-duration').value || 0;
-    esmDraft.notes = document.getElementById('esm-notes').value.trim();
+    // esmDraft.notes (the session-level "how did it feel" note, set when the
+    // workout was first finished) is deliberately left untouched here — this
+    // modal no longer has a UI for it (removed per request, now that notes
+    // live per-set inside each exercise instead), so whatever was already
+    // saved just passes through unchanged.
     // renderEsmExList() already shows every exercise here regardless of its
     // stored skipped flag (including ones stuck skipped by the old
     // "Skip on the last set drops the whole exercise" bug — see the
