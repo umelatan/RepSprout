@@ -10453,12 +10453,24 @@ function renderExercisePhase(ex) {
         <div class="pt-2.5">${renderSetDots(setNum, totalTarget)}</div>
       </div>
     </div>`;
+  // "Skip" here used to always mean skip-exercise — fine on set 1 (nothing
+  // logged yet to lose), but on set 2+ it silently discarded every set
+  // already completed for this exercise too (skip-exercise excludes the
+  // WHOLE exercise from the saved session, not just the pending set), which
+  // read as "I skipped one set and RepSprout dropped the entire exercise."
+  // Once at least one set is done, "Skip" now does what a user looking at
+  // "Set N of totalTarget" actually expects: skip just this one pending
+  // set (same skip-set action/red accent the active-set screen already
+  // uses), leaving the completed sets intact.
+  const skipBtnHtml = setNum > 1
+    ? `<button data-action="skip-set" class="text-red-400 hover:underline py-2">Skip set</button>`
+    : `<button data-action="skip-exercise" class="text-slate-400 hover:underline py-2">Skip</button>`;
   footer.innerHTML = `
     <button data-action="start-set" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Set</button>
     <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-2 flex-wrap">
       <button data-action="change-weight" class="text-slate-400 hover:underline py-2">Change weight</button>
       <button data-action="add-note" class="text-slate-400 hover:underline py-2">Note</button>
-      <button data-action="skip-exercise" class="text-slate-400 hover:underline py-2">Skip</button>
+      ${skipBtnHtml}
       <button data-action="open-queue" class="text-slate-400 hover:underline py-2">Queue</button>
     </div>`;
   document.getElementById('aw-ex-name-btn').addEventListener('click', () => openExerciseDetail(ex.exerciseId));
