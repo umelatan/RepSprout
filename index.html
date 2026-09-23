@@ -10075,8 +10075,11 @@ function buildSessionExercise(exerciseId, overrides = {}) {
     weightIncrement: ex.weightIncrement || 0,
     progressionEnabled: ex.progressionEnabled !== false,
     targetReps,
-    sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps: '', rir: '', completed: false, warmup: false, completedAt: null })),
-    skipped: false, notes: '', entered: false,
+    // notes lives per-set (below), not here — a note added while looking at
+    // one set must never bleed into another set's own note (see the
+    // add-note/view-note/ls-note handling further down).
+    sets: targetReps.map(() => ({ weight: ex.currentWeight || 0, reps: '', rir: '', completed: false, warmup: false, completedAt: null, notes: '' })),
+    skipped: false, entered: false,
     // A workout-group-level rest override (see Configure Exercise's own
     // Rest timer chips) seeds restSecondsOverride, the same field the
     // in-session "Change rest" UI writes to — resolveRestDuration() already
@@ -10453,24 +10456,21 @@ function renderExercisePhase(ex) {
         <div class="pt-2.5">${renderSetDots(setNum, totalTarget)}</div>
       </div>
     </div>`;
-  // "Skip" here used to always mean skip-exercise — fine on set 1 (nothing
-  // logged yet to lose), but on set 2+ it silently discarded every set
-  // already completed for this exercise too (skip-exercise excludes the
-  // WHOLE exercise from the saved session, not just the pending set), which
+  // "Skip" on this per-set screen always means skip-set now, unconditionally
+  // — it used to be skip-exercise (excludes the WHOLE exercise from the
+  // saved session, dropping every set already completed for it too), which
   // read as "I skipped one set and RepSprout dropped the entire exercise."
-  // Once at least one set is done, "Skip" now does what a user looking at
-  // "Set N of totalTarget" actually expects: skip just this one pending
-  // set (same skip-set action/red accent the active-set screen already
-  // uses), leaving the completed sets intact.
-  const skipBtnHtml = setNum > 1
-    ? `<button data-action="skip-set" class="text-red-400 hover:underline py-2">Skip set</button>`
-    : `<button data-action="skip-exercise" class="text-slate-400 hover:underline py-2">Skip</button>`;
+  // A genuine "I don't want this exercise at all" is still reachable: skip
+  // each remaining set individually, which correctly preserves whatever
+  // real sets were already done instead of discarding them. The one-tap
+  // skip-exercise action still exists on the earlier "Up Next" screen
+  // (before Start Exercise is tapped), where nothing's been logged yet.
   footer.innerHTML = `
     <button data-action="start-set" class="btn btn-green btn-pop w-full py-3.5 text-base">Start Set</button>
     <div class="flex items-center justify-center gap-4 text-xs font-semibold pt-2 flex-wrap">
       <button data-action="change-weight" class="text-slate-400 hover:underline py-2">Change weight</button>
       <button data-action="add-note" class="text-slate-400 hover:underline py-2">Note</button>
-      ${skipBtnHtml}
+      <button data-action="skip-set" class="text-red-400 hover:underline py-2">Skip set</button>
       <button data-action="open-queue" class="text-slate-400 hover:underline py-2">Queue</button>
     </div>`;
   document.getElementById('aw-ex-name-btn').addEventListener('click', () => openExerciseDetail(ex.exerciseId));
@@ -11257,7 +11257,10 @@ function openLogSetSheet() {
 
   document.getElementById('ls-rir').value = '';
   document.querySelectorAll('.ls-rir-chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
-  document.getElementById('ls-note').value = ex.notes || '';
+  // Pre-fills from THIS set's own note (e.g. one already added via the
+  // idle screen's "Note" button) — never another set's, since notes are
+  // per-set now (see buildSessionExercise()).
+  document.getElementById('ls-note').value = ex.sets[si].notes || '';
   setLsWarmup(false);
 
   renderLsPlantPanel();
@@ -11329,7 +11332,7 @@ document.getElementById('ls-save-btn').addEventListener('click', () => {
   const warmup = document.getElementById('ls-warmup').checked;
   const note = document.getElementById('ls-note').value.trim();
   playLsCompletionAnimation(() => {
-    const entry = { weight, reps, rir: rirVal === '' ? '' : +rirVal, completed: true, warmup, completedAt: Date.now() };
+    const entry = { weight, reps, rir: rirVal === '' ? '' : +rirVal, completed: true, warmup, completedAt: Date.now(), notes: note };
     if (warmup) {
       // A warm-up is an EXTRA logged entry, never a replacement for the next
       // pending working slot — splice it in before that slot so it stays
@@ -11342,7 +11345,6 @@ document.getElementById('ls-save-btn').addEventListener('click', () => {
       ex.sets[si] = entry;
       ex.weight = weight; // "today's weight" tracks working weight, not a warm-up weight
     }
-    if (note) ex.notes = note;
     closeLogSetSheet();
     afterSetLogged(ex, si, {});
   });
@@ -11353,7 +11355,8 @@ document.getElementById('ls-incomplete-btn').addEventListener('click', () => {
   if (si === -1) return;
   const reps = +document.getElementById('ls-reps').value || 0;
   const weight = +document.getElementById('ls-weight').value || ex.sets[si].weight || 0;
-  ex.sets[si] = { weight, reps, rir: '', completed: false, warmup: false, completedAt: null };
+  const note = document.getElementById('ls-note').value.trim();
+  ex.sets[si] = { weight, reps, rir: '', completed: false, warmup: false, completedAt: null, notes: note };
   closeLogSetSheet();
   activeSession.phase = 'exercise';
   renderGuidedWorkout();
@@ -11496,7 +11499,10 @@ function handleAwAction(action) {
     case 'skip-set': {
       const si = currentSetIndex(ex);
       if (si === -1) break;
-      ex.sets[si] = { weight: ex.sets[si].weight||0, reps: 0, rir: '', completed: true, warmup: false, completedAt: Date.now() };
+      // Carries forward this set's own notes (e.g. added via "Add note"
+      // before deciding to skip it) — this replaces the whole set object,
+      // so without this a note typed in first would silently vanish.
+      ex.sets[si] = { weight: ex.sets[si].weight||0, reps: 0, rir: '', completed: true, warmup: false, completedAt: Date.now(), notes: ex.sets[si].notes || '' };
       afterSetLogged(ex, si, { skippedSet: true });
       break;
     }
@@ -11513,13 +11519,27 @@ function handleAwAction(action) {
       openPreviousSetsSheet(ex);
       break;
     case 'add-note': {
-      const note = prompt('Exercise note', ex.notes || '');
-      if (note !== null) { ex.notes = note.trim(); saveActiveSessionDraft(); }
+      // Attached to the PENDING set, not the exercise — a note added while
+      // looking at "Set 3 of 3" must never show up against set 1's own
+      // entry (see buildSessionExercise()'s per-set notes field).
+      const si = currentSetIndex(ex);
+      if (si === -1) break;
+      const note = prompt(`Note for Set ${completedWorkingCount(ex) + 1}`, ex.sets[si].notes || '');
+      if (note !== null) { ex.sets[si].notes = note.trim(); saveActiveSessionDraft(); }
       break;
     }
-    case 'view-note':
-      alert(ex.notes || 'No note added.');
+    case 'view-note': {
+      // Every completed set can carry its own note now, so this lists each
+      // one labeled by set number instead of a single shared string.
+      const noted = ex.sets.filter(s => s.completed && s.notes);
+      if (!noted.length) { alert('No notes added.'); break; }
+      const lines = noted.map(s => {
+        const label = s.warmup ? 'Warm-up' : `Set ${workingSetsFor(ex).indexOf(s) + 1}`;
+        return `${label}: ${s.notes}`;
+      });
+      alert(lines.join('\n'));
       break;
+    }
     case 'skip-exercise':
       ex.skipped = true;
       goToNextExercise();
@@ -12597,10 +12617,11 @@ document.getElementById('finish-save-btn').addEventListener('click', async () =>
       // depending on whatever the exercise library's rep range happens to
       // be at recalculation time.
       minReps: ex.minReps, maxReps: ex.maxReps, weightIncrement: ex.weightIncrement, progressionEnabled: ex.progressionEnabled,
-      targetReps: ex.targetReps, skipped: ex.skipped, notes: ex.notes || null,
+      targetReps: ex.targetReps, skipped: ex.skipped,
+      // notes lives per-set below, not here — see buildSessionExercise().
       sets: ex.sets.map(s => ({
         weight: s.weight||0, reps: s.completed ? (s.reps||0) : 0, rir: s.rir===''?null:s.rir,
-        completed: !!s.completed, warmup: !!s.warmup, completedAt: s.completedAt || null
+        completed: !!s.completed, warmup: !!s.warmup, completedAt: s.completedAt || null, notes: s.notes || null
       }))
     }))
   };
@@ -14165,8 +14186,8 @@ function newSessionExerciseFromLibrary(exerciseId) {
   if (!built) return null;
   return {
     exerciseId: built.exerciseId, name: built.name, muscleGroup: built.category,
-    weight: built.weight, unit: built.unit, targetReps: built.targetReps, skipped: false, notes: '',
-    sets: built.targetReps.map(r => ({ weight: built.weight, reps: r, rir: null, completed: true, warmup: false, completedAt: Date.now() }))
+    weight: built.weight, unit: built.unit, targetReps: built.targetReps, skipped: false,
+    sets: built.targetReps.map(r => ({ weight: built.weight, reps: r, rir: null, completed: true, warmup: false, completedAt: Date.now(), notes: '' }))
   };
 }
 
@@ -14268,8 +14289,14 @@ function esmExpandedCardHtml(ex, i) {
             </div>
           </div>
           <div>
-            <label class="text-xs font-semibold text-slate-400 block mb-1">Exercise notes</label>
-            <input type="text" class="esm-ex-notes" data-idx="${i}" placeholder="Optional" value="${esc(ex.notes||'')}">
+            <p class="text-xs font-semibold text-slate-400 mb-1.5">Notes per set</p>
+            <div class="space-y-2">
+              ${(ex.sets||[]).map((s, j) => `
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
+                  <input type="text" class="esm-set-notes flex-1" data-idx="${i}" data-set="${j}" placeholder="Optional" value="${esc(s.notes||'')}">
+                </div>`).join('')}
+            </div>
           </div>
           <div>
             <p class="text-xs font-semibold text-slate-400 mb-1.5">Completed</p>
@@ -14359,7 +14386,7 @@ function wireEsmExListEvents() {
   list.querySelectorAll('.esm-add-set').forEach(b => b.addEventListener('click', () => {
     const sets = esmDraft.exercises[+b.dataset.idx].sets;
     const last = sets[sets.length - 1] || { weight: esmDraft.exercises[+b.dataset.idx].weight||0, reps: 0, rir: null };
-    sets.push({ weight: last.weight || 0, reps: last.reps || 0, rir: last.rir ?? null, completed: true, warmup: false, completedAt: Date.now() });
+    sets.push({ weight: last.weight || 0, reps: last.reps || 0, rir: last.rir ?? null, completed: true, warmup: false, completedAt: Date.now(), notes: '' });
     renderEsmExList();
   }));
   list.querySelectorAll('.esm-advanced-toggle').forEach(b => b.addEventListener('click', () => {
@@ -14372,8 +14399,8 @@ function wireEsmExListEvents() {
   }));
   list.querySelectorAll('.esm-mark-working').forEach(b => b.addEventListener('click', () => esmSetWarmup(+b.dataset.idx, false)));
   list.querySelectorAll('.esm-mark-warmup').forEach(b => b.addEventListener('click', () => esmSetWarmup(+b.dataset.idx, true)));
-  list.querySelectorAll('.esm-ex-notes').forEach(inp => inp.addEventListener('change', () => {
-    esmDraft.exercises[+inp.dataset.idx].notes = inp.value.trim();
+  list.querySelectorAll('.esm-set-notes').forEach(inp => inp.addEventListener('change', () => {
+    esmDraft.exercises[+inp.dataset.idx].sets[+inp.dataset.set].notes = inp.value.trim();
   }));
   list.querySelectorAll('.esm-toggle-completed').forEach(b => b.addEventListener('click', () => {
     const s = esmDraft.exercises[+b.dataset.idx].sets[+b.dataset.set];
