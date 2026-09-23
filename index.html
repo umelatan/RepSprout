@@ -14193,9 +14193,10 @@ function newSessionExerciseFromLibrary(exerciseId) {
 
 // Review-first: exercises render collapsed (name/weight/reps summary +
 // chevron) and only esmExpandedIdx's exercise expands, closing the others.
-// esmWeightEditorOpen/esmAdvancedOpen are scoped to whichever exercise is
-// currently expanded and reset every time the expanded exercise changes.
-let esmExpandedIdx = null, esmWeightEditorOpen = false, esmAdvancedOpen = false;
+// esmWeightEditorOpen/esmRirOpen/esmNotesOpen are scoped to whichever
+// exercise is currently expanded and reset every time the expanded
+// exercise changes.
+let esmExpandedIdx = null, esmWeightEditorOpen = false, esmRirOpen = false, esmNotesOpen = false;
 
 function esmComputeStats() {
   const exs = esmDraft.exercises || [];
@@ -14267,43 +14268,48 @@ function esmExpandedCardHtml(ex, i) {
       <button type="button" class="esm-add-set text-xs font-semibold text-brand-500 hover:underline" data-idx="${i}">+ Add set</button>
 
       <div class="rounded-xl bg-white dark:bg-slate-900 overflow-hidden">
-        <button type="button" class="esm-advanced-toggle w-full flex items-center gap-3 p-3 text-left" aria-expanded="${esmAdvancedOpen?'true':'false'}">
-          <span class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-base text-purple-500 dark:text-purple-400">tune</span></span>
+        <button type="button" class="esm-rir-toggle w-full flex items-center gap-3 p-3 text-left" aria-expanded="${esmRirOpen?'true':'false'}">
+          <span class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-base text-purple-500 dark:text-purple-400">speed</span></span>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Advanced</p>
-            <p class="text-xs text-slate-400">RIR, notes</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">RIR</p>
+            <p class="text-xs text-slate-400">Reps in reserve, per set (optional)</p>
           </div>
-          <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">${esmAdvancedOpen?'expand_less':'expand_more'}</span>
+          <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">${esmRirOpen?'expand_less':'expand_more'}</span>
         </button>
-        ${esmAdvancedOpen ? `
-        <div class="px-3 pb-3 space-y-3 border-t border-slate-100 dark:border-slate-800 pt-3">
-          <div>
-            <p class="text-xs font-semibold text-slate-400 mb-1.5">RIR per set — reps in reserve (optional)</p>
-            <div class="space-y-2">
-              ${(ex.sets||[]).map((s, j) => `
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
-                  <input type="number" inputmode="numeric" class="esm-set-rir flex-1" data-idx="${i}" data-set="${j}" placeholder="—" value="${s.rir ?? ''}">
-                </div>`).join('')}
-            </div>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-400 mb-1.5">Notes per set</p>
-            <div class="space-y-2">
-              ${(ex.sets||[]).map((s, j) => `
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
-                  <input type="text" class="esm-set-notes flex-1" data-idx="${i}" data-set="${j}" placeholder="Optional" value="${esc(s.notes||'')}">
-                </div>`).join('')}
-            </div>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-400 mb-1.5">Completed</p>
-            <div class="flex flex-wrap gap-1.5">
-              ${(ex.sets||[]).map((s,j) => `<button type="button" class="esm-toggle-completed px-2.5 py-1.5 rounded-lg text-xs font-semibold ${s.completed !== false ? 'bg-brand-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}" data-idx="${i}" data-set="${j}" aria-pressed="${s.completed !== false}">Set ${j+1}${s.completed === false ? ' · incomplete' : ''}</button>`).join('')}
-            </div>
-          </div>
+        ${esmRirOpen ? `
+        <div class="px-3 pb-3 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+          ${(ex.sets||[]).map((s, j) => `
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
+              <input type="number" inputmode="numeric" class="esm-set-rir flex-1" data-idx="${i}" data-set="${j}" placeholder="—" value="${s.rir ?? ''}">
+            </div>`).join('')}
         </div>` : ''}
+      </div>
+
+      <div class="rounded-xl bg-white dark:bg-slate-900 overflow-hidden">
+        <button type="button" class="esm-notes-toggle w-full flex items-center gap-3 p-3 text-left" aria-expanded="${esmNotesOpen?'true':'false'}">
+          <span class="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0" aria-hidden="true"><span class="ms text-base text-amber-500 dark:text-amber-400">description</span></span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Notes</p>
+            <p class="text-xs text-slate-400">Optional, per set</p>
+          </div>
+          <span class="ms text-slate-400 flex-shrink-0" aria-hidden="true">${esmNotesOpen?'expand_less':'expand_more'}</span>
+        </button>
+        ${esmNotesOpen ? `
+        <div class="px-3 pb-3 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+          ${(ex.sets||[]).map((s, j) => `
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400 w-14 flex-shrink-0">${s.warmup ? 'Warm-up' : 'Set '+(workingSetsFor(ex).indexOf(s)+1)}</span>
+              <input type="text" class="esm-set-notes flex-1" data-idx="${i}" data-set="${j}" placeholder="Optional" value="${esc(s.notes||'')}">
+            </div>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <div>
+        <p class="text-xs font-semibold text-slate-400 mb-1.5">Completed</p>
+        <div class="flex flex-wrap gap-1.5">
+          ${(ex.sets||[]).map((s,j) => `<button type="button" class="esm-toggle-completed px-2.5 py-1.5 rounded-lg text-xs font-semibold ${s.completed !== false ? 'bg-brand-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}" data-idx="${i}" data-set="${j}" aria-pressed="${s.completed !== false}">Set ${j+1}${s.completed === false ? ' · incomplete' : ''}</button>`).join('')}
+        </div>
       </div>
     </div>`;
 }
@@ -14330,9 +14336,9 @@ function esmStepWeight(idx, dir) {
 function wireEsmExListEvents() {
   const list = document.getElementById('esm-ex-list');
   // Only one exercise expands at a time — expanding a new one collapses
-  // whatever was previously open and resets its Advanced/weight-editor state.
+  // whatever was previously open and resets its RIR/Notes/weight-editor state.
   list.querySelectorAll('.esm-ex-card').forEach(b => b.addEventListener('click', () => {
-    esmExpandedIdx = +b.dataset.idx; esmWeightEditorOpen = false; esmAdvancedOpen = false;
+    esmExpandedIdx = +b.dataset.idx; esmWeightEditorOpen = false; esmRirOpen = false; esmNotesOpen = false;
     renderEsmExList();
   }));
   list.querySelectorAll('.esm-ex-collapse').forEach(b => b.addEventListener('click', () => {
@@ -14384,8 +14390,12 @@ function wireEsmExListEvents() {
     sets.push({ weight: last.weight || 0, reps: last.reps || 0, rir: last.rir ?? null, completed: true, warmup: false, completedAt: Date.now(), notes: '' });
     renderEsmExList();
   }));
-  list.querySelectorAll('.esm-advanced-toggle').forEach(b => b.addEventListener('click', () => {
-    esmAdvancedOpen = !esmAdvancedOpen;
+  list.querySelectorAll('.esm-rir-toggle').forEach(b => b.addEventListener('click', () => {
+    esmRirOpen = !esmRirOpen;
+    renderEsmExList();
+  }));
+  list.querySelectorAll('.esm-notes-toggle').forEach(b => b.addEventListener('click', () => {
+    esmNotesOpen = !esmNotesOpen;
     renderEsmExList();
   }));
   list.querySelectorAll('.esm-set-rir').forEach(inp => inp.addEventListener('change', () => {
@@ -14415,7 +14425,7 @@ function openEditSessionModal(date, sessionId) {
   esmDate = date; esmSessionId = sessionId;
   esmDraft = JSON.parse(JSON.stringify(s)); // deep clone so closing without saving discards edits cleanly
   if (!Array.isArray(esmDraft.exercises)) esmDraft.exercises = [];
-  esmExpandedIdx = null; esmWeightEditorOpen = false; esmAdvancedOpen = false;
+  esmExpandedIdx = null; esmWeightEditorOpen = false; esmRirOpen = false; esmNotesOpen = false;
   document.getElementById('esm-subtitle').textContent = fmtDate(date);
   document.getElementById('esm-error').style.display = 'none';
 
